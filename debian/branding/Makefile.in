@@ -42,7 +42,7 @@ BROWSER_APP_FILES = \
 
 GARBAGE += $(BROWSER_APP_FILES)
 
-export:: $(BROWSER_APP_FILES) iceweasel.xpm
+export:: $(BROWSER_APP_FILES) cunaguaro.xpm
 	$(NSINSTALL) -D $(DIST)/branding
 	cp $(BROWSER_APP_FILES) $(DIST)/branding/
 
@@ -57,8 +57,8 @@ firefox.ico: mozicon128.png
 %.ico %.xpm:
 	convert $< $@
 
-iceweasel.xpm: default32.png
-GARBAGE += iceweasel.xpm iceweasel.png
+cunaguaro.xpm: default32.png
+GARBAGE += cunaguaro.xpm cunaguaro.png
 
 document_icon.png: SIZE=40
 default64.png: SIZE=64
@@ -68,10 +68,10 @@ default32.png: SIZE=32
 default48.png: SIZE=48
 GARBAGE += document_icon.png default64.png
 
-document_icon.png mozicon128.png default16.png default32.png default48.png default64.png: $(srcdir)/iceweasel_icon.svg
+document_icon.png mozicon128.png default16.png default32.png default48.png default64.png: $(srcdir)/cunaguaro_icon.svg
 	rsvg-convert -w $(SIZE) -h $(SIZE) -o $@ $<
 
-iceweasel_logo.png: $(srcdir)/iceweasel_logo.svg
+cunaguaro_logo.png: $(srcdir)/cunaguaro_logo.svg
 	rsvg-convert -w 256 -a -o $@ $<
 
-GARBAGE += iceweasel_logo.png
+GARBAGE += cunaguaro_logo.png

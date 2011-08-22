@@ -11,7 +11,7 @@ for REEMPLAZAR in ${OPCIONES}; do
 	ICEWEASEL=${REEMPLAZAR%_____________________*}
 	CUNAGUARO=${REEMPLAZAR#${ICEWEASEL}_____________________}
 
-	for ARCHIVO in $( find . -type f | grep -v ".git/" ); do
+	for ARCHIVO in $( find . -type f | grep -v ".git/" | grep -v "convertir-a-cunaguaro.sh" ); do
 		NUEVO=$( echo ${ARCHIVO} | sed "s/${ICEWEASEL}/${CUNAGUARO}/g" )
 		if [ "${ARCHIVO}" != "${NUEVO}" ]; then
 			echo "Renombrando ${ARCHIVO} a ${NUEVO}"
@@ -19,7 +19,7 @@ for REEMPLAZAR in ${OPCIONES}; do
 		fi
 	done
 
-	for ARCHIVO in $( grep -IHR "${ICEWEASEL}" . | cut -d: -f1 | grep -v ".git/" ); do
+	for ARCHIVO in $( grep -IHR "${ICEWEASEL}" . | cut -d: -f1 | grep -v ".git/" | grep -v "convertir-a-cunaguaro.sh" ); do
 		echo "Sustituyendo ${ICEWEASEL} por ${CUNAGUARO} en ${ARCHIVO}"
 		sed -i "s/${ICEWEASEL}/${CUNAGUARO}/g" ${ARCHIVO}
 	done
