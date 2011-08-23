@@ -68,10 +68,13 @@ Suggests: ttf-lyx | latex-xft-fonts,
           mozplugger,
           libgssapi-krb5-2 | libkrb53
 Provides: www-browser,
-          gnome-www-browser
+          gnome-www-browser,
+          iceweasel
 Description: Navegador Web para Canaima GNU/Linux
- Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
- with support for modern web application technologies.
+ Cunaguaro es un navegador web para el sistema operativo Canaima
+ diseñado para integrase a su plataforma tecnológica, aumentar el
+ rendimiento de su desempeño, mejorar su apariencia gráfica, e
+ impulsar la identificación del venezolano con su fauna.
 
 Package: cunaguaro-dbg
 Architecture: any
