@@ -1,8 +1,8 @@
 Source: cunaguaro
 Section: web
 Priority: optional
-Maintainer: Maintainers of Mozilla-related packages <pkg-mozilla-maintainers@lists.alioth.debian.org>
-Uploaders: Mike Hommey <glandium@debian.org>
+Maintainer: Equipo de Desarrollo de Canaima GNU/Linux <desarrolladores@canaima.softwarelibre.gob.ve>
+Uploaders: José Miguel Parrella Romero <jparrella@onuva.com>, Carlos David Marrero <cdmarrero2040@gmail.com>, Orlando Andrés Fiol Carballo <ofiol@indesoft.org.ve>, Carlos Alejandro Guerrero Mora <guerrerocarlos@gmail.com>, Diego Alberto Aguilera Zambrano <diegoaguilera85@gmail.com>, Luis Alejandro Martínez Faneyth <martinez.faneyth@gmail.com>, Francisco Javier Vásquez Guerrero <franjvasquezg@gmail.com>, Jesús Lara Giménez <jesuslara@devel.com.ve>
 Build-Depends: autotools-dev,
                debhelper (>= 7.2.3),
                libx11-dev,
@@ -49,9 +49,10 @@ Build-Depends: autotools-dev,
 Build-Conflicts: graphicsmagick-imagemagick-compat,
                  libhildonmime-dev,
                  libosso-dev
-Standards-Version: 3.9.2.0
-Vcs-Git: git://git.debian.org/git/pkg-mozilla/cunaguaro.git
-Vcs-Browser: http://git.debian.org/?p=pkg-mozilla/cunaguaro.git
+Standards-Version: 3.9.1
+Homepage: http://canaima.softwarelibre.gob.ve/
+Vcs-Git: git://gitorious.org/canaima-gnu-linux/cunaguaro.git
+Vcs-Browser: http://gitorious.org/canaima-gnu-linux/cunaguaro/trees/master
 
 Package: cunaguaro
 Architecture: any
@@ -67,10 +68,13 @@ Suggests: ttf-lyx | latex-xft-fonts,
           mozplugger,
           libgssapi-krb5-2 | libkrb53
 Provides: www-browser,
-          gnome-www-browser
-Description: Web browser based on Firefox
- Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
- with support for modern web application technologies.
+          gnome-www-browser,
+          iceweasel
+Description: Navegador Web para Canaima GNU/Linux
+ Cunaguaro es un navegador web para el sistema operativo Canaima
+ diseñado para integrase a su plataforma tecnológica, aumentar el
+ rendimiento de su desempeño, mejorar su apariencia gráfica, e
+ impulsar la identificación del venezolano con su fauna.
 
 Package: cunaguaro-dbg
 Architecture: any
