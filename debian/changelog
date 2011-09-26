@@ -1,8 +1,11 @@
 cunaguaro (6.0.2+1) unstable; urgency=medium
 
+  [ Mike Hommey ]
   * Versión inicial para Canaima GNU/Linux
 
- -- Mike Hommey <glandium@debian.org>  Tue, 06 Sep 2011 08:32:55 +0200
+  [ Luis Alejandro Martínez Faneyth ]
+
+ -- Luis Alejandro Martínez Faneyth <martinez.faneyth@gmail.com>  Mon, 26 Sep 2011 16:35:50 -0430
 
 cunaguaro (6.0.2-1) unstable; urgency=medium
 
