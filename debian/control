@@ -1,8 +1,8 @@
-Source: cunaguaro
+Source: iceweasel
 Section: web
 Priority: optional
-Maintainer: Equipo de Desarrollo de Canaima GNU/Linux <desarrolladores@canaima.softwarelibre.gob.ve>
-Uploaders: José Miguel Parrella Romero <jparrella@onuva.com>, Carlos David Marrero <cdmarrero2040@gmail.com>, Orlando Andrés Fiol Carballo <ofiol@indesoft.org.ve>, Carlos Alejandro Guerrero Mora <guerrerocarlos@gmail.com>, Diego Alberto Aguilera Zambrano <diegoaguilera85@gmail.com>, Luis Alejandro Martínez Faneyth <martinez.faneyth@gmail.com>, Francisco Javier Vásquez Guerrero <franjvasquezg@gmail.com>, Jesús Lara Giménez <jesuslara@devel.com.ve>
+Maintainer: Maintainers of Mozilla-related packages <pkg-mozilla-maintainers@lists.alioth.debian.org>
+Uploaders: Mike Hommey <glandium@debian.org>
 Build-Depends: autotools-dev,
                debhelper (>= 7.2.3),
                libx11-dev,
@@ -49,12 +49,11 @@ Build-Depends: autotools-dev,
 Build-Conflicts: graphicsmagick-imagemagick-compat,
                  libhildonmime-dev,
                  libosso-dev
-Standards-Version: 3.9.1
-Homepage: http://canaima.softwarelibre.gob.ve/
-Vcs-Git: git://gitorious.org/canaima-gnu-linux/cunaguaro.git
-Vcs-Browser: http://gitorious.org/canaima-gnu-linux/cunaguaro/trees/master
+Standards-Version: 3.9.2.0
+Vcs-Git: git://git.debian.org/git/pkg-mozilla/iceweasel.git
+Vcs-Browser: http://git.debian.org/?p=pkg-mozilla/iceweasel.git
 
-Package: cunaguaro
+Package: iceweasel
 Architecture: any
 Depends: ${shlibs:Depends},
          ${misc:Depends},
@@ -68,26 +67,23 @@ Suggests: ttf-lyx | latex-xft-fonts,
           mozplugger,
           libgssapi-krb5-2 | libkrb53
 Provides: www-browser,
-          gnome-www-browser,
-          iceweasel
-Description: Navegador Web para Canaima GNU/Linux
- Cunaguaro es un navegador web para el sistema operativo Canaima
- diseñado para integrase a su plataforma tecnológica, aumentar el
- rendimiento de su desempeño, mejorar su apariencia gráfica, e
- impulsar la identificación del venezolano con su fauna.
+          gnome-www-browser
+Description: Web browser based on Firefox
+ Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+ with support for modern web application technologies.
 
-Package: cunaguaro-dbg
+Package: iceweasel-dbg
 Architecture: any
 Priority: extra
 Section: debug
 Depends: ${misc:Depends},
-         cunaguaro (= ${binary:Version}),
+         iceweasel (= ${binary:Version}),
          xulrunner-6.0-dbg
-Description: debugging symbols for cunaguaro
- Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
+Description: debugging symbols for iceweasel
+ Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the debugging symbols for cunaguaro.
+ This package contains the debugging symbols for iceweasel.
 
 Package: xulrunner-6.0
 Section: libs
@@ -127,7 +123,7 @@ Depends: ${shlibs:Depends},
          ${misc:Depends}
 Description: Mozilla SpiderMonkey JavaScript library
  This library provides the embeddable JavaScript/ECMAScript engine from
- the Mozilla project (used among others by the Cunaguaro (Firefox) browser
+ the Mozilla project (used among others by the Iceweasel (Firefox) browser
  as well as by the iPlanet WebServer).
 Homepage: http://www.mozilla.org/js/
 
@@ -139,7 +135,7 @@ Depends: ${misc:Depends},
          libnspr4-dev
 Description: Development files for the Mozilla SpiderMonkey JavaScript library
  This library provides the embeddable JavaScript/ECMAScript engine from
- the Mozilla project (used among others by the Cunaguaro (Firefox) browser
+ the Mozilla project (used among others by the Iceweasel (Firefox) browser
  as well as by the iPlanet WebServer).
  .
  Install this package if you wish to develop your own programs using the
@@ -154,7 +150,7 @@ Depends: libmozjs6d (= ${binary:Version}),
          ${misc:Depends}
 Description: Development files for the Mozilla SpiderMonkey JavaScript library
  This library provides the embeddable JavaScript/ECMAScript engine from
- the Mozilla project (used among others by the Cunaguaro (Firefox) browser
+ the Mozilla project (used among others by the Iceweasel (Firefox) browser
  as well as by the iPlanet WebServer).
  .
  This package provides the debugging symbols for the library and for

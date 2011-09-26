@@ -228,7 +228,7 @@ class FirefoxRunner(Runner):
     if sys.platform == 'darwin':
         names = ['firefox', 'minefield', 'shiretoko']
     elif (sys.platform == 'linux2') or (sys.platform in ('sunos5', 'solaris')):
-        names = ['firefox', 'mozilla-firefox', 'cunaguaro']
+        names = ['firefox', 'mozilla-firefox', 'iceweasel']
     elif os.name == 'nt' or sys.platform == 'cygwin':
         names =['firefox']
     else:

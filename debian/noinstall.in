@@ -1,7 +1,7 @@
-usr/bin/cunaguaro
-usr/lib/cunaguaro/run-mozilla.sh
-usr/lib/cunaguaro/README.txt
-usr/lib/cunaguaro/removed-files
+usr/bin/iceweasel
+usr/lib/iceweasel/run-mozilla.sh
+usr/lib/iceweasel/README.txt
+usr/lib/iceweasel/removed-files
 usr/lib/xulrunner-##GRE_VERSION##/README.txt
 usr/lib/xulrunner-##GRE_VERSION##/dictionaries
 usr/include/xulrunner-##GRE_VERSION##/testing

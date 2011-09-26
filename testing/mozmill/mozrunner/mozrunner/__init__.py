@@ -310,7 +310,7 @@ class FirefoxProfile(Profile):
         if sys.platform == 'darwin':
             return ['firefox', 'minefield', 'shiretoko']
         if (sys.platform == 'linux2') or (sys.platform in ('sunos5', 'solaris')):
-            return ['firefox', 'mozilla-firefox', 'cunaguaro']
+            return ['firefox', 'mozilla-firefox', 'iceweasel']
         if os.name == 'nt' or sys.platform == 'cygwin':
             return ['firefox']
 
@@ -495,7 +495,7 @@ class FirefoxRunner(Runner):
         if sys.platform == 'darwin':
             return ['firefox', 'minefield', 'shiretoko']
         if (sys.platform == 'linux2') or (sys.platform in ('sunos5', 'solaris')):
-            return ['firefox', 'mozilla-firefox', 'cunaguaro']
+            return ['firefox', 'mozilla-firefox', 'iceweasel']
         if os.name == 'nt' or sys.platform == 'cygwin':
             return ['firefox']
 

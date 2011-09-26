@@ -386,7 +386,7 @@ xulrunner (1.9.1.8-5) unstable; urgency=low
     debian/extra-stuff/packages-static.xulrunner, toolkit/content/about.dtd,
     toolkit/content/about.xhtml, toolkit/content/jar.mn: Remove the debAbout
     component and its use in the about: page. We already removed its use
-    from the cunaguaro package, and it was the sole user of that feature.
+    from the iceweasel package, and it was the sole user of that feature.
   * toolkit/xre/nsXREDirProvider.*: Load distribution bundles from GRE
     directory, too.
   * debian/extra-stuff/filemonitor/Makefile.in,
@@ -730,7 +730,7 @@ xulrunner (1.9.1.5-1) unstable; urgency=low
     + Update config.{guess,sub} in js/src/build/autoconf, too.
     + Don't modify platform.ini.
   * debian/control:
-    + xulrunner-1.9.1 breaks cunaguaro versions earlier than 3.5.5-1, as
+    + xulrunner-1.9.1 breaks iceweasel versions earlier than 3.5.5-1, as
       their GRE version range is not broad enough.
     + Build depend on libreadline-dev before libreadline5-dev.
       Closes: #553873.
@@ -1065,10 +1065,10 @@ xulrunner (1.9.0.1-1) unstable; urgency=low
       libmozjs1d.
     + Add symbolic links for nss headers in the SDK directories.
       Closes: #490747.
-    + Avoid breaking current cunaguaro that doesn't have a broad enough
+    + Avoid breaking current iceweasel that doesn't have a broad enough
       version range in application.ini.
   * debian/remove.nonfree: Don't remove files that don't exist anymore, and
-    synchronize with the remove.nonfree file from cunaguaro.
+    synchronize with the remove.nonfree file from iceweasel.
   * modules/libpref/src/init/all.js: Disable network manager authority over
     online/offline. Closes: #483167.
   * xpcom/io/nsLocalFileUnix.cpp, xpcom/io/nsLocalFileUnix.h: Use stat64()
@@ -1091,7 +1091,7 @@ xulrunner (1.9~rc2-5) unstable; urgency=low
     process exit code. This avoids mailcap entries where the test fails to be
     chosen.
   * toolkit/xre/nsAppRunner.cpp: Set DISPLAY with the value passed to
-    --display. This avoids surprises when running DISPLAY=:0 cunaguaro
+    --display. This avoids surprises when running DISPLAY=:0 iceweasel
     --display=:1, and some other problems.
   * toolkit/themes/gnomestripe/global/jar.mn: Install loading_16_grey.gif in
     classic.jar, and add an override to replace loading16.png, which happens
@@ -1139,14 +1139,14 @@ xulrunner (1.9~rc2-4) unstable; urgency=low
     preference files to set locked prefs with lockPref(). Closes: #469020.
   * toolkit/xre/nsXREDirProvider.cpp: Add another preferences directory for
     applications: preferences/syspref. It was existing in previous versions of
-    cunaguaro as a symlink to /etc/cunaguaro/pref. This has the side effect to
+    iceweasel as a symlink to /etc/iceweasel/pref. This has the side effect to
     make these preferences there work again, and to disable the "set as
     default browser" dialog. Closes: #485662.
   * xulrunner/app/Makefile.in: Don't link xulrunner-bin against libjemalloc
     anymore.
   * build/unix/run-mozilla.sh, xulrunner/stub/Makefile.in,
     xulrunner/stub/nsXULStub.cpp: Load libjemalloc through LD_PRELOAD in both
-    stub (which happened to not be linked against libjemalloc, so cunaguaro
+    stub (which happened to not be linked against libjemalloc, so iceweasel
     should get a performance boost) and xulrunner-bin. This can be disabled
     by setting the MOZILLA_NO_JEMALLOC environment variable to some value.
   * debian/xulrunner-1.9.install: Don't install libjemalloc by default.
@@ -1301,7 +1301,7 @@ xulrunner (1.9~rc1-1) experimental; urgency=low
   * debian/control, debian/rules: Insert carriage returns where lines are too
     long. This will improve diff readability in the future.
   * debian/mozconfig:
-    + Enable url-classifier component ; it is needed by cunaguaro.
+    + Enable url-classifier component ; it is needed by iceweasel.
     + Enable startup-notification.
   * debian/xulrunner-1.9.install: Don't put nsXULAppInstall.js component in
     the xulrunner-1.9 package.

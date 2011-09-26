@@ -47,6 +47,7 @@ PARALLEL_DIRS = \
   app \
   setup \
   stub \
+  examples \
   $(NULL)
 
 ifeq ($(OS_ARCH),WINNT)

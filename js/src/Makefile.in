@@ -74,7 +74,6 @@ MODULE		    = js
 LIBRARY_NAME	    = mozjs
 STATIC_LIBRARY_NAME = js_static
 GRE_MODULE	    = 1
-SO_VERSION	= 6d
 
 LIBS		= $(NSPR_LIBS) 
 
@@ -269,7 +268,6 @@ INSTALLED_HEADERS = \
 		jsval.h \
 		jsvalue.h \
 		prmjtime.h \
-		jskeyword.tbl \
 		$(NULL)
 
 ###############################################
@@ -309,21 +307,21 @@ VPATH		+= \
 
 INSTALLED_HEADERS += \
 		jsbuiltins.h    \
-		nanojit/Assembler.h     \
-		nanojit/Allocator.h     \
-		nanojit/CodeAlloc.h     \
-		nanojit/Containers.h    \
-		nanojit/LIR.h		\
-		nanojit/LIRopcode.tbl	\
-		nanojit/avmplus.h	\
-		nanojit/Fragmento.h	\
-		nanojit/Native.h	\
-		nanojit/NativeCommon.h	\
-		nanojit/Native$(NANOJIT_ARCH).h \
-		nanojit/njconfig.h	\
-		nanojit/njcpudetect.h	\
-		nanojit/RegAlloc.h	\
-		nanojit/nanojit.h	\
+		Assembler.h     \
+		Allocator.h     \
+		CodeAlloc.h     \
+		Containers.h    \
+		LIR.h		\
+		LIRopcode.tbl \
+		avmplus.h	\
+		Fragmento.h	\
+		Native.h	\
+		NativeCommon.h	\
+		Native$(NANOJIT_ARCH).h \
+		njconfig.h      \
+		njcpudetect.h   \
+		RegAlloc.h	\
+		nanojit.h	\
 		VMPI.h		\
 		Writer.h	\
 		$(NULL)
@@ -492,20 +490,11 @@ CPPSRCS += \
     Library.cpp \
     $(NULL)
 
-ifdef MOZ_NATIVE_FFI
-LOCAL_INCLUDES = $(MOZ_FFI_CFLAGS)
-else
-LOCAL_INCLUDES = -Ictypes/libffi/include
-endif
-
-LOCAL_INCLUDES += \
+LOCAL_INCLUDES = \
+    -Ictypes/libffi/include \
     -I. \
     $(NULL)
 
-
-ifdef MOZ_NATIVE_FFI
-EXTRA_DSO_LDOPTS += $(MOZ_FFI_LIBS)
-else
 ifeq ($(OS_ARCH),OS2)
 SHARED_LIBRARY_LIBS += \
     ctypes/libffi/.libs/ffi.a \
@@ -514,7 +503,6 @@ else
 SHARED_LIBRARY_LIBS += \
     ctypes/libffi/.libs/libffi.$(LIB_SUFFIX) \
     $(NULL)
-endif
 endif
 
 endif # JS_HAS_CTYPES
@@ -542,11 +530,7 @@ ifeq ($(OS_ARCH),WINNT)
 INSTALLED_HEADERS += jscpucfg.h
 endif
 
-EXPORTS = $(filter-out nanojit/%,$(INSTALLED_HEADERS))
-ifdef ENABLE_TRACEJIT
-EXPORTS_NAMESPACES += nanojit
-EXPORTS_nanojit = $(filter nanojit/%,$(INSTALLED_HEADERS))
-endif # ENABLE_TRACEJIT
+EXPORTS = $(INSTALLED_HEADERS)
 
 DASH_R		= -r
 
@@ -599,7 +583,6 @@ endif
 include $(topsrcdir)/config/rules.mk
 
 ifdef JS_HAS_CTYPES
-ifndef MOZ_NATIVE_FFI
 # Build libffi proper as part of the 'exports' target, so things get built
 # in the right order.
 export::
@@ -607,7 +590,6 @@ export::
 
 distclean clean::
 		$(call SUBMAKE,$@,ctypes/libffi)
-endif
 endif
 
 # Because the SpiderMonkey can be distributed and built independently
@@ -980,12 +962,7 @@ js-config: js-config.in Makefile $(DEPTH)/config/autoconf.mk $(topsrcdir)/config
 SCRIPTS = js-config
 SDK_BINARY = js-config
 
-ifdef ENABLE_TRACEJIT
-install:: $(filter nanojit/%,$(INSTALLED_HEADERS))
-	$(SYSINSTALL) $^ $(DESTDIR)$(includedir)/$(MODULE)/nanojit
-endif
-
-install:: $(filter-out nanojit/%,$(INSTALLED_HEADERS))
+install:: $(INSTALLED_HEADERS)
 	$(SYSINSTALL) $^ $(DESTDIR)$(includedir)/$(MODULE)
 
 install:: $(SCRIPTS)
@@ -997,14 +974,10 @@ ifneq (,$(LIBRARY))
 endif
 ifneq (,$(SHARED_LIBRARY))
 	$(SYSINSTALL) $(SHARED_LIBRARY) $(DESTDIR)$(libdir)
-ifneq (,$(UNVERSIONED_LIBRARY))
-	ln -s $(SHARED_LIBRARY) $(DESTDIR)$(libdir)/$(UNVERSIONED_LIBRARY)
-endif
 endif
 ifneq (,$(IMPORT_LIBRARY))
 	$(SYSINSTALL) $(IMPORT_LIBRARY) $(DESTDIR)$(libdir)
 endif
-	$(MAKE) -C shell install
 
 # Extra dependancies and rules for auto-generated headers
 host_jskwgen.$(OBJ_SUFFIX): jsversion.h jskeyword.tbl
