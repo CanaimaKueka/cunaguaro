@@ -1,9 +1,6 @@
 cunaguaro (6.0.2+1) unstable; urgency=medium
 
-  [ Mike Hommey ]
   * Versión inicial para Canaima GNU/Linux
-
-  [ Luis Alejandro Martínez Faneyth ]
   * [ccb02ee] Removiendo residuos de compilación.
 
  -- Luis Alejandro Martínez Faneyth <martinez.faneyth@gmail.com>  Mon, 26 Sep 2011 16:38:22 -0430
