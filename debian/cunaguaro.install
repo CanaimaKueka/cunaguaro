@@ -1,0 +1,35 @@
+debian/tmp/usr/lib/cunaguaro/components usr/lib/cunaguaro
+debian/cunaguaro-xremote-client usr/lib/cunaguaro
+
+debian/tmp/usr/lib/cunaguaro/defaults/preferences usr/share/cunaguaro/defaults
+debian/tmp/usr/lib/cunaguaro/searchplugins usr/share/cunaguaro
+debian/tmp/usr/lib/cunaguaro/icons usr/share/cunaguaro
+debian/tmp/usr/lib/cunaguaro/chrome usr/share/cunaguaro
+debian/tmp/usr/lib/cunaguaro/modules usr/share/cunaguaro
+
+debian/tmp/usr/lib/cunaguaro/application.ini usr/lib/cunaguaro
+debian/tmp/usr/lib/cunaguaro/blocklist.xml usr/lib/cunaguaro
+
+debian/tmp/usr/lib/cunaguaro/defaults/profile etc/cunaguaro/
+
+debian/cunaguaro.desktop usr/share/applications
+debian/cunaguarorc etc/cunaguaro
+
+build-cunaguaro/debian/branding/mozicon16.xpm usr/share/cunaguaro/icons/
+build-cunaguaro/debian/branding/mozicon50.xpm usr/share/cunaguaro/icons/
+build-cunaguaro/debian/branding/mozicon128.png usr/share/cunaguaro/icons/
+build-cunaguaro/debian/branding/document.png usr/share/cunaguaro/icons/
+
+debian/cunaguaro.js etc/cunaguaro/pref
+debian/vendor.js usr/share/cunaguaro/defaults/preferences
+
+debian/debsearch.xml usr/share/cunaguaro/searchplugins
+debian/duckduckgo.xml usr/share/cunaguaro/searchplugins
+
+debian/tmp/usr/lib/cunaguaro/extensions/\{972ce4c6-7e08-4474-a285-3208198ce6fd\} usr/lib/cunaguaro/extensions
+
+build-cunaguaro/debian/branding/cunaguaro.xpm usr/share/pixmaps
+
+debian/firefox usr/bin
+
+usr/lib/cunaguaro/chrome.manifest

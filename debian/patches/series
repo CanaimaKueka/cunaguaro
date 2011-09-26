@@ -18,9 +18,9 @@ fixes/Bug-671631-Don-t-hardcode-en-US-in-test_update.js.patch
 fixes/Bug-671798-Always-load-gre-defaults-pref-prefs.patch
 fixes/Bug-671804-Provide-NS_APP_PREF_DEFAULTS_50_DIR-and-N.patch
 fixes/Bug-673460-Unbreak-build-for-GNU-Hurd-and-GNU-kFreeB.patch
-iceweasel-branding/Use-MOZ_APP_DISPLAYNAME-to-fill-appstrings.propertie.patch
-iceweasel-branding/Modify-search-plugins-depending-on-MOZ_APP_NAME.patch
-iceweasel-branding/Determine-which-phishing-shavar-to-use-depending-on-.patch
+cunaguaro-branding/Use-MOZ_APP_DISPLAYNAME-to-fill-appstrings.propertie.patch
+cunaguaro-branding/Modify-search-plugins-depending-on-MOZ_APP_NAME.patch
+cunaguaro-branding/Determine-which-phishing-shavar-to-use-depending-on-.patch
 porting/Add-xptcall-support-for-SH4-processors.patch
 porting/Fix-FTBFS-in-xpcom-base-on-armv4t.patch
 porting/Allow-to-build-yuv_convert_arm.cpp-on-armv4t.patch

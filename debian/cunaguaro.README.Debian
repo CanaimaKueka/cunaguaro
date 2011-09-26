@@ -1,7 +1,7 @@
-Iceweasel for Debian
+Cunaguaro for Debian
 ====================
 
-Please read the file /usr/share/bug/iceweasel/presubj for information
+Please read the file /usr/share/bug/cunaguaro/presubj for information
 you may want to know if you will report a bug.
 
 Why is it not called Firefox?
@@ -20,9 +20,9 @@ occasional bug fix).
 Sound
 -----
 
-By default, iceweasel doesn't use a dsp wrapper for sound support. If you
+By default, cunaguaro doesn't use a dsp wrapper for sound support. If you
 happen to experience sound issues, you can try to edit
-/etc/iceweasel/iceweaselrc or ~/.mozilla/firefox/rc and set the ICEWEASEL_DSP
+/etc/cunaguaro/cunaguarorc or ~/.mozilla/firefox/rc and set the CUNAGUARO_DSP
 variable to:
 
 "auto": Auto-detection.
@@ -70,7 +70,7 @@ at http://kb.mozillazine.org/Emacs_Keybindings_(Firefox).
 Well Known Ports
 ----------------
 
-To prevent Iceweasel from being used to launch attacks against other
+To prevent Cunaguaro from being used to launch attacks against other
 protocols, certain ports cannot be connected to by default. See
 http://www.mozilla.org/projects/netlib/PortBanning.html for further
 information. To allow the port numbers being used, enter
