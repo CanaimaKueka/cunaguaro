@@ -1,4 +1,4 @@
-cunaguaro (6.0.2-2) unstable; urgency=medium
+cunaguaro (6.0.2-2) unstable; urgency=low
 
   * Versión inicial para Canaima GNU/Linux
   * [ccb02ee] Removiendo residuos de compilación.
