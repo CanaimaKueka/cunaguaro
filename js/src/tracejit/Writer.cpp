@@ -41,6 +41,7 @@
 #include "jstl.h"
 
 #include "jscompartment.h"
+#include "jsiter.h"
 #include "Writer.h"
 #include "nanojit.h"
 
@@ -376,7 +377,7 @@ void ValidateWriter::checkAccSet(LOpcode op, LIns *base, int32_t disp, AccSet ac
         // ins  = ldp.regs base[<disp within FrameRegs>]
         ok = op == LIR_ldp &&
              dispWithin(FrameRegs) && 
-             match(base, LIR_ldp, ACCSET_CX, offsetof(JSContext, stack) + ContextStack::offsetOfRegs());
+             match(base, LIR_ldp, ACCSET_SEG, StackSegment::offsetOfRegs());
         break;
 
       case ACCSET_STACKFRAME:
@@ -458,13 +459,13 @@ void ValidateWriter::checkAccSet(LOpcode op, LIns *base, int32_t disp, AccSet ac
         break;
 
       case ACCSET_TARRAY:
+        // we actually just want the JSObject itself
         // This check is imperfect.
         //
         // base = ldp.objprivate ...[offsetof(JSObject, privateData)]
         // ins = ld{i,p}.tarray base[<disp within TypedArray>]
-        ok = (op == LIR_ldi || op == LIR_ldp) &&
-             dispWithin(TypedArray) &&
-             match(base, LIR_ldp, ACCSET_OBJ_PRIVATE, offsetof(JSObject, privateData));
+        ok = (op == LIR_ldi || op == LIR_ldp); /*&&*/
+             //match(base, LIR_ldp, ACCSET_OBJ_SLOTS, offsetof(JSObject, slots));
         break;
 
       case ACCSET_TARRAY_DATA:
@@ -474,9 +475,12 @@ void ValidateWriter::checkAccSet(LOpcode op, LIns *base, int32_t disp, AccSet ac
         // base_oprnd1 = ldp.tarray/c ...[TypedArray::dataOffset()]
         // base        = addp base_oprnd1, ...
         // ins         = {ld,st}X.tdata base[...]
-        ok = match(base, LIR_ldp, ACCSET_TARRAY, LOAD_CONST, TypedArray::dataOffset()) ||
-             (base->isop(LIR_addp) &&
-              match(base->oprnd1(), LIR_ldp, ACCSET_TARRAY, LOAD_CONST, TypedArray::dataOffset()));
+        ok = true;
+        //ok = isConstPrivatePtr(base, TypedArray::FIELD_DATA);
+        JS_ASSERT(ok);
+        //ok = match(base, LIR_ldp, ACCSET_TARRAY, LOAD_CONST,  sizeof(js::Value) * js::TypedArray::FIELD_DATA) ||
+                //((base->isop(LIR_addp) &&
+                //match(base->oprnd1(), LIR_ldp, ACCSET_TARRAY, sizeof(js::Value) * js::TypedArray::FIELD_DATA)));
         break;
 
       case ACCSET_ITER:
@@ -550,6 +554,12 @@ void ValidateWriter::checkAccSet(LOpcode op, LIns *base, int32_t disp, AccSet ac
         ok = (isConstPrivatePtr(base, ArgumentsObject::DATA_SLOT) ||
               (base->isop(LIR_addp) &&
                isConstPrivatePtr(base->oprnd1(), ArgumentsObject::DATA_SLOT)));
+        break;
+
+      case ACCSET_SEG:
+        // Match the ACCSET_SEG load that comes out of ldpContextRegs
+        ok = dispWithin(StackSegment) &&
+             match(base, LIR_ldp, ACCSET_CX, offsetof(JSContext, stack) + ContextStack::offsetOfSeg());
         break;
 
       default:

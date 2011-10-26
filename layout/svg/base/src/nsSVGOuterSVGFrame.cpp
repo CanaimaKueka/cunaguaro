@@ -49,7 +49,7 @@
 #include "nsIContentViewer.h"
 #include "nsIDocShell.h"
 #include "nsIDOMDocument.h"
-#include "nsIDOMWindowInternal.h"
+#include "nsIDOMWindow.h"
 #include "nsPIDOMWindow.h"
 #include "nsIObjectLoadingContent.h"
 #include "nsIInterfaceRequestorUtils.h"
@@ -283,7 +283,8 @@ nsSVGOuterSVGFrame::GetIntrinsicRatio()
   nsSVGLength2 &height = content->mLengthAttributes[nsSVGSVGElement::HEIGHT];
 
   if (!width.IsPercentage() && !height.IsPercentage()) {
-    nsSize ratio(width.GetAnimValue(content), height.GetAnimValue(content));
+    nsSize ratio(NSToCoordRoundWithClamp(width.GetAnimValue(content)),
+                 NSToCoordRoundWithClamp(height.GetAnimValue(content)));
     if (ratio.width < 0) {
       ratio.width = 0;
     }
@@ -304,7 +305,8 @@ nsSVGOuterSVGFrame::GetIntrinsicRatio()
     if (viewBoxHeight < 0.0f) {
       viewBoxHeight = 0.0f;
     }
-    return nsSize(viewBoxWidth, viewBoxHeight);
+    return nsSize(NSToCoordRoundWithClamp(viewBoxWidth),
+                  NSToCoordRoundWithClamp(viewBoxHeight));
   }
 
   return nsSVGOuterSVGFrameBase::GetIntrinsicRatio();
@@ -678,9 +680,6 @@ nsSVGOuterSVGFrame::IsRedrawSuspended()
 NS_IMETHODIMP
 nsSVGOuterSVGFrame::SuspendRedraw()
 {
-#ifdef DEBUG
-  //printf("suspend redraw (count=%d)\n", mRedrawSuspendCount);
-#endif
   if (++mRedrawSuspendCount != 1)
     return NS_OK;
 
@@ -697,10 +696,6 @@ nsSVGOuterSVGFrame::SuspendRedraw()
 NS_IMETHODIMP
 nsSVGOuterSVGFrame::UnsuspendRedraw()
 {
-#ifdef DEBUG
-//  printf("unsuspend redraw (count=%d)\n", mRedrawSuspendCount);
-#endif
-
   NS_ASSERTION(mRedrawSuspendCount >=0, "unbalanced suspend count!");
 
   if (--mRedrawSuspendCount > 0)
@@ -814,7 +809,7 @@ nsSVGOuterSVGFrame::IsRootOfReplacedElementSubDoc(nsIFrame **aEmbeddingFrame)
   if (!mContent->GetParent()) {
     // Our content is the document element
     nsCOMPtr<nsISupports> container = PresContext()->GetContainer();
-    nsCOMPtr<nsIDOMWindowInternal> window = do_GetInterface(container);
+    nsCOMPtr<nsIDOMWindow> window = do_GetInterface(container);
     if (window) {
       nsCOMPtr<nsIDOMElement> frameElement;
       window->GetFrameElement(getter_AddRefs(frameElement));

@@ -96,6 +96,7 @@
 #include "nsIContentSecurityPolicy.h"
 #include "nsIChannelPolicy.h"
 #include "nsChannelPolicy.h"
+#include "mozilla/dom/Element.h"
 
 #ifdef PR_LOGGING
 static PRLogModuleInfo* gObjectLog = PR_NewLogModule("objlc");
@@ -337,9 +338,7 @@ class AutoNotifier {
         mOldState = aContent->ObjectState();
     }
     ~AutoNotifier() {
-      if (mNotify) {
-        mContent->NotifyStateChanged(mOldType, mOldState, PR_FALSE);
-      }
+      mContent->NotifyStateChanged(mOldType, mOldState, PR_FALSE, mNotify);
     }
 
     /**
@@ -350,7 +349,7 @@ class AutoNotifier {
     void Notify() {
       NS_ASSERTION(mNotify, "Should not notify when notify=false");
 
-      mContent->NotifyStateChanged(mOldType, mOldState, PR_TRUE);
+      mContent->NotifyStateChanged(mOldType, mOldState, PR_TRUE, PR_TRUE);
       mOldType = mContent->Type();
       mOldState = mContent->ObjectState();
     }
@@ -1497,11 +1496,8 @@ nsObjectLoadingContent::GetCapabilities() const
 {
   return eSupportImages |
          eSupportPlugins |
-         eSupportDocuments
-#ifdef MOZ_SVG
-         | eSupportSVG
-#endif
-         ;
+         eSupportDocuments |
+         eSupportSVG;
 }
 
 void
@@ -1642,7 +1638,9 @@ nsObjectLoadingContent::UnloadContent()
 
 void
 nsObjectLoadingContent::NotifyStateChanged(ObjectType aOldType,
-                                          nsEventStates aOldState, PRBool aSync)
+                                           nsEventStates aOldState,
+                                           PRBool aSync,
+                                           PRBool aNotify)
 {
   LOG(("OBJLC [%p]: Notifying about state change: (%u, %llx) -> (%u, %llx) (sync=%i)\n",
        this, aOldType, aOldState.GetInternalValue(), mType,
@@ -1651,6 +1649,18 @@ nsObjectLoadingContent::NotifyStateChanged(ObjectType aOldType,
   nsCOMPtr<nsIContent> thisContent = 
     do_QueryInterface(static_cast<nsIImageLoadingContent*>(this));
   NS_ASSERTION(thisContent, "must be a content");
+
+  NS_ASSERTION(thisContent->IsElement(), "Not an element?");
+
+  // Unfortunately, we do some state changes without notifying
+  // (e.g. in Fallback when canceling image requests), so we have to
+  // manually notify object state changes.
+  thisContent->AsElement()->UpdateState(false);
+
+  if (!aNotify) {
+    // We're done here
+    return;
+  }
 
   nsIDocument* doc = thisContent->GetCurrentDoc();
   if (!doc) {
@@ -1665,12 +1675,11 @@ nsObjectLoadingContent::NotifyStateChanged(ObjectType aOldType,
     nsEventStates changedBits = aOldState ^ newState;
 
     {
-      mozAutoDocUpdate upd(doc, UPDATE_CONTENT_STATE, PR_TRUE);
+      nsAutoScriptBlocker scriptBlocker;
       doc->ContentStateChanged(thisContent, changedBits);
     }
     if (aSync) {
-      // Make sure that frames are actually constructed, and do it after
-      // EndUpdate was called.
+      // Make sure that frames are actually constructed immediately.
       doc->FlushPendingNotifications(Flush_Frames);
     }
   } else if (aOldType != mType) {
@@ -1706,12 +1715,8 @@ nsObjectLoadingContent::GetTypeOfContent(const nsCString& aMIMEType)
     return eType_Image;
   }
 
-#ifdef MOZ_SVG
   PRBool isSVG = aMIMEType.LowerCaseEqualsLiteral("image/svg+xml");
   PRBool supportedSVG = isSVG && (caps & eSupportSVG);
-#else
-  PRBool supportedSVG = PR_FALSE;
-#endif
   if (((caps & eSupportDocuments) || supportedSVG) &&
       IsSupportedDocument(aMIMEType)) {
     return eType_Document;

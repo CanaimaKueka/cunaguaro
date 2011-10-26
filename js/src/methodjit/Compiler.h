@@ -247,7 +247,8 @@ class Compiler : public BaseCompiler
             return bindNameLabels_;
         }
         ic::ScopeNameLabels &scopeNameLabels() {
-            JS_ASSERT(kind == ic::PICInfo::NAME || kind == ic::PICInfo::XNAME);
+            JS_ASSERT(kind == ic::PICInfo::NAME || kind == ic::PICInfo::CALLNAME ||
+                      kind == ic::PICInfo::XNAME);
             return scopeNameLabels_;
         }
 #else
@@ -264,7 +265,8 @@ class Compiler : public BaseCompiler
             return ic::PICInfo::bindNameLabels_;
         }
         ic::ScopeNameLabels &scopeNameLabels() {
-            JS_ASSERT(kind == ic::PICInfo::NAME || kind == ic::PICInfo::XNAME);
+            JS_ASSERT(kind == ic::PICInfo::NAME || kind == ic::PICInfo::CALLNAME ||
+                      kind == ic::PICInfo::XNAME);
             return ic::PICInfo::scopeNameLabels_;
         }
 #endif
@@ -356,6 +358,7 @@ class Compiler : public BaseCompiler
     js::Vector<DoublePatch, 16, CompilerAllocPolicy> doubleList;
     js::Vector<JumpTable, 16> jumpTables;
     js::Vector<uint32, 16> jumpTableOffsets;
+    js::Vector<JSObject *, 0, CompilerAllocPolicy> rootedObjects;
     StubCompiler stubcc;
     Label invokeLabel;
     Label arityLabel;
@@ -408,7 +411,7 @@ class Compiler : public BaseCompiler
     void restoreFrameRegs(Assembler &masm);
     bool emitStubCmpOp(BoolStub stub, jsbytecode *target, JSOp fused);
     bool iter(uintN flags);
-    void iterNext();
+    void iterNext(ptrdiff_t offset);
     bool iterMore();
     void iterEnd();
     MaybeJump loadDouble(FrameEntry *fe, FPRegisterID fpReg);
@@ -467,16 +470,13 @@ class Compiler : public BaseCompiler
     bool jsop_callprop_str(JSAtom *atom);
     bool jsop_callprop_generic(JSAtom *atom);
     bool jsop_instanceof();
-    void jsop_name(JSAtom *atom);
+    void jsop_name(JSAtom *atom, bool isCall);
     bool jsop_xname(JSAtom *atom);
     void enterBlock(JSObject *obj);
     void leaveBlock();
     void emitEval(uint32 argc);
     void jsop_arguments();
     bool jsop_tableswitch(jsbytecode *pc);
-    void jsop_forprop(JSAtom *atom);
-    void jsop_forname(JSAtom *atom);
-    void jsop_forgname(JSAtom *atom);
 
     /* Fast arithmetic. */
     void jsop_binary(JSOp op, VoidStub stub);

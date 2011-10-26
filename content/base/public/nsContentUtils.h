@@ -51,6 +51,17 @@
 #include <ieeefp.h>
 #endif
 
+//A trick to handle IEEE floating point exceptions on FreeBSD - E.D.
+#ifdef __FreeBSD__
+#include <ieeefp.h>
+#ifdef __alpha__
+static fp_except_t allmask = FP_X_INV|FP_X_OFL|FP_X_UFL|FP_X_DZ|FP_X_IMP;
+#else
+static fp_except_t allmask = FP_X_INV|FP_X_OFL|FP_X_UFL|FP_X_DZ|FP_X_IMP|FP_X_DNML;
+#endif
+static fp_except_t oldmask = fpsetmask(~allmask);
+#endif
+
 #include "nsAString.h"
 #include "nsIStatefulFrame.h"
 #include "nsINodeInfo.h"
@@ -58,7 +69,6 @@
 #include "nsContentList.h"
 #include "nsDOMClassInfoID.h"
 #include "nsIXPCScriptable.h"
-#include "nsIDOM3Node.h"
 #include "nsDataHashtable.h"
 #include "nsIScriptRuntime.h"
 #include "nsIScriptGlobalObject.h"
@@ -66,17 +76,19 @@
 #include "nsTArray.h"
 #include "nsTextFragment.h"
 #include "nsReadableUtils.h"
-#include "nsIPrefBranch2.h"
 #include "mozilla/AutoRestore.h"
 #include "nsINode.h"
 #include "nsHashtable.h"
+#include "nsIDOMNode.h"
+#include "nsHtml5Parser.h"
+#include "nsIFragmentContentSink.h"
+#include "nsMathUtils.h"
 
 struct nsNativeKeyEvent; // Don't include nsINativeKeyBindings.h here: it will force strange compilation error!
 
 class nsIDOMScriptObjectFactory;
 class nsIXPConnect;
 class nsIContent;
-class nsIDOMNode;
 class nsIDOMKeyEvent;
 class nsIDocument;
 class nsIDocumentObserver;
@@ -93,7 +105,6 @@ class imgIDecoderObserver;
 class imgIRequest;
 class imgILoader;
 class imgICache;
-class nsIPrefBranch2;
 class nsIImageLoadingContent;
 class nsIDOMHTMLFormElement;
 class nsIDOMDocument;
@@ -104,7 +115,7 @@ class nsIContentPolicy;
 class nsILineBreaker;
 class nsIWordBreaker;
 class nsIJSRuntimeService;
-class nsIEventListenerManager;
+class nsEventListenerManager;
 class nsIScriptContext;
 class nsIRunnable;
 class nsIInterfaceRequestor;
@@ -114,12 +125,8 @@ struct JSRuntime;
 class nsIUGenCategory;
 class nsIWidget;
 class nsIDragSession;
-class nsPIDOMWindow;
-class nsPIDOMEventTarget;
 class nsIPresShell;
 class nsIXPConnectJSObjectHolder;
-class nsPrefOldCallback;
-class nsPrefObserverHashKey;
 #ifdef MOZ_XTF
 class nsIXTFService;
 #endif
@@ -134,11 +141,6 @@ class nsAutoScriptBlockerSuppressNodeRemoved;
 struct nsIntMargin;
 class nsPIDOMWindow;
 class nsIDocumentLoaderFactory;
-
-#ifndef have_PrefChangedFunc_typedef
-typedef int (*PR_CALLBACK PrefChangedFunc)(const char *, void *);
-#define have_PrefChangedFunc_typedef
-#endif
 
 namespace mozilla {
 
@@ -214,7 +216,8 @@ public:
    * When a document's scope changes (e.g., from document.open(), call this
    * function to move all content wrappers from the old scope to the new one.
    */
-  static nsresult ReparentContentWrappersInScope(nsIScriptGlobalObject *aOldScope,
+  static nsresult ReparentContentWrappersInScope(JSContext *cx,
+                                                 nsIScriptGlobalObject *aOldScope,
                                                  nsIScriptGlobalObject *aNewScope);
 
   static PRBool   IsCallerChrome();
@@ -300,10 +303,10 @@ public:
   static PRBool PositionIsBefore(nsINode* aNode1,
                                  nsINode* aNode2)
   {
-    return (aNode2->CompareDocumentPosition(aNode1) &
-      (nsIDOM3Node::DOCUMENT_POSITION_PRECEDING |
-       nsIDOM3Node::DOCUMENT_POSITION_DISCONNECTED)) ==
-      nsIDOM3Node::DOCUMENT_POSITION_PRECEDING;
+    return (aNode2->CompareDocPosition(aNode1) &
+      (nsIDOMNode::DOCUMENT_POSITION_PRECEDING |
+       nsIDOMNode::DOCUMENT_POSITION_DISCONNECTED)) ==
+      nsIDOMNode::DOCUMENT_POSITION_PRECEDING;
   }
 
   /**
@@ -339,7 +342,6 @@ public:
    * @return  The reversed document position flags.
    *
    * @see nsIDOMNode
-   * @see nsIDOM3Node
    */
   static PRUint16 ReverseDocumentPosition(PRUint16 aDocumentPosition);
 
@@ -545,31 +547,11 @@ public:
   static nsresult GetNodeInfoFromQName(const nsAString& aNamespaceURI,
                                        const nsAString& aQualifiedName,
                                        nsNodeInfoManager* aNodeInfoManager,
+                                       PRUint16 aNodeType,
                                        nsINodeInfo** aNodeInfo);
 
   static void SplitExpatName(const PRUnichar *aExpatName, nsIAtom **aPrefix,
                              nsIAtom **aTagName, PRInt32 *aNameSpaceID);
-
-  static nsAdoptingCString GetCharPref(const char *aPref);
-  static PRPackedBool GetBoolPref(const char *aPref,
-                                  PRBool aDefault = PR_FALSE);
-  static PRInt32 GetIntPref(const char *aPref, PRInt32 aDefault = 0);
-  static nsAdoptingString GetLocalizedStringPref(const char *aPref);
-  static nsAdoptingString GetStringPref(const char *aPref);
-  static void RegisterPrefCallback(const char *aPref,
-                                   PrefChangedFunc aCallback,
-                                   void * aClosure);
-  static void UnregisterPrefCallback(const char *aPref,
-                                     PrefChangedFunc aCallback,
-                                     void * aClosure);
-  static void AddBoolPrefVarCache(const char* aPref, PRBool* aVariable,
-                                  PRBool aDefault = PR_FALSE);
-  static void AddIntPrefVarCache(const char* aPref, PRInt32* aVariable,
-                                 PRInt32 aDefault = 0);
-  static nsIPrefBranch2 *GetPrefBranch()
-  {
-    return sPrefBranch;
-  }
 
   // Get a permission-manager setting for the given uri and type.
   // If the pref doesn't exist or if it isn't ALLOW_ACTION, PR_FALSE is
@@ -709,7 +691,9 @@ public:
     nsNodeInfoManager *niMgr = aNodeInfo->NodeInfoManager();
 
     *aResult = niMgr->GetNodeInfo(aName, aNodeInfo->GetPrefixAtom(),
-                                  aNodeInfo->NamespaceID()).get();
+                                  aNodeInfo->NamespaceID(),
+                                  aNodeInfo->NodeType(),
+                                  aNodeInfo->GetExtraName()).get();
     return *aResult ? NS_OK : NS_ERROR_OUT_OF_MEMORY;
   }
 
@@ -770,9 +754,7 @@ public:
     eFORMS_PROPERTIES,
     ePRINTING_PROPERTIES,
     eDOM_PROPERTIES,
-#ifdef MOZ_SVG
     eSVG_PROPERTIES,
-#endif
     eBRAND_PROPERTIES,
     eCOMMON_DIALOG_PROPERTIES,
     PropertiesFile_COUNT
@@ -864,16 +846,6 @@ public:
    * which do not belong to a docshell.
    */
   static PRBool IsInChromeDocshell(nsIDocument *aDocument);
-
-  /**
-   * Release *aSupportsPtr when the shutdown notification is received
-   */
-  static nsresult ReleasePtrOnShutdown(nsISupports** aSupportsPtr) {
-    NS_ASSERTION(aSupportsPtr, "Expect to crash!");
-    NS_ASSERTION(*aSupportsPtr, "Expect to crash!");
-    return sPtrsToPtrsToRelease->AppendElement(aSupportsPtr) != nsnull ? NS_OK :
-      NS_ERROR_OUT_OF_MEMORY;
-  }
 
   /**
    * Return the content policy service
@@ -1030,8 +1002,8 @@ public:
    * @param aCreateIfNotFound If PR_FALSE, returns a listener manager only if
    *                          one already exists.
    */
-  static nsIEventListenerManager* GetListenerManager(nsINode* aNode,
-                                                     PRBool aCreateIfNotFound);
+  static nsEventListenerManager* GetListenerManager(nsINode* aNode,
+                                                    PRBool aCreateIfNotFound);
 
   /**
    * Remove the eventlistener manager for aNode.
@@ -1068,14 +1040,47 @@ public:
    *
    * @param aContextNode the node which is used to resolve namespaces
    * @param aFragment the string which is parsed to a DocumentFragment
-   * @param aWillOwnFragment is PR_TRUE if ownership of the fragment should be
-   *                         transferred to the caller.
-   * @param aReturn [out] the created DocumentFragment
+   * @param aReturn the resulting fragment
+   * @param aPreventScriptExecution whether to mark scripts as already started
    */
   static nsresult CreateContextualFragment(nsINode* aContextNode,
                                            const nsAString& aFragment,
-                                           PRBool aWillOwnFragment,
+                                           PRBool aPreventScriptExecution,
                                            nsIDOMDocumentFragment** aReturn);
+
+  /**
+   * Invoke the fragment parsing algorithm (innerHTML) using the HTML parser.
+   *
+   * @param aSourceBuffer the string being set as innerHTML
+   * @param aTargetNode the target container
+   * @param aContextLocalName local name of context node
+   * @param aContextNamespace namespace of context node
+   * @param aQuirks true to make <table> not close <p>
+   * @param aPreventScriptExecution true to prevent scripts from executing;
+   *        don't set to false when parsing into a target node that has been
+   *        bound to tree.
+   */
+  static void ParseFragmentHTML(const nsAString& aSourceBuffer,
+                                nsIContent* aTargetNode,
+                                nsIAtom* aContextLocalName,
+                                PRInt32 aContextNamespace,
+                                PRBool aQuirks,
+                                PRBool aPreventScriptExecution);
+
+  /**
+   * Invoke the fragment parsing algorithm (innerHTML) using the XML parser.
+   *
+   * @param aSourceBuffer the string being set as innerHTML
+   * @param aTargetNode the target container
+   * @param aTagStack the namespace mapping context
+   * @param aPreventExecution whether to mark scripts as already started
+   * @param aReturn the result fragment
+   */
+  static nsresult ParseFragmentXML(const nsAString& aSourceBuffer,
+                                   nsIDocument* aDocument,
+                                   nsTArray<nsString>& aTagStack,
+                                   PRBool aPreventScriptExecution,
+                                   nsIDOMDocumentFragment** aReturn);
 
   /**
    * Creates a new XML document, which is marked to be loaded as data.
@@ -1494,29 +1499,6 @@ public:
     return sScriptBlockerCount == 0;
   }
 
-  /**
-   * Get/Set the current number of removable updates. Currently only
-   * UPDATE_CONTENT_MODEL updates are removable, and only when firing mutation
-   * events. These functions should only be called by mozAutoDocUpdateRemover.
-   * The count is also adjusted by the normal calls to BeginUpdate/EndUpdate.
-   */
-  static void AddRemovableScriptBlocker()
-  {
-    AddScriptBlocker();
-    ++sRemovableScriptBlockerCount;
-  }
-  static void RemoveRemovableScriptBlocker()
-  {
-    NS_ASSERTION(sRemovableScriptBlockerCount != 0,
-                "Number of removable blockers should never go below zero");
-    --sRemovableScriptBlockerCount;
-    RemoveScriptBlocker();
-  }
-  static PRUint32 GetRemovableScriptBlockerLevel()
-  {
-    return sRemovableScriptBlockerCount;
-  }
-
   /* Process viewport META data. This gives us information for the scale
    * and zoom of a page on mobile devices. We stick the information in
    * the document header and use it later on after rendering.
@@ -1651,17 +1633,6 @@ public:
   static void StripNullChars(const nsAString& aInStr, nsAString& aOutStr);
 
   /**
-   * Creates a structured clone of the given jsval according to the algorithm
-   * at:
-   *     http://www.whatwg.org/specs/web-apps/current-work/multipage/
-   *                                   urls.html#safe-passing-of-structured-data
-   *
-   * If the function returns a success code then rval is set to point at the
-   * cloned jsval. rval is not set if the function returns a failure code.
-   */
-  static nsresult CreateStructuredClone(JSContext* cx, jsval val, jsval* rval);
-
-  /**
    * Strip all \n, \r and nulls from the given string
    * @param aString the string to remove newlines from [in/out]
    */
@@ -1729,6 +1700,12 @@ public:
    */
   static PRBool IsFocusedContent(const nsIContent *aContent);
 
+  static void GetShiftText(nsAString& text);
+  static void GetControlText(nsAString& text);
+  static void GetMetaText(nsAString& text);
+  static void GetAltText(nsAString& text);
+  static void GetModifierSeparatorText(nsAString& text);
+
   /**
    * Returns if aContent has a tabbable subdocument.
    * A sub document isn't tabbable when it's a zombie document.
@@ -1752,6 +1729,11 @@ public:
    * and XBL and false otherwise.
    */
   static bool AllowXULXBLForPrincipal(nsIPrincipal* aPrincipal);
+
+  /**
+   * Perform cleanup that's appropriate for XPCOM shutdown.
+   */
+  static void XPCOMShutdown();
 
   enum ContentViewerType
   {
@@ -1789,6 +1771,13 @@ public:
    * ontouch* event handler DOM attributes.
    */
   static void InitializeTouchEventTable();
+
+  static nsresult Btoa(const nsAString& aBinaryData,
+                       nsAString& aAsciiBase64String);
+
+  static nsresult Atob(const nsAString& aAsciiString,
+                       nsAString& aBinaryData);
+  
 private:
   static PRBool InitializeEventTable();
 
@@ -1808,6 +1797,10 @@ private:
                              nsIXPConnectJSObjectHolder** aHolder,
                              PRBool aAllowWrapping);
 
+  static void InitializeModifierStrings();
+
+  static void DropFragmentParsers();
+
   static nsIDOMScriptObjectFactory *sDOMScriptObjectFactory;
 
   static nsIXPConnect *sXPConnect;
@@ -1825,11 +1818,6 @@ private:
 #ifdef MOZ_XTF
   static nsIXTFService *sXTFService;
 #endif
-
-  static nsIPrefBranch2 *sPrefBranch;
-  // For old compatibility of RegisterPrefCallback
-  static nsRefPtrHashtable<nsPrefObserverHashKey, nsPrefOldCallback>
-    *sPrefCallbackTable;
 
   static bool sImgLoaderInitialized;
   static void InitImgLoader();
@@ -1854,9 +1842,6 @@ private:
   static nsIWordBreaker* sWordBreaker;
   static nsIUGenCategory* sGenCat;
 
-  // Holds pointers to nsISupports* that should be released at shutdown
-  static nsTArray<nsISupports**>* sPtrsToPtrsToRelease;
-
   static nsIScriptRuntime* sScriptRuntimes[NS_STID_ARRAY_UBOUND];
   static PRInt32 sScriptRootCount[NS_STID_ARRAY_UBOUND];
   static PRUint32 sJSGCThingRootCount;
@@ -1867,11 +1852,11 @@ private:
 
   static PRBool sInitialized;
   static PRUint32 sScriptBlockerCount;
-  static PRUint32 sRemovableScriptBlockerCount;
 #ifdef DEBUG
   static PRUint32 sDOMNodeRemovedSuppressCount;
 #endif
-  static nsCOMArray<nsIRunnable>* sBlockedScriptRunners;
+  // Not an nsCOMArray because removing elements from those is slower
+  static nsTArray< nsCOMPtr<nsIRunnable> >* sBlockedScriptRunners;
   static PRUint32 sRunnersCountAtFirstBlocker;
   static PRUint32 sScriptBlockerCountWhereRunnersPrevented;
 
@@ -1879,6 +1864,16 @@ private:
 
   static PRBool sIsHandlingKeyBoardEvent;
   static PRBool sAllowXULXBL_for_file;
+
+  static nsHtml5Parser* sHTMLFragmentParser;
+  static nsIParser* sXMLFragmentParser;
+  static nsIFragmentContentSink* sXMLFragmentSink;
+
+  static nsString* sShiftText;
+  static nsString* sControlText;
+  static nsString* sMetaText;
+  static nsString* sAltText;
+  static nsString* sModifierSeparator;
 };
 
 #define NS_HOLD_JS_OBJECTS(obj, clazz)                                         \
@@ -1896,10 +1891,10 @@ public:
   ~nsCxPusher(); // Calls Pop();
 
   // Returns PR_FALSE if something erroneous happened.
-  PRBool Push(nsPIDOMEventTarget *aCurrentTarget);
+  PRBool Push(nsIDOMEventTarget *aCurrentTarget);
   // If nothing has been pushed to stack, this works like Push.
   // Otherwise if context will change, Pop and Push will be called.
-  PRBool RePush(nsPIDOMEventTarget *aCurrentTarget);
+  PRBool RePush(nsIDOMEventTarget *aCurrentTarget);
   // If a null JSContext is passed to Push(), that will cause no
   // push to happen and false to be returned.
   PRBool Push(JSContext *cx, PRBool aRequiresScriptContext = PR_TRUE);
@@ -1935,33 +1930,6 @@ private:
   MOZILLA_DECL_USE_GUARD_OBJECT_NOTIFIER
 };
 
-class NS_STACK_CLASS nsAutoRemovableScriptBlocker {
-public:
-  nsAutoRemovableScriptBlocker(MOZILLA_GUARD_OBJECT_NOTIFIER_ONLY_PARAM) {
-    MOZILLA_GUARD_OBJECT_NOTIFIER_INIT;
-    nsContentUtils::AddRemovableScriptBlocker();
-  }
-  ~nsAutoRemovableScriptBlocker() {
-    nsContentUtils::RemoveRemovableScriptBlocker();
-  }
-private:
-  MOZILLA_DECL_USE_GUARD_OBJECT_NOTIFIER
-};
-
-class NS_STACK_CLASS mozAutoRemovableBlockerRemover
-{
-public:
-  mozAutoRemovableBlockerRemover(nsIDocument* aDocument
-                                 MOZILLA_GUARD_OBJECT_NOTIFIER_PARAM);
-  ~mozAutoRemovableBlockerRemover();
-
-private:
-  PRUint32 mNestingLevel;
-  nsCOMPtr<nsIDocument> mDocument;
-  nsCOMPtr<nsIDocumentObserver> mObserver;
-  MOZILLA_DECL_USE_GUARD_OBJECT_NOTIFIER
-};
-
 class NS_STACK_CLASS nsAutoScriptBlockerSuppressNodeRemoved :
                           public nsAutoScriptBlocker {
 public:
@@ -1986,17 +1954,87 @@ public:
     }                                                                         \
   } else
 
-/*
- * Check whether a floating point number is finite (not +/-infinity and not a
- * NaN value).
+/**
+ * Macros to workaround math-bugs bugs in various platforms
  */
-inline NS_HIDDEN_(PRBool) NS_FloatIsFinite(jsdouble f) {
-#ifdef WIN32
-  return _finite(f);
-#else
-  return finite(f);
+
+/**
+ * Stefan Hanske <sh990154@mail.uni-greifswald.de> reports:
+ *  ARM is a little endian architecture but 64 bit double words are stored
+ * differently: the 32 bit words are in little endian byte order, the two words
+ * are stored in big endian`s way.
+ */
+
+#if defined(__arm) || defined(__arm32__) || defined(__arm26__) || defined(__arm__)
+#if !defined(__VFP_FP__)
+#define FPU_IS_ARM_FPA
 #endif
-}
+#endif
+
+typedef union dpun {
+    struct {
+#if defined(IS_LITTLE_ENDIAN) && !defined(FPU_IS_ARM_FPA)
+        PRUint32 lo, hi;
+#else
+        PRUint32 hi, lo;
+#endif
+    } s;
+    PRFloat64 d;
+public:
+    operator double() const {
+        return d;
+    }
+} dpun;
+
+/**
+ * Utility class for doubles
+ */
+#if (__GNUC__ == 2 && __GNUC_MINOR__ > 95) || __GNUC__ > 2
+/**
+ * This version of the macros is safe for the alias optimizations
+ * that gcc does, but uses gcc-specific extensions.
+ */
+#define DOUBLE_HI32(x) (__extension__ ({ dpun u; u.d = (x); u.s.hi; }))
+#define DOUBLE_LO32(x) (__extension__ ({ dpun u; u.d = (x); u.s.lo; }))
+
+#else // __GNUC__
+
+/* We don't know of any non-gcc compilers that perform alias optimization,
+ * so this code should work.
+ */
+
+#if defined(IS_LITTLE_ENDIAN) && !defined(FPU_IS_ARM_FPA)
+#define DOUBLE_HI32(x)        (((PRUint32 *)&(x))[1])
+#define DOUBLE_LO32(x)        (((PRUint32 *)&(x))[0])
+#else
+#define DOUBLE_HI32(x)        (((PRUint32 *)&(x))[0])
+#define DOUBLE_LO32(x)        (((PRUint32 *)&(x))[1])
+#endif
+
+#endif // __GNUC__
+
+#define DOUBLE_HI32_SIGNBIT   0x80000000
+#define DOUBLE_HI32_EXPMASK   0x7ff00000
+#define DOUBLE_HI32_MANTMASK  0x000fffff
+
+#define DOUBLE_IS_NaN(x)                                                \
+((DOUBLE_HI32(x) & DOUBLE_HI32_EXPMASK) == DOUBLE_HI32_EXPMASK && \
+ (DOUBLE_LO32(x) || (DOUBLE_HI32(x) & DOUBLE_HI32_MANTMASK)))
+
+#ifdef IS_BIG_ENDIAN
+#define DOUBLE_NaN {{DOUBLE_HI32_EXPMASK | DOUBLE_HI32_MANTMASK,   \
+                        0xffffffff}}
+#else
+#define DOUBLE_NaN {{0xffffffff,                                         \
+                        DOUBLE_HI32_EXPMASK | DOUBLE_HI32_MANTMASK}}
+#endif
+
+#if defined(XP_WIN)
+#define DOUBLE_COMPARE(LVAL, OP, RVAL)                                  \
+    (!DOUBLE_IS_NaN(LVAL) && !DOUBLE_IS_NaN(RVAL) && (LVAL) OP (RVAL))
+#else
+#define DOUBLE_COMPARE(LVAL, OP, RVAL) ((LVAL) OP (RVAL))
+#endif
 
 /*
  * In the following helper macros we exploit the fact that the result of a
@@ -2004,32 +2042,32 @@ inline NS_HIDDEN_(PRBool) NS_FloatIsFinite(jsdouble f) {
  * series is not finite.
  */
 #define NS_ENSURE_FINITE(f, rv)                                               \
-  if (!NS_FloatIsFinite(f)) {                                                 \
+  if (!NS_finite(f)) {                                                        \
     return (rv);                                                              \
   }
 
 #define NS_ENSURE_FINITE2(f1, f2, rv)                                         \
-  if (!NS_FloatIsFinite((f1)+(f2))) {                                         \
+  if (!NS_finite((f1)+(f2))) {                                                \
     return (rv);                                                              \
   }
 
 #define NS_ENSURE_FINITE3(f1, f2, f3, rv)                                     \
-  if (!NS_FloatIsFinite((f1)+(f2)+(f3))) {                                    \
+  if (!NS_finite((f1)+(f2)+(f3))) {                                           \
     return (rv);                                                              \
   }
 
 #define NS_ENSURE_FINITE4(f1, f2, f3, f4, rv)                                 \
-  if (!NS_FloatIsFinite((f1)+(f2)+(f3)+(f4))) {                               \
+  if (!NS_finite((f1)+(f2)+(f3)+(f4))) {                                      \
     return (rv);                                                              \
   }
 
 #define NS_ENSURE_FINITE5(f1, f2, f3, f4, f5, rv)                             \
-  if (!NS_FloatIsFinite((f1)+(f2)+(f3)+(f4)+(f5))) {                          \
+  if (!NS_finite((f1)+(f2)+(f3)+(f4)+(f5))) {                                 \
     return (rv);                                                              \
   }
 
 #define NS_ENSURE_FINITE6(f1, f2, f3, f4, f5, f6, rv)                         \
-  if (!NS_FloatIsFinite((f1)+(f2)+(f3)+(f4)+(f5)+(f6))) {                     \
+  if (!NS_finite((f1)+(f2)+(f3)+(f4)+(f5)+(f6))) {                            \
     return (rv);                                                              \
   }
 

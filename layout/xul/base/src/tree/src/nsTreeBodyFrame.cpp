@@ -69,7 +69,6 @@
 #include "nsIDOMElement.h"
 #include "nsIDOMNodeList.h"
 #include "nsIDOMDocument.h"
-#include "nsIDOMNSDocument.h"
 #include "nsIDOMXULElement.h"
 #include "nsIDocument.h"
 #include "nsIContent.h"
@@ -91,7 +90,6 @@
 #include "nsTreeUtils.h"
 #include "nsChildIterator.h"
 #include "nsITheme.h"
-#include "nsITimelineService.h"
 #include "imgIRequest.h"
 #include "imgIContainer.h"
 #include "imgIContainerObserver.h"
@@ -106,7 +104,7 @@
 #include "nsRenderingContext.h"
 
 #ifdef IBMBIDI
-#include "nsBidiPresUtils.h"
+#include "nsBidiUtils.h"
 #endif
 
 // Enumeration function that cancels all the image requests in our cache
@@ -685,8 +683,7 @@ nsTreeBodyFrame::InvalidateColumn(nsITreeColumn* aCol)
     return NS_ERROR_INVALID_ARG;
 
 #ifdef ACCESSIBILITY
-  nsIPresShell *presShell = PresContext()->PresShell();
-  if (presShell->IsAccessibilityActive())
+  if (nsIPresShell::IsAccessibilityActive())
     FireInvalidateEvent(-1, -1, aCol, aCol);
 #endif
 
@@ -708,8 +705,7 @@ nsTreeBodyFrame::InvalidateRow(PRInt32 aIndex)
     return NS_OK;
 
 #ifdef ACCESSIBILITY
-  nsIPresShell *presShell = PresContext()->PresShell();
-  if (presShell->IsAccessibilityActive())
+  if (nsIPresShell::IsAccessibilityActive())
     FireInvalidateEvent(aIndex, aIndex, nsnull, nsnull);
 #endif
 
@@ -730,8 +726,7 @@ nsTreeBodyFrame::InvalidateCell(PRInt32 aIndex, nsITreeColumn* aCol)
     return NS_OK;
 
 #ifdef ACCESSIBILITY
-  nsIPresShell *presShell = PresContext()->PresShell();
-  if (presShell->IsAccessibilityActive())
+  if (nsIPresShell::IsAccessibilityActive())
     FireInvalidateEvent(aIndex, aIndex, aCol, aCol);
 #endif
 
@@ -774,8 +769,7 @@ nsTreeBodyFrame::InvalidateRange(PRInt32 aStart, PRInt32 aEnd)
     aEnd = last;
 
 #ifdef ACCESSIBILITY
-  nsIPresShell *presShell = PresContext()->PresShell();
-  if (presShell->IsAccessibilityActive()) {
+  if (nsIPresShell::IsAccessibilityActive()) {
     PRInt32 end =
       mRowCount > 0 ? ((mRowCount <= aEnd) ? mRowCount - 1 : aEnd) : 0;
     FireInvalidateEvent(aStart, end, nsnull, nsnull);
@@ -812,8 +806,7 @@ nsTreeBodyFrame::InvalidateColumnRange(PRInt32 aStart, PRInt32 aEnd, nsITreeColu
     aEnd = last;
 
 #ifdef ACCESSIBILITY
-  nsIPresShell *presShell = PresContext()->PresShell();
-  if (presShell->IsAccessibilityActive()) {
+  if (nsIPresShell::IsAccessibilityActive()) {
     PRInt32 end =
       mRowCount > 0 ? ((mRowCount <= aEnd) ? mRowCount - 1 : aEnd) : 0;
     FireInvalidateEvent(aStart, end, aCol, aCol);
@@ -843,7 +836,7 @@ FindScrollParts(nsIFrame* aCurrFrame, nsTreeBodyFrame::ScrollParts* aResult)
     }
   }
   
-  nsIScrollbarFrame *sf = do_QueryFrame(aCurrFrame);
+  nsScrollbarFrame *sf = do_QueryFrame(aCurrFrame);
   if (sf) {
     if (!aCurrFrame->IsHorizontal()) {
       if (!aResult->mVScrollbar) {
@@ -1616,7 +1609,10 @@ nsTreeBodyFrame::GetItemWithinCellAt(nscoord aX, const nsRect& aCellRect,
 
   AdjustForBorderPadding(textContext, textRect);
 
-  nsLayoutUtils::SetFontFromStyle(rc, textContext);
+  nsRefPtr<nsFontMetrics> fm;
+  nsLayoutUtils::GetFontMetricsForStyleContext(textContext,
+                                               getter_AddRefs(fm));
+  rc->SetFont(fm);
 
   AdjustForCellText(cellText, aRowIndex, aColumn, *rc, textRect);
 
@@ -1743,7 +1739,10 @@ nsTreeBodyFrame::GetCellWidth(PRInt32 aRow, nsTreeColumn* aCol,
   // Get the borders and padding for the text.
   GetBorderPadding(textContext, bp);
 
-  nsLayoutUtils::SetFontFromStyle(aRenderingContext, textContext);
+  nsRefPtr<nsFontMetrics> fm;
+  nsLayoutUtils::GetFontMetricsForStyleContext(textContext,
+                                               getter_AddRefs(fm));
+  aRenderingContext->SetFont(fm);
 
   // Get the width of the text itself
   nscoord width =
@@ -1824,8 +1823,7 @@ nsTreeBodyFrame::RowCountChanged(PRInt32 aIndex, PRInt32 aCount)
     return NS_OK; // Nothing to do.
 
 #ifdef ACCESSIBILITY
-  nsIPresShell *presShell = PresContext()->PresShell();
-  if (presShell->IsAccessibilityActive())
+  if (nsIPresShell::IsAccessibilityActive())
     FireRowCountChangedEvent(aIndex, aCount);
 #endif
 
@@ -1845,7 +1843,7 @@ nsTreeBodyFrame::RowCountChanged(PRInt32 aIndex, PRInt32 aCount)
   NS_ASSERTION(rowCount == mRowCount, "row count did not change by the amount suggested, check caller");
 #endif
 
-  PRInt32 count = PR_ABS(aCount);
+  PRInt32 count = NS_ABS(aCount);
   PRInt32 last = GetLastVisibleRow();
   if (aIndex >= mTopRowIndex && aIndex <= last)
     InvalidateRange(aIndex, last);
@@ -3394,6 +3392,9 @@ nsTreeBodyFrame::PaintImage(PRInt32              aRowIndex,
   // Resolve style for the image.
   nsStyleContext* imageContext = GetPseudoStyleContext(nsCSSAnonBoxes::moztreeimage);
 
+  // Obtain opacity value for the image.
+  float opacity = imageContext->GetStyleDisplay()->mOpacity;
+
   // Obtain the margins for the image and then deflate our rect by that
   // amount.  The image is assumed to be contained within the deflated rect.
   nsRect imageRect(aImageRect);
@@ -3500,10 +3501,20 @@ nsTreeBodyFrame::PaintImage(PRInt32              aRowIndex,
       nsLayoutUtils::GetWholeImageDestination(rawImageSize, sourceRect,
           nsRect(destRect.TopLeft(), imageDestSize));
 
+    gfxContext* ctx = aRenderingContext.ThebesContext();
+    if (opacity != 1.0f) {
+      ctx->PushGroup(gfxASurface::CONTENT_COLOR_ALPHA);
+    }
+
     nsLayoutUtils::DrawImage(&aRenderingContext, image,
         nsLayoutUtils::GetGraphicsFilterForFrame(this),
         wholeImageDest, destRect, destRect.TopLeft(), aDirtyRect,
         imgIContainer::FLAG_NONE);
+
+    if (opacity != 1.0f) {
+      ctx->PopGroupToSource();
+      ctx->Paint(opacity);
+    }
   }
 
   // Update the aRemainingWidth and aCurrX values.
@@ -3540,6 +3551,9 @@ nsTreeBodyFrame::PaintText(PRInt32              aRowIndex,
   // Resolve style for the text.  It contains all the info we need to lay ourselves
   // out and to paint.
   nsStyleContext* textContext = GetPseudoStyleContext(nsCSSAnonBoxes::moztreecelltext);
+
+  // Obtain opacity value for the image.
+  float opacity = textContext->GetStyleDisplay()->mOpacity;
 
   // Obtain the margins for the text and then deflate our rect by that 
   // amount.  The text is assumed to be contained within the deflated rect.
@@ -3601,18 +3615,22 @@ nsTreeBodyFrame::PaintText(PRInt32              aRowIndex,
     fontMet->GetStrikeout(offset, size);
     aRenderingContext.FillRect(textRect.x, textRect.y + baseline - offset, textRect.width, size);
   }
-#ifdef MOZ_TIMELINE
-  NS_TIMELINE_START_TIMER("Render Outline Text");
-#endif
   PRUint8 direction = aTextRTL ? NS_STYLE_DIRECTION_RTL :
                                  NS_STYLE_DIRECTION_LTR;
 
+  gfxContext* ctx = aRenderingContext.ThebesContext();
+  if (opacity != 1.0f) {
+    ctx->PushGroup(gfxASurface::CONTENT_COLOR_ALPHA);
+  }
+
   nsLayoutUtils::DrawString(this, &aRenderingContext, text.get(), text.Length(),
                             textRect.TopLeft() + nsPoint(0, baseline), direction);
-#ifdef MOZ_TIMELINE
-  NS_TIMELINE_STOP_TIMER("Render Outline Text");
-  NS_TIMELINE_MARK_TIMER("Render Outline Text");
-#endif
+
+  if (opacity != 1.0f) {
+    ctx->PopGroupToSource();
+    ctx->Paint(opacity);
+  }
+
 }
 
 void
@@ -4122,7 +4140,7 @@ nsTreeBodyFrame::ScrollHorzInternal(const ScrollParts& aParts, PRInt32 aPosition
 }
 
 NS_IMETHODIMP
-nsTreeBodyFrame::ScrollbarButtonPressed(nsIScrollbarFrame* aScrollbar, PRInt32 aOldIndex, PRInt32 aNewIndex)
+nsTreeBodyFrame::ScrollbarButtonPressed(nsScrollbarFrame* aScrollbar, PRInt32 aOldIndex, PRInt32 aNewIndex)
 {
   ScrollParts parts = GetScrollParts();
 
@@ -4141,7 +4159,7 @@ nsTreeBodyFrame::ScrollbarButtonPressed(nsIScrollbarFrame* aScrollbar, PRInt32 a
 }
   
 NS_IMETHODIMP
-nsTreeBodyFrame::PositionChanged(nsIScrollbarFrame* aScrollbar, PRInt32 aOldIndex, PRInt32& aNewIndex)
+nsTreeBodyFrame::PositionChanged(nsScrollbarFrame* aScrollbar, PRInt32 aOldIndex, PRInt32& aNewIndex)
 {
   ScrollParts parts = GetScrollParts();
   

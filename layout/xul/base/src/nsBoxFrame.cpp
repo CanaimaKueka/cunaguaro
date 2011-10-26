@@ -78,7 +78,7 @@
 #include "nsIPresShell.h"
 #include "nsCSSRendering.h"
 #include "nsIServiceManager.h"
-#include "nsIBoxLayout.h"
+#include "nsBoxLayout.h"
 #include "nsSprocketLayout.h"
 #include "nsIDocument.h"
 #include "nsIScrollableFrame.h"
@@ -93,12 +93,14 @@
 #include "nsEventDispatcher.h"
 #include "nsIDOMEvent.h"
 #include "nsIPrivateDOMEvent.h"
-#include "nsContentUtils.h"
 #include "nsDisplayList.h"
+#include "mozilla/Preferences.h"
 
 // Needed for Print Preview
 #include "nsIDocument.h"
 #include "nsIURI.h"
+
+using namespace mozilla;
 
 //define DEBUG_REDRAW
 
@@ -118,7 +120,7 @@ nsIBox* nsBoxFrame::mDebugChild = nsnull;
 #endif
 
 nsIFrame*
-NS_NewBoxFrame(nsIPresShell* aPresShell, nsStyleContext* aContext, PRBool aIsRoot, nsIBoxLayout* aLayoutManager)
+NS_NewBoxFrame(nsIPresShell* aPresShell, nsStyleContext* aContext, PRBool aIsRoot, nsBoxLayout* aLayoutManager)
 {
   return new (aPresShell) nsBoxFrame(aPresShell, aContext, aIsRoot, aLayoutManager);
 }
@@ -134,7 +136,7 @@ NS_IMPL_FRAMEARENA_HELPERS(nsBoxFrame)
 nsBoxFrame::nsBoxFrame(nsIPresShell* aPresShell,
                        nsStyleContext* aContext,
                        PRBool aIsRoot,
-                       nsIBoxLayout* aLayoutManager) :
+                       nsBoxLayout* aLayoutManager) :
   nsContainerFrame(aContext)
 {
   mState |= NS_STATE_IS_HORIZONTAL;
@@ -147,7 +149,7 @@ nsBoxFrame::nsBoxFrame(nsIPresShell* aPresShell,
   mHalign = hAlign_Left;
   
   // if no layout manager specified us the static sprocket layout
-  nsCOMPtr<nsIBoxLayout> layout = aLayoutManager;
+  nsCOMPtr<nsBoxLayout> layout = aLayoutManager;
 
   if (layout == nsnull) {
     NS_NewSprocketLayout(aPresShell, layout);
@@ -1246,7 +1248,7 @@ nsBoxFrame::AttributeChanged(PRInt32 aNameSpaceID,
 void
 nsBoxFrame::GetDebugPref(nsPresContext* aPresContext)
 {
-    gDebug = nsContentUtils::GetBoolPref("xul.debug.box");
+    gDebug = Preferences::GetBool("xul.debug.box");
 }
 
 class nsDisplayXULDebug : public nsDisplayItem {
@@ -2013,21 +2015,6 @@ nsBoxFrame::CheckBoxOrder(nsBoxLayoutState& aState)
 
   nsIFrame* head = MergeSort(aState, mFrames.FirstChild());
   mFrames = nsFrameList(head, nsLayoutUtils::GetLastSibling(head));
-}
-
-NS_IMETHODIMP
-nsBoxFrame::SetLayoutManager(nsIBoxLayout* aLayout)
-{
-  mLayoutManager = aLayout;
-  return NS_OK;
-}
-
-NS_IMETHODIMP
-nsBoxFrame::GetLayoutManager(nsIBoxLayout** aLayout)
-{
-  *aLayout = mLayoutManager;
-  NS_IF_ADDREF(*aLayout);
-  return NS_OK;
 }
 
 nsresult

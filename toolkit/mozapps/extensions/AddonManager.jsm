@@ -37,6 +37,8 @@
 # ***** END LICENSE BLOCK *****
 */
 
+"use strict";
+
 const Cc = Components.classes;
 const Ci = Components.interfaces;
 const Cr = Components.results;
@@ -273,6 +275,7 @@ var AddonManagerInternal = {
   typeListeners: [],
   providers: [],
   types: {},
+  startupChanges: {},
 
   // A read-only wrapper around the types dictionary
   typesProxy: Proxy.create({
@@ -385,6 +388,13 @@ var AddonManagerInternal = {
       callProvider(provider, "startup", null, appChanged, oldAppVersion,
                    oldPlatformVersion);
     });
+
+    // If this is a new profile just pretend that there were no changes
+    if (appChanged === undefined) {
+      for (let type in this.startupChanges)
+        delete this.startupChanges[type];
+    }
+
     gStarted = true;
   },
 
@@ -467,7 +477,7 @@ var AddonManagerInternal = {
    * Shuts down the addon manager and all registered providers, this must clean
    * up everything in order for automated tests to fake restarts.
    */
-  shutdown: function AM_shutdown() {
+  shutdown: function AMI_shutdown() {
     this.providers.forEach(function(provider) {
       callProvider(provider, "shutdown");
     });
@@ -475,6 +485,8 @@ var AddonManagerInternal = {
     this.installListeners.splice(0);
     this.addonListeners.splice(0);
     this.typeListeners.splice(0);
+    for (let type in this.startupChanges)
+      delete this.startupChanges[type];
     gStarted = false;
   },
 
@@ -505,17 +517,6 @@ var AddonManagerInternal = {
       scope.AddonRepository.repopulateCache(ids, notifyComplete);
 
       pendingUpdates += aAddons.length;
-      var autoUpdateDefault = AddonManager.autoUpdateDefault;
-
-      function shouldAutoUpdate(aAddon) {
-        if (!("applyBackgroundUpdates" in aAddon))
-          return false;
-        if (aAddon.applyBackgroundUpdates == AddonManager.AUTOUPDATE_ENABLE)
-          return true;
-        if (aAddon.applyBackgroundUpdates == AddonManager.AUTOUPDATE_DISABLE)
-          return false;
-        return autoUpdateDefault;
-      }
 
       aAddons.forEach(function BUC_forEachCallback(aAddon) {
         // Check all add-ons for updates so that any compatibility updates will
@@ -525,7 +526,7 @@ var AddonManagerInternal = {
             // Start installing updates when the add-on can be updated and
             // background updates should be applied.
             if (aAddon.permissions & AddonManager.PERM_CAN_UPGRADE &&
-                shouldAutoUpdate(aAddon)) {
+                AddonManager.shouldAutoUpdate(aAddon)) {
               aInstall.install();
             }
           },
@@ -536,6 +537,49 @@ var AddonManagerInternal = {
 
       notifyComplete();
     });
+  },
+
+  /**
+   * Adds a add-on to the list of detected changes for this startup. If
+   * addStartupChange is called multiple times for the same add-on in the same
+   * startup then only the most recent change will be remembered.
+   *
+   * @param  aType
+   *         The type of change as a string. Providers can define their own
+   *         types of changes or use the existing defined STARTUP_CHANGE_*
+   *         constants
+   * @param  aID
+   *         The ID of the add-on
+   */
+  addStartupChange: function AMI_addStartupChange(aType, aID) {
+    if (gStarted)
+      return;
+
+    // Ensure that an ID is only listed in one type of change
+    for (let type in this.startupChanges)
+      this.removeStartupChange(type, aID);
+
+    if (!(aType in this.startupChanges))
+      this.startupChanges[aType] = [];
+    this.startupChanges[aType].push(aID);
+  },
+
+  /**
+   * Removes a startup change for an add-on.
+   *
+   * @param  aType
+   *         The type of change
+   * @param  aID
+   *         The ID of the add-on
+   */
+  removeStartupChange: function AMI_removeStartupChange(aType, aID) {
+    if (gStarted)
+      return;
+
+    if (!(aType in this.startupChanges))
+      return;
+
+    this.startupChanges[aType] = this.startupChanges[aType].filter(function(aItem) aItem != aID);
   },
 
   /**
@@ -774,7 +818,7 @@ var AddonManagerInternal = {
    * @param  aMimetype
    *         The mimetype of add-ons being installed
    * @param  aSource
-   *         The nsIDOMWindowInternal that started the installs
+   *         The nsIDOMWindow that started the installs
    * @param  aURI
    *         the nsIURI that started the installs
    * @param  aInstalls
@@ -1030,10 +1074,7 @@ var AddonManagerInternal = {
   },
 
   get autoUpdateDefault() {
-    try {
-      return Services.prefs.getBoolPref(PREF_EM_AUTOUPDATE_DEFAULT);
-    } catch(e) { }
-    return true;
+    return Services.prefs.getBoolPref(PREF_EM_AUTOUPDATE_DEFAULT);
   }
 };
 
@@ -1062,6 +1103,14 @@ var AddonManagerPrivate = {
 
   backgroundUpdateCheck: function AMP_backgroundUpdateCheck() {
     AddonManagerInternal.backgroundUpdateCheck();
+  },
+
+  addStartupChange: function AMP_addStartupChange(aType, aID) {
+    AddonManagerInternal.addStartupChange(aType, aID);
+  },
+
+  removeStartupChange: function AMP_removeStartupChange(aType, aID) {
+    AddonManagerInternal.removeStartupChange(aType, aID);
   },
 
   notifyAddonChanged: function AMP_notifyAddonChanged(aId, aType, aPendingRestart) {
@@ -1212,6 +1261,34 @@ var AddonManager = {
   // Indicates that the Addon should update automatically.
   AUTOUPDATE_ENABLE: 2,
 
+  // Constants for how Addon options should be shown.
+  // Options will be opened in a new window
+  OPTIONS_TYPE_DIALOG: 1,
+  // Options will be displayed within the AM detail view
+  OPTIONS_TYPE_INLINE: 2,
+  // Options will be displayed in a new tab, if possible
+  OPTIONS_TYPE_TAB: 3,
+
+  // Constants for getStartupChanges, addStartupChange and removeStartupChange
+  // Add-ons that were detected as installed during startup. Doesn't include
+  // add-ons that were pending installation the last time the application ran.
+  STARTUP_CHANGE_INSTALLED: "installed",
+  // Add-ons that were detected as changed during startup. This includes an
+  // add-on moving to a different location, changing version or just having
+  // been detected as possibly changed.
+  STARTUP_CHANGE_CHANGED: "changed",
+  // Add-ons that were detected as uninstalled during startup. Doesn't include
+  // add-ons that were pending uninstallation the last time the application ran.
+  STARTUP_CHANGE_UNINSTALLED: "uninstalled",
+  // Add-ons that were detected as disabled during startup, normally because of
+  // an application change making an add-on incompatible. Doesn't include
+  // add-ons that were pending being disabled the last time the application ran.
+  STARTUP_CHANGE_DISABLED: "disabled",
+  // Add-ons that were detected as enabled during startup, normally because of
+  // an application change making an add-on compatible. Doesn't include
+  // add-ons that were pending being enabled the last time the application ran.
+  STARTUP_CHANGE_ENABLED: "enabled",
+
   getInstallForURL: function AM_getInstallForURL(aUrl, aCallback, aMimetype,
                                                  aHash, aName, aIconURL,
                                                  aVersion, aLoadGroup) {
@@ -1221,6 +1298,19 @@ var AddonManager = {
 
   getInstallForFile: function AM_getInstallForFile(aFile, aCallback, aMimetype) {
     AddonManagerInternal.getInstallForFile(aFile, aCallback, aMimetype);
+  },
+
+  /**
+   * Gets an array of add-on IDs that changed during the most recent startup.
+   *
+   * @param  aType
+   *         The type of startup change to get
+   * @return An array of add-on IDs
+   */
+  getStartupChanges: function AM_getStartupChanges(aType) {
+    if (!(aType in AddonManagerInternal.startupChanges))
+      return [];
+    return AddonManagerInternal.startupChanges[aType].slice(0);
   },
 
   getAddonByID: function AM_getAddonByID(aId, aCallback) {
@@ -1295,6 +1385,16 @@ var AddonManager = {
 
   get autoUpdateDefault() {
     return AddonManagerInternal.autoUpdateDefault;
+  },
+
+  shouldAutoUpdate: function AM_shouldAutoUpdate(aAddon) {
+    if (!("applyBackgroundUpdates" in aAddon))
+      return false;
+    if (aAddon.applyBackgroundUpdates == AddonManager.AUTOUPDATE_ENABLE)
+      return true;
+    if (aAddon.applyBackgroundUpdates == AddonManager.AUTOUPDATE_DISABLE)
+      return false;
+    return this.autoUpdateDefault;
   }
 };
 

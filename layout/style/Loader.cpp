@@ -56,10 +56,10 @@
 #include "nsCOMArray.h"
 #include "nsString.h"
 #include "nsIContent.h"
-#include "nsIDOMNode.h"
-#include "nsIDOMWindow.h"
 #include "nsIDocument.h"
-#include "nsIDOMNSDocumentStyle.h"
+#include "nsIDOMNode.h"
+#include "nsIDOMDocument.h"
+#include "nsIDOMWindow.h"
 #include "nsICharsetAlias.h"
 #include "nsHashtable.h"
 #include "nsIURI.h"
@@ -69,12 +69,10 @@
 #include "nsCRT.h"
 #include "nsIScriptSecurityManager.h"
 #include "nsContentPolicyUtils.h"
-#include "nsITimelineService.h"
 #include "nsIHttpChannel.h"
 #include "nsIScriptError.h"
 #include "nsMimeTypes.h"
 #include "nsIAtom.h"
-#include "nsIDOM3Node.h"
 #include "nsCSSStyleSheet.h"
 #include "nsIStyleSheetLinkingElement.h"
 #include "nsICSSLoaderObserver.h"
@@ -457,7 +455,7 @@ Loader::Loader(nsIDocument* aDocument)
   // We can just use the preferred set, since there are no sheets in the
   // document yet (if there are, how did they get there? _we_ load the sheets!)
   // and hence the selected set makes no sense at this time.
-  nsCOMPtr<nsIDOMNSDocumentStyle> domDoc(do_QueryInterface(mDocument));
+  nsCOMPtr<nsIDOMDocument> domDoc = do_QueryInterface(mDocument);
   if (domDoc) {
     domDoc->GetPreferredStyleSheetSet(mPreferredSheet);
   }
@@ -511,7 +509,7 @@ nsresult
 Loader::SetPreferredSheet(const nsAString& aTitle)
 {
 #ifdef DEBUG
-  nsCOMPtr<nsIDOMNSDocumentStyle> doc(do_QueryInterface(mDocument));
+  nsCOMPtr<nsIDOMDocument> doc = do_QueryInterface(mDocument);
   if (doc) {
     nsAutoString currentPreferred;
     doc->GetLastStyleSheetSet(currentPreferred);
@@ -816,11 +814,6 @@ SheetLoadData::OnStreamComplete(nsIUnicharStreamLoader* aLoader,
   }
 
   mSheet->SetPrincipal(principal);
-
-#ifdef MOZ_TIMELINE
-  NS_TIMELINE_OUTDENT();
-  NS_TIMELINE_MARK_CHANNEL("SheetLoadData::OnStreamComplete(%s)", channel);
-#endif // MOZ_TIMELINE
 
   // If it's an HTTP channel, we want to make sure this is not an
   // error document we got.
@@ -1442,11 +1435,6 @@ Loader::LoadSheet(SheetLoadData* aLoadData, StyleSheetState aSheetState)
     }
   }
 
-#ifdef MOZ_TIMELINE
-  NS_TIMELINE_MARK_URI("Loading style sheet: %s", aLoadData->mURI);
-  NS_TIMELINE_INDENT();
-#endif
-
   nsCOMPtr<nsIChannel> channel;
   rv = NS_NewChannel(getter_AddRefs(channel),
                      aLoadData->mURI, nsnull, loadGroup, nsnull,
@@ -1881,6 +1869,36 @@ Loader::LoadStyleLink(nsIContent* aElement,
   return rv;
 }
 
+static PRBool
+HaveAncestorDataWithURI(SheetLoadData *aData, nsIURI *aURI)
+{
+  if (!aData->mURI) {
+    // Inline style; this won't have any ancestors
+    NS_ABORT_IF_FALSE(!aData->mParentData,
+                      "How does inline style have a parent?");
+    return PR_FALSE;
+  }
+
+  PRBool equal;
+  if (NS_FAILED(aData->mURI->Equals(aURI, &equal)) || equal) {
+    return PR_TRUE;
+  }
+
+  // Datas down the mNext chain have the same URI as aData, so we
+  // don't have to compare to them.  But they might have different
+  // parents, and we have to check all of those.
+  while (aData) {
+    if (aData->mParentData &&
+        HaveAncestorDataWithURI(aData->mParentData, aURI)) {
+      return PR_TRUE;
+    }
+
+    aData = aData->mNext;
+  }
+
+  return PR_FALSE;
+}
+
 nsresult
 Loader::LoadChildSheet(nsCSSStyleSheet* aParentSheet,
                        nsIURI* aURL,
@@ -1935,16 +1953,11 @@ Loader::LoadChildSheet(nsCSSStyleSheet* aParentSheet,
     LOG(("  Have a parent load"));
     parentData = mParsingDatas.ElementAt(count - 1);
     // Check for cycles
-    SheetLoadData* data = parentData;
-    while (data && data->mURI) {
-      PRBool equal;
-      if (NS_SUCCEEDED(data->mURI->Equals(aURL, &equal)) && equal) {
-        // Houston, we have a loop, blow off this child and pretend this never
-        // happened
-        LOG_ERROR(("  @import cycle detected, dropping load"));
-        return NS_OK;
-      }
-      data = data->mParentData;
+    if (HaveAncestorDataWithURI(parentData, aURL)) {
+      // Houston, we have a loop, blow off this child and pretend this never
+      // happened
+      LOG_ERROR(("  @import cycle detected, dropping load"));
+      return NS_OK;
     }
 
     NS_ASSERTION(parentData->mSheet == aParentSheet,

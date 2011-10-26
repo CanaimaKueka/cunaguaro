@@ -168,6 +168,9 @@ public:
     // nsIDOMNode interface overrides
     NS_IMETHOD CloneNode(PRBool deep, nsIDOMNode **_retval);
 
+    // nsIDOMDocument
+    NS_IMETHOD GetContentType(nsAString& aContentType);
+
     // nsDocument interface overrides
     NS_IMETHOD GetElementById(const nsAString& aId, nsIDOMElement** aReturn)
     {
@@ -177,9 +180,6 @@ public:
 
     // nsIDOMXULDocument interface
     NS_DECL_NSIDOMXULDOCUMENT
-
-    // nsIDOMNSDocument
-    NS_IMETHOD GetContentType(nsAString& aContentType);
 
     // nsICSSLoaderObserver
     NS_IMETHOD StyleSheetLoaded(nsCSSStyleSheet* aSheet,
@@ -655,11 +655,6 @@ protected:
      * @param aURI the URI of the overlay that failed to load
      */
     void ReportMissingOverlay(nsIURI* aURI);
-    
-#if defined(DEBUG_waterson) || defined(DEBUG_hyatt)
-    // timing
-    nsTime mLoadStart;
-#endif
 
     class CachedChromeStreamListener : public nsIStreamListener {
     protected:

@@ -154,12 +154,12 @@ toolbarbutton.urlbar-button {
 
 /* left cap button --------------------------------------------------------- */
 #identity-box {
-  border-right: @border_width_tiny@ solid rgba(118,121,126,0.5) !important;
+  -moz-border-end: @border_width_tiny@ solid rgba(118,121,126,0.5) !important;
 }
 
 #identity-box[open="true"],
 #identity-box:hover:active {
-  border-right: @border_width_tiny@ solid rgba(0, 0, 0, 0.2);
+  -moz-border-end: @border_width_tiny@ solid rgba(0, 0, 0, 0.2);
 }
 
 /* add special color */
@@ -190,6 +190,7 @@ toolbarbutton.urlbar-button {
 #urlbar-favicon {
   width: 32px;
   height: 32px;
+  image-rendering: -moz-crisp-edges;
 }
 
 #urlbar-favicon[src=""] {
@@ -208,8 +209,8 @@ toolbarbutton.urlbar-button {
 #urlbar-edit,
 #urlbar-title {
   margin: 0 !important;
-  border-left: @border_width_tiny@ solid white;
-  border-right: @border_width_tiny@ solid white;
+  -moz-border-start: @border_width_tiny@ solid white;
+  -moz-border-end: @border_width_tiny@ solid white;
   min-height: @touch_normal@;
 }
 
@@ -221,7 +222,7 @@ toolbarbutton.urlbar-button {
 #urlbar-edit {
   -moz-appearance: none !important;
   border: 0 solid transparent;
-  border-right: @border_width_tiny@ solid rgba(0,0,0,0.5);
+  -moz-border-end: @border_width_tiny@ solid rgba(0,0,0,0.5);
   padding: 0 !important;
 }
 
@@ -240,7 +241,7 @@ toolbarbutton.urlbar-button {
 
 /* Right cap button --------------------------------------------------------- */
 #urlbar-icons {
-  border-left: @border_width_tiny@ solid rgba(118,121,126,0.5) !important;
+  -moz-border-start: @border_width_tiny@ solid rgba(118,121,126,0.5) !important;
 }
 
 #urlbar-icons[disabled="true"] {
@@ -252,7 +253,7 @@ toolbarbutton.urlbar-button {
 }
 
 #urlbar-icons:not([disabled="true"]):hover:active {
-  border-left: @border_width_tiny@ solid rgba(0, 0, 0, 0.2);
+  -moz-border-start: @border_width_tiny@ solid rgba(0, 0, 0, 0.2);
 }
 
 #tool-reload {
@@ -291,7 +292,7 @@ toolbarbutton.urlbar-button {
   background: @color_background_default@;
 }
 
-toolbarbutton.button-control {
+.button-control {
   padding: 0 !important;
   min-width: @sidebar_width_minimum@ !important;
   border-top: @border_width_tiny@ solid @color_divider_border@ !important;
@@ -302,34 +303,38 @@ toolbarbutton.button-control {
   height: @sidebar_button_height@;
 }
 
-toolbarbutton.button-control:last-child {
+.button-control:last-child {
   border-bottom: 0 solid @color_divider_border@ !important;
 }
 
-toolbarbutton.button-control[disabled="true"] {
+.button-control[disabled="true"] {
   opacity: 0.5;
 }
 
-toolbarbutton.button-control:not([disabled="true"]):hover:active {
+.button-control:not([disabled="true"]):hover:active {
   background-color: @color_background_active@ !important;
   border-top: none;
 }
 
-#tool-star {
+#tool-tabs {
+  list-style-image: url("chrome://browser/skin/images/tabs-hdpi.png");
+}
+
+.tool-star {
   list-style-image: url("chrome://browser/skin/images/bookmark-default-hdpi.png");
 }
 
-#tool-star[starred="true"] {
+.tool-star[starred="true"] {
   list-style-image: url("chrome://browser/skin/images/bookmark-starred-hdpi.png");
 }
 
-#tool-back,
-#tool-forward:-moz-locale-dir(rtl) {
+.tool-back,
+.tool-forward:-moz-locale-dir(rtl) {
   list-style-image: url("chrome://browser/skin/images/back-default-hdpi.png");
 }
 
-#tool-back:-moz-locale-dir(rtl),
-#tool-forward {
+.tool-back:-moz-locale-dir(rtl),
+.tool-forward {
   list-style-image: url("chrome://browser/skin/images/forward-default-hdpi.png");
 }
 
@@ -692,6 +697,7 @@ placeitem > .bookmark-manage > image {
   width: 32px;
   height: 32px;
   max-height: 32px;
+  image-rendering: -moz-crisp-edges;
   /* margin-top = (1 - title's line-height) * title's font-size */
   margin-top: @autocomplete_item_container_image_padding@;
   margin-bottom: 0;
@@ -977,11 +983,16 @@ documenttab[reload="true"] > stack > .documenttab-reload {
   display: none;
 }
 
+#bookmark-popup-title {
+  background-color: @color_background_default@;
+}
+
 /* Identity popup   -------------------------------------------------------- */
 #identity-popup-container {
   background-color: @color_background_panel@;
   padding: @padding_normal@; /* core spacing */
   padding-bottom: @padding_xxxnormal@;
+  color: @color_text_panel@;
 }
 
 /* Popup Icons */
@@ -1167,6 +1178,7 @@ pageaction:not([image]) > hbox >.pageaction-image {
 }
 
 #share-title,
+#bookmark-popup-title,
 #context-hint {
   color: @color_text_default@;
   font-size: @font_small@;
@@ -1208,37 +1220,41 @@ pageaction:not([image]) > hbox >.pageaction-image {
   border-bottom: @border_width_tiny@ solid #cacdd5;
 }
 
-/* XXX should be a richlistitem */
-.prefbox {
+setting {
   padding: @padding_xsmall@;
   border-bottom: @border_width_tiny@ solid @color_divider_border@;
   min-height: @touch_row@; /* row size */
   -moz-box-align: center;
+  -moz-box-orient: horizontal;
 }
 
-.setting-group > .prefbox {
+.setting-label {
+  -moz-box-flex: 1;
+}
+
+.setting-group > setting {
   border-bottom: none;
 }
 
-.setting-subgroup > .prefbox {
+.setting-subgroup > setting {
   border-bottom: none;
   -moz-margin-start: @margin_xxxnormal@;
 }
 
-.setting-subgroup + :not(.setting-subgroup) > .prefbox {
+.setting-subgroup + :not(.setting-subgroup) > setting {
   border-top: @border_width_tiny@ solid rgb(207,207,207);
 }
 
 /* Put setting textboxes on a separate row in portrait */
 @media (@orientation@: portrait) {
-  .setting-integer,
-  .setting-string {
+  setting[type="integer"],
+  setting[type="string"] {
     -moz-box-align: start;
     -moz-box-orient: vertical;
   }
 
-  .setting-integer > .setting-input > textbox,
-  .setting-string > .setting-input > textbox {
+  setting[type="integer"] > .setting-input > textbox,
+  setting[type="string"] > .setting-input > textbox {
     width: 499px; /* textboxes seem to need a width in order to flex */
     -moz-box-flex: 1;
   }
@@ -1248,17 +1264,17 @@ pageaction:not([image]) > hbox >.pageaction-image {
   -moz-margin-start: 28px;  /* sized based on the 32px addon image */
 }
 
-.options-box > setting:last-child > .prefbox {
+.options-box > setting:last-child {
   border-bottom: 0;
 }
 
 /* XXX should be a richlistitem description.title */
-.preftitle {
+.preferences-title {
   font-size: @font_normal@ !important;
 }
 
 /* XXX should be a richlistitem description.normal */
-.prefdesc {
+.preferences-description {
   font-size: @font_small@ !important;
   color: @color_subtext_default@;
 }
@@ -1305,6 +1321,25 @@ pageaction:not([image]) > hbox >.pageaction-image {
 .full-screen {
   position: absolute;
   z-index: 500;
+}
+
+/* openwebapps capabilities ------------------------------------------------------------ */
+.webapps-noperm description.webapps-perm-requested-hint {
+  display: block;
+}
+
+.webapps-perm description.webapps-perm-requested-hint {
+  display: none;
+}
+
+#webapps-icon {
+  width: 32px;
+  height: 32px;
+  margin: @margin_normal@;
+}
+
+#webapps-title {
+  -moz-margin-end: @margin_normal@;
 }
 
 /* Android menu ------------------------------------------------------------ */
@@ -1439,16 +1474,16 @@ pageaction:not([image]) > hbox >.pageaction-image {
   min-width: 5.5em;
 }
 
-.syncsetup-link {
-  text-decoration: underline;
-}
-
 .syncsetup-label {
   color: @color_text_default@;
 }
 
 #syncsetup-customserver {
   -moz-margin-start: @margin_xnormal@;
+}
+
+#sync-message {
+  padding-bottom: 2em;
 }
 
 /* content scrollbars */
@@ -1479,10 +1514,14 @@ pageaction:not([image]) > hbox >.pageaction-image {
 }
 
 /* Sidebar peeking */
-.sidebar[mode="discovery"], #browsers[mode="discovery"] {
+:-moz-any(.sidebar, #browsers)[mode="discovery"] {
   -moz-animation-delay: 1s;
   -moz-animation-duration: 5s;
   -moz-animation-name: sidebardiscovery;
+}
+
+:-moz-any(.sidebar, #browsers)[mode="discovery"]:-moz-locale-dir(rtl) {
+  -moz-animation-name: sidebardiscoveryrtl;
 }
 
 @-moz-keyframes sidebardiscovery {
@@ -1492,4 +1531,72 @@ pageaction:not([image]) > hbox >.pageaction-image {
   55% { -moz-transform: translateX(-@sidebar_width_minimum@); }
   90% { -moz-transform: translateX(-@sidebar_width_minimum@); }
   to { -moz-transform: translateX(0); }
+}
+
+@-moz-keyframes sidebardiscoveryrtl {
+  from { -moz-transform: translateX(0); }
+  10% { -moz-transform: translateX(-moz-calc(-121px - @border_width_large@ - 2*@padding_normal@)); }
+  45% { -moz-transform: translateX(-moz-calc(-121px - @border_width_large@ - 2*@padding_normal@)); }
+  55% { -moz-transform: translateX(@sidebar_width_minimum@); }
+  90% { -moz-transform: translateX(@sidebar_width_minimum@); }
+  to { -moz-transform: translateX(0); }
+}
+
+/* Tablet mode */
+
+.button-actionbar {
+  visibility: collapse;
+}
+
+.button-actionbar[disabled="true"] {
+  opacity: 0.5;
+}
+
+.button-actionbar:hover:active {
+  background-color: #8db8d8;
+}
+
+#toolbar-main[tablet="true"] > .button-actionbar {
+  visibility: visible;
+}
+#toolbar-main[tablet="true"][mode="edit"] > .button-actionbar {
+  visibility: collapse;
+}
+
+#controls-scrollbox[tablet="true"] > #controls-sidebar {
+  visibility: collapse;
+}
+
+#controls-scrollbox[tablet="true"] > #tabs-sidebar {
+  border: none;
+  position: fixed;
+  top: -moz-calc(@touch_button_xlarge@ + @margin_normal@);
+  visibility: collapse;
+}
+#controls-scrollbox[tablet="true"] > #tabs-sidebar:-moz-locale-dir(ltr) {
+  right: 0;
+}
+#controls-scrollbox[tablet="true"] > #tabs-sidebar:-moz-locale-dir(rtl) {
+  left: 0;
+}
+#controls-scrollbox[tablet="true"] > #tabs-sidebar[open] {
+  visibility: visible;
+}
+
+/* Text selection handles */
+
+#selectionhandle-start,
+#selectionhandle-end {
+  min-width: 35px !important;
+  width: 35px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+#selectionhandle-start {
+  list-style-image: url("chrome://browser/skin/images/handle-start.png");
+}
+
+#selectionhandle-end {
+  list-style-image: url("chrome://browser/skin/images/handle-end.png");
 }

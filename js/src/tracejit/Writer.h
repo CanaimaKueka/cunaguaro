@@ -40,7 +40,6 @@
 #ifndef tracejit_Writer_h___
 #define tracejit_Writer_h___
 
-#include "jsiter.h"
 #include "jsstr.h"
 #include "jstypedarray.h"
 #include "nanojit.h"
@@ -126,6 +125,7 @@ enum LC_TMBits {
  * - ACCSET_TYPEMAP:       All typemaps form a single region.
  * - ACCSET_FCSLOTS:       All fcslots arrays form a single region.
  * - ACCSET_ARGS_DATA:     All Arguments data arrays form a single region.
+ * - ACCSET_SEG:           All StackSegment structs.
  */
 static const nanojit::AccSet ACCSET_STATE         = (1 <<  0);
 static const nanojit::AccSet ACCSET_STACK         = (1 <<  1);
@@ -158,8 +158,9 @@ static const nanojit::AccSet ACCSET_STRING_MCHARS = (1 << 24);
 static const nanojit::AccSet ACCSET_TYPEMAP       = (1 << 25);
 static const nanojit::AccSet ACCSET_FCSLOTS       = (1 << 26);
 static const nanojit::AccSet ACCSET_ARGS_DATA     = (1 << 27);
+static const nanojit::AccSet ACCSET_SEG           = (1 << 28);
 
-static const uint8_t TM_NUM_USED_ACCS = 28; // number of access regions used by TraceMonkey
+static const uint8_t TM_NUM_USED_ACCS = 29; // number of access regions used by TraceMonkey
 
 /*
  * An Address describes everything about a loaded/stored memory location.  One
@@ -427,8 +428,11 @@ class Writer
         name(w.ldpContextFieldHelper(cx_ins, offsetof(JSContext, fieldname), LOAD_CONST), \
              #fieldname)
     nj::LIns *ldpContextRegs(nj::LIns *cx) const {
-        int32 offset = offsetof(JSContext, stack) + ContextStack::offsetOfRegs();
-        return name(ldpContextFieldHelper(cx, offset, nj::LOAD_NORMAL),"regs");
+        int32 segOff = offsetof(JSContext, stack) + ContextStack::offsetOfSeg();
+        nj::LIns *seg = ldpContextFieldHelper(cx, segOff, nj::LOAD_CONST);
+        int32 regsOff = StackSegment::offsetOfRegs();
+        return name(lir->insLoad(nj::LIR_ldp, seg, regsOff, ACCSET_SEG, nj::LOAD_CONST), "cx->regs()");
+
     }
 
     nj::LIns *stContextField(nj::LIns *value, nj::LIns *cx, int32 offset) const {
@@ -525,20 +529,35 @@ class Writer
     }
 
     nj::LIns *ldpObjSlots(nj::LIns *obj) const {
-        return name(lir->insLoad(nj::LIR_ldp, obj, offsetof(JSObject, slots), ACCSET_OBJ_SLOTS),
+        return name(lir->insLoad(nj::LIR_ldp, obj, JSObject::offsetOfSlots(), ACCSET_OBJ_SLOTS),
                     "slots");
     }
 
+    nj::LIns *ldpObjFixedSlots(nj::LIns *obj) const {
+        //return name(lir->insLoad(nj::LIR_ldp, obj, sizeof(JSObject), ACCSET_SLOTS),
+#if JS_BITS_PER_WORD == 32
+        return name(lir->ins2(nj::LIR_addp, obj, lir->insImmI(sizeof(JSObject))),
+#else
+        return name(lir->ins2(nj::LIR_addp, obj, lir->insImmQ(sizeof(JSObject))),
+#endif
+                "fixed_slots");
+    }
+
     nj::LIns *ldiConstTypedArrayLength(nj::LIns *array) const {
-        return name(lir->insLoad(nj::LIR_ldi, array, js::TypedArray::lengthOffset(), ACCSET_TARRAY,
+        return name(lir->insLoad(nj::LIR_ldi, array, sizeof(Value) * js::TypedArray::FIELD_LENGTH + sPayloadOffset, ACCSET_TARRAY,
                                  nj::LOAD_CONST),
                     "typedArrayLength");
     }
 
-    nj::LIns *ldpConstTypedArrayData(nj::LIns *array) const {
-        return name(lir->insLoad(nj::LIR_ldp, array, js::TypedArray::dataOffset(), ACCSET_TARRAY,
+    nj::LIns *ldiConstTypedArrayByteOffset(nj::LIns *array) const {
+        return name(lir->insLoad(nj::LIR_ldi, array, sizeof(Value) * js::TypedArray::FIELD_BYTEOFFSET + sPayloadOffset, ACCSET_TARRAY,
                                  nj::LOAD_CONST),
-                    "typedElems");
+                    "typedArrayByteOffset");
+    }
+
+    nj::LIns *ldpConstTypedArrayData(nj::LIns *obj) const {
+        uint32 offset = offsetof(JSObject, privateData);
+        return name(lir->insLoad(nj::LIR_ldp, obj, offset, ACCSET_TARRAY, nj::LOAD_CONST), "typedArrayData");
     }
 
     nj::LIns *ldc2iTypedArrayElement(nj::LIns *elems, nj::LIns *index) const {
@@ -593,22 +612,9 @@ class Writer
                              ACCSET_TARRAY_DATA);
     }
 
-    nj::LIns *ldpIterCursor(nj::LIns *iter) const {
-        return name(lir->insLoad(nj::LIR_ldp, iter, offsetof(NativeIterator, props_cursor),
-                                 ACCSET_ITER),
-                    "cursor");
-    }
-
-    nj::LIns *ldpIterEnd(nj::LIns *iter) const {
-        return name(lir->insLoad(nj::LIR_ldp, iter, offsetof(NativeIterator, props_end),
-                                 ACCSET_ITER),
-                    "end");
-    }
-
-    nj::LIns *stpIterCursor(nj::LIns *cursor, nj::LIns *iter) const {
-        return lir->insStore(nj::LIR_stp, cursor, iter, offsetof(NativeIterator, props_cursor),
-                             ACCSET_ITER);
-    }
+    inline nj::LIns *ldpIterCursor(nj::LIns *iter) const;
+    inline nj::LIns *ldpIterEnd(nj::LIns *iter) const;
+    inline nj::LIns *stpIterCursor(nj::LIns *cursor, nj::LIns *iter) const;
 
     nj::LIns *ldpStringLengthAndFlags(nj::LIns *str) const {
         return name(lir->insLoad(nj::LIR_ldp, str, JSString::offsetOfLengthAndFlags(),

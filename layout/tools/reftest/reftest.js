@@ -65,6 +65,7 @@ const NS_OBSERVER_SERVICE_CONTRACTID =
 var gLoadTimeout = 0;
 var gTimeoutHook = null;
 var gRemote = false;
+var gIgnoreWindowSize = false;
 var gTotalChunks = 0;
 var gThisChunk = 0;
 
@@ -156,6 +157,7 @@ var gRecycledCanvases = new Array();
 
 // By default we just log to stdout
 var gDumpLog = dump;
+var gVerbose = false;
 
 // Only dump the sandbox once, because it doesn't depend on the
 // manifest URL (yet!).
@@ -169,14 +171,18 @@ function LogWarning(str)
 
 function LogInfo(str)
 {
-//    gDumpLog("REFTEST INFO | " + str + "\n");
+    if (gVerbose)
+        gDumpLog("REFTEST INFO | " + str + "\n");
     gTestLog.push(str);
 }
 
 function FlushTestLog()
 {
-    for (var i = 0; i < gTestLog.length; ++i) {
-        gDumpLog("REFTEST INFO | Saved log: " + gTestLog[i] + "\n");
+    if (!gVerbose) {
+        // In verbose mode, we've dumped all these messages already.
+        for (var i = 0; i < gTestLog.length; ++i) {
+            gDumpLog("REFTEST INFO | Saved log: " + gTestLog[i] + "\n");
+        }
     }
     gTestLog = [];
 }
@@ -218,6 +224,10 @@ function OnRefTestLoad()
                     .getService(CI.nsIProperties)
                     .get("ProfD", CI.nsIFile);
     gCrashDumpDir.append("minidumps");
+    
+    var env = CC["@mozilla.org/process/environment;1"].
+              getService(CI.nsIEnvironment);
+    gVerbose = !!env.get("MOZ_REFTEST_VERBOSE");
 
     var prefs = Components.classes["@mozilla.org/preferences-service;1"].
                 getService(Components.interfaces.nsIPrefBranch2);
@@ -254,9 +264,9 @@ function InitAndStartRefTests()
       logFile = prefs.getCharPref("reftest.logFile");
       if (logFile) {
         try {
-          MozillaFileLogger.init(logFile);
+          var mfl = new MozillaFileLogger(logFile);
           // Set to mirror to stdout as well as the file
-          gDumpLog = function (msg) {dump(msg); MozillaFileLogger.log(msg);};
+          gDumpLog = function (msg) {dump(msg); mfl.log(msg);};
         }
         catch(e) {
           // If there is a problem, just use stdout
@@ -264,6 +274,7 @@ function InitAndStartRefTests()
         }
       }
       gRemote = prefs.getBoolPref("reftest.remote");
+      gIgnoreWindowSize = prefs.getBoolPref("reftest.ignoreWindowSize");
     }
     catch(e) {
       gLoadTimeout = 5 * 60 * 1000; //5 minutes as per bug 479518
@@ -990,10 +1001,11 @@ function DoDrawWindow(ctx, x, y, w, h)
 {
     var flags = ctx.DRAWWINDOW_DRAW_CARET | ctx.DRAWWINDOW_DRAW_VIEW;
     var testRect = gBrowser.getBoundingClientRect();
-    if (0 <= testRect.left &&
-        0 <= testRect.top &&
-        window.innerWidth >= testRect.right &&
-        window.innerHeight >= testRect.bottom) {
+    if (gIgnoreWindowSize ||
+        (0 <= testRect.left &&
+         0 <= testRect.top &&
+         window.innerWidth >= testRect.right &&
+         window.innerHeight >= testRect.bottom)) {
         // We can use the window's retained layer manager
         // because the window is big enough to display the entire
         // browser element

@@ -82,6 +82,7 @@
 #include <startup-notification-1.0/libsn/sn.h>
 #endif
 
+#include "mozilla/Preferences.h"
 #include "nsIPrefService.h"
 #include "nsIPrefBranch.h"
 #include "nsIServiceManager.h"
@@ -97,6 +98,9 @@
 #include "nsIAccessibleDocument.h"
 #include "prenv.h"
 #include "stdlib.h"
+
+using namespace mozilla;
+
 static PRBool sAccessibilityChecked = PR_FALSE;
 /* static */
 PRBool nsWindow::sAccessibilityEnabled = PR_FALSE;
@@ -1093,6 +1097,12 @@ nsWindow::Show(PRBool aState)
         }
     }
 
+#ifdef ACCESSIBILITY
+    if (aState && sAccessibilityEnabled) {
+        CreateRootAccessible();
+    }
+#endif
+
     NativeShow(aState);
 
     return NS_OK;
@@ -1101,6 +1111,10 @@ nsWindow::Show(PRBool aState)
 NS_IMETHODIMP
 nsWindow::Resize(PRInt32 aWidth, PRInt32 aHeight, PRBool aRepaint)
 {
+    // For top-level windows, aWidth and aHeight should possibly be
+    // interpreted as frame bounds, but NativeResize treats these as window
+    // bounds (Bug 581866).
+
     mBounds.SizeTo(GetSafeWindowSize(nsIntSize(aWidth, aHeight)));
 
     if (!mCreated)
@@ -1537,11 +1551,13 @@ nsWindow::GetScreenBounds(nsIntRect &aRect)
     else {
         aRect.MoveTo(WidgetToScreenOffset());
     }
+    // mBounds.Size() is the window bounds, not the window-manager frame
+    // bounds (bug 581863).  gdk_window_get_frame_extents would give the
+    // frame bounds, but mBounds.Size() is returned here for consistency
+    // with Resize.
     aRect.SizeTo(mBounds.Size());
-    LOG(("GetScreenBounds %d %d | %d %d | %d %d\n",
-         aRect.x, aRect.y,
-         mBounds.width, mBounds.height,
-         aRect.width, aRect.height));
+    LOG(("GetScreenBounds %d,%d | %dx%d\n",
+         aRect.x, aRect.y, aRect.width, aRect.height));
     return NS_OK;
 }
 
@@ -2343,10 +2359,31 @@ nsWindow::OnExposeEvent(GtkWidget *aWidget, GdkEventExpose *aEvent)
 gboolean
 nsWindow::OnConfigureEvent(GtkWidget *aWidget, GdkEventConfigure *aEvent)
 {
+    // These events are only received on toplevel windows.
+    //
+    // GDK ensures that the coordinates are the client window top-left wrt the
+    // root window.
+    //
+    //   GDK calculates the cordinates for real ConfigureNotify events on
+    //   managed windows (that would normally be relative to the parent
+    //   window).
+    //
+    //   Synthetic ConfigureNotify events are from the window manager and
+    //   already relative to the root window.  GDK creates all X windows with
+    //   border_width = 0, so synthetic events also indicate the top-left of
+    //   the client window.
+    //
+    //   Override-redirect windows are children of the root window so parent
+    //   coordinates are root coordinates.
+
     LOG(("configure event [%p] %d %d %d %d\n", (void *)this,
          aEvent->x, aEvent->y, aEvent->width, aEvent->height));
 
-    // can we shortcut?
+    // mBounds.x/y are set to the window manager frame top-left when Move() or
+    // Resize()d from within Gecko, so comparing with the client window
+    // top-left is weird.  However, mBounds.x/y are set to client window
+    // position below, so this check avoids unwanted rollup on spurious
+    // configure events from Cygwin/X (bug 672103).
     if (mBounds.x == aEvent->x &&
         mBounds.y == aEvent->y)
         return FALSE;
@@ -2355,19 +2392,40 @@ nsWindow::OnConfigureEvent(GtkWidget *aWidget, GdkEventConfigure *aEvent)
         check_for_rollup(aEvent->window, 0, 0, PR_FALSE, PR_TRUE);
     }
 
-    // Toplevel windows need to have their bounds set so that we can
-    // keep track of our location.  It's not often that the x,y is set
-    // by the layout engine.  Width and height are set elsewhere.
-    nsIntPoint pnt(aEvent->x, aEvent->y);
-    if (mIsTopLevel) {
-        // Need to translate this into the right coordinates
-        mBounds.MoveTo(WidgetToScreenOffset());
-        pnt = mBounds.TopLeft();
+    // This event indicates that the window position may have changed.
+    // mBounds.Size() is updated in OnSizeAllocate().
+
+    // (The gtk_window_get_window_type() function is only available from
+    // version 2.20.)
+    NS_ASSERTION(GTK_IS_WINDOW(aWidget),
+                 "Configure event on widget that is not a GtkWindow");
+    gint type;
+    g_object_get(aWidget, "type", &type, NULL);
+    if (type == GTK_WINDOW_POPUP) {
+        // Override-redirect window
+        //
+        // These windows should not be moved by the window manager, and so any
+        // change in position is a result of our direction.  mBounds has
+        // already been set in Move() or Resize(), and that is more
+        // up-to-date than the position in the ConfigureNotify event if the
+        // event is from an earlier window move.
+        //
+        // Skipping the NS_MOVE dispatch saves context menus from an infinite
+        // loop when nsXULPopupManager::PopupMoved moves the window to the new
+        // position and nsMenuPopupFrame::SetPopupPosition adds
+        // offsetForContextMenu on each iteration.
+        return FALSE;
     }
+
+    // This is wrong, but noautohide titlebar panels currently depend on it
+    // (bug 601545#c13).  mBounds.TopLeft() should refer to the
+    // window-manager frame top-left, but WidgetToScreenOffset() gives the
+    // client window origin.
+    mBounds.MoveTo(WidgetToScreenOffset());
 
     nsGUIEvent event(PR_TRUE, NS_MOVE, this);
 
-    event.refPoint = pnt;
+    event.refPoint = mBounds.TopLeft();
 
     // XXX mozilla will invalidate the entire window after this move
     // complete.  wtf?
@@ -2906,10 +2964,6 @@ nsWindow::OnContainerFocusInEvent(GtkWidget *aWidget, GdkEventFocus *aEvent)
                  "Unexpected focus on a popup window");
 
     LOGFOCUS(("OnContainerFocusInEvent [%p]\n", (void *)this));
-    if (!mEnabled) {
-        LOGFOCUS(("Container focus is blocked [%p]\n", (void *)this));
-        return;
-    }
 
     // Unset the urgency hint, if possible
     GtkWidget* top_window = nsnull;
@@ -2990,6 +3044,15 @@ nsWindow::DispatchCommandEvent(nsIAtom* aCommand)
     nsCommandEvent event(PR_TRUE, nsWidgetAtoms::onAppCommand, aCommand, this);
     DispatchEvent(&event, status);
     return TRUE;
+}
+
+PRBool
+nsWindow::DispatchContentCommandEvent(PRInt32 aMsg)
+{
+  nsEventStatus status;
+  nsContentCommandEvent event(PR_TRUE, aMsg, this);
+  DispatchEvent(&event, status);
+  return TRUE;
 }
 
 static PRUint32
@@ -3138,6 +3201,20 @@ nsWindow::OnKeyPressEvent(GtkWidget *aWidget, GdkEventKey *aEvent)
             return DispatchCommandEvent(nsWidgetAtoms::Bookmarks);
         case XF86XK_HomePage:
             return DispatchCommandEvent(nsWidgetAtoms::Home);
+        case XF86XK_Copy:
+        case GDK_F16:  // F16, F20, F18, F14 are old keysyms for Copy Cut Paste Undo
+            return DispatchContentCommandEvent(NS_CONTENT_COMMAND_COPY);
+        case XF86XK_Cut:
+        case GDK_F20:
+            return DispatchContentCommandEvent(NS_CONTENT_COMMAND_CUT);
+        case XF86XK_Paste:
+        case GDK_F18:
+            return DispatchContentCommandEvent(NS_CONTENT_COMMAND_PASTE);
+        case GDK_Redo:
+            return DispatchContentCommandEvent(NS_CONTENT_COMMAND_REDO);
+        case GDK_Undo:
+        case GDK_F14:
+            return DispatchContentCommandEvent(NS_CONTENT_COMMAND_UNDO);
     }
 #endif /* ! AIX */
 #endif /* MOZ_X11 */
@@ -3858,16 +3935,6 @@ nsWindow::Create(nsIWidget        *aParent,
 
     // save our bounds
     mBounds = aRect;
-    if (mWindowType != eWindowType_child &&
-        mWindowType != eWindowType_plugin) {
-        // We only move a toplevel window if someone has actually placed the
-        // window somewhere.  If no placement has taken place, we just let the
-        // window manager Do The Right Thing.
-        //
-        // Indicate that if we're shown, we at least need to have our size set.
-        // If we get explicitly moved, the position will also be set.
-        mNeedsResize = PR_TRUE;
-    }
 
     // figure out our parent window
     GtkWidget      *parentMozContainer = nsnull;
@@ -3902,6 +3969,14 @@ nsWindow::Create(nsIWidget        *aParent,
     case eWindowType_toplevel:
     case eWindowType_invisible: {
         mIsTopLevel = PR_TRUE;
+
+        // We only move a general managed toplevel window if someone has
+        // actually placed the window somewhere.  If no placement has taken
+        // place, we just let the window manager Do The Right Thing.
+        //
+        // Indicate that if we're shown, we at least need to have our size set.
+        // If we get explicitly moved, the position will also be set.
+        mNeedsResize = PR_TRUE;
 
         nsXPIDLString brandName;
         GetBrandName(brandName);
@@ -3939,6 +4014,11 @@ nsWindow::Create(nsIWidget        *aParent,
             }
         }
         else if (mWindowType == eWindowType_popup) {
+            // With popup windows, we want to control their position, so don't
+            // wait for the window manager to place them (which wouldn't
+            // happen with override-redirect windows anyway).
+            mNeedsMove = PR_TRUE;
+
             // Popups that are not noautohide are only temporary. The are used
             // for menus and the like and disappear when another window is used.
             if (!aInitData->mNoAutoHide) {
@@ -4243,10 +4323,6 @@ nsWindow::Create(nsIWidget        *aParent,
 
         }
     }
-    if (sAccessibilityEnabled) {
-        LOG(("nsWindow:: Create Toplevel Accessibility\n"));
-        CreateRootAccessible();
-    }
 #endif
 
 #ifdef MOZ_DFB
@@ -4396,7 +4472,9 @@ nsWindow::NativeResize(PRInt32 aX, PRInt32 aY,
     ResizeTransparencyBitmap(aWidth, aHeight);
 
     if (mIsTopLevel) {
+        // aX and aY give the position of the window manager frame top-left.
         gtk_window_move(GTK_WINDOW(mShell), aX, aY);
+        // This sets the client window size.
         gtk_window_resize(GTK_WINDOW(mShell), aWidth, aHeight);
     }
     else if (mContainer) {
@@ -4729,8 +4807,8 @@ nsWindow::ResizeTransparencyBitmap(PRInt32 aNewWidth, PRInt32 aNewHeight)
     memset(newBits, 255, newSize);
 
     // Now copy the intersection of the old and new areas into the new mask
-    PRInt32 copyWidth = PR_MIN(aNewWidth, mTransparencyBitmapWidth);
-    PRInt32 copyHeight = PR_MIN(aNewHeight, mTransparencyBitmapHeight);
+    PRInt32 copyWidth = NS_MIN(aNewWidth, mTransparencyBitmapWidth);
+    PRInt32 copyHeight = NS_MIN(aNewHeight, mTransparencyBitmapHeight);
     PRInt32 oldRowBytes = (mTransparencyBitmapWidth+7)/8;
     PRInt32 newRowBytes = (aNewWidth+7)/8;
     PRInt32 copyBytes = (copyWidth+7)/8;
@@ -6151,20 +6229,10 @@ drag_data_received_event_cb(GtkWidget *aWidget,
 static nsresult
 initialize_prefs(void)
 {
-    nsCOMPtr<nsIPrefBranch> prefs = do_GetService(NS_PREFSERVICE_CONTRACTID);
-    if (!prefs)
-        return NS_OK;
-
-    PRBool val = PR_TRUE;
-    nsresult rv;
-
-    rv = prefs->GetBoolPref("mozilla.widget.raise-on-setfocus", &val);
-    if (NS_SUCCEEDED(rv))
-        gRaiseWindows = val;
-
-    rv = prefs->GetBoolPref("mozilla.widget.disable-native-theme", &val);
-    if (NS_SUCCEEDED(rv))
-        gDisableNativeTheme = val;
+    gRaiseWindows =
+        Preferences::GetBool("mozilla.widget.raise-on-setfocus", PR_TRUE);
+    gDisableNativeTheme =
+        Preferences::GetBool("mozilla.widget.disable-native-theme", PR_FALSE);
 
     return NS_OK;
 }
@@ -6334,6 +6402,7 @@ void
 nsWindow::CreateRootAccessible()
 {
     if (mIsTopLevel && !mRootAccessible) {
+        LOG(("nsWindow:: Create Toplevel Accessibility\n"));
         nsAccessible *acc = DispatchAccessibleEvent();
 
         if (acc) {
@@ -6542,8 +6611,8 @@ nsWindow::GetThebesSurface()
     gint width, height;
     gdk_drawable_get_size(d, &width, &height);
     // Owen Taylor says this is the right thing to do!
-    width = PR_MIN(32767, width);
-    height = PR_MIN(32767, height);
+    width = NS_MIN(32767, width);
+    height = NS_MIN(32767, height);
     gfxIntSize size(width, height);
     Visual* visual = GDK_VISUAL_XVISUAL(gdk_drawable_get_visual(d));
 

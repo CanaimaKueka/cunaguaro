@@ -88,6 +88,7 @@ class JS_FRIEND_API(JSWrapper) : public js::JSProxyHandler {
     virtual JSType typeOf(JSContext *cx, JSObject *proxy);
     virtual JSString *obj_toString(JSContext *cx, JSObject *wrapper);
     virtual JSString *fun_toString(JSContext *cx, JSObject *wrapper, uintN indent);
+    virtual bool defaultValue(JSContext *cx, JSObject *wrapper, JSType hint, js::Value *vp);
 
     virtual void trace(JSTracer *trc, JSObject *wrapper);
 
@@ -150,6 +151,9 @@ class JS_FRIEND_API(JSCrossCompartmentWrapper) : public JSWrapper {
     virtual bool hasInstance(JSContext *cx, JSObject *wrapper, const js::Value *vp, bool *bp);
     virtual JSString *obj_toString(JSContext *cx, JSObject *wrapper);
     virtual JSString *fun_toString(JSContext *cx, JSObject *wrapper, uintN indent);
+    virtual bool defaultValue(JSContext *cx, JSObject *wrapper, JSType hint, js::Value *vp);
+
+    virtual void trace(JSTracer *trc, JSObject *wrapper);
 
     static JSCrossCompartmentWrapper singleton;
 };
@@ -164,7 +168,7 @@ class JS_FRIEND_API(ForceFrame)
     JSContext * const context;
     JSObject * const target;
   private:
-    DummyFrameGuard frame;
+    DummyFrameGuard *frame;
 
   public:
     ForceFrame(JSContext *cx, JSObject *target);
@@ -194,6 +198,22 @@ class AutoCompartment
     // Prohibit copying.
     AutoCompartment(const AutoCompartment &);
     AutoCompartment & operator=(const AutoCompartment &);
+};
+
+/*
+ * Use this to change the behavior of an AutoCompartment slightly on error. If
+ * the exception happens to be an Error object, copy it to the origin compartment
+ * instead of wrapping it.
+ */
+class ErrorCopier {
+    AutoCompartment &ac;
+    JSObject *scope;
+
+  public:
+    ErrorCopier(AutoCompartment &ac, JSObject *scope) : ac(ac), scope(scope) {
+        JS_ASSERT(scope->compartment() == ac.origin);
+    }
+    ~ErrorCopier();
 };
 
 extern JSObject *

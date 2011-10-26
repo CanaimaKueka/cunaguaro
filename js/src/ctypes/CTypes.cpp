@@ -1842,7 +1842,7 @@ ImplicitConvert(JSContext* cx,
       case TYPE_unsigned_char: {
         // Convert from UTF-16 to UTF-8.
         size_t nbytes =
-          js_GetDeflatedUTF8StringLength(cx, sourceChars, sourceLength);
+          GetDeflatedUTF8StringLength(cx, sourceChars, sourceLength);
         if (nbytes == (size_t) -1)
           return false;
 
@@ -1853,7 +1853,7 @@ ImplicitConvert(JSContext* cx,
           return false;
         }
 
-        ASSERT_OK(js_DeflateStringToUTF8Buffer(cx, sourceChars, sourceLength,
+        ASSERT_OK(DeflateStringToUTF8Buffer(cx, sourceChars, sourceLength,
                     *charBuffer, &nbytes));
         (*charBuffer)[nbytes] = 0;
         *freePointer = true;
@@ -1899,7 +1899,7 @@ ImplicitConvert(JSContext* cx,
       case TYPE_unsigned_char: {
         // Convert from UTF-16 to UTF-8.
         size_t nbytes =
-          js_GetDeflatedUTF8StringLength(cx, sourceChars, sourceLength);
+          GetDeflatedUTF8StringLength(cx, sourceChars, sourceLength);
         if (nbytes == (size_t) -1)
           return false;
 
@@ -1909,7 +1909,7 @@ ImplicitConvert(JSContext* cx,
         }
 
         char* charBuffer = static_cast<char*>(buffer);
-        ASSERT_OK(js_DeflateStringToUTF8Buffer(cx, sourceChars, sourceLength,
+        ASSERT_OK(DeflateStringToUTF8Buffer(cx, sourceChars, sourceLength,
                     charBuffer, &nbytes));
 
         if (targetLength > nbytes)
@@ -3584,7 +3584,7 @@ ArrayType::ConstructData(JSContext* cx,
       case TYPE_signed_char:
       case TYPE_unsigned_char: {
         // Determine the UTF-8 length.
-        length = js_GetDeflatedUTF8StringLength(cx, sourceChars, sourceLength);
+        length = GetDeflatedUTF8StringLength(cx, sourceChars, sourceLength);
         if (length == (size_t) -1)
           return false;
 
@@ -4548,6 +4548,11 @@ GetABI(JSContext* cx, jsval abiType, ffi_abi* result)
 #if (defined(_WIN32) && !defined(_WIN64)) || defined(_OS2)
     *result = FFI_STDCALL;
     return true;
+#elif (defined(_WIN64))
+    // We'd like the same code to work across Win32 and Win64, so stdcall_api
+    // and winapi_abi become aliases to the lone Win64 ABI.
+    *result = FFI_WIN64;
+    return true;
 #endif
   case INVALID_ABI:
     break;
@@ -4692,6 +4697,7 @@ FunctionType::BuildSymbolName(JSContext* cx,
     break;
 
   case ABI_STDCALL: {
+#if (defined(_WIN32) && !defined(_WIN64)) || defined(_OS2)
     // On WIN32, stdcall functions look like:
     //   _foo@40
     // where 'foo' is the function name, and '40' is the aligned size of the
@@ -4708,6 +4714,11 @@ FunctionType::BuildSymbolName(JSContext* cx,
     }
 
     IntegerToString(size, 10, result);
+#elif defined(_WIN64)
+    // On Win64, stdcall is an alias to the default ABI for compatibility, so no
+    // mangling is done.
+    AppendString(result, name);
+#endif
     break;
   }
 
@@ -5766,7 +5777,7 @@ CData::ReadString(JSContext* cx, uintN argc, jsval* vp)
 
     // Determine the length.
     size_t dstlen;
-    if (!js_InflateUTF8StringToBuffer(cx, bytes, length, NULL, &dstlen))
+    if (!InflateUTF8StringToBuffer(cx, bytes, length, NULL, &dstlen))
       return JS_FALSE;
 
     jschar* dst =
@@ -5774,7 +5785,7 @@ CData::ReadString(JSContext* cx, uintN argc, jsval* vp)
     if (!dst)
       return JS_FALSE;
 
-    ASSERT_OK(js_InflateUTF8StringToBuffer(cx, bytes, length, dst, &dstlen));
+    ASSERT_OK(InflateUTF8StringToBuffer(cx, bytes, length, dst, &dstlen));
     dst[dstlen] = 0;
 
     result = JS_NewUCString(cx, dst, dstlen);

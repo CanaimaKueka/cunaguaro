@@ -41,6 +41,8 @@
 #include "States.h"
 #include "nsTextEquivUtils.h"
 
+using namespace mozilla::a11y;
+
 ////////////////////////////////////////////////////////////////////////////////
 // nsXFormsLabelAccessible
 ////////////////////////////////////////////////////////////////////////////////
@@ -113,13 +115,10 @@ nsXFormsTriggerAccessible::GetValue(nsAString& aValue)
   return NS_OK;
 }
 
-NS_IMETHODIMP
-nsXFormsTriggerAccessible::GetNumActions(PRUint8 *aCount)
+PRUint8
+nsXFormsTriggerAccessible::ActionCount()
 {
-  NS_ENSURE_ARG_POINTER(aCount);
-
-  *aCount = 1;
-  return NS_OK;
+  return 1;
 }
 
 NS_IMETHODIMP
@@ -161,13 +160,10 @@ nsXFormsInputAccessible::NativeRole()
   return nsIAccessibleRole::ROLE_ENTRY;
 }
 
-NS_IMETHODIMP
-nsXFormsInputAccessible::GetNumActions(PRUint8* aCount)
+PRUint8
+nsXFormsInputAccessible::ActionCount()
 {
-  NS_ENSURE_ARG_POINTER(aCount);
-
-  *aCount = 1;
-  return NS_OK;
+  return 1;
 }
 
 NS_IMETHODIMP
@@ -223,13 +219,10 @@ nsXFormsInputBooleanAccessible::NativeState()
   return state;
 }
 
-NS_IMETHODIMP
-nsXFormsInputBooleanAccessible::GetNumActions(PRUint8 *aCount)
+PRUint8
+nsXFormsInputBooleanAccessible::ActionCount()
 {
-  NS_ENSURE_ARG_POINTER(aCount);
-
-  *aCount = 1;
-  return NS_OK;
+  return 1;
 }
 
 NS_IMETHODIMP
@@ -502,7 +495,7 @@ nsXFormsItemCheckgroupAccessible::NativeState()
 {
   PRUint64 state = nsXFormsSelectableItemAccessible::NativeState();
 
-  if (IsItemSelected())
+  if (IsSelected())
     state |= states::CHECKED;
 
   return state;
@@ -514,7 +507,7 @@ nsXFormsItemCheckgroupAccessible::GetActionName(PRUint8 aIndex, nsAString& aName
   if (aIndex != eAction_Click)
     return NS_ERROR_INVALID_ARG;
 
-  if (IsItemSelected())
+  if (IsSelected())
     aName.AssignLiteral("uncheck");
   else
     aName.AssignLiteral("check");
@@ -544,7 +537,7 @@ nsXFormsItemRadiogroupAccessible::NativeState()
 {
   PRUint64 state = nsXFormsSelectableItemAccessible::NativeState();
 
-  if (IsItemSelected())
+  if (IsSelected())
     state |= states::CHECKED;
 
   return state;
@@ -627,7 +620,7 @@ nsXFormsItemComboboxAccessible::NativeState()
     return state;
 
   state |= states::SELECTABLE;
-  if (IsItemSelected())
+  if (IsSelected())
     state |= states::SELECTED;
 
   return state;

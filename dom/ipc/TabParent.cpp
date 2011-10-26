@@ -59,7 +59,6 @@
 #include "nsIPrivateDOMEvent.h"
 #include "nsFrameLoader.h"
 #include "nsNetUtil.h"
-#include "jsarray.h"
 #include "nsContentUtils.h"
 #include "nsContentPermissionHelper.h"
 #include "nsIDOMNSHTMLFrameElement.h"
@@ -68,6 +67,8 @@
 #include "nsSerializationHelper.h"
 #include "nsIPromptFactory.h"
 #include "nsIContent.h"
+#include "nsIWidget.h"
+#include "nsIViewManager.h"
 #include "mozilla/unused.h"
 #include "nsDebug.h"
 
@@ -209,15 +210,21 @@ TabParent::Show(const nsIntSize& size)
 }
 
 void
-TabParent::Move(const nsIntSize& size)
+TabParent::UpdateDimensions(const nsRect& rect, const nsIntSize& size)
 {
-    unused << SendMove(size);
+    unused << SendUpdateDimensions(rect, size);
 }
 
 void
 TabParent::Activate()
 {
     unused << SendActivate();
+}
+
+void
+TabParent::Deactivate()
+{
+  unused << SendDeactivate();
 }
 
 NS_IMETHODIMP
@@ -294,6 +301,21 @@ TabParent::SendKeyEvent(const nsAString& aType,
                                          aModifiers, aPreventDefault);
 }
 
+bool TabParent::SendRealMouseEvent(nsMouseEvent& event)
+{
+  return PBrowserParent::SendRealMouseEvent(event);
+}
+
+bool TabParent::SendMouseScrollEvent(nsMouseScrollEvent& event)
+{
+  return PBrowserParent::SendMouseScrollEvent(event);
+}
+
+bool TabParent::SendRealKeyEvent(nsKeyEvent& event)
+{
+  return PBrowserParent::SendRealKeyEvent(event);
+}
+
 bool
 TabParent::RecvSyncMessage(const nsString& aMessage,
                            const nsString& aJSON,
@@ -307,6 +329,16 @@ TabParent::RecvAsyncMessage(const nsString& aMessage,
                             const nsString& aJSON)
 {
   return ReceiveMessage(aMessage, PR_FALSE, aJSON, nsnull);
+}
+
+bool
+TabParent::RecvSetCursor(const PRUint32& aCursor)
+{
+  nsCOMPtr<nsIWidget> widget = GetWidget();
+  if (widget) {
+    widget->SetCursor((nsCursor) aCursor);
+  }
+  return true;
 }
 
 bool
@@ -400,7 +432,7 @@ TabParent::HandleQueryContentEvent(nsQueryContentEvent& aEvent)
   {
   case NS_QUERY_SELECTED_TEXT:
     {
-      aEvent.mReply.mOffset = PR_MIN(mIMESelectionAnchor, mIMESelectionFocus);
+      aEvent.mReply.mOffset = NS_MIN(mIMESelectionAnchor, mIMESelectionFocus);
       if (mIMESelectionAnchor == mIMESelectionFocus) {
         aEvent.mReply.mString.Truncate(0);
       } else {
@@ -446,7 +478,7 @@ bool
 TabParent::SendCompositionEvent(nsCompositionEvent& event)
 {
   mIMEComposing = event.message == NS_COMPOSITION_START;
-  mIMECompositionStart = PR_MIN(mIMESelectionAnchor, mIMESelectionFocus);
+  mIMECompositionStart = NS_MIN(mIMESelectionAnchor, mIMESelectionFocus);
   if (mIMECompositionEnding)
     return true;
   event.seqno = ++mIMESeqno;
@@ -471,7 +503,7 @@ TabParent::SendTextEvent(nsTextEvent& event)
   // We must be able to simulate the selection because
   // we might not receive selection updates in time
   if (!mIMEComposing) {
-    mIMECompositionStart = PR_MIN(mIMESelectionAnchor, mIMESelectionFocus);
+    mIMECompositionStart = NS_MIN(mIMESelectionAnchor, mIMESelectionFocus);
   }
   mIMESelectionAnchor = mIMESelectionFocus =
       mIMECompositionStart + event.theText.Length();
@@ -515,8 +547,10 @@ bool
 TabParent::RecvGetIMEEnabled(PRUint32* aValue)
 {
   nsCOMPtr<nsIWidget> widget = GetWidget();
-  if (!widget)
+  if (!widget) {
+    *aValue = nsIWidget::IME_STATUS_DISABLED;
     return true;
+  }
 
   IMEContext context;
   widget->GetInputMode(context);
@@ -577,6 +611,29 @@ TabParent::RecvGetDPI(float* aValue)
                     "Must not ask for DPI before OwnerElement is received!");
   *aValue = mDPI;
   return true;
+}
+
+bool
+TabParent::RecvGetWidgetNativeData(WindowsHandle* aValue)
+{
+  nsCOMPtr<nsIContent> content = do_QueryInterface(mFrameElement);
+  if (content) {
+    nsIDocument* document = content->GetOwnerDoc();
+    if (document) {
+      nsIPresShell* shell = document->GetShell();
+      if (shell) {
+        nsIViewManager* vm = shell->GetViewManager();
+        nsCOMPtr<nsIWidget> widget;
+        vm->GetRootWidget(getter_AddRefs(widget));
+        if (widget) {
+          *aValue = reinterpret_cast<WindowsHandle>(
+            widget->GetNativeData(NS_NATIVE_WINDOW));
+          return true;
+        }
+      }
+    }
+  }
+  return false;
 }
 
 bool
@@ -711,8 +768,7 @@ PRenderFrameParent*
 TabParent::AllocPRenderFrame()
 {
   nsRefPtr<nsFrameLoader> frameLoader = GetFrameLoader();
-  NS_WARN_IF_FALSE(frameLoader, "'message sent to unknown actor ID' coming up");
-  return frameLoader ? new RenderFrameParent(frameLoader) : nsnull;
+  return new RenderFrameParent(frameLoader);
 }
 
 bool

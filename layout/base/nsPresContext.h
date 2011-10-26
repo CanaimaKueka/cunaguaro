@@ -69,7 +69,6 @@
 #include "nsTArray.h"
 #include "nsAutoPtr.h"
 #include "nsThreadUtils.h"
-#include "nsContentUtils.h"
 #include "nsIWidget.h"
 #include "mozilla/TimeStamp.h"
 #include "nsIContent.h"
@@ -103,9 +102,7 @@ class nsUserFontSet;
 struct nsFontFaceRuleContainer;
 class nsObjectFrame;
 class nsTransitionManager;
-#ifdef MOZ_CSS_ANIMATIONS
 class nsAnimationManager;
-#endif
 class nsRefreshDriver;
 class imgIContainer;
 class nsIDOMMediaQueryList;
@@ -243,9 +240,7 @@ public:
     { return GetPresShell()->FrameManager(); } 
 
   nsTransitionManager* TransitionManager() { return mTransitionManager; }
-#ifdef MOZ_CSS_ANIMATIONS
   nsAnimationManager* AnimationManager() { return mAnimationManager; }
-#endif
 
   nsRefreshDriver* RefreshDriver() { return mRefreshDriver; }
 #endif
@@ -329,17 +324,6 @@ public:
   }
 
   /**
-   * Get the font metrics for a given font.
-   *
-   * If aUseUserFontSet is false, don't build or use the user font set.
-   * This is intended only for nsRuleNode::CalcLengthWithInitialFont
-   * (which is used from media query matching, which is in turn called
-   * when building the user font set).
-   */
-  NS_HIDDEN_(already_AddRefed<nsFontMetrics>)
-  GetMetricsFor(const nsFont& aFont, PRBool aUseUserFontSet = PR_TRUE);
-
-  /**
    * Get the default font corresponding to the given ID.  This object is
    * read-only, you must copy the font to modify it.
    * 
@@ -398,11 +382,6 @@ public:
     return PR_FALSE;
   }
 
-  /**
-   * Access Nav's magic font scaler value
-   */
-  PRInt32 FontScaler() const { return mFontScaler; }
-
   /** 
    * Get the default colors
    */
@@ -413,6 +392,12 @@ public:
   const nscolor DefaultVisitedLinkColor() const { return mVisitedLinkColor; }
   const nscolor FocusBackgroundColor() const { return mFocusBackgroundColor; }
   const nscolor FocusTextColor() const { return mFocusTextColor; }
+
+  /**
+   * Body text color, for use in quirks mode only.
+   */
+  const nscolor BodyTextColor() const { return mBodyTextColor; }
+  void SetBodyTextColor(nscolor aColor) { mBodyTextColor = aColor; }
 
   PRBool GetUseFocusColors() const { return mUseFocusColors; }
   PRUint8 FocusRingWidth() const { return mFocusRingWidth; }
@@ -595,7 +580,7 @@ public:
   }
   
   static PRInt32 AppUnitsPerCSSPixel() { return nsDeviceContext::AppUnitsPerCSSPixel(); }
-  PRInt32 AppUnitsPerDevPixel() const  { return mDeviceContext->AppUnitsPerDevPixel(); }
+  PRUint32 AppUnitsPerDevPixel() const  { return mDeviceContext->AppUnitsPerDevPixel(); }
   static PRInt32 AppUnitsPerCSSInch() { return nsDeviceContext::AppUnitsPerCSSInch(); }
 
   static nscoord CSSPixelsToAppUnits(PRInt32 aPixels)
@@ -761,11 +746,6 @@ public:
 //Mohamed
 
   /**
-   * Get a Bidi presentation utilities object
-   */
-  NS_HIDDEN_(nsBidiPresUtils*) GetBidiUtils();
-
-  /**
    * Set the Bidi options for the presentation context
    */  
   NS_HIDDEN_(void) SetBidi(PRUint32 aBidiOptions,
@@ -777,10 +757,6 @@ public:
    * include nsIDocument.
    */  
   NS_HIDDEN_(PRUint32) GetBidi() const;
-
-  PRUint32 GetBidiMemoryUsed();
-#else
-  PRUint32 GetBidiMemoryUsed() { return 0; }
 #endif // IBMBIDI
 
   /**
@@ -996,6 +972,8 @@ public:
   }
   inline void ForgetUpdatePluginGeometryFrame(nsIFrame* aFrame);
 
+  void DestroyImageLoaders();
+
   PRBool GetContainsUpdatePluginGeometryFrame()
   {
     return mContainsUpdatePluginGeometryFrame;
@@ -1013,7 +991,6 @@ public:
     PRUint32 result = 0;
 
     result += sizeof(nsPresContext);
-    result += GetBidiMemoryUsed();
 
     return result;
   }
@@ -1043,6 +1020,7 @@ protected:
 
   NS_HIDDEN_(void) UpdateCharSet(const nsAFlatCString& aCharSet);
 
+  void InvalidateThebesLayers();
   void AppUnitsPerDevPixelChanged();
 
   PRBool MayHavePaintEventListener();
@@ -1075,9 +1053,7 @@ protected:
   nsILookAndFeel*       mLookAndFeel;   // [STRONG]
   nsRefPtr<nsRefreshDriver> mRefreshDriver;
   nsRefPtr<nsTransitionManager> mTransitionManager;
-#ifdef MOZ_CSS_ANIMATIONS
   nsRefPtr<nsAnimationManager> mAnimationManager;
-#endif
   nsIAtom*              mMedium;        // initialized by subclass ctors;
                                         // weak pointer to static atom
 
@@ -1103,10 +1079,6 @@ protected:
 
   PRInt32               mCurAppUnitsPerDevPixel;
   PRInt32               mAutoQualityMinFontSizePixelsPref;
-
-#ifdef IBMBIDI
-  nsAutoPtr<nsBidiPresUtils> mBidiUtils;
-#endif
 
   nsCOMPtr<nsITheme> mTheme;
   nsCOMPtr<nsILanguageAtomService> mLangService;
@@ -1137,6 +1109,8 @@ protected:
 
   nscolor               mFocusBackgroundColor;
   nscolor               mFocusTextColor;
+
+  nscolor               mBodyTextColor;
 
   ScrollbarStyles       mViewportStyleOverflow;
   PRUint8               mFocusRingWidth;
@@ -1363,93 +1337,6 @@ nsPresContext::ForgetUpdatePluginGeometryFrame(nsIFrame* aFrame)
     }
   }
 }
-
-#ifdef DEBUG
-
-struct nsAutoLayoutPhase {
-  nsAutoLayoutPhase(nsPresContext* aPresContext, nsLayoutPhase aPhase)
-    : mPresContext(aPresContext), mPhase(aPhase), mCount(0)
-  {
-    Enter();
-  }
-
-  ~nsAutoLayoutPhase()
-  {
-    Exit();
-    NS_ASSERTION(mCount == 0, "imbalanced");
-  }
-
-  void Enter()
-  {
-    switch (mPhase) {
-      case eLayoutPhase_Paint:
-        NS_ASSERTION(mPresContext->mLayoutPhaseCount[eLayoutPhase_Paint] == 0,
-                     "recurring into paint");
-        NS_ASSERTION(mPresContext->mLayoutPhaseCount[eLayoutPhase_Reflow] == 0,
-                     "painting in the middle of reflow");
-        NS_ASSERTION(mPresContext->mLayoutPhaseCount[eLayoutPhase_FrameC] == 0,
-                     "painting in the middle of frame construction");
-        break;
-      case eLayoutPhase_Reflow:
-        NS_ASSERTION(mPresContext->mLayoutPhaseCount[eLayoutPhase_Paint] == 0,
-                     "reflowing in the middle of a paint");
-        NS_ASSERTION(mPresContext->mLayoutPhaseCount[eLayoutPhase_Reflow] == 0,
-                     "recurring into reflow");
-        NS_ASSERTION(mPresContext->mLayoutPhaseCount[eLayoutPhase_FrameC] == 0,
-                     "reflowing in the middle of frame construction");
-        break;
-      case eLayoutPhase_FrameC:
-        NS_ASSERTION(mPresContext->mLayoutPhaseCount[eLayoutPhase_Paint] == 0,
-                     "constructing frames in the middle of a paint");
-        NS_ASSERTION(mPresContext->mLayoutPhaseCount[eLayoutPhase_Reflow] == 0,
-                     "constructing frames in the middle of reflow");
-        NS_ASSERTION(mPresContext->mLayoutPhaseCount[eLayoutPhase_FrameC] == 0,
-                     "recurring into frame construction");
-        NS_ASSERTION(!nsContentUtils::IsSafeToRunScript(),
-                     "constructing frames and scripts are not blocked");
-        break;
-      default:
-        break;
-    }
-    ++(mPresContext->mLayoutPhaseCount[mPhase]);
-    ++mCount;
-  }
-
-  void Exit()
-  {
-    NS_ASSERTION(mCount > 0 && mPresContext->mLayoutPhaseCount[mPhase] > 0,
-                 "imbalanced");
-    --(mPresContext->mLayoutPhaseCount[mPhase]);
-    --mCount;
-  }
-
-private:
-  nsPresContext *mPresContext;
-  nsLayoutPhase mPhase;
-  PRUint32 mCount;
-};
-
-#define AUTO_LAYOUT_PHASE_ENTRY_POINT(pc_, phase_) \
-  nsAutoLayoutPhase autoLayoutPhase((pc_), (eLayoutPhase_##phase_))
-#define LAYOUT_PHASE_TEMP_EXIT() \
-  PR_BEGIN_MACRO \
-    autoLayoutPhase.Exit(); \
-  PR_END_MACRO
-#define LAYOUT_PHASE_TEMP_REENTER() \
-  PR_BEGIN_MACRO \
-    autoLayoutPhase.Enter(); \
-  PR_END_MACRO
-
-#else
-
-#define AUTO_LAYOUT_PHASE_ENTRY_POINT(pc_, phase_) \
-  PR_BEGIN_MACRO PR_END_MACRO
-#define LAYOUT_PHASE_TEMP_EXIT() \
-  PR_BEGIN_MACRO PR_END_MACRO
-#define LAYOUT_PHASE_TEMP_REENTER() \
-  PR_BEGIN_MACRO PR_END_MACRO
-
-#endif
 
 #ifdef MOZ_REFLOW_PERF
 

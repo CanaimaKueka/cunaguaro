@@ -39,6 +39,7 @@
 
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource://gre/modules/Services.jsm");
+Cu.import("resource://gre/modules/AddonManager.jsm");
 
 [
   ["AllPagesList", "popup_autocomplete", "cmd_openLocation"],
@@ -297,8 +298,8 @@ var BrowserUI = {
     if (this._activePanel)
       this._activePanel.close();
 
-    // The readOnly state of the field enabled/disabled the VKB
-    let isReadOnly = !(aPanel == AllPagesList && Util.isPortrait() && (willShowPanel || !this._edit.readOnly));
+    // If the keyboard will cover the full screen, we do not want to show it right away.
+    let isReadOnly = (aPanel != AllPagesList || this._isKeyboardFullscreen() || (!willShowPanel && this._edit.readOnly));
     this._edit.readOnly = isReadOnly;
     if (isReadOnly)
       this._edit.blur();
@@ -353,6 +354,24 @@ var BrowserUI = {
       return;
     this._popup = null;
     this._dispatchPopupChanged(false);
+  },
+
+  // Will the on-screen keyboard cover the whole screen when opened?
+  _isKeyboardFullscreen: function _isKeyboardFullscreen() {
+#ifdef ANDROID
+    if (!Util.isPortrait()) {
+      switch (Services.prefs.getIntPref("widget.ime.android.landscape_fullscreen")) {
+        case 1:
+          return true;
+        case -1: {
+          let threshold = Services.prefs.getIntPref("widget.ime.android.fullscreen_threshold");
+          let dpi = Util.displayDPI;
+          return (window.innerHeight * 100 < threshold * dpi);
+        }
+      }
+    }
+#endif
+    return false;
   },
 
   _dispatchPopupChanged: function _dispatchPopupChanged(aVisible) {
@@ -415,11 +434,6 @@ var BrowserUI = {
   get sidebarW() {
     delete this._sidebarW;
     return this._sidebarW = Elements.controls.getBoundingClientRect().width;
-  },
-
-  get starButton() {
-    delete this.starButton;
-    return this.starButton = document.getElementById("tool-star");
   },
 
   sizeControls: function(windowW, windowH) {
@@ -513,15 +527,18 @@ var BrowserUI = {
       DownloadsView.init();
       ConsoleView.init();
 
-      // Pre-start the content process
-      Cc["@mozilla.org/xre/app-info;1"].getService(Ci.nsIXULRuntime)
-          .ensureContentProcess();
+      if (Services.prefs.getBoolPref("browser.tabs.remote")) {
+          // Pre-start the content process
+          Cc["@mozilla.org/xre/app-info;1"].getService(Ci.nsIXULRuntime)
+                                           .ensureContentProcess();
+      }
 
 #ifdef MOZ_SERVICES_SYNC
       // Init the sync system
       WeaveGlue.init();
 #endif
 
+      Services.prefs.addObserver("browser.ui.layout.tablet", BrowserUI, false);
       Services.obs.addObserver(BrowserSearch, "browser-search-engine-modified", false);
       messageManager.addMessageListener("Browser:MozApplicationManifest", OfflineApps);
 
@@ -535,17 +552,14 @@ var BrowserUI = {
       CharsetMenu.init();
 
       // If some add-ons were disabled during during an application update, alert user
-      if (Services.prefs.prefHasUserValue("extensions.disabledAddons")) {
-        let addons = Services.prefs.getCharPref("extensions.disabledAddons").split(",");
-        if (addons.length > 0) {
-          let disabledStrings = Strings.browser.GetStringFromName("alertAddonsDisabled");
-          let label = PluralForm.get(addons.length, disabledStrings).replace("#1", addons.length);
-          let image = "chrome://browser/skin/images/alert-addons-30.png";
+      let addonIDs = AddonManager.getStartupChanges("disabled");
+      if (addonIDs.length > 0) {
+        let disabledStrings = Strings.browser.GetStringFromName("alertAddonsDisabled");
+        let label = PluralForm.get(addonIDs.length, disabledStrings).replace("#1", addonIDs.length);
+        let image = "chrome://browser/skin/images/alert-addons-30.png";
 
-          let alerts = Cc["@mozilla.org/toaster-alerts-service;1"].getService(Ci.nsIAlertsService);
-          alerts.showAlertNotification(image, Strings.browser.GetStringFromName("alertAddons"), label, false, "", null);
-        }
-        Services.prefs.clearUserPref("extensions.disabledAddons");
+        let alerts = Cc["@mozilla.org/toaster-alerts-service;1"].getService(Ci.nsIAlertsService);
+        alerts.showAlertNotification(image, Strings.browser.GetStringFromName("alertAddons"), label, false, "", null);
       }
 
 #ifdef MOZ_UPDATER
@@ -583,9 +597,23 @@ var BrowserUI = {
 
   uninit: function() {
     Services.obs.removeObserver(BrowserSearch, "browser-search-engine-modified");
+    Services.prefs.removeObserver("browser.ui.layout.tablet", BrowserUI);
     messageManager.removeMessageListener("Browser:MozApplicationManifest", OfflineApps);
     ExtensionsView.uninit();
     ConsoleView.uninit();
+  },
+
+  observe: function observe(aSubject, aTopic, aData) {
+    if (aTopic == "nsPref:changed" && aData == "browser.ui.layout.tablet")
+      this.updateTabletLayout();
+  },
+
+  updateTabletLayout: function updateTabletLayout() {
+    let tabletPref = Services.prefs.getIntPref("browser.ui.layout.tablet");
+    if (tabletPref == 1 || (tabletPref == -1 && Util.isTablet()))
+      Elements.urlbarState.setAttribute("tablet", "true");
+    else
+      Elements.urlbarState.removeAttribute("tablet");
   },
 
   update: function(aState) {
@@ -735,16 +763,23 @@ var BrowserUI = {
   updateStar: function() {
     let uri = getBrowser().currentURI;
     if (uri.spec == "about:blank") {
-      this.starButton.removeAttribute("starred");
+      this._setStar(false);
       return;
     }
 
-    PlacesUtils.asyncGetBookmarkIds(uri, function (aItemIds) {
-      if (aItemIds.length)
-        this.starButton.setAttribute("starred", "true");
-      else
-        this.starButton.removeAttribute("starred");
+    PlacesUtils.asyncGetBookmarkIds(uri, function(aItemIds) {
+      this._setStar(aItemIds.length > 0)
     }, this);
+  },
+
+  _setStar: function _setStar(aIsStarred) {
+    let buttons = document.getElementsByClassName("tool-star");
+    for (let i = 0; i < buttons.length; i++) {
+      if (aIsStarred)
+        buttons[i].setAttribute("starred", "true");
+      else
+        buttons[i].removeAttribute("starred");
+    }
   },
 
   newTab: function newTab(aURI, aOwner) {
@@ -839,8 +874,8 @@ var BrowserUI = {
 
   switchTask: function switchTask() {
     try {
-      let phone = Cc["@mozilla.org/phone/support;1"].createInstance(Ci.nsIPhoneSupport);
-      phone.switchTask();
+      let shell = Cc["@mozilla.org/browser/shell-service;1"].createInstance(Ci.nsIShellService);
+      shell.switchTask();
     } catch(e) { }
   },
 
@@ -1020,6 +1055,35 @@ var BrowserUI = {
         return this._domWindowClose(browser);
         break;
       case "DOMLinkAdded":
+        // checks for an icon to use for a web app
+        // apple-touch-icon size is 57px and default size is 16px
+        let rel = json.rel.toLowerCase().split(" ");
+        if (rel.indexOf("icon") != -1) {
+          // We use the sizes attribute if available
+          // see http://www.whatwg.org/specs/web-apps/current-work/multipage/links.html#rel-icon
+          let size = 16;
+          if (json.sizes) {
+            let sizes = json.sizes.toLowerCase().split(" ");
+            sizes.forEach(function(item) {
+              if (item != "any") {
+                let [w, h] = item.split("x");
+                size = Math.max(Math.min(w, h), size);
+              }
+            });
+          }
+          if (size > browser.appIcon.size) {
+            browser.appIcon.href = json.href;
+            browser.appIcon.size = size;
+          }
+        }
+        else if ((rel.indexOf("apple-touch-icon") != -1) && (browser.appIcon.size < 57)) {
+          // XXX should we support apple-touch-icon-precomposed ?
+          // see http://developer.apple.com/safari/library/documentation/appleapplications/reference/safariwebcontent/configuringwebapplications/configuringwebapplications.html
+          browser.appIcon.href = json.href;
+          browser.appIcon.size = 57;
+        }
+
+        // Handle favicon changes
         if (Browser.selectedBrowser == browser)
           this._updateIcon(Browser.selectedBrowser.mIconURL);
         break;
@@ -1092,6 +1156,7 @@ var BrowserUI = {
       case "cmd_quit":
       case "cmd_close":
       case "cmd_menu":
+      case "cmd_showTabs":
       case "cmd_newTab":
       case "cmd_closeTab":
       case "cmd_undoCloseTab":
@@ -1160,8 +1225,7 @@ var BrowserUI = {
       case "cmd_star":
       {
         BookmarkPopup.toggle();
-        if (!this.starButton.hasAttribute("starred"))
-          this.starButton.setAttribute("starred", "true");
+        this._setStar(true);
 
         let bookmarkURI = browser.currentURI;
         PlacesUtils.asyncGetBookmarkIds(bookmarkURI, function (aItemIds) {
@@ -1220,13 +1284,17 @@ var BrowserUI = {
         this.activePanel = RemoteTabsList;
         break;
       case "cmd_quit":
-        GlobalOverlay.goQuitApplication();
+        // Only close one window
+        this._closeOrQuit();
         break;
       case "cmd_close":
         this._closeOrQuit();
         break;
       case "cmd_menu":
         AppMenu.toggle();
+        break;
+      case "cmd_showTabs":
+        TabsPopup.toggle();
         break;
       case "cmd_newTab":
         this.newTab();

@@ -18,7 +18,6 @@ debian/cunaguarorc etc/cunaguaro
 build-cunaguaro/debian/branding/mozicon16.xpm usr/share/cunaguaro/icons/
 build-cunaguaro/debian/branding/mozicon50.xpm usr/share/cunaguaro/icons/
 build-cunaguaro/debian/branding/mozicon128.png usr/share/cunaguaro/icons/
-build-cunaguaro/debian/branding/document.png usr/share/cunaguaro/icons/
 
 debian/cunaguaro.js etc/cunaguaro/pref
 debian/vendor.js usr/share/cunaguaro/defaults/preferences

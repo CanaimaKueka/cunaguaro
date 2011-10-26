@@ -49,10 +49,8 @@
 #include "nsContentCID.h"
 #include "nsIDOMCharacterData.h"
 #include "nsIDOMDocument.h"
-#include "nsPIDOMWindow.h"        
 #include "nsIDOMRange.h"
 #include "nsIDOMNSRange.h"
-#include "nsIDOMWindowInternal.h"
 #include "nsIDOMXULDocument.h"
 #include "nsIEditingSession.h"
 #include "nsIEditor.h"
@@ -62,11 +60,12 @@
 #include "nsIInterfaceRequestorUtils.h"
 #include "nsIPlaintextEditor.h"
 #include "nsIScrollableFrame.h"
-#include "nsISelection2.h"
 #include "nsISelectionPrivate.h"
 #include "nsIServiceManager.h"
 #include "nsTextFragment.h"
 #include "gfxSkipChars.h"
+
+using namespace mozilla::a11y;
 
 static NS_DEFINE_IID(kRangeCID, NS_RANGE_CID);
 
@@ -623,9 +622,9 @@ nsHyperTextAccessible::DOMPointToHypertextOffset(nsINode *aNode,
   }
 
   // From the descendant, go up and get the immediate child of this hypertext
-  nsAccessible *childAccAtOffset = nsnull;
+  nsAccessible* childAccAtOffset = nsnull;
   while (descendantAcc) {
-    nsAccessible *parentAcc = descendantAcc->GetParent();
+    nsAccessible* parentAcc = descendantAcc->Parent();
     if (parentAcc == this) {
       childAccAtOffset = descendantAcc;
       break;
@@ -1154,7 +1153,7 @@ nsHyperTextAccessible::GetTextAttributes(PRBool aIncludeDefAttrs,
     return NS_ERROR_INVALID_ARG;
   }
 
-  PRInt32 accAtOffsetIdx = accAtOffset->GetIndexInParent();
+  PRInt32 accAtOffsetIdx = accAtOffset->IndexInParent();
   PRInt32 startOffset = GetChildOffset(accAtOffsetIdx);
   PRInt32 endOffset = GetChildOffset(accAtOffsetIdx + 1);
   PRInt32 offsetInAcc = aOffset - startOffset;
@@ -1255,19 +1254,18 @@ nsHyperTextAccessible::GetAttributesInternal(nsIPersistentProperties *aAttribute
   }
 
   // For the html landmark elements we expose them like we do aria landmarks to
-  // make AT navigation schemes "just work".
+  // make AT navigation schemes "just work". Note html:header is redundant as
+  // a landmark since it usually contains headings. We're not yet sure how the
+  // web will use html:footer but our best bet right now is as contentinfo.
   if (mContent->Tag() == nsAccessibilityAtoms::nav)
     nsAccUtils::SetAccAttr(aAttributes, nsAccessibilityAtoms::xmlroles,
                            NS_LITERAL_STRING("navigation"));
-  else if (mContent->Tag() == nsAccessibilityAtoms::header) 
-    nsAccUtils::SetAccAttr(aAttributes, nsAccessibilityAtoms::xmlroles,
-                           NS_LITERAL_STRING("banner"));
   else if (mContent->Tag() == nsAccessibilityAtoms::footer) 
     nsAccUtils::SetAccAttr(aAttributes, nsAccessibilityAtoms::xmlroles,
                            NS_LITERAL_STRING("contentinfo"));
   else if (mContent->Tag() == nsAccessibilityAtoms::aside) 
     nsAccUtils::SetAccAttr(aAttributes, nsAccessibilityAtoms::xmlroles,
-                           NS_LITERAL_STRING("note"));
+                           NS_LITERAL_STRING("complementary"));
 
   return  NS_OK;
 }
@@ -1792,8 +1790,7 @@ nsHyperTextAccessible::GetSelections(PRInt16 aType,
   }
 
   if (aRanges) {
-    nsCOMPtr<nsISelection2> selection2(do_QueryInterface(domSel));
-    NS_ENSURE_TRUE(selection2, NS_ERROR_FAILURE);
+    nsCOMPtr<nsISelectionPrivate> privSel(do_QueryInterface(domSel));
 
     nsCOMPtr<nsINode> startNode = GetNode();
     if (peditor) {
@@ -1805,7 +1802,7 @@ nsHyperTextAccessible::GetSelections(PRInt16 aType,
 
     PRUint32 childCount = startNode->GetChildCount();
     nsCOMPtr<nsIDOMNode> startDOMNode(do_QueryInterface(startNode));
-    nsresult rv = selection2->
+    nsresult rv = privSel->
       GetRangesForIntervalCOMArray(startDOMNode, 0, startDOMNode, childCount,
                                    PR_TRUE, aRanges);
     NS_ENSURE_SUCCESS(rv, rv);
@@ -2093,7 +2090,7 @@ nsHyperTextAccessible::InvalidateChildren()
 PRBool
 nsHyperTextAccessible::RemoveChild(nsAccessible* aAccessible)
 {
-  PRInt32 childIndex = aAccessible->GetIndexInParent();
+  PRInt32 childIndex = aAccessible->IndexInParent();
   PRInt32 count = mOffsets.Length() - childIndex;
   if (count > 0)
     mOffsets.RemoveElementsAt(childIndex, count);

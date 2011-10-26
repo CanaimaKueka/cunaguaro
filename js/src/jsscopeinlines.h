@@ -41,6 +41,7 @@
 #define jsscopeinlines_h___
 
 #include <new>
+#include "jsarray.h"
 #include "jsbool.h"
 #include "jscntxt.h"
 #include "jsdbgapi.h"
@@ -221,7 +222,7 @@ Shape::hash() const
     JSDHashNumber hash = 0;
 
     /* Accumulate from least to most random so the low bits are most random. */
-    JS_ASSERT_IF(isMethod(), !rawSetter || rawSetter == js_watch_set);
+    JS_ASSERT_IF(isMethod(), !rawSetter);
     if (rawGetter)
         hash = JS_ROTATE_LEFT32(hash, 4) ^ jsuword(rawGetter);
     if (rawSetter)
@@ -349,12 +350,7 @@ Shape::insertIntoDictionary(js::Shape **dictp)
 inline
 EmptyShape::EmptyShape(JSCompartment *comp, js::Class *aclasp)
   : js::Shape(comp, aclasp)
-{
-#ifdef DEBUG
-    if (comp->rt->meterEmptyShapes())
-        comp->emptyShapes.put(this);
-#endif
-}
+{}
 
 /* static */ inline EmptyShape *
 EmptyShape::getEmptyArgumentsShape(JSContext *cx)
@@ -362,6 +358,35 @@ EmptyShape::getEmptyArgumentsShape(JSContext *cx)
     return ensure(cx, &NormalArgumentsObject::jsClass, &cx->compartment->emptyArgumentsShape);
 }
 
+/* static */ inline EmptyShape *
+EmptyShape::getEmptyBlockShape(JSContext *cx)
+{
+    return ensure(cx, &js_BlockClass, &cx->compartment->emptyBlockShape);
+}
+
+/* static */ inline EmptyShape *
+EmptyShape::getEmptyCallShape(JSContext *cx)
+{
+    return ensure(cx, &js_CallClass, &cx->compartment->emptyCallShape);
+}
+
+/* static */ inline EmptyShape *
+EmptyShape::getEmptyDeclEnvShape(JSContext *cx)
+{
+    return ensure(cx, &js_DeclEnvClass, &cx->compartment->emptyDeclEnvShape);
+}
+
+/* static */ inline EmptyShape *
+EmptyShape::getEmptyEnumeratorShape(JSContext *cx)
+{
+    return ensure(cx, &js_IteratorClass, &cx->compartment->emptyEnumeratorShape);
+}
+
+/* static */ inline EmptyShape *
+EmptyShape::getEmptyWithShape(JSContext *cx)
+{
+    return ensure(cx, &js_WithClass, &cx->compartment->emptyWithShape);
+}
 
 } /* namespace js */
 

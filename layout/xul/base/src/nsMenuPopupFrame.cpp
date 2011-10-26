@@ -74,7 +74,6 @@
 #include "nsContentUtils.h"
 #include "nsCSSFrameConstructor.h"
 #include "nsEventStateManager.h"
-#include "nsIBoxLayout.h"
 #include "nsIPopupBoxObject.h"
 #include "nsPIWindowRoot.h"
 #include "nsIReflowCallback.h"
@@ -86,6 +85,9 @@
 #include "nsIScreenManager.h"
 #include "nsIServiceManager.h"
 #include "nsThemeConstants.h"
+#include "mozilla/Preferences.h"
+
+using namespace mozilla;
 
 PRInt8 nsMenuPopupFrame::sDefaultLevelIsTop = -1;
 
@@ -112,6 +114,7 @@ nsMenuPopupFrame::nsMenuPopupFrame(nsIPresShell* aShell, nsStyleContext* aContex
   mPopupState(ePopupClosed),
   mPopupAlignment(POPUPALIGNMENT_NONE),
   mPopupAnchor(POPUPALIGNMENT_NONE),
+  mConsumeRollupEvent(nsIPopupBoxObject::ROLLUP_DEFAULT),
   mFlipBoth(PR_FALSE),
   mIsOpenChanged(PR_FALSE),
   mIsContextMenu(PR_FALSE),
@@ -119,7 +122,6 @@ nsMenuPopupFrame::nsMenuPopupFrame(nsIPresShell* aShell, nsStyleContext* aContex
   mGeneratedChildren(PR_FALSE),
   mMenuCanOverlapOSBar(PR_FALSE),
   mShouldAutoPosition(PR_TRUE),
-  mConsumeRollupEvent(nsIPopupBoxObject::ROLLUP_DEFAULT),
   mInContentShell(PR_TRUE),
   mIsMenuLocked(PR_FALSE),
   mHFlip(PR_FALSE),
@@ -130,7 +132,7 @@ nsMenuPopupFrame::nsMenuPopupFrame(nsIPresShell* aShell, nsStyleContext* aContex
   if (sDefaultLevelIsTop >= 0)
     return;
   sDefaultLevelIsTop =
-    nsContentUtils::GetBoolPref("ui.panel.default_level_parent", PR_FALSE);
+    Preferences::GetBool("ui.panel.default_level_parent", PR_FALSE);
 } // ctor
 
 
@@ -146,7 +148,7 @@ nsMenuPopupFrame::Init(nsIContent*      aContent,
 
   // lookup if we're allowed to overlap the OS bar (menubar/taskbar) from the
   // look&feel object
-  PRBool tempBool;
+  PRInt32 tempBool;
   presContext->LookAndFeel()->
     GetMetric(nsILookAndFeel::eMetric_MenusCanOverlapOSBar, tempBool);
   mMenuCanOverlapOSBar = tempBool;
@@ -833,12 +835,13 @@ nsMenuPopupFrame::HidePopup(PRBool aDeselectMenu, nsPopupState aNewState)
   // XXX, bug 137033, In Windows, if mouse is outside the window when the menupopup closes, no
   // mouse_enter/mouse_exit event will be fired to clear current hover state, we should clear it manually.
   // This code may not the best solution, but we can leave it here until we find the better approach.
-  nsEventStateManager *esm = PresContext()->EventStateManager();
+  NS_ASSERTION(mContent->IsElement(), "How do we have a non-element?");
+  nsEventStates state = mContent->AsElement()->State();
 
-  nsEventStates state = esm->GetContentState(mContent);
-
-  if (state.HasState(NS_EVENT_STATE_HOVER))
+  if (state.HasState(NS_EVENT_STATE_HOVER)) {
+    nsEventStateManager *esm = PresContext()->EventStateManager();
     esm->SetContentState(nsnull, NS_EVENT_STATE_HOVER);
+  }
 
   nsMenuFrame* menuFrame = GetParentMenu();
   if (menuFrame) {
@@ -1063,6 +1066,7 @@ nsMenuPopupFrame::FlipOrResize(nscoord& aScreenPoint, nscoord aSize,
           aScreenPoint = aScreenEnd - aSize;
         }
         else {
+          aScreenPoint = endpos + aMarginBegin;
           popupSize = aScreenEnd - aScreenPoint;
         }
       }
@@ -1087,7 +1091,22 @@ nsMenuPopupFrame::FlipOrResize(nscoord& aScreenPoint, nscoord aSize,
     }
   }
 
-  return popupSize;
+  // Make sure that the point is within the screen boundaries and that the
+  // size isn't off the edge of the screen. This can happen when a large
+  // positive or negative margin is used.
+  if (aScreenPoint < aScreenBegin) {
+    aScreenPoint = aScreenBegin;
+  }
+  if (aScreenPoint > aScreenEnd) {
+    aScreenPoint = aScreenEnd - aSize;
+  }
+
+  // If popupSize ended up being negative, or the original size was actually
+  // smaller than the calculated popup size, just use the original size instead.
+  if (popupSize <= 0 || aSize < popupSize) {
+    popupSize = aSize;
+  }
+  return NS_MIN(popupSize, aScreenEnd - aScreenPoint);
 }
 
 nsresult
@@ -1160,10 +1179,8 @@ nsMenuPopupFrame::SetPopupPosition(nsIFrame* aAnchorFrame, PRBool aIsMove)
 
   nsDeviceContext* devContext = presContext->DeviceContext();
   nscoord offsetForContextMenu = 0;
-  // if mScreenXPos and mScreenYPos are -1, then we are anchored. If they
-  // have other values, then the popup appears unanchored at that screen
-  // coordinate.
-  if (mScreenXPos == -1 && mScreenYPos == -1) {
+
+  if (IsAnchored()) {
     // if we are anchored, there are certain things we don't want to do when
     // repositioning the popup to fit on the screen, such as end up positioned
     // over the anchor, for instance a popup appearing over the menu label.

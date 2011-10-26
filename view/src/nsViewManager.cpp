@@ -48,10 +48,7 @@
 #include "nsView.h"
 #include "nsISupportsArray.h"
 #include "nsCOMPtr.h"
-#include "nsIServiceManager.h"
 #include "nsGUIEvent.h"
-#include "nsIPrefBranch.h"
-#include "nsIPrefService.h"
 #include "nsRegion.h"
 #include "nsHashtable.h"
 #include "nsCOMArray.h"
@@ -62,8 +59,6 @@
 #include "nsIPresShell.h"
 #include "nsPresContext.h"
 #include "nsEventStateManager.h"
-
-static NS_DEFINE_IID(kRegionCID, NS_REGION_CID);
 
 PRTime gFirstPaintTimestamp = 0; // Timestamp of the first paint event
 /**
@@ -167,28 +162,6 @@ nsViewManager::~nsViewManager()
 }
 
 NS_IMPL_ISUPPORTS1(nsViewManager, nsIViewManager)
-
-nsresult
-nsViewManager::CreateRegion(nsIRegion* *result)
-{
-  nsresult rv;
-
-  if (!mRegionFactory) {
-    mRegionFactory = do_GetClassObject(kRegionCID, &rv);
-    if (NS_FAILED(rv)) {
-      *result = nsnull;
-      return rv;
-    }
-  }
-
-  nsIRegion* region = nsnull;
-  rv = CallCreateInstance(mRegionFactory.get(), &region);
-  if (NS_SUCCEEDED(rv)) {
-    rv = region->Init();
-    *result = region;
-  }
-  return rv;
-}
 
 // We don't hold a reference to the presentation context because it
 // holds a reference to us.
@@ -344,16 +317,32 @@ static nsRegion ConvertRegionBetweenViews(const nsRegion& aIn,
   return out;
 }
 
-static nsView* GetDisplayRootFor(nsView* aView)
+nsIView* nsIViewManager::GetDisplayRootFor(nsIView* aView)
 {
-  nsView *displayRoot = aView;
+  nsIView *displayRoot = aView;
   for (;;) {
-    nsView *displayParent = displayRoot->GetParent();
+    nsIView *displayParent = displayRoot->GetParent();
     if (!displayParent)
       return displayRoot;
 
     if (displayRoot->GetFloating() && !displayParent->GetFloating())
       return displayRoot;
+
+    // If we have a combobox dropdown popup within a panel popup, both the view
+    // for the dropdown popup and its parent will be floating, so we need to
+    // distinguish this situation. We do this by looking for a widget. Any view
+    // with a widget is a display root, except for plugins.
+    nsIWidget* widget = displayRoot->GetWidget();
+    if (widget) {
+      nsWindowType type;
+      widget->GetWindowType(type);
+      if (type == eWindowType_popup) {
+        NS_ASSERTION(displayRoot->GetFloating() && displayParent->GetFloating(),
+          "this should only happen with floating views that have floating parents");
+        return displayRoot;
+      }
+    }
+
     displayRoot = displayParent;
   }
 }
@@ -621,7 +610,7 @@ ShouldIgnoreInvalidation(nsViewManager* aVM)
 {
   while (aVM) {
     nsIViewObserver* vo = aVM->GetViewObserver();
-    if (vo && vo->ShouldIgnoreInvalidation()) {
+    if (!vo || vo->ShouldIgnoreInvalidation()) {
       return PR_TRUE;
     }
     nsView* view = aVM->GetRootViewImpl()->GetParent();
@@ -658,7 +647,7 @@ NS_IMETHODIMP nsViewManager::UpdateViewNoSuppression(nsIView *aView,
     return NS_OK;
   }
 
-  nsView* displayRoot = GetDisplayRootFor(view);
+  nsView* displayRoot = static_cast<nsView*>(GetDisplayRootFor(view));
   nsViewManager* displayRootVM = displayRoot->GetViewManager();
   // Propagate the update to the displayRoot, since iframes, for example,
   // can overlap each other and be translucent.  So we have to possibly
@@ -1011,7 +1000,7 @@ NS_IMETHODIMP nsViewManager::DispatchEvent(nsGUIEvent *aEvent,
         if (NS_IsEventUsingCoordinates(aEvent)) {
           // will dispatch using coordinates. Pretty bogus but it's consistent
           // with what presshell does.
-          view = GetDisplayRootFor(baseView);
+          view = static_cast<nsView*>(GetDisplayRootFor(baseView));
         }
 
         if (nsnull != view) {

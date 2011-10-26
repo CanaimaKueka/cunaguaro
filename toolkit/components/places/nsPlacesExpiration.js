@@ -212,8 +212,8 @@ const EXPIRATION_QUERIES = {
   // unique URIs limit.
   QUERY_FIND_VISITS_TO_EXPIRE: {
     sql: "INSERT INTO expiration_notify "
-       +   "(v_id, url, visit_date, expected_results) "
-       + "SELECT v.id, h.url, v.visit_date, :limit_visits "
+       +   "(v_id, url, guid, visit_date, expected_results) "
+       + "SELECT v.id, h.url, h.guid, v.visit_date, :limit_visits "
        + "FROM moz_historyvisits v "
        + "JOIN moz_places h ON h.id = v.place_id "
        + "WHERE (SELECT COUNT(*) FROM moz_places) > :max_uris "
@@ -237,8 +237,8 @@ const EXPIRATION_QUERIES = {
   // run this query in such a case, but just delete URIs.
   QUERY_FIND_URIS_TO_EXPIRE: {
     sql: "INSERT INTO expiration_notify "
-       +   "(p_id, url, visit_date, expected_results) "
-       + "SELECT h.id, h.url, h.last_visit_date, :limit_uris "
+       +   "(p_id, url, guid, visit_date, expected_results) "
+       + "SELECT h.id, h.url, h.guid, h.last_visit_date, :limit_uris "
        + "FROM moz_places h "
        + "LEFT JOIN moz_historyvisits v ON h.id = v.place_id "
        + "LEFT JOIN moz_bookmarks b ON h.id = b.fk "
@@ -388,7 +388,7 @@ const EXPIRATION_QUERIES = {
   // If p_id is set whole_entry = 1, then we have expired the full page.
   // Either p_id or v_id are always set.
   QUERY_SELECT_NOTIFICATIONS: {
-    sql: "SELECT url, MAX(visit_date) AS visit_date, "
+    sql: "SELECT url, guid, MAX(visit_date) AS visit_date, "
        +        "MAX(IFNULL(MIN(p_id, 1), MIN(v_id, 0))) AS whole_entry, "
        +        "expected_results "
        + "FROM expiration_notify "
@@ -449,6 +449,7 @@ function nsPlacesExpiration()
     + ", v_id INTEGER "
     + ", p_id INTEGER "
     + ", url TEXT NOT NULL "
+    + ", guid TEXT NOT NULL "
     + ", visit_date INTEGER "
     + ", expected_results INTEGER NOT NULL "
     + ") ");
@@ -653,10 +654,12 @@ nsPlacesExpiration.prototype = {
         this._expectedResultsCount--;
 
       let uri = Services.io.newURI(row.getResultByName("url"), null, null);
+      let guid = row.getResultByName("guid");
       let visitDate = row.getResultByName("visit_date");
       let wholeEntry = row.getResultByName("whole_entry");
       // Dispatch expiration notifications to history.
-      this._hsn.notifyOnPageExpired(uri, visitDate, wholeEntry);
+      this._hsn.notifyOnPageExpired(uri, visitDate, wholeEntry, guid,
+                                    Ci.nsINavHistoryObserver.REASON_EXPIRED);
     }
   },
 
@@ -666,6 +669,8 @@ nsPlacesExpiration.prototype = {
                    aError.result + "', '" + aError.message + "'");
   },
 
+  // Number of expiration steps needed to reach a CLEAN status.
+  _telemetrySteps: 1,
   handleCompletion: function PEX_handleCompletion(aReason)
   {
     if (aReason == Ci.mozIStorageStatementCallback.REASON_FINISHED) {
@@ -673,8 +678,29 @@ nsPlacesExpiration.prototype = {
         // Adapt the aggressivity of steps based on the status of history.
         // A dirty history will return all the entries we are expecting bringing
         // our countdown to zero, while a clean one will not.
+        let oldStatus = this.status;
         this.status = this._expectedResultsCount == 0 ? STATUS.DIRTY
                                                       : STATUS.CLEAN;
+
+        // Collect or send telemetry data.
+        if (this.status == STATUS.DIRTY) {
+          this._telemetrySteps++;
+        }
+        else {
+          // Avoid reporting the common cases where the database is clean, or
+          // a single step is needed.
+          if (oldStatus == STATUS.DIRTY) {
+            try {
+              Services.telemetry
+                      .getHistogramById("PLACES_EXPIRATION_STEPS_TO_CLEAN")
+                      .add(this._telemetrySteps);
+            } catch (ex) {
+              Components.utils.reportError("Unable to report telemetry.");
+            }
+          }
+          this._telemetrySteps = 1;
+        }
+
         delete this._expectedResultsCount;
       }
 
@@ -738,17 +764,14 @@ nsPlacesExpiration.prototype = {
     catch(e) {}
 
     if (this._urisLimit < 0) {
-      // PR_GetPhysicalMemorySize sometimes returns garbage (bug 660036).
-      // If the return value is greater than MEMSIZE_MAX_BYTES, assume it is
-      // garbage and use MEMSIZE_FALLBACK_BYTES instead.  Must stay in sync
-      // with the code in nsNavHistory.cpp.
-      const MEMSIZE_MAX_BYTES = 137438953472; // 128 G
+      // If physical memory size is not available, use MEMSIZE_FALLBACK_BYTES
+      // instead.  Must stay in sync with the code in nsNavHistory.cpp.
       const MEMSIZE_FALLBACK_BYTES = 268435456; // 256 M
 
       // The preference did not exist or has a negative value, so we calculate a
       // limit based on hardware.
       let memsize = this._sys.getProperty("memsize"); // Memory size in bytes.
-      if (memsize <= 0 || memsize > MEMSIZE_MAX_BYTES)
+      if (memsize <= 0)
         memsize = MEMSIZE_FALLBACK_BYTES;
 
       let cpucount = this._sys.getProperty("cpucount"); // CPU count.

@@ -119,6 +119,9 @@ static PRLogModuleInfo* gMediaElementEventsLog;
 #include "nsIChannelPolicy.h"
 #include "nsChannelPolicy.h"
 
+#include "mozilla/Preferences.h"
+
+using namespace mozilla;
 using namespace mozilla::dom;
 using namespace mozilla::layers;
 
@@ -396,7 +399,7 @@ NS_INTERFACE_MAP_END_INHERITING(nsGenericHTMLElement)
 NS_IMPL_URI_ATTR(nsHTMLMediaElement, Src, src)
 NS_IMPL_BOOL_ATTR(nsHTMLMediaElement, Controls, controls)
 NS_IMPL_BOOL_ATTR(nsHTMLMediaElement, Autoplay, autoplay)
-NS_IMPL_STRING_ATTR(nsHTMLMediaElement, Preload, preload)
+NS_IMPL_ENUM_ATTR_DEFAULT_VALUE(nsHTMLMediaElement, Preload, preload, NULL)
 
 /* readonly attribute nsIDOMHTMLMediaElement mozAutoplayEnabled; */
 NS_IMETHODIMP nsHTMLMediaElement::GetMozAutoplayEnabled(PRBool *aAutoplayEnabled)
@@ -628,18 +631,9 @@ static PRBool HasSourceChildren(nsIContent *aElement)
   return PR_FALSE;
 }
 
-// Returns true if aElement has a src attribute, or a <source> child.
-static PRBool HasPotentialResource(nsIContent *aElement)
-{
-  nsAutoString src;
-  if (aElement->GetAttr(kNameSpaceID_None, nsGkAtoms::src, src))
-    return PR_TRUE;
-  return HasSourceChildren(aElement);
-}
-
 void nsHTMLMediaElement::SelectResource()
 {
-  if (!HasPotentialResource(this)) {
+  if (!HasAttr(kNameSpaceID_None, nsGkAtoms::src) && !HasSourceChildren(this)) {
     // The media element has neither a src attribute nor any source
     // element children, abort the load.
     mNetworkState = nsIDOMHTMLMediaElement::NETWORK_EMPTY;
@@ -838,7 +832,7 @@ void nsHTMLMediaElement::ResumeLoad(PreloadAction aAction)
 
 static PRBool IsAutoplayEnabled()
 {
-  return nsContentUtils::GetBoolPref("media.autoplay.enabled");
+  return Preferences::GetBool("media.autoplay.enabled");
 }
 
 void nsHTMLMediaElement::UpdatePreloadAction()
@@ -854,10 +848,12 @@ void nsHTMLMediaElement::UpdatePreloadAction()
     // Find the appropriate preload action by looking at the attribute.
     const nsAttrValue* val = mAttrsAndChildren.GetAttr(nsGkAtoms::preload,
                                                        kNameSpaceID_None);
-    PRUint32 preloadDefault = nsContentUtils::GetIntPref("media.preload.default",
-                            nsHTMLMediaElement::PRELOAD_ATTR_METADATA);
-    PRUint32 preloadAuto = nsContentUtils::GetIntPref("media.preload.auto",
-                            nsHTMLMediaElement::PRELOAD_ENOUGH);
+    PRUint32 preloadDefault =
+      Preferences::GetInt("media.preload.default",
+                          nsHTMLMediaElement::PRELOAD_ATTR_METADATA);
+    PRUint32 preloadAuto =
+      Preferences::GetInt("media.preload.auto",
+                          nsHTMLMediaElement::PRELOAD_ENOUGH);
     if (!val) {
       // Attribute is not set. Use the preload action specified by the 
       // media.preload.default pref, or just preload metadata if not present.
@@ -1137,6 +1133,19 @@ NS_IMETHODIMP nsHTMLMediaElement::GetDuration(double *aDuration)
   *aDuration = mDecoder ? mDecoder->GetDuration() : std::numeric_limits<double>::quiet_NaN();
   return NS_OK;
 }
+
+/* readonly attribute nsIDOMHTMLTimeRanges seekable; */
+NS_IMETHODIMP nsHTMLMediaElement::GetSeekable(nsIDOMTimeRanges** aSeekable)
+{
+  nsTimeRanges* ranges = new nsTimeRanges();
+  NS_ADDREF(*aSeekable = ranges);
+
+  if (mDecoder && mReadyState > nsIDOMHTMLMediaElement::HAVE_NOTHING) {
+    mDecoder->GetSeekable(ranges);
+  }
+  return NS_OK;
+}
+
 
 /* readonly attribute boolean paused; */
 NS_IMETHODIMP nsHTMLMediaElement::GetPaused(PRBool *aPaused)
@@ -1536,7 +1545,7 @@ static const char* gRawCodecs[] = {
 
 static PRBool IsRawEnabled()
 {
-  return nsContentUtils::GetBoolPref("media.raw.enabled");
+  return Preferences::GetBool("media.raw.enabled");
 }
 
 static PRBool IsRawType(const nsACString& aType)
@@ -1568,7 +1577,7 @@ char const *const nsHTMLMediaElement::gOggCodecs[3] = {
 bool
 nsHTMLMediaElement::IsOggEnabled()
 {
-  return nsContentUtils::GetBoolPref("media.ogg.enabled");
+  return Preferences::GetBool("media.ogg.enabled");
 }
 
 bool
@@ -1603,7 +1612,7 @@ char const *const nsHTMLMediaElement::gWaveCodecs[2] = {
 bool
 nsHTMLMediaElement::IsWaveEnabled()
 {
-  return nsContentUtils::GetBoolPref("media.wave.enabled");
+  return Preferences::GetBool("media.wave.enabled");
 }
 
 bool
@@ -1635,7 +1644,7 @@ char const *const nsHTMLMediaElement::gWebMCodecs[4] = {
 bool
 nsHTMLMediaElement::IsWebMEnabled()
 {
-  return nsContentUtils::GetBoolPref("media.webm.enabled");
+  return Preferences::GetBool("media.webm.enabled");
 }
 
 bool
@@ -1829,7 +1838,7 @@ nsresult nsHTMLMediaElement::InitializeDecoderAsClone(nsMediaDecoder* aOriginal)
   double duration = aOriginal->GetDuration();
   if (duration >= 0) {
     decoder->SetDuration(duration);
-    decoder->SetSeekable(aOriginal->GetSeekable());
+    decoder->SetSeekable(aOriginal->IsSeekable());
   }
 
   nsMediaStream* stream = originalStream->CloneData(decoder);
@@ -1991,11 +2000,11 @@ void nsHTMLMediaElement::NetworkError()
 
 void nsHTMLMediaElement::DecodeError()
 {
+  if (mDecoder) {
+    mDecoder->Shutdown();
+    mDecoder = nsnull;
+  }
   if (mIsLoadingFromSourceChildren) {
-    if (mDecoder) {
-      mDecoder->Shutdown();
-      mDecoder = nsnull;
-    }
     mError = nsnull;
     if (mSourceLoadCandidate) {
       DispatchAsyncSourceError(mSourceLoadCandidate);
@@ -2038,6 +2047,11 @@ void nsHTMLMediaElement::PlaybackEnded()
   // We changed the state of IsPlaybackEnded which can affect AddRemoveSelfReference
   AddRemoveSelfReference();
 
+  if (mDecoder && mDecoder->IsInfinite()) {
+    LOG(PR_LOG_DEBUG, ("%p, got duration by reaching the end of the stream", this));
+    DispatchAsyncEvent(NS_LITERAL_STRING("durationchange"));
+  }
+
   FireTimeUpdate(PR_FALSE);
   DispatchAsyncEvent(NS_LITERAL_STRING("ended"));
 }
@@ -2059,6 +2073,7 @@ void nsHTMLMediaElement::SeekCompleted()
 
 void nsHTMLMediaElement::DownloadSuspended()
 {
+  DispatchAsyncEvent(NS_LITERAL_STRING("progress"));
   if (mBegun) {
     mNetworkState = nsIDOMHTMLMediaElement::NETWORK_IDLE;
     AddRemoveSelfReference();
@@ -2083,8 +2098,7 @@ void nsHTMLMediaElement::DownloadStalled()
 
 PRBool nsHTMLMediaElement::ShouldCheckAllowOrigin()
 {
-  return nsContentUtils::GetBoolPref("media.enforce_same_site_origin",
-                                     PR_TRUE);
+  return Preferences::GetBool("media.enforce_same_site_origin", PR_TRUE);
 }
 
 void nsHTMLMediaElement::UpdateReadyStateForData(NextFrameStatus aNextFrame)

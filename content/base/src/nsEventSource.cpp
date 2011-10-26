@@ -57,6 +57,10 @@
 #include "nsICharsetConverterManager.h"
 #include "nsIChannelPolicy.h"
 #include "nsIContentSecurityPolicy.h"
+#include "nsContentUtils.h"
+#include "mozilla/Preferences.h"
+
+using namespace mozilla;
 
 #define REPLACEMENT_CHAR     (PRUnichar)0xFFFD
 #define BOM_CHAR             (PRUnichar)0xFEFF
@@ -296,8 +300,8 @@ nsEventSource::Init(nsIPrincipal* aPrincipal,
   mOrigin = origin;
 
   mReconnectionTime =
-    nsContentUtils::GetIntPref("dom.server-events.default-reconnection-time",
-                               DEFAULT_RECONNECTION_TIME_VALUE);
+    Preferences::GetInt("dom.server-events.default-reconnection-time",
+                        DEFAULT_RECONNECTION_TIME_VALUE);
 
   nsCOMPtr<nsICharsetConverterManager> convManager =
     do_GetService(NS_CHARSETCONVERTERMANAGER_CONTRACTID, &rv);
@@ -775,7 +779,7 @@ nsEventSource::GetInterface(const nsIID & aIID,
 PRBool
 nsEventSource::PrefEnabled()
 {
-  return nsContentUtils::GetBoolPref("dom.server-events.enabled", PR_FALSE);
+  return Preferences::GetBool("dom.server-events.enabled", PR_FALSE);
 }
 
 nsresult

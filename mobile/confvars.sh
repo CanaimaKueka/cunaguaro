@@ -38,7 +38,7 @@
 MOZ_APP_NAME=fennec
 MOZ_APP_UA_NAME=Fennec
 
-MOZ_APP_VERSION=6.0.1
+MOZ_APP_VERSION=8.0
 
 MOZ_BRANDING_DIRECTORY=mobile/branding/unofficial
 MOZ_OFFICIAL_BRANDING_DIRECTORY=mobile/branding/official
@@ -53,10 +53,12 @@ if test "$LIBXUL_SDK"; then
 MOZ_XULRUNNER=1
 else
 MOZ_XULRUNNER=
-MOZ_MORK=
 MOZ_PLACES=1
 fi
 
 # Needed for building our components as part of libxul
 MOZ_APP_COMPONENT_LIBS="browsercomps"
 MOZ_APP_COMPONENT_INCLUDE=nsBrowserComponents.h
+
+# use custom widget for html:select
+MOZ_USE_NATIVE_POPUP_WINDOWS=1

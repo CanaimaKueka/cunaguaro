@@ -60,18 +60,23 @@ ENABLE_CXX_EXCEPTIONS=1
 OS_COMPILE_CFLAGS = $(OS_CPPFLAGS)
 OS_COMPILE_CXXFLAGS = $(OS_CPPFLAGS)
 
-LOCAL_INCLUDES = -I$(srcdir)/../../include -I$(srcdir)/.. -I"$(DXSDK_DIR)/include"
+LOCAL_INCLUDES = \
+ -I$(srcdir)/../../include \
+ -I$(srcdir)/.. \
+ -I"$(DXSDK_DIR)/include" \
+ -I"$(MOZ_DIRECTX_SDK_PATH)/include" \
+
 
 VPATH += $(srcdir)/..
 VPATH += $(srcdir)/../compiler
 VPATH += $(srcdir)/../compiler/preprocessor
 VPATH += $(srcdir)/../common
-VPATH += $(srcdir)/geometry
 
 # Translator/compiler first
 
 CPPSRCS = \
 	Compiler.cpp \
+        DetectRecursion.cpp \
         InfoSink.cpp \
         Initialize.cpp \
         InitializeDll.cpp \
@@ -128,8 +133,6 @@ endif
 
 CPPSRCS	+= \
 	debug.cpp \
-	IndexDataManager.cpp \
-	VertexDataManager.cpp \
 	Blit.cpp \
 	Buffer.cpp \
 	Context.cpp \
@@ -154,6 +157,8 @@ DEFFILE = $(srcdir)/libGLESv2.def
 
 include $(topsrcdir)/config/rules.mk
 
-EXTRA_DSO_LDOPTS = "$(MOZ_DIRECTX_SDK_PATH)/lib/x86/d3d9.lib" \
-                   "$(MOZ_DIRECTX_SDK_PATH)/lib/x86/d3dx9.lib" \
-		   "$(MOZ_DIRECTX_SDK_PATH)/lib/x86/D3DCompiler.lib"
+EXTRA_DSO_LDOPTS = "$(MOZ_DIRECTX_SDK_PATH)/lib/$(MOZ_DIRECTX_SDK_CPU_SUFFIX)/d3d9.lib" \
+                   "$(MOZ_DIRECTX_SDK_PATH)/lib/$(MOZ_DIRECTX_SDK_CPU_SUFFIX)/d3dx9.lib" \
+		   "$(MOZ_DIRECTX_SDK_PATH)/lib/$(MOZ_DIRECTX_SDK_CPU_SUFFIX)/D3DCompiler.lib"
+
+EXTRA_DSO_LDOPTS += $(MOZALLOC_LIB)

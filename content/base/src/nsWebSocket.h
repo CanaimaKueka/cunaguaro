@@ -50,6 +50,7 @@
 #include "nsIDOMEventListener.h"
 #include "nsDOMEventTargetWrapperCache.h"
 #include "nsAutoPtr.h"
+#include "nsIDOMDOMStringList.h"
 
 #define DEFAULT_WS_SCHEME_PORT  80
 #define DEFAULT_WSS_SCHEME_PORT 443
@@ -87,18 +88,13 @@ public:
 
   // nsIDOMEventTarget
   NS_IMETHOD AddEventListener(const nsAString& aType,
-                              nsIDOMEventListener* aListener,
-                              PRBool aUseCapture);
-  NS_IMETHOD RemoveEventListener(const nsAString& aType,
-                                 nsIDOMEventListener* aListener,
-                                 PRBool aUseCapture);
-
-  // nsIDOMNSEventTarget
-  NS_IMETHOD AddEventListener(const nsAString& aType,
                               nsIDOMEventListener *aListener,
                               PRBool aUseCapture,
                               PRBool aWantsUntrusted,
                               PRUint8 optional_argc);
+  NS_IMETHOD RemoveEventListener(const nsAString& aType,
+                                 nsIDOMEventListener* aListener,
+                                 PRBool aUseCapture);
 
   // Determine if preferences allow WebSocket
   static PRBool PrefEnabled();
@@ -109,12 +105,12 @@ public:
 
 protected:
   nsresult ParseURL(const nsString& aURL);
-  nsresult SetProtocol(const nsString& aProtocol);
   nsresult EstablishConnection();
 
   nsresult CreateAndDispatchSimpleEvent(const nsString& aName);
   nsresult CreateAndDispatchMessageEvent(const nsACString& aData);
-  nsresult CreateAndDispatchCloseEvent(PRBool aWasClean);
+  nsresult CreateAndDispatchCloseEvent(PRBool aWasClean, PRUint16 aCode,
+                                       const nsString &aReason);
 
   // called from mConnection accordingly to the situation
   void SetReadyState(PRUint16 aNewReadyState);
@@ -141,13 +137,20 @@ protected:
   PRPackedBool mCheckMustKeepAlive;
   PRPackedBool mTriggeredCloseEvent;
 
+  nsCString mClientReason;
+  PRUint16  mClientReasonCode;
+  nsString  mServerReason;
+  PRUint16  mServerReasonCode;
+
   nsCString mAsciiHost;  // hostname
   PRUint32  mPort;
   nsCString mResource; // [filepath[?query]]
   nsString  mUTF16Origin;
   
   nsCOMPtr<nsIURI> mURI;
-  nsCString mProtocol;
+  nsCString mRequestedProtocolList;
+  nsCString mEstablishedProtocol;
+  nsCString mEstablishedExtensions;
 
   PRUint16 mReadyState;
 

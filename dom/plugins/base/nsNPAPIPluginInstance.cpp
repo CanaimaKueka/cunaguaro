@@ -59,6 +59,7 @@
 #include "nsPluginStreamListenerPeer.h"
 #include "nsSize.h"
 #include "nsNetCID.h"
+#include "nsIContent.h"
 
 using namespace mozilla;
 using namespace mozilla::plugins::parent;
@@ -81,14 +82,13 @@ nsNPAPIPluginInstance::nsNPAPIPluginInstance(nsNPAPIPlugin* plugin)
     mWindowless(PR_FALSE),
     mWindowlessLocal(PR_FALSE),
     mTransparent(PR_FALSE),
-    mCached(PR_FALSE),
     mUsesDOMForCursor(PR_FALSE),
     mInPluginInitCall(PR_FALSE),
     mPlugin(plugin),
     mMIMEType(nsnull),
     mOwner(nsnull),
     mCurrentPluginEvent(nsnull),
-#if defined(MOZ_X11) || defined(XP_WIN)
+#if defined(MOZ_X11) || defined(XP_WIN) || defined(XP_MACOSX)
     mUsePluginLayersPref(PR_TRUE)
 #else
     mUsePluginLayersPref(PR_FALSE)
@@ -104,7 +104,7 @@ nsNPAPIPluginInstance::nsNPAPIPluginInstance(nsNPAPIPlugin* plugin)
   nsCOMPtr<nsIPrefBranch> prefs(do_GetService(NS_PREFSERVICE_CONTRACTID));
   if (prefs) {
     PRBool useLayersPref;
-    nsresult rv = prefs->GetBoolPref("mozilla.plugins.use_layers", &useLayersPref);
+    nsresult rv = prefs->GetBoolPref("plugins.use_layers", &useLayersPref);
     if (NS_SUCCEEDED(rv))
       mUsePluginLayersPref = useLayersPref;
   }
@@ -127,12 +127,6 @@ nsNPAPIPluginInstance::Destroy()
 {
   Stop();
   mPlugin = nsnull;
-}
-
-TimeStamp
-nsNPAPIPluginInstance::LastStopTime()
-{
-  return mStopTime;
 }
 
 nsresult nsNPAPIPluginInstance::Initialize(nsIPluginInstanceOwner* aOwner, const char* aMIMEType)
@@ -193,7 +187,6 @@ nsresult nsNPAPIPluginInstance::Stop()
   {
     AsyncCallbackAutoLock lock;
     mRunning = DESTROYING;
-    mStopTime = TimeStamp::Now();
   }
 
   OnPluginDestroy(&mNPP);
@@ -596,15 +589,6 @@ nsresult nsNPAPIPluginInstance::HandleEvent(void* event, PRInt16* result)
 
 nsresult nsNPAPIPluginInstance::GetValueFromPlugin(NPPVariable variable, void* value)
 {
-#if (MOZ_PLATFORM_MAEMO == 5)
-  // The maemo flash plugin does not remember this.  It sets the
-  // value, but doesn't support the get value.
-  if (variable == NPPVpluginWindowlessLocalBool) {
-    *(NPBool*)value = mWindowlessLocal;
-    return NS_OK;
-  }
-#endif
-
   if (!mPlugin || !mPlugin->GetLibrary())
     return NS_ERROR_FAILURE;
 
@@ -816,20 +800,6 @@ nsNPAPIPluginInstance::DefineJavaProperties()
   if (!ok)
     return NS_ERROR_FAILURE;
 
-  return NS_OK;
-}
-
-nsresult
-nsNPAPIPluginInstance::SetCached(PRBool aCache)
-{
-  mCached = aCache;
-  return NS_OK;
-}
-
-nsresult
-nsNPAPIPluginInstance::ShouldCache(PRBool* shouldCache)
-{
-  *shouldCache = mCached;
   return NS_OK;
 }
 

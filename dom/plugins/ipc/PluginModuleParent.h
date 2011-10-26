@@ -90,7 +90,8 @@ protected:
 
     virtual PPluginIdentifierParent*
     AllocPPluginIdentifier(const nsCString& aString,
-                           const int32_t& aInt);
+                           const int32_t& aInt,
+                           const bool& aTemporary);
 
     virtual bool
     DeallocPPluginIdentifier(PPluginIdentifierParent* aActor);
@@ -136,8 +137,14 @@ public:
         return !IsOnCxxStack();
     }
 
-    PPluginIdentifierParent*
-    GetIdentifierForNPIdentifier(NPIdentifier aIdentifier);
+    /**
+     * Get an identifier actor for this NPIdentifier. If this is a temporary
+     * identifier, the temporary refcount is increased by one. This method
+     * is intended only for use by StackIdentifier and the scriptable
+     * Enumerate hook.
+     */
+    PluginIdentifierParent*
+    GetIdentifierForNPIdentifier(NPP npp, NPIdentifier aIdentifier);
 
     void ProcessRemoteNativeEventsInRPCCall();
 
@@ -202,6 +209,10 @@ protected:
 
     NS_OVERRIDE virtual bool
     RecvGetNativeCursorsSupported(bool* supported);
+
+    NS_OVERRIDE virtual bool
+    RecvNPN_SetException(PPluginScriptableObjectParent* aActor,
+                         const nsCString& aMessage);
 
     static PluginInstanceParent* InstCast(NPP instance);
     static BrowserStreamParent* StreamCast(NPP instance, NPStream* s);

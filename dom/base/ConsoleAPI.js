@@ -83,6 +83,10 @@ ConsoleAPI.prototype = {
       trace: function CA_trace() {
         self.notifyObservers(id, "trace", self.getStackTrace());
       },
+      // Displays an interactive listing of all the properties of an object.
+      dir: function CA_dir() {
+        self.notifyObservers(id, "dir", arguments);
+      },
       __exposedProps__: {
         log: "r",
         info: "r",
@@ -90,29 +94,34 @@ ConsoleAPI.prototype = {
         error: "r",
         debug: "r",
         trace: "r",
+        dir: "r"
       }
     };
 
     // We need to return an actual content object here, instead of a wrapped
     // chrome object. This allows things like console.log.bind() to work.
-    let sandbox = Cu.Sandbox(aWindow);
-    let contentObject = Cu.evalInSandbox(
-        "(function(x) {\
-          var bind = Function.bind;\
-          var obj = {\
-            log: bind.call(x.log, x),\
-            info: bind.call(x.info, x),\
-            warn: bind.call(x.warn, x),\
-            error: bind.call(x.error, x),\
-            debug: bind.call(x.debug, x),\
-            trace: bind.call(x.trace, x),\
-            __noSuchMethod__: function() {}\
-          };\
-          Object.defineProperty(obj, '__mozillaConsole__', { value: true });\
-          return obj;\
-        })", sandbox)(chromeObject);
+    let contentObj = Cu.createObjectIn(aWindow);
+    function genPropDesc(fun) {
+      return { enumerable: true, configurable: true, writable: true,
+               value: chromeObject[fun].bind(chromeObject) };
+    }
+    const properties = {
+      log: genPropDesc('log'),
+      info: genPropDesc('info'),
+      warn: genPropDesc('warn'),
+      error: genPropDesc('error'),
+      debug: genPropDesc('debug'),
+      trace: genPropDesc('trace'),
+      dir: genPropDesc('dir'),
+      __noSuchMethod__: { enumerable: true, configurable: true, writable: true,
+                          value: function() {} },
+      __mozillaConsole__: { value: true }
+    };
 
-      return contentObject;
+    Object.defineProperties(contentObj, properties);
+    Cu.makeObjectPropsNormal(contentObj);
+
+    return contentObj;
   },
 
   /**
