@@ -1,4 +1,10 @@
-cunaguaro (8.0~b4-1~bpo60+1) UNRELEASED; urgency=low
+cunaguaro (8.0~b4-1) stable; urgency=low
+
+  * Versión 8.0~b4-1 de Cunaguaro para Canaima GNU/Linux
+
+ -- Mike Hommey <glandium@debian.org>  Fri, 21 Oct 2011 16:18:38 +0000
+
+cunaguaro (8.0~b4-1~bpo60+1) stable; urgency=low
 
   * Rebuild for squeeze-backports.
 
