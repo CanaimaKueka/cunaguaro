@@ -1,27 +1,27 @@
-.TH ICEWEASEL 1 "November 4, 2004" iceweasel "Linux User's Manual"
+.TH CUNAGUARO 1 "November 4, 2004" cunaguaro "Linux User's Manual"
 .SH NAME
-iceweasel - a Web browser for X11 derived from the Mozilla browser
+cunaguaro - a Web browser for X11 derived from the Mozilla browser
 
 .SH SYNOPSIS
-.B iceweasel
+.B cunaguaro
 [\fIOPTIONS\fR] [\fIURL\fR]
 
-.B /usr/lib/iceweasel/firefox\-bin
+.B /usr/lib/cunaguaro/firefox\-bin
 [\fIOPTIONS\fR] [\fIURL\fR]
 
 .SH DESCRIPTION
-\fBIceweasel\fR is an open-source web browser, designed for
+\fBCunaguaro\fR is an open-source web browser, designed for
 standards compliance, performance and portability.
 
 .SH USAGE
-\fBiceweasel\fR is a simple shell script that will set up the
+\fBcunaguaro\fR is a simple shell script that will set up the
 environment for the actual executable, \fBfirefox\-bin\fR.
-If there is an Iceweasel browser already running, \fBiceweasel\fR will
+If there is an Cunaguaro browser already running, \fBcunaguaro\fR will
 arrange for it to create a new browser window; otherwise it will start
-the Iceweasel application.
+the Cunaguaro application.
 
 .SH OPTIONS
-A summary of the options supported by \fBiceweasel\fR is included below.
+A summary of the options supported by \fBcunaguaro\fR is included below.
 
 .SS "X11 options"
 .TP
@@ -47,7 +47,7 @@ Make all warnings fatal
 Show summary of options.
 .TP
 .B \-v, \-version
-Print Iceweasel version.
+Print Cunaguaro version.
 .TP
 \fB\-P\fR [\fIprofile\fR]
 Start with \fIprofile\fR. When no profile is given, displays the Profile Manager. May require \fB\-no\-remote\fR, see below.
@@ -59,60 +59,60 @@ Start with migration wizard. May require \fB\-no\-remote\fR, see below.
 Start with profile manager. May require \fB\-no\-remote\fR, see below.
 .TP
 .B \-no\-remote
-Don't connect to a running Iceweasel instance. This option can be necessary
+Don't connect to a running Cunaguaro instance. This option can be necessary
 in conjunction to several of the options above, that won't have any effect
-when an Iceweasel instance is running unless \fB\-no\-remote\fR is used at
+when an Cunaguaro instance is running unless \fB\-no\-remote\fR is used at
 the same time.
 .TP
 \fB\-UILocale\fR \fIlocale\fR
 Start with \fIlocale\fR resources as User Interface locale. By default, it is
-guessed from environment and available locales for Iceweasel.
+guessed from environment and available locales for Cunaguaro.
 .TP
 .B \-safe\-mode
-Starts Iceweasel in safe mode, i.e. disabling all extensions and
+Starts Cunaguaro in safe mode, i.e. disabling all extensions and
 showing a bit more debugging messages.
 .TP
 .B \-jsconsole
 Start with Javascript Console
 .TP
 \fB\-new-window\fR \fIURL\fR
-Open \fIURL\fR in a new window in an already running Iceweasel process.
+Open \fIURL\fR in a new window in an already running Cunaguaro process.
 .TP
 \fB\-new-tab\fR \fIURL\fR
-Open \fIURL\fR in a new tab in an already running Iceweasel process.
+Open \fIURL\fR in a new tab in an already running Cunaguaro process.
 .TP
 \fB\-chrome\fR \fIurl\fR
 Load the specified chrome.
 .SS "Debugger options"
 .TP
 .B \-g, \-debug
-Starts Iceweasel through a debugger (gdb by default).
+Starts Cunaguaro through a debugger (gdb by default).
 .TP
 \fB\-\-debugger\fR \fIprogram\fR
-Use \fIprogram\fR as a debugger for Iceweasel. Implies \fB\-debug\fR.
+Use \fIprogram\fR as a debugger for Cunaguaro. Implies \fB\-debug\fR.
 
 .SH ENVIRONMENT
-\fIICEWEASEL_DSP\fR - configures the /dev/dsp wrapper to use. Accepted values
+\fICUNAGUARO_DSP\fR - configures the /dev/dsp wrapper to use. Accepted values
 are "auto", "artsdsp", "esddsp", "aoss" or "none" (default).
 
 \fIMOZILLA_DISABLE_PLUGINS\fR - when set, totally disables loading browser plugins
 (the ones that appear at the about:plugins url)
 
 .SH FILES
-\fI/usr/bin/iceweasel\fR - shell script wrapping
+\fI/usr/bin/cunaguaro\fR - shell script wrapping
 \fBfirefox\-bin\fR
 .br
 
-\fI/usr/lib/iceweasel/firefox\-bin\fR - \fBiceweasel\fR
+\fI/usr/lib/cunaguaro/firefox\-bin\fR - \fBcunaguaro\fR
 executable
 .br
 
-\fI/etc/iceweasel/iceweaselrc\fR - file containing environment
-variables to be passed to Iceweasel.
+\fI/etc/cunaguaro/cunaguarorc\fR - file containing environment
+variables to be passed to Cunaguaro.
 .br
 
 \fI${HOME}/.mozilla/firefox/rc\fR - file containing environment variables to
-be passed to Iceweasel. Overrides \fI/etc/iceweasel/iceweaselrc\fR
+be passed to Cunaguaro. Overrides \fI/etc/cunaguaro/cunaguarorc\fR
 
 .SH BUGS
 To report a bug, please visit \fIhttp://bugzilla.mozilla.org/\fR and/or report bugs

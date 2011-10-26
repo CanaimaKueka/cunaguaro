@@ -11,11 +11,19 @@ for REEMPLAZAR in ${OPCIONES}; do
 	ICEWEASEL=${REEMPLAZAR%_____________________*}
 	CUNAGUARO=${REEMPLAZAR#${ICEWEASEL}_____________________}
 
+	for ARCHIVO in $( find . -type d | grep -v ".git/" | grep -v "convertir-a-cunaguaro.sh" ); do
+		NUEVO=$( echo ${ARCHIVO} | sed "s/${ICEWEASEL}/${CUNAGUARO}/g" )
+		if [ "${ARCHIVO}" != "${NUEVO}" ]; then
+			echo "Renombrando ${ARCHIVO} a ${NUEVO}"
+			mv "${ARCHIVO}" "${NUEVO}"
+		fi
+	done
+
 	for ARCHIVO in $( find . -type f | grep -v ".git/" | grep -v "convertir-a-cunaguaro.sh" ); do
 		NUEVO=$( echo ${ARCHIVO} | sed "s/${ICEWEASEL}/${CUNAGUARO}/g" )
 		if [ "${ARCHIVO}" != "${NUEVO}" ]; then
 			echo "Renombrando ${ARCHIVO} a ${NUEVO}"
-			mv ${ARCHIVO} ${NUEVO}
+			mv "${ARCHIVO}" "${NUEVO}"
 		fi
 	done
 
