@@ -13,6 +13,7 @@
 #include <unistd.h>
 #ifndef ANDROID
 #include <execinfo.h>
+#include <sys/sysctl.h>
 #endif
 
 #include "base/basictypes.h"

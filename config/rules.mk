@@ -62,26 +62,12 @@ ifdef SDK_HEADERS
 EXPORTS += $(SDK_HEADERS)
 endif
 
-ifneq (,$(findstring sample,$(MODULE))$(findstring test,$(MODULE))$(findstring Test,$(MODULE)))
-INCLUDE_DIR := $(DIST)/include/testing
-IDL_DIR := $(DIST)/tests/idl
-LOCAL_INCLUDES += -I$(XPIDL_GEN_DIR) -I$(INCLUDE_DIR)
-override MOZ_JAVAXPCOM :=
-XPIDL_FLAGS += -I$(DIST)/idl
-else
-INCLUDE_DIR := $(DIST)/include
-endif
-
 REPORT_BUILD = @echo $(notdir $<)
 
 ifeq ($(OS_ARCH),OS2)
 EXEC			=
 else
 EXEC			= exec
-endif
-
-ifneq (,$(SIMPLE_PROGRAMS)$(PROGRAM))
-LIBS += $(MOZ_JEMALLOC_LIBS)
 endif
 
 # Don't copy xulrunner files at install time, when using system xulrunner
@@ -271,18 +257,6 @@ else
 SHARED_LIBRARY		:= $(DLL_PREFIX)$(SHARED_LIBRARY_NAME)$(DLL_SUFFIX)
 endif
 
-ifdef SO_VERSION
-UNVERSIONED_LIBRARY	:= $(notdir $(SHARED_LIBRARY))
-
-ifeq ($(strip $(SHARED_LIBRARY)),$(strip $(SDK_LIBRARY)))
-SDK_LIBRARY		:= $(SHARED_LIBRARY)
-endif
-
-SHARED_LIBRARY		:= $(SHARED_LIBRARY).$(SO_VERSION)
-
-MKSHLINKS		= rm -f $(1)/$(UNVERSIONED_LIBRARY); ln -s $(SHARED_LIBRARY) $(1)/$(UNVERSIONED_LIBRARY)
-endif
-
 ifeq ($(OS_ARCH),OS2)
 DEF_FILE		:= $(SHARED_LIBRARY:.dll=.def)
 endif
@@ -376,7 +350,7 @@ SIMPLE_PROGRAMS :=
 endif
 
 ifndef TARGETS
-TARGETS			= $(LIBRARY) $(UNVERSIONED_LIBRARY) $(SHARED_LIBRARY) $(PROGRAM) $(SIMPLE_PROGRAMS) $(HOST_LIBRARY) $(HOST_PROGRAM) $(HOST_SIMPLE_PROGRAMS) $(JAVA_LIBRARY)
+TARGETS			= $(LIBRARY) $(SHARED_LIBRARY) $(PROGRAM) $(SIMPLE_PROGRAMS) $(HOST_LIBRARY) $(HOST_PROGRAM) $(HOST_SIMPLE_PROGRAMS) $(JAVA_LIBRARY)
 endif
 
 ifndef OBJS
@@ -835,7 +809,7 @@ GARBAGE += $(foreach lib,$(LIBRARY),$(EXPORT_LIBRARY)/$(lib))
 endif
 endif # EXPORT_LIBRARY
 
-libs:: $(SUBMAKEFILES) $(MAKE_DIRS) $(HOST_LIBRARY) $(LIBRARY) $(UNVERSIONED_LIBRARY) $(SHARED_LIBRARY) $(IMPORT_LIBRARY) $(HOST_PROGRAM) $(PROGRAM) $(HOST_SIMPLE_PROGRAMS) $(SIMPLE_PROGRAMS) $(JAVA_LIBRARY)
+libs:: $(SUBMAKEFILES) $(MAKE_DIRS) $(HOST_LIBRARY) $(LIBRARY) $(SHARED_LIBRARY) $(IMPORT_LIBRARY) $(HOST_PROGRAM) $(PROGRAM) $(HOST_SIMPLE_PROGRAMS) $(SIMPLE_PROGRAMS) $(JAVA_LIBRARY)
 ifndef NO_DIST_INSTALL
 ifdef LIBRARY
 ifdef EXPORT_LIBRARY # Stage libs that will be linked into a static build
@@ -864,10 +838,8 @@ ifndef NO_INSTALL_IMPORT_LIBRARY
 endif
 else
 	$(INSTALL) $(IFLAGS2) $(SHARED_LIBRARY) $(DIST)/lib
-	$(call MKSHLINKS,$(DIST)/lib)
 endif
 	$(INSTALL) $(IFLAGS2) $(SHARED_LIBRARY) $(FINAL_TARGET)
-	$(call MKSHLINKS,$(FINAL_TARGET))
 endif # IS_COMPONENT
 endif # SHARED_LIBRARY
 ifdef PROGRAM
@@ -1161,8 +1133,6 @@ endif
 # so instead of deleting .o files after repacking them into a dylib, we make
 # symlinks back to the originals. The symlinks are a no-op for stabs debugging,
 # so no need to conditionalize on OS version or debugging format.
-$(UNVERSIONED_LIBRARY): $(SHARED_LIBRARY)
-	$(call MKSHLINKS,.)
 
 $(SHARED_LIBRARY): $(OBJS) $(LOBJS) $(DEF_FILE) $(RESFILE) $(SHARED_LIBRARY_LIBS_DEPS) $(LIBRARY) $(EXTRA_DEPS) $(DSO_LDOPTS_DEPS) $(GLOBAL_DEPS)
 ifndef INCREMENTAL_LINKER
@@ -1614,7 +1584,7 @@ ifndef NO_DIST_INSTALL
 export:: $(XPIDLSRCS) $(IDL_DIR)
 	$(INSTALL) $(IFLAGS1) $^
 
-export:: $(patsubst %.idl,$(XPIDL_GEN_DIR)/%.h, $(XPIDLSRCS)) $(INCLUDE_DIR)
+export:: $(patsubst %.idl,$(XPIDL_GEN_DIR)/%.h, $(XPIDLSRCS)) $(DIST)/include
 	$(INSTALL) $(IFLAGS1) $^ 
 endif # NO_DIST_INSTALL
 

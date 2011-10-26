@@ -74,7 +74,6 @@ MODULE		    = js
 LIBRARY_NAME	    = mozjs
 STATIC_LIBRARY_NAME = js_static
 GRE_MODULE	    = 1
-SO_VERSION	= 8d
 
 LIBS		= $(NSPR_LIBS) 
 
@@ -262,7 +261,6 @@ INSTALLED_HEADERS = \
 		jsval.h \
 		jsvalue.h \
 		prmjtime.h \
-		jskeyword.tbl \
 		$(NULL)
 
 ######################################################
@@ -307,21 +305,21 @@ VPATH		+= \
 
 INSTALLED_HEADERS += \
 		jsbuiltins.h    \
-		nanojit/Assembler.h     \
-		nanojit/Allocator.h     \
-		nanojit/CodeAlloc.h     \
-		nanojit/Containers.h    \
-		nanojit/LIR.h		\
-		nanojit/LIRopcode.tbl	\
-		nanojit/avmplus.h	\
-		nanojit/Fragmento.h	\
-		nanojit/Native.h	\
-		nanojit/NativeCommon.h	\
-		nanojit/Native$(NANOJIT_ARCH).h \
-		nanojit/njconfig.h	\
-		nanojit/njcpudetect.h	\
-		nanojit/RegAlloc.h	\
-		nanojit/nanojit.h	\
+		Assembler.h     \
+		Allocator.h     \
+		CodeAlloc.h     \
+		Containers.h    \
+		LIR.h		\
+		LIRopcode.tbl \
+		avmplus.h	\
+		Fragmento.h	\
+		Native.h	\
+		NativeCommon.h	\
+		Native$(NANOJIT_ARCH).h \
+		njconfig.h      \
+		njcpudetect.h   \
+		RegAlloc.h	\
+		nanojit.h	\
 		VMPI.h		\
 		Writer.h	\
 		$(NULL)
@@ -440,9 +438,6 @@ else
 ###############################################
 # BEGIN include sources for the Nitro assembler
 #
-
-ENABLE_YARR_JIT = 1
-
 VPATH += 	$(srcdir)/assembler \
 		$(srcdir)/assembler/wtf \
 		$(srcdir)/assembler/jit \
@@ -544,11 +539,7 @@ ifeq ($(OS_ARCH),WINNT)
 INSTALLED_HEADERS += jscpucfg.h
 endif
 
-EXPORTS = $(filter-out nanojit/%,$(INSTALLED_HEADERS))
-ifdef ENABLE_TRACEJIT
-EXPORTS_NAMESPACES += nanojit
-EXPORTS_nanojit = $(filter nanojit/%,$(INSTALLED_HEADERS))
-endif # ENABLE_TRACEJIT
+EXPORTS = $(INSTALLED_HEADERS)
 
 DASH_R		= -r
 
@@ -985,12 +976,7 @@ js-config: js-config.in Makefile $(DEPTH)/config/autoconf.mk $(topsrcdir)/config
 SCRIPTS = js-config
 SDK_BINARY = js-config
 
-ifdef ENABLE_TRACEJIT
-install:: $(filter nanojit/%,$(INSTALLED_HEADERS))
-	$(SYSINSTALL) $^ $(DESTDIR)$(includedir)/$(MODULE)/nanojit
-endif
-
-install:: $(filter-out nanojit/%,$(INSTALLED_HEADERS))
+install:: $(INSTALLED_HEADERS)
 	$(SYSINSTALL) $^ $(DESTDIR)$(includedir)/$(MODULE)
 
 install:: $(SCRIPTS)
@@ -1002,14 +988,10 @@ ifneq (,$(LIBRARY))
 endif
 ifneq (,$(SHARED_LIBRARY))
 	$(SYSINSTALL) $(SHARED_LIBRARY) $(DESTDIR)$(libdir)
-ifneq (,$(UNVERSIONED_LIBRARY))
-	ln -s $(SHARED_LIBRARY) $(DESTDIR)$(libdir)/$(UNVERSIONED_LIBRARY)
-endif
 endif
 ifneq (,$(IMPORT_LIBRARY))
 	$(SYSINSTALL) $(IMPORT_LIBRARY) $(DESTDIR)$(libdir)
 endif
-	$(MAKE) -C shell install
 
 # Extra dependancies and rules for auto-generated headers
 host_jskwgen.$(OBJ_SUFFIX): jsversion.h jskeyword.tbl
@@ -1099,11 +1081,7 @@ endif
 # Needed to "configure" it correctly.  Unfortunately these
 # flags wind up being applied to all code in js/src, not just
 # the code in js/src/assembler.
-CXXFLAGS += -DUSE_SYSTEM_MALLOC=1 -DENABLE_ASSEMBLER=1
-
-ifneq (,$(ENABLE_YARR_JIT)$(ENABLE_TRACEJIT)$(ENABLE_METHODJIT))
-CXXFLAGS +=  -DENABLE_JIT=1
-endif
+CXXFLAGS += -DUSE_SYSTEM_MALLOC=1 -DENABLE_ASSEMBLER=1 -DENABLE_JIT=1
 
 INCLUDES +=	-I$(srcdir)/assembler -I$(srcdir)/yarr
 
