@@ -45,7 +45,6 @@
 #include "nsContentList.h"
 #include "nsIContent.h"
 #include "nsIDOMNode.h"
-#include "nsIDOM3Node.h"
 #include "nsIDocument.h"
 #include "nsGenericElement.h"
 
@@ -528,7 +527,7 @@ nsContentList::Item(PRUint32 aIndex, PRBool aDoFlush)
   }
 
   if (mState != LIST_UP_TO_DATE)
-    PopulateSelf(aIndex+1);
+    PopulateSelf(NS_MIN(aIndex, PR_UINT32_MAX - 1) + 1);
 
   ASSERT_IN_SYNC;
   NS_ASSERTION(!mRootNode || mState != LIST_DIRTY,

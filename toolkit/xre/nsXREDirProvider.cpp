@@ -372,9 +372,6 @@ nsXREDirProvider::GetFile(const char* aProperty, PRBool* aPersistent,
         ensureFilePermissions = PR_TRUE;
       }
     }
-    else if (!strcmp(aProperty, NS_APP_HISTORY_50_FILE)) {
-      rv = file->AppendNative(NS_LITERAL_CSTRING("history.dat"));
-    }
     else if (!strcmp(aProperty, NS_APP_USER_MIMETYPES_50_FILE)) {
       rv = file->AppendNative(NS_LITERAL_CSTRING("mimeTypes.rdf"));
       EnsureProfileFileExists(file);
@@ -453,9 +450,6 @@ LoadDirsIntoArray(nsCOMArray<nsIFile>& aSourceDirs,
       aDirectories.AppendObject(appended);
   }
 }
-
-static const char *const kAppendChromeManifests[] =
-  { "chrome.manifest", nsnull };
 
 NS_IMETHODIMP
 nsXREDirProvider::GetFiles(const char* aProperty, nsISimpleEnumerator** aResult)
@@ -597,6 +591,7 @@ nsXREDirProvider::LoadAppBundleDirs()
 }
 
 static const char *const kAppendPrefDir[] = { "defaults", "preferences", nsnull };
+static const char *const kAppendSysPrefDir[] = { "defaults", "syspref", nsnull };
 
 #ifdef DEBUG_bsmedberg
 static void
@@ -638,6 +633,7 @@ nsXREDirProvider::GetFilesInternal(const char* aProperty,
     LoadAppDirIntoArray(mXULAppDir, kAppendPrefDir, directories);
     LoadDirsIntoArray(mAppBundleDirectories,
                       kAppendPrefDir, directories);
+    LoadAppDirIntoArray(mXULAppDir, kAppendSysPrefDir, directories);
 
     rv = NS_NewArrayEnumerator(aResult, directories);
   }

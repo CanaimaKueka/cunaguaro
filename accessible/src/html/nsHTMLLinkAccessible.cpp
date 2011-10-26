@@ -43,6 +43,9 @@
 #include "nsCoreUtils.h"
 
 #include "nsEventStates.h"
+#include "mozilla/dom/Element.h"
+
+using namespace mozilla::a11y;
 
 ////////////////////////////////////////////////////////////////////////////////
 // nsHTMLLinkAccessible
@@ -81,7 +84,7 @@ nsHTMLLinkAccessible::NativeState()
     states |= states::SELECTABLE;
   }
 
-  nsEventStates state = mContent->IntrinsicState();
+  nsEventStates state = mContent->AsElement()->State();
   if (state.HasAtLeastOneOfStates(NS_EVENT_STATE_VISITED |
                                   NS_EVENT_STATE_UNVISITED)) {
     states |= states::LINKED;
@@ -117,16 +120,10 @@ nsHTMLLinkAccessible::GetValue(nsAString& aValue)
   return presShell->GetLinkLocation(DOMNode, aValue);
 }
 
-NS_IMETHODIMP
-nsHTMLLinkAccessible::GetNumActions(PRUint8 *aNumActions)
+PRUint8
+nsHTMLLinkAccessible::ActionCount()
 {
-  NS_ENSURE_ARG_POINTER(aNumActions);
-
-  if (!IsLinked())
-    return nsHyperTextAccessible::GetNumActions(aNumActions);
-
-  *aNumActions = 1;
-  return NS_OK;
+  return IsLinked() ? 1 : nsHyperTextAccessible::ActionCount();
 }
 
 NS_IMETHODIMP
@@ -166,14 +163,14 @@ nsHTMLLinkAccessible::DoAction(PRUint8 aIndex)
 // HyperLinkAccessible
 
 bool
-nsHTMLLinkAccessible::IsHyperLink()
+nsHTMLLinkAccessible::IsLink()
 {
   // Expose HyperLinkAccessible unconditionally.
   return true;
 }
 
 already_AddRefed<nsIURI>
-nsHTMLLinkAccessible::GetAnchorURI(PRUint32 aAnchorIndex)
+nsHTMLLinkAccessible::AnchorURIAt(PRUint32 aAnchorIndex)
 {
   return aAnchorIndex == 0 ? mContent->GetHrefURI() : nsnull;
 }
@@ -187,7 +184,7 @@ nsHTMLLinkAccessible::IsLinked()
   if (IsDefunct())
     return PR_FALSE;
 
-  nsEventStates state = mContent->IntrinsicState();
+  nsEventStates state = mContent->AsElement()->State();
   return state.HasAtLeastOneOfStates(NS_EVENT_STATE_VISITED |
                                      NS_EVENT_STATE_UNVISITED);
 }

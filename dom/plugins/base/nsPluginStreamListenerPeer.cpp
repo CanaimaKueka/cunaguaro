@@ -653,26 +653,11 @@ nsPluginStreamListenerPeer::OnStartRequest(nsIRequest *request,
     mOwner->GetWindow(window);
     if (!mPluginInstance && window) {
       nsRefPtr<nsPluginHost> pluginHost = dont_AddRef(nsPluginHost::GetInst());
-      
-      // determine if we need to try embedded again. FullPage takes a different code path
-      PRInt32 mode;
-      mOwner->GetMode(&mode);
-      if (mode == NP_EMBED) {
-        // Make sure to not allow new streams to be opened here; we've
-        // already got a stream for this data; we just need a properly
-        // set up plugin instance.
-        rv = pluginHost->InstantiateEmbeddedPlugin(aContentType.get(), aURL,
-                                                   mOwner, PR_FALSE);
-      }
-      else {
-        rv = pluginHost->SetUpPluginInstance(aContentType.get(), aURL, mOwner);
-      }
-      
-      if (NS_OK == rv) {
+      rv = pluginHost->SetUpPluginInstance(aContentType.get(), aURL, mOwner);
+      if (NS_SUCCEEDED(rv)) {
         mOwner->GetInstance(getter_AddRefs(pluginInstRefPtr));
         mPluginInstance = pluginInstRefPtr.get();
         if (mPluginInstance) {
-          mPluginInstance->Start();
           mOwner->CreateWidget();
           // If we've got a native window, the let the plugin know about it.
           mOwner->SetWindow();
@@ -905,8 +890,7 @@ nsresult nsPluginStreamListenerPeer::ServeStreamAsFile(nsIRequest *request,
 PRBool
 nsPluginStreamListenerPeer::UseExistingPluginCacheFile(nsPluginStreamListenerPeer* psi)
 {
-  
-  NS_ENSURE_ARG_POINTER(psi);
+  NS_ENSURE_TRUE(psi, PR_FALSE);
   
   if (psi->mLength == mLength &&
       psi->mModified == mModified &&

@@ -54,8 +54,7 @@
 #include "nsIXPConnect.h"
 #include "nsIObserverService.h"
 #include "mozilla/Services.h"
-#include "nsIPrefService.h"
-#include "nsIPrefBranch.h"
+#include "mozilla/Preferences.h"
 
 #include "sqlite3.h"
 #include "test_quota.c"
@@ -64,6 +63,7 @@
 #include "nsIMemoryReporter.h"
 
 #include "mozilla/FunctionTimer.h"
+#include "mozilla/Util.h"
 
 namespace {
 
@@ -133,17 +133,17 @@ namespace storage {
 //// Memory Reporting
 
 static PRInt64
-GetStorageSQLiteMemoryUsed(void *)
+GetStorageSQLiteMemoryUsed()
 {
   return ::sqlite3_memory_used();
 }
 
 NS_MEMORY_REPORTER_IMPLEMENT(StorageSQLiteMemoryUsed,
     "explicit/storage/sqlite",
-    MR_HEAP,
-    "Memory used by SQLite.",
+    KIND_HEAP,
+    UNITS_BYTES,
     GetStorageSQLiteMemoryUsed,
-    nsnull)
+    "Memory used by SQLite.")
 
 ////////////////////////////////////////////////////////////////////////////////
 //// Helpers
@@ -185,10 +185,8 @@ public:
     // We need to obtain the toolkit.storage.synchronous preferences on the main
     // thread because the preference service can only be accessed there.  This
     // is cached in the service for all future Open[Unshared]Database calls.
-    nsCOMPtr<nsIPrefBranch> pref(do_GetService(NS_PREFSERVICE_CONTRACTID));
-    PRInt32 synchronous = PREF_TS_SYNCHRONOUS_DEFAULT;
-    if (pref)
-      (void)pref->GetIntPref(PREF_TS_SYNCHRONOUS, &synchronous);
+    PRInt32 synchronous =
+      Preferences::GetInt(PREF_TS_SYNCHRONOUS, PREF_TS_SYNCHRONOUS_DEFAULT);
     ::PR_ATOMIC_SET(mSynchronousPrefValPtr, synchronous);
 
     // Register our SQLite memory reporter.  Registration can only happen on
@@ -224,6 +222,7 @@ Service::getSingleton()
     return gService;
   }
 
+#if 0
   // Ensure that we are using the same version of SQLite that we compiled with
   // or newer.  Our configure check ensures we are using a new enough version
   // at compile time.
@@ -239,6 +238,7 @@ Service::getSingleton()
     }
     ::PR_Abort();
   }
+#endif
 
   gService = new Service();
   if (gService) {
@@ -280,15 +280,20 @@ Service::getSynchronousPref()
 }
 
 Service::Service()
-: mMutex("Service::mMutex")
+: mMutex("Service::mMutex"),
+  mSqliteVFS(nsnull)
 {
 }
 
 Service::~Service()
 {
+  int rc = sqlite3_vfs_unregister(mSqliteVFS);
+  if (rc != SQLITE_OK)
+    NS_WARNING("Failed to unregister sqlite vfs wrapper.");
+
   // Shutdown the sqlite3 API.  Warn if shutdown did not turn out okay, but
   // there is nothing actionable we can do in that case.
-  int rc = ::sqlite3_quota_shutdown();
+  rc = ::sqlite3_quota_shutdown();
   if (rc != SQLITE_OK)
     NS_WARNING("sqlite3 did not shutdown cleanly.");
 
@@ -296,10 +301,12 @@ Service::~Service()
   if (rc != SQLITE_OK)
     NS_WARNING("sqlite3 did not shutdown cleanly.");
 
-  bool shutdownObserved = !sXPConnect;
+  DebugOnly<bool> shutdownObserved = !sXPConnect;
   NS_ASSERTION(shutdownObserved, "Shutdown was not observed!");
 
   gService = nsnull;
+  delete mSqliteVFS;
+  mSqliteVFS = nsnull;
 }
 
 void
@@ -308,6 +315,8 @@ Service::shutdown()
   NS_IF_RELEASE(sXPConnect);
 }
 
+sqlite3_vfs* ConstructTelemetryVFS();
+ 
 nsresult
 Service::initialize()
 {
@@ -322,7 +331,15 @@ Service::initialize()
   if (rc != SQLITE_OK)
     return convertResultCode(rc);
 
-  rc = ::sqlite3_quota_initialize(NULL, 0);
+  mSqliteVFS = ConstructTelemetryVFS();
+  if (mSqliteVFS) {
+    rc = sqlite3_vfs_register(mSqliteVFS, 1);
+    if (rc != SQLITE_OK)
+      return convertResultCode(rc);
+  } else {
+    NS_WARNING("Failed to register telemetry VFS");
+  }
+  rc = ::sqlite3_quota_initialize("telemetry-vfs", 0);
   if (rc != SQLITE_OK)
     return convertResultCode(rc);
 
@@ -479,6 +496,8 @@ NS_IMETHODIMP
 Service::OpenUnsharedDatabase(nsIFile *aDatabaseFile,
                               mozIStorageConnection **_connection)
 {
+  NS_ENSURE_ARG(aDatabaseFile);
+
 #ifdef NS_FUNCTION_TIMER
   nsCString leafname;
   (void)aDatabaseFile->GetNativeLeafName(leafname);

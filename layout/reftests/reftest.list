@@ -89,6 +89,9 @@ skip-if(Android) include css-invalid/reftest.list
 # css-submit-invalid
 include css-submit-invalid/reftest.list
 
+# css text-overflow
+include text-overflow/reftest.list
+
 # css transitions
 include css-transitions/reftest.list
 
@@ -202,6 +205,9 @@ include object/reftest.list
 
 # ogg-video/
 include ogg-video/reftest.list
+
+# webm-video/
+include webm-video/reftest.list
 
 # parser/
 include ../../parser/htmlparser/tests/reftest/reftest.list

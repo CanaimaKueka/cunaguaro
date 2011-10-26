@@ -45,9 +45,9 @@
 #
 
 # Define an include-at-most-once flag
-#ifdef INCLUDED_CONFIG_MK
-#$(error Don't include config.mk twice!)
-#endif
+ifdef INCLUDED_CONFIG_MK
+$(error Don't include config.mk twice!)
+endif
 INCLUDED_CONFIG_MK = 1
 
 EXIT_ON_ERROR = set -e; # Shell loops continue past errors without this.
@@ -87,6 +87,9 @@ nullstr :=
 space :=$(nullstr) # EOL
 
 core_winabspath = $(firstword $(subst /, ,$(call core_abspath,$(1)))):$(subst $(space),,$(patsubst %,\\%,$(wordlist 2,$(words $(subst /, ,$(call core_abspath,$(1)))), $(strip $(subst /, ,$(call core_abspath,$(1)))))))
+
+# LIBXUL_DIST is not defined under js/src, thus we make it mean DIST there.
+LIBXUL_DIST ?= $(DIST)
 
 # FINAL_TARGET specifies the location into which we copy end-user-shipped
 # build products (typelibs, components, chrome).
@@ -148,11 +151,11 @@ MOZ_WIDGET_SUPPORT_LIBS    = $(DIST)/lib/$(LIB_PREFIX)widgetsupport_s.$(LIB_SUFF
 
 ifdef MOZ_MEMORY
 ifneq ($(OS_ARCH),WINNT)
-JEMALLOC_LIBS = $(MKSHLIB_FORCE_ALL) $(call EXPAND_MOZLIBNAME,jemalloc) $(MKSHLIB_UNFORCE_ALL)
+MOZ_JEMALLOC_LIBS = $(MKSHLIB_FORCE_ALL) $(call EXPAND_MOZLIBNAME,jemalloc) $(MKSHLIB_UNFORCE_ALL)
 # If we are linking jemalloc into a program, we want the jemalloc symbols
 # to be exported
 ifneq (,$(SIMPLE_PROGRAMS)$(PROGRAM))
-JEMALLOC_LIBS += $(MOZ_JEMALLOC_STANDALONE_GLUE_LDOPTS)
+MOZ_JEMALLOC_LIBS += $(MOZ_JEMALLOC_STANDALONE_GLUE_LDOPTS)
 endif
 endif
 endif
@@ -162,6 +165,13 @@ CXX := $(CXX_WRAPPER) $(CXX)
 MKDIR ?= mkdir
 SLEEP ?= sleep
 TOUCH ?= touch
+
+ifndef .PYMAKE
+PYTHON_PATH = $(PYTHON) $(topsrcdir)/config/pythonpath.py
+else
+PYCOMMANDPATH += $(topsrcdir)/config
+PYTHON_PATH = %pythonpath main
+endif
 
 # determine debug-related options
 _DEBUG_CFLAGS :=
@@ -194,14 +204,6 @@ OS_CFLAGS += -FR
 OS_CXXFLAGS += -FR
 endif
 else # ! MOZ_DEBUG
-
-# We don't build a static CRT when building a custom CRT,
-# it appears to be broken. So don't link to jemalloc if
-# the Makefile wants static CRT linking.
-ifeq ($(MOZ_MEMORY)_$(USE_STATIC_LIBS),1_)
-# Disable default CRT libs and add the right lib path for the linker
-OS_LDFLAGS += $(MOZ_MEMORY_LDFLAGS)
-endif
 
 # MOZ_DEBUG_SYMBOLS generates debug symbols in separate PDB files.
 # Used for generating an optimized build with debugging symbols.
@@ -241,6 +243,15 @@ endif
 endif # NS_TRACE_MALLOC
 
 endif # MOZ_DEBUG
+
+# We don't build a static CRT when building a custom CRT,
+# it appears to be broken. So don't link to jemalloc if
+# the Makefile wants static CRT linking.
+ifeq ($(MOZ_MEMORY)_$(USE_STATIC_LIBS),1_)
+# Disable default CRT libs and add the right lib path for the linker
+OS_LDFLAGS += $(MOZ_MEMORY_LDFLAGS)
+endif
+
 endif # WINNT && !GNU_CC
 
 #
@@ -383,7 +394,6 @@ MY_RULES	:= $(DEPTH)/config/myrules.mk
 # Default command macros; can be overridden in <arch>.mk.
 #
 CCC = $(CXX)
-NFSPWD = $(CONFIG_TOOLS)/nfspwd
 PURIFY = purify $(PURIFYOPTIONS)
 QUANTIFY = quantify $(QUANTIFYOPTIONS)
 ifdef CROSS_COMPILE
@@ -562,10 +572,6 @@ else
 ELF_DYNSTR_GC	= :
 endif
 
-ifeq ($(MOZ_WIDGET_TOOLKIT),qt)
-OS_LIBS += $(MOZ_QT_LIBS)
-endif
-
 ifndef CROSS_COMPILE
 ifdef USE_ELF_DYNSTR_GC
 ifdef MOZ_COMPONENTS_VERSION_SCRIPT_LDFLAGS
@@ -595,13 +601,6 @@ ifeq (2,$(MOZ_OPTIMIZE))
 PBBUILD_SETTINGS += GCC_MODEL_TUNING= OPTIMIZATION_CFLAGS="$(MOZ_OPTIMIZE_FLAGS)"
 endif # MOZ_OPTIMIZE=2
 endif # MOZ_OPTIMIZE
-ifeq (1,$(HAS_XCODE_2_1))
-# Xcode 2.1 puts its build products in a directory corresponding to the
-# selected build style/configuration.
-XCODE_PRODUCT_DIR = build/$(BUILDSTYLE)
-else
-XCODE_PRODUCT_DIR = build
-endif # HAS_XCODE_2_1=1
 endif # OS_ARCH=Darwin
 
 
@@ -687,26 +686,23 @@ endif # NSINSTALL_BIN
 ifeq (,$(CROSS_COMPILE)$(filter-out WINNT OS2, $(OS_ARCH)))
 INSTALL		= $(NSINSTALL)
 else
-ifeq ($(NSDISTMODE),copy)
-# copy files, but preserve source mtime
-INSTALL		= $(NSINSTALL) -t
-else
-ifeq ($(NSDISTMODE),absolute_symlink)
-# install using absolute symbolic links
-ifeq ($(OS_ARCH),Darwin)
-INSTALL		= $(NSINSTALL) -L $(PWD)
-else
-INSTALL		= $(NSINSTALL) -L `$(NFSPWD)`
-endif # Darwin
-else
-# install using relative symbolic links
-INSTALL		= $(NSINSTALL) -R
-endif # absolute_symlink
-endif # copy
+
+# This isn't laid out as conditional directives so that NSDISTMODE can be
+# target-specific.
+INSTALL         = $(if $(filter copy, $(NSDISTMODE)), $(NSINSTALL) -t, $(if $(filter absolute_symlink, $(NSDISTMODE)), $(NSINSTALL) -L $(PWD), $(NSINSTALL) -R))
+
 endif # WINNT/OS2
 
 # Use nsinstall in copy mode to install files on the system
 SYSINSTALL	= $(NSINSTALL) -t
+
+# Directory nsinstall. Windows and OS/2 nsinstall can't recursively copy
+# directories.
+ifneq (,$(filter WINNT os2-emx,$(HOST_OS_ARCH)))
+DIR_INSTALL = $(PYTHON) $(topsrcdir)/config/nsinstall.py
+else
+DIR_INSTALL = $(INSTALL)
+endif # WINNT/OS2
 
 #
 # Localization build automation
@@ -750,10 +746,10 @@ endif
 MERGE_FILES = $(foreach f,$(1),$(call MERGE_FILE,$(f)))
 
 ifeq (OS2,$(OS_ARCH))
-RUN_TEST_PROGRAM = $(topsrcdir)/build/os2/test_os2.cmd "$(DIST)"
+RUN_TEST_PROGRAM = $(topsrcdir)/build/os2/test_os2.cmd "$(LIBXUL_DIST)"
 else
 ifneq (WINNT,$(OS_ARCH))
-RUN_TEST_PROGRAM = $(DIST)/bin/run-mozilla.sh
+RUN_TEST_PROGRAM = $(LIBXUL_DIST)/bin/run-mozilla.sh
 endif # ! WINNT
 endif # ! OS2
 

@@ -81,9 +81,10 @@
 
 #include "mozilla/FunctionTimer.h"
 #include "nsThreadUtils.h"
+#include "mozilla/Telemetry.h"
 
 static const char DISK_CACHE_DEVICE_ID[] = { "disk" };
-
+using namespace mozilla;
 
 /******************************************************************************
  *  nsDiskCacheEvictor
@@ -348,6 +349,7 @@ nsDiskCache::Truncate(PRFileDesc *  fd, PRUint32  newEOF)
 
 nsDiskCacheDevice::nsDiskCacheDevice()
     : mCacheCapacity(0)
+    , mMaxEntrySize(-1) // -1 means "no limit"
     , mInitialized(PR_FALSE)
 {
 }
@@ -937,12 +939,15 @@ nsDiskCacheDevice::Visit(nsICacheVisitor * visitor)
     return NS_OK;
 }
 
-// Max allowed size for an entry is currently MIN(5MB, 1/8 CacheCapacity)
+// Max allowed size for an entry is currently MIN(mMaxEntrySize, 1/8 CacheCapacity)
 bool
 nsDiskCacheDevice::EntryIsTooBig(PRInt64 entrySize)
 {
-    return entrySize > kMaxDataFileSize
-           || entrySize > (static_cast<PRInt64>(mCacheCapacity) * 1024 / 8);
+    if (mMaxEntrySize == -1) // no limit
+        return entrySize > (static_cast<PRInt64>(mCacheCapacity) * 1024 / 8);
+    else 
+        return entrySize > mMaxEntrySize ||
+               entrySize > (static_cast<PRInt64>(mCacheCapacity) * 1024 / 8);
 }
 
 nsresult
@@ -976,6 +981,7 @@ nsDiskCacheDevice::EvictEntries(const char * clientID)
 nsresult
 nsDiskCacheDevice::OpenDiskCache()
 {
+    Telemetry::AutoTimer<Telemetry::NETWORK_DISK_CACHE_OPEN> timer;
     // if we don't have a cache directory, create one and open it
     PRBool exists;
     nsresult rv = mCacheDirectory->Exists(&exists);
@@ -988,7 +994,8 @@ nsDiskCacheDevice::OpenDiskCache()
         rv = mCacheMap.Open(mCacheDirectory);        
         // move "corrupt" caches to trash
         if (rv == NS_ERROR_FILE_CORRUPTED) {
-            rv = DeleteDir(mCacheDirectory, PR_TRUE, PR_FALSE);
+            // delay delete by 1 minute to avoid IO thrash at startup
+            rv = DeleteDir(mCacheDirectory, PR_TRUE, PR_FALSE, 60000);
             if (NS_FAILED(rv))
                 return rv;
             exists = PR_FALSE;
@@ -1018,8 +1025,10 @@ nsDiskCacheDevice::OpenDiskCache()
         GetTrashDir(mCacheDirectory, &trashDir);
         if (trashDir) {
             PRBool exists;
-            if (NS_SUCCEEDED(trashDir->Exists(&exists)) && exists)
+            if (NS_SUCCEEDED(trashDir->Exists(&exists)) && exists) {
+                // be paranoid and delete immediately if leftover
                 DeleteDir(trashDir, PR_FALSE, PR_FALSE);
+            }
         }
     }
 
@@ -1142,4 +1151,15 @@ PRUint32 nsDiskCacheDevice::getCacheSize()
 PRUint32 nsDiskCacheDevice::getEntryCount()
 {
     return mCacheMap.EntryCount();
+}
+
+void
+nsDiskCacheDevice::SetMaxEntrySize(PRInt32 maxSizeInKilobytes)
+{
+    // Internal units are bytes. Changing this only takes effect *after* the
+    // change and has no consequences for existing cache-entries
+    if (maxSizeInKilobytes >= 0)
+        mMaxEntrySize = maxSizeInKilobytes * 1024;
+    else
+        mMaxEntrySize = -1;
 }

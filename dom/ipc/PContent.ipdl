@@ -129,6 +129,11 @@ child:
 
     FlushMemory(nsString reason);
 
+    /**
+     * Start accessibility engine in content process.
+     */
+    ActivateA11y();
+
 parent:
     PNecko();
     PCrashReporter();
@@ -196,6 +201,12 @@ parent:
 
     sync GetSystemColors(PRUint32 colorsCount)
         returns (PRUint32[] colors);
+
+    sync GetIconForExtension(nsCString aFileExt, PRUint32 aIconSize)
+        returns (PRUint8[] bits);
+
+    sync GetShowPasswordSetting()
+        returns (PRBool showPassword);
 
 both:
      AsyncMessage(nsString aMessage, nsString aJSON);

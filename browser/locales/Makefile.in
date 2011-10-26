@@ -69,6 +69,8 @@ SUBMAKEFILES += \
 	$(DEPTH)/$(MOZ_BRANDING_DIRECTORY)/locales/Makefile \
 	$(NULL)
 
+DEFINES += -DMOZ_APP_DISPLAYNAME=$(MOZ_APP_DISPLAYNAME)
+
 # This makefile uses variable overrides from the libs-% target to
 # build non-default locales to non-default dist/ locations. Be aware!
 
@@ -125,26 +127,12 @@ install::
 	    $(LOCALE_SRCDIR)/existing-profile-defaults.js > $(DESTDIR)$(mozappdir)/defaults/existing-profile-defaults.js; \
 	fi
 
-README_FILE = $(call MERGE_FILE,README.txt)
-
 PROFILE_FILES = \
 	localstore.rdf \
 	mimeTypes.rdf \
 	$(NULL)
 
 PROFILE_CHROME = userChrome-example.css userContent-example.css
-
-libs:: $(README_FILE)
-ifeq ($(OS_ARCH),WINNT)
-	$(EXIT_ON_ERROR) \
-	for file in $^; do \
-	  $(PERL) -pe 's/(?<!\r)\n/\r\n/g;' < $$file > $(FINAL_TARGET)/`basename $$file`; \
-	done
-else
-ifneq ($(OS_ARCH),OS2)
-	$(SYSINSTALL) $(IFLAGS1) $^ $(FINAL_TARGET)
-endif
-endif
 
 NO_JA_JP_MAC_AB_CD := $(if $(filter ja-JP-mac, $(AB_CD)),ja,$(AB_CD))
 
@@ -174,8 +162,13 @@ install:: $(call MERGE_FILES,$(addprefix profile/chrome/,$(PROFILE_CHROME)))
 
 SEARCH_PLUGINS = $(shell cat $(call MERGE_FILE,/searchplugins/list.txt))
 
-libs:: $(addsuffix .xml,$(SEARCH_PLUGINS))
-	$(SYSINSTALL) $(IFLAGS1) $^ $(FINAL_TARGET)/searchplugins
+$(FINAL_TARGET)/searchplugins/%: %
+	$(SYSINSTALL) -D $(dir $@)
+	$(PYTHON) $(topsrcdir)/config/Preprocessor.py \
+	  -DMOZ_APP_NAME=$(MOZ_APP_NAME) \
+	  $< > $@
+
+libs:: $(addprefix $(FINAL_TARGET)/searchplugins/,$(addsuffix .xml,$(SEARCH_PLUGINS)))
 
 install:: $(addsuffix .xml,$(SEARCH_PLUGINS))
 	$(SYSINSTALL) $(IFLAGS1) $^ $(DESTDIR)$(mozappdir)/searchplugins

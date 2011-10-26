@@ -74,7 +74,7 @@ class AutoPreserveEnumerators {
 class InvokeSessionGuard
 {
     InvokeArgsGuard args_;
-    InvokeFrameGuard frame_;
+    InvokeFrameGuard ifg_;
     Value savedCallee_, savedThis_;
     Value *formals_, *actuals_;
     unsigned nformals_;
@@ -82,14 +82,14 @@ class InvokeSessionGuard
     Value *stackLimit_;
     jsbytecode *stop_;
 
-    bool optimized() const { return frame_.pushed(); }
+    bool optimized() const { return ifg_.pushed(); }
 
   public:
-    InvokeSessionGuard() : args_(), frame_() {}
+    InvokeSessionGuard() : args_(), ifg_() {}
     ~InvokeSessionGuard() {}
 
     bool start(JSContext *cx, const Value &callee, const Value &thisv, uintN argc);
-    bool invoke(JSContext *cx) const;
+    bool invoke(JSContext *cx);
 
     bool started() const {
         return args_.pushed();
@@ -98,7 +98,7 @@ class InvokeSessionGuard
     Value &operator[](unsigned i) const {
         JS_ASSERT(i < argc());
         Value &arg = i < nformals_ ? formals_[i] : actuals_[i];
-        JS_ASSERT_IF(optimized(), &arg == &frame_.fp()->canonicalActualArg(i));
+        JS_ASSERT_IF(optimized(), &arg == &ifg_.fp()->canonicalActualArg(i));
         JS_ASSERT_IF(!optimized(), &arg == &args_[i]);
         return arg;
     }
@@ -108,12 +108,12 @@ class InvokeSessionGuard
     }
 
     const Value &rval() const {
-        return optimized() ? frame_.fp()->returnValue() : args_.rval();
+        return optimized() ? ifg_.fp()->returnValue() : args_.rval();
     }
 };
 
 inline bool
-InvokeSessionGuard::invoke(JSContext *cx) const
+InvokeSessionGuard::invoke(JSContext *cx)
 {
     /* N.B. Must be kept in sync with Invoke */
 
@@ -133,14 +133,13 @@ InvokeSessionGuard::invoke(JSContext *cx) const
         return Invoke(cx, args_);
 
     /* Clear any garbage left from the last Invoke. */
-    StackFrame *fp = frame_.fp();
-    fp->clearMissingArgs();
-    fp->resetInvokeCallFrame();
-    SetValueRangeToUndefined(fp->slots(), script_->nfixed);
+    StackFrame *fp = ifg_.fp();
+    fp->resetCallFrame(script_);
 
     JSBool ok;
     {
         AutoPreserveEnumerators preserve(cx);
+        args_.setActive();  /* From js::Invoke(InvokeArgsGuard) overload. */
         Probes::enterJSFun(cx, fp->fun(), script_);
 #ifdef JS_METHODJIT
         ok = mjit::EnterMethodJIT(cx, fp, code, stackLimit_);
@@ -150,6 +149,7 @@ InvokeSessionGuard::invoke(JSContext *cx) const
         ok = Interpret(cx, cx->fp());
 #endif
         Probes::exitJSFun(cx, fp->fun(), script_);
+        args_.setInactive();
     }
 
     /* Don't clobber callee with rval; rval gets read from fp->rval. */
@@ -209,41 +209,28 @@ GetPrimitiveThis(JSContext *cx, Value *vp, T *v)
 
 /*
  * Compute the implicit |this| parameter for a call expression where the callee
- * is an unqualified name reference.
+ * funval was resolved from an unqualified name reference to a property on obj
+ * (an object on the scope chain).
  *
  * We can avoid computing |this| eagerly and push the implicit callee-coerced
- * |this| value, undefined, according to this decision tree:
+ * |this| value, undefined, if any of these conditions hold:
  *
- * 1. If the called value, funval, is not an object, bind |this| to undefined.
+ * 1. The callee funval is not an object.
  *
- * 2. The nominal |this|, obj, has one of Block, Call, or DeclEnv class (this
+ * 2. The nominal |this|, obj, is a global object.
+ *
+ * 3. The nominal |this|, obj, has one of Block, Call, or DeclEnv class (this
  *    is what IsCacheableNonGlobalScope tests). Such objects-as-scopes must be
- *    censored.
+ *    censored with undefined.
  *
- * 3. obj is a global. There are several sub-cases:
+ * Only if funval is an object and obj is neither a declarative scope object to
+ * be censored, nor a global object, do we bind |this| to obj->thisObject().
+ * Only |with| statements and embedding-specific scope objects fall into this
+ * last ditch.
  *
- * a) obj is a proxy: we try unwrapping it (see jswrapper.cpp) in order to find
- *    a function object inside. If the proxy is not a wrapper, or else it wraps
- *    a non-function, then bind |this| to undefined per ES5-strict/Harmony.
- *
- *    [Else fall through with callee pointing to an unwrapped function object.]
- *
- * b) If callee is a function (after unwrapping if necessary), check whether it
- *    is interpreted and in strict mode. If so, then bind |this| to undefined
- *    per ES5 strict.
- *
- * c) Now check that callee is scoped by the same global object as the object
- *    in which its unqualified name was bound as a property. ES1-3 bound |this|
- *    to the name's "Reference base object", which in the context of multiple
- *    global objects may not be the callee's global. If globals match, bind
- *    |this| to undefined.
- *
- *    This is a backward compatibility measure; see bug 634590.
- *
- * 4. Finally, obj is neither a declarative scope object to be censored, nor a
- *    global where the callee requires no backward-compatible special handling
- *    or future-proofing based on (explicit or imputed by Harmony status in the
- *    proxy case) strict mode opt-in. Bind |this| to obj->thisObject().
+ * If funval is a strict mode function, then code implementing JSOP_THIS in the
+ * interpreter and JITs will leave undefined as |this|. If funval is a function
+ * not in strict mode, JSOP_THIS code replaces undefined with funval's global.
  *
  * We set *vp to undefined early to reduce code size and bias this code for the
  * common and future-friendly cases.
@@ -256,25 +243,11 @@ ComputeImplicitThis(JSContext *cx, JSObject *obj, const Value &funval, Value *vp
     if (!funval.isObject())
         return true;
 
-    if (!obj->isGlobal()) {
-        if (IsCacheableNonGlobalScope(obj))
-            return true;
-    } else {
-        JSObject *callee = &funval.toObject();
+    if (obj->isGlobal())
+        return true;
 
-        if (callee->isProxy()) {
-            callee = callee->unwrap();
-            if (!callee->isFunction())
-                return true; // treat any non-wrapped-function proxy as strict
-        }
-        if (callee->isFunction()) {
-            JSFunction *fun = callee->getFunctionPrivate();
-            if (fun->isInterpreted() && fun->inStrictMode())
-                return true;
-        }
-        if (callee->getGlobal() == cx->fp()->scopeChain().getGlobal())
-            return true;;
-    }
+    if (IsCacheableNonGlobalScope(obj))
+        return true;
 
     obj = obj->thisObject(cx);
     if (!obj)
@@ -353,15 +326,18 @@ ScriptPrologue(JSContext *cx, StackFrame *fp)
         fp->functionThis().setObject(*obj);
     }
 
-    if (cx->compartment->debugMode)
+    Probes::enterJSFun(cx, fp->maybeFun(), fp->script());
+    if (cx->compartment->debugMode())
         ScriptDebugPrologue(cx, fp);
+
     return true;
 }
 
 inline bool
 ScriptEpilogue(JSContext *cx, StackFrame *fp, bool ok)
 {
-    if (cx->compartment->debugMode)
+    Probes::exitJSFun(cx, fp->maybeFun(), fp->script());
+    if (cx->compartment->debugMode())
         ok = ScriptDebugEpilogue(cx, fp, ok);
 
     /*
@@ -371,7 +347,6 @@ ScriptEpilogue(JSContext *cx, StackFrame *fp, bool ok)
     if (fp->isConstructing() && ok) {
         if (fp->returnValue().isPrimitive())
             fp->setReturnValue(ObjectValue(fp->constructorThis()));
-        JS_RUNTIME_METER(cx->runtime, constructs);
     }
 
     return ok;
@@ -382,7 +357,7 @@ ScriptPrologueOrGeneratorResume(JSContext *cx, StackFrame *fp)
 {
     if (!fp->isGeneratorFrame())
         return ScriptPrologue(cx, fp);
-    if (cx->compartment->debugMode)
+    if (cx->compartment->debugMode())
         ScriptDebugPrologue(cx, fp);
     return true;
 }
@@ -392,7 +367,7 @@ ScriptEpilogueOrGeneratorYield(JSContext *cx, StackFrame *fp, bool ok)
 {
     if (!fp->isYielding())
         return ScriptEpilogue(cx, fp, ok);
-    if (cx->compartment->debugMode)
+    if (cx->compartment->debugMode())
         return ScriptDebugEpilogue(cx, fp, ok);
     return ok;
 }

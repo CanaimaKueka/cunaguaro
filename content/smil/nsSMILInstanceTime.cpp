@@ -38,32 +38,7 @@
 #include "nsSMILInstanceTime.h"
 #include "nsSMILInterval.h"
 #include "nsSMILTimeValueSpec.h"
-
-//----------------------------------------------------------------------
-// Helper classes
-
-namespace
-{
-  // Utility class to set a PRPackedBool value to PR_TRUE whilst it is in scope.
-  // Saves us having to remember to clear the flag at every possible return.
-  class AutoBoolSetter
-  {
-  public:
-    AutoBoolSetter(PRPackedBool& aValue)
-    : mValue(aValue)
-    {
-      mValue = PR_TRUE;
-    }
- 
-    ~AutoBoolSetter()
-    {
-      mValue = PR_FALSE;
-    }
-
-  private:
-    PRPackedBool&   mValue;
-  };
-}
+#include "mozilla/AutoRestore.h"
 
 //----------------------------------------------------------------------
 // Implementation
@@ -146,7 +121,8 @@ nsSMILInstanceTime::HandleChangedInterval(
   PRBool objectChanged = mCreator->DependsOnBegin() ? aBeginObjectChanged :
                                                       aEndObjectChanged;
 
-  AutoBoolSetter setVisited(mVisited);
+  mozilla::AutoRestore<PRPackedBool> setVisited(mVisited);
+  mVisited = PR_TRUE;
 
   nsRefPtr<nsSMILInstanceTime> deathGrip(this);
   mCreator->HandleChangedInstanceTime(*GetBaseTime(), aSrcContainer, *this,
@@ -224,8 +200,25 @@ nsSMILInstanceTime::IsDependentOn(const nsSMILInstanceTime& aOther) const
     return PR_TRUE;
 
   // mVisited is mutable
-  AutoBoolSetter setVisited(const_cast<nsSMILInstanceTime*>(this)->mVisited);
+  mozilla::AutoRestore<PRPackedBool> setVisited(const_cast<nsSMILInstanceTime*>(this)->mVisited);
+  const_cast<nsSMILInstanceTime*>(this)->mVisited = PR_TRUE;
   return myBaseTime->IsDependentOn(aOther);
+}
+
+const nsSMILInstanceTime*
+nsSMILInstanceTime::GetBaseTime() const
+{
+  if (!mBaseInterval) {
+    return nsnull;
+  }
+
+  NS_ABORT_IF_FALSE(mCreator, "Base interval is set but there is no creator.");
+  if (!mCreator) {
+    return nsnull;
+  }
+
+  return mCreator->DependsOnBegin() ? mBaseInterval->Begin() :
+                                      mBaseInterval->End();
 }
 
 void
@@ -245,20 +238,4 @@ nsSMILInstanceTime::SetBaseInterval(nsSMILInterval* aBaseInterval)
   }
 
   mBaseInterval = aBaseInterval;
-}
-
-const nsSMILInstanceTime*
-nsSMILInstanceTime::GetBaseTime() const
-{
-  if (!mBaseInterval) {
-    return nsnull;
-  }
-
-  NS_ABORT_IF_FALSE(mCreator, "Base interval is set but there is no creator.");
-  if (!mCreator) {
-    return nsnull;
-  }
-
-  return mCreator->DependsOnBegin() ? mBaseInterval->Begin() :
-                                      mBaseInterval->End();
 }

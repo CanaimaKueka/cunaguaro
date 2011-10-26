@@ -43,7 +43,6 @@
 #include "nsITransferable.h"
 #include "nsISupportsArray.h"
 #include "nsSize.h"
-#include "nsIRegion.h"
 #include "nsXPCOM.h"
 #include "nsISupportsPrimitives.h"
 #include "nsCOMPtr.h"
@@ -520,11 +519,7 @@ nsBaseDragService::DrawDrag(nsIDOMNode* aDOMNode,
   // otherwise, just draw the node
   nsIntRegion clipRegion;
   if (aRegion) {
-    nsCOMPtr<nsIRegion> clipIRegion;
-    aRegion->GetRegion(getter_AddRefs(clipIRegion));
-    if (clipIRegion) {
-      clipRegion = clipIRegion->GetUnderlyingRegion();
-    }
+    aRegion->GetRegion(&clipRegion);
   }
 
   nsIntPoint pnt(aScreenDragRect->x, aScreenDragRect->y);
@@ -594,9 +589,9 @@ nsBaseDragService::DrawDragForImage(nsPresContext* aPresContext,
   if (destSize.width > maxWidth || destSize.height > maxHeight) {
     float scale = 1.0;
     if (destSize.width > maxWidth)
-      scale = PR_MIN(scale, float(maxWidth) / destSize.width);
+      scale = NS_MIN(scale, float(maxWidth) / destSize.width);
     if (destSize.height > maxHeight)
-      scale = PR_MIN(scale, float(maxHeight) / destSize.height);
+      scale = NS_MIN(scale, float(maxHeight) / destSize.height);
 
     destSize.width = NSToIntFloor(float(destSize.width) * scale);
     destSize.height = NSToIntFloor(float(destSize.height) * scale);

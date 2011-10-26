@@ -265,10 +265,10 @@ GetLine(JSContext *cx, char *bufp, FILE *file, const char *prompt) {
     } else
 #endif
     {
-        char line[256];
+        char line[256] = { '\0' };
         fputs(prompt, gOutFile);
         fflush(gOutFile);
-        if (!fgets(line, sizeof line, file))
+        if (!fgets(line, sizeof line, file) && errno != EINTR || feof(file))
             return JS_FALSE;
         strcpy(bufp, line);
     }
@@ -548,14 +548,6 @@ GC(JSContext *cx, uintN argc, jsval *vp)
     rt = cx->runtime;
     preBytes = rt->gcBytes;
     JS_GC(cx);
-    fprintf(gOutFile, "before %lu, after %lu, break %08lx\n",
-           (unsigned long)preBytes, (unsigned long)rt->gcBytes,
-#if defined(XP_UNIX) && !defined(__SYMBIAN32__)
-           (unsigned long)sbrk(0)
-#else
-           0
-#endif
-           );
 #ifdef JS_GCMETER
     js_DumpGCStats(rt, stdout);
 #endif
@@ -571,7 +563,7 @@ GCZeal(JSContext *cx, uintN argc, jsval *vp)
     if (!JS_ValueToECMAUint32(cx, argc ? JS_ARGV(cx, vp)[0] : JSVAL_VOID, &zeal))
         return JS_FALSE;
 
-    JS_SetGCZeal(cx, (PRUint8)zeal);
+    JS_SetGCZeal(cx, (PRUint8)zeal, JS_DEFAULT_ZEAL_FREQ, JS_FALSE);
     JS_SET_RVAL(cx, vp, JSVAL_VOID);
     return JS_TRUE;
 }
@@ -728,7 +720,6 @@ static const struct {
     const char  *name;
     uint32      flag;
 } js_options[] = {
-    {"anonfunfix",      JSOPTION_ANONFUNFIX},
     {"atline",          JSOPTION_ATLINE},
     {"jit",             JSOPTION_JIT},
     {"relimit",         JSOPTION_RELIMIT},
@@ -856,11 +847,6 @@ static JSFunctionSpec glob_functions[] = {
 #endif
     {"sendCommand",     SendCommand,    1,0},
     {"getChildGlobalObject", GetChildGlobalObject, 0,0},
-#ifdef MOZ_CALLGRIND
-    {"startCallgrind",  js_StartCallgrind,  0,0},
-    {"stopCallgrind",   js_StopCallgrind,   0,0},
-    {"dumpCallgrind",   js_DumpCallgrind,   1,0},
-#endif
     {nsnull,nsnull,0,0}
 };
 
@@ -1161,7 +1147,7 @@ ProcessArgs(JSContext *cx, JSObject *obj, char **argv, int argc)
 {
     const char rcfilename[] = "xpcshell.js";
     FILE *rcfile;
-    int i, j, length;
+    int i;
     JSObject *argsObj;
     char *filename = NULL;
     JSBool isInteractive = JS_TRUE;
@@ -1207,8 +1193,7 @@ ProcessArgs(JSContext *cx, JSObject *obj, char **argv, int argc)
         return 1;
     }
 
-    length = argc - i;
-    for (j = 0; j < length; j++) {
+    for (size_t j = 0, length = argc - i; j < length; j++) {
         JSString *str = JS_NewStringCopyZ(cx, argv[i++]);
         if (!str)
             return 1;
@@ -1844,6 +1829,21 @@ main(int argc, char **argv, char **envp)
     }
 
     {
+        if (argc > 1 && !strcmp(argv[1], "--greomni")) {
+            nsCOMPtr<nsILocalFile> greOmni;
+            nsCOMPtr<nsILocalFile> appOmni;
+            XRE_GetFileFromPath(argv[2], getter_AddRefs(greOmni));
+            if (argc > 3 && !strcmp(argv[3], "--appomni")) {
+                XRE_GetFileFromPath(argv[4], getter_AddRefs(appOmni));
+                argc-=2;
+                argv+=2;
+            } 
+            
+            XRE_InitOmnijar(greOmni, appOmni);
+            argc-=2;
+            argv+=2;
+        }
+
         nsCOMPtr<nsIServiceManager> servMan;
         rv = NS_InitXPCOM2(getter_AddRefs(servMan), appDir, &dirprovider);
         if (NS_FAILED(rv)) {
@@ -2081,7 +2081,15 @@ XPCShellDirProvider::GetFile(const char *prop, PRBool *persistent,
 {
     if (mGREDir && !strcmp(prop, NS_GRE_DIR)) {
         *persistent = PR_TRUE;
-        NS_ADDREF(*result = mGREDir);
+        return mGREDir->Clone(result);
+    } else if (mGREDir && !strcmp(prop, NS_APP_PREF_DEFAULTS_50_DIR)) {
+        nsCOMPtr<nsIFile> file;
+        *persistent = PR_TRUE;
+        if (NS_FAILED(mGREDir->Clone(getter_AddRefs(file))) ||
+            NS_FAILED(file->AppendNative(NS_LITERAL_CSTRING("defaults"))) ||
+            NS_FAILED(file->AppendNative(NS_LITERAL_CSTRING("pref"))))
+            return NS_ERROR_FAILURE;
+        NS_ADDREF(*result = file);
         return NS_OK;
     }
 
@@ -2104,6 +2112,18 @@ XPCShellDirProvider::GetFiles(const char *prop, nsISimpleEnumerator* *result)
         if (NS_SUCCEEDED(rv))
             dirs.AppendObject(file);
 
+        return NS_NewArrayEnumerator(result, dirs);
+    } else if (!strcmp(prop, NS_APP_PREFS_DEFAULTS_DIR_LIST)) {
+        nsCOMArray<nsIFile> dirs;
+
+        nsCOMPtr<nsIFile> file;
+        if (NS_FAILED(NS_GetSpecialDirectory(NS_XPCOM_CURRENT_PROCESS_DIR,
+                                             getter_AddRefs(file))) ||
+            NS_FAILED(file->AppendNative(NS_LITERAL_CSTRING("defaults"))) ||
+            NS_FAILED(file->AppendNative(NS_LITERAL_CSTRING("preferences"))))
+            return NS_ERROR_FAILURE;
+
+        dirs.AppendObject(file);
         return NS_NewArrayEnumerator(result, dirs);
     }
     return NS_ERROR_FAILURE;

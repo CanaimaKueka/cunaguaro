@@ -166,6 +166,7 @@ typedef struct JSCrossCompartmentCall JSCrossCompartmentCall;
 typedef struct JSStructuredCloneWriter JSStructuredCloneWriter;
 typedef struct JSStructuredCloneReader JSStructuredCloneReader;
 typedef struct JSStructuredCloneCallbacks JSStructuredCloneCallbacks;
+typedef struct JSPropertyName    JSPropertyName;
 
 #ifdef __cplusplus
 typedef class JSWrapper          JSWrapper;
@@ -548,7 +549,6 @@ typedef JSObject *
 (* JSPreWrapCallback)(JSContext *cx, JSObject *scope, JSObject *obj, uintN flags);
 
 typedef enum {
-    JSCOMPARTMENT_NEW, /* XXX Does it make sense to have a NEW? */
     JSCOMPARTMENT_DESTROY
 } JSCompartmentOp;
 

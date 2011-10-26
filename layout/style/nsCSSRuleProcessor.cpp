@@ -94,9 +94,10 @@
 #include "mozilla/dom/Element.h"
 #include "nsGenericElement.h"
 #include "nsNthIndexCache.h"
+#include "mozilla/Preferences.h"
 
+using namespace mozilla;
 using namespace mozilla::dom;
-namespace css = mozilla::css;
 
 #define VISITED_PSEUDO_PREF "layout.css.visited_links_enabled"
 
@@ -140,10 +141,14 @@ struct RuleValue : RuleSelectorPair {
 
 // Uses any of the sets of ops below.
 struct RuleHashTableEntry : public PLDHashEntryHdr {
+  // If you add members that have heap allocated memory be sure to change the
+  // logic in RuleHashTableSizeOfEnumerator.
   nsTArray<RuleValue> mRules;
 };
 
 struct RuleHashTagTableEntry : public RuleHashTableEntry {
+  // If you add members that have heap allocated memory be sure to change the
+  // logic in RuleHash::SizeOf.
   nsCOMPtr<nsIAtom> mTag;
 };
 
@@ -389,6 +394,8 @@ public:
   void EnumerateAllRules(Element* aElement, RuleProcessorData* aData,
                          NodeMatchContext& aNodeMatchContext);
   PLArenaPool& Arena() { return mArena; }
+
+  PRInt64 SizeOf() const;
 
 protected:
   typedef nsTArray<RuleValue> RuleValueList;
@@ -695,37 +702,54 @@ void RuleHash::EnumerateAllRules(Element* aElement, RuleProcessorData* aData,
   }
 }
 
-//--------------------------------
-
-// Attribute selectors hash table.
-struct AttributeSelectorEntry : public PLDHashEntryHdr {
-  nsIAtom *mAttribute;
-  nsTArray<nsCSSSelector*> *mSelectors;
-};
-
-static void
-AttributeSelectorClearEntry(PLDHashTable *table, PLDHashEntryHdr *hdr)
+static PLDHashOperator
+RuleHashTableSizeOfEnumerator(PLDHashTable* aTable, PLDHashEntryHdr* aHdr,
+                              PRUint32 i, void* aClosure)
 {
-  AttributeSelectorEntry *entry = static_cast<AttributeSelectorEntry*>(hdr);
-  delete entry->mSelectors;
-  memset(entry, 0, table->entrySize);
+  PRInt64* n = static_cast<PRInt64*>(aClosure);
+  RuleHashTableEntry* entry = static_cast<RuleHashTableEntry*>(aHdr);
+
+  *n += entry->mRules.SizeOf();
+  // The size of the RuleHashTableEntry itself is accounted for already
+
+  return PL_DHASH_NEXT;
 }
 
-static const PLDHashTableOps AttributeSelectorOps = {
-  PL_DHashAllocTable,
-  PL_DHashFreeTable,
-  PL_DHashVoidPtrKeyStub,
-  PL_DHashMatchEntryStub,
-  PL_DHashMoveEntryStub,
-  AttributeSelectorClearEntry,
-  PL_DHashFinalizeStub,
-  NULL
-};
+PRInt64
+RuleHash::SizeOf() const
+{
+  PRInt64 n = sizeof(*this);
 
+  n += PL_DHASH_TABLE_SIZE(&mIdTable) * sizeof(RuleHashTableEntry);
+  PL_DHashTableEnumerate(const_cast<PLDHashTable*>(&mIdTable),
+                         RuleHashTableSizeOfEnumerator, &n);
+
+  n += PL_DHASH_TABLE_SIZE(&mClassTable) * sizeof(RuleHashTableEntry);
+  PL_DHashTableEnumerate(const_cast<PLDHashTable*>(&mClassTable),
+                         RuleHashTableSizeOfEnumerator, &n);
+
+  n += PL_DHASH_TABLE_SIZE(&mTagTable) * sizeof(RuleHashTagTableEntry);
+  PL_DHashTableEnumerate(const_cast<PLDHashTable*>(&mTagTable),
+                         RuleHashTableSizeOfEnumerator, &n);
+
+  n += PL_DHASH_TABLE_SIZE(&mNameSpaceTable) * sizeof(RuleHashTableEntry);
+  PL_DHashTableEnumerate(const_cast<PLDHashTable*>(&mNameSpaceTable),
+                         RuleHashTableSizeOfEnumerator, &n);
+
+  n += mUniversalRules.SizeOf();
+
+  const PLArena* current = &mArena.first;
+  while (current) {
+    n += current->limit - current->base;
+    current = current->next;
+  }
+
+  return n;
+}
 
 //--------------------------------
 
-// Class selectors hash table.
+// A hash table mapping atoms to lists of selectors
 struct AtomSelectorEntry : public PLDHashEntryHdr {
   nsIAtom *mAtom;
   nsTArray<nsCSSSelector*> mSelectors;
@@ -755,18 +779,15 @@ AtomSelector_GetKey(PLDHashTable *table, const PLDHashEntryHdr *hdr)
 }
 
 // Case-sensitive ops.
-static const RuleHashTableOps AtomSelector_CSOps = {
-  {
+static const PLDHashTableOps AtomSelector_CSOps = {
   PL_DHashAllocTable,
   PL_DHashFreeTable,
   PL_DHashVoidPtrKeyStub,
-  RuleHash_CSMatchEntry,
+  PL_DHashMatchEntryStub,
   PL_DHashMoveEntryStub,
   AtomSelector_ClearEntry,
   PL_DHashFinalizeStub,
   AtomSelector_InitEntry
-  },
-  AtomSelector_GetKey
 };
 
 // Case-insensitive ops.
@@ -795,17 +816,19 @@ struct RuleCascadeData {
       mNext(nsnull),
       mQuirksMode(aQuirksMode)
   {
-    PL_DHashTableInit(&mAttributeSelectors, &AttributeSelectorOps, nsnull,
-                      sizeof(AttributeSelectorEntry), 16);
+    // mAttributeSelectors is matching on the attribute _name_, not the value,
+    // and we case-fold names at parse-time, so this is a case-sensitive match.
+    PL_DHashTableInit(&mAttributeSelectors, &AtomSelector_CSOps, nsnull,
+                      sizeof(AtomSelectorEntry), 16);
     PL_DHashTableInit(&mAnonBoxRules, &RuleHash_TagTable_Ops, nsnull,
                       sizeof(RuleHashTagTableEntry), 16);
     PL_DHashTableInit(&mIdSelectors,
                       aQuirksMode ? &AtomSelector_CIOps.ops :
-                                    &AtomSelector_CSOps.ops,
+                                    &AtomSelector_CSOps,
                       nsnull, sizeof(AtomSelectorEntry), 16);
     PL_DHashTableInit(&mClassSelectors,
                       aQuirksMode ? &AtomSelector_CIOps.ops :
-                                    &AtomSelector_CSOps.ops,
+                                    &AtomSelector_CSOps,
                       nsnull, sizeof(AtomSelectorEntry), 16);
     memset(mPseudoElementRuleHashes, 0, sizeof(mPseudoElementRuleHashes));
 #ifdef MOZ_XUL
@@ -827,6 +850,9 @@ struct RuleCascadeData {
       delete mPseudoElementRuleHashes[i];
     }
   }
+
+  PRInt64 SizeOf() const;
+
   RuleHash                 mRuleHash;
   RuleHash*
     mPseudoElementRuleHashes[nsCSSPseudoElements::ePseudo_PseudoElementCount];
@@ -843,9 +869,7 @@ struct RuleCascadeData {
 #endif
 
   nsTArray<nsFontFaceRuleContainer> mFontFaceRules;
-#ifdef MOZ_CSS_ANIMATIONS
   nsTArray<nsCSSKeyframesRule*> mKeyframesRules;
-#endif
 
   // Looks up or creates the appropriate list in |mAttributeSelectors|.
   // Returns null only on allocation failure.
@@ -857,21 +881,71 @@ struct RuleCascadeData {
   const PRBool mQuirksMode;
 };
 
+static PLDHashOperator
+SelectorsSizeOfEnumerator(PLDHashTable* aTable, PLDHashEntryHdr* aHdr,
+                          PRUint32 i, void* aClosure)
+{
+  PRInt64* n = (PRInt64*) aClosure;
+  AtomSelectorEntry* entry = (AtomSelectorEntry*)aHdr;
+
+  *n += entry->mSelectors.SizeOf();
+
+  return PL_DHASH_NEXT;
+}
+
+PRInt64
+RuleCascadeData::SizeOf() const
+{
+  PRInt64 n = sizeof(*this);
+
+  n += mRuleHash.SizeOf();
+  for (PRUint32 i = 0; i < NS_ARRAY_LENGTH(mPseudoElementRuleHashes); ++i) {
+    if (mPseudoElementRuleHashes[i])
+      n += mPseudoElementRuleHashes[i]->SizeOf();
+  }
+
+  n += mStateSelectors.SizeOf();
+
+  n += PL_DHASH_TABLE_SIZE(&mIdSelectors) * sizeof(AtomSelectorEntry);
+  PL_DHashTableEnumerate(const_cast<PLDHashTable*>(&mIdSelectors),
+                         SelectorsSizeOfEnumerator, &n);
+  n += PL_DHASH_TABLE_SIZE(&mClassSelectors) * sizeof(AtomSelectorEntry);
+  PL_DHashTableEnumerate(const_cast<PLDHashTable*>(&mClassSelectors),
+                         SelectorsSizeOfEnumerator, &n);
+
+  n += mPossiblyNegatedClassSelectors.SizeOf();
+  n += mPossiblyNegatedIDSelectors.SizeOf();
+
+  n += PL_DHASH_TABLE_SIZE(&mAttributeSelectors) * sizeof(AtomSelectorEntry);
+  PL_DHashTableEnumerate(const_cast<PLDHashTable*>(&mAttributeSelectors),
+                         SelectorsSizeOfEnumerator, &n);
+
+  n += PL_DHASH_TABLE_SIZE(&mAnonBoxRules) * sizeof(RuleHashTagTableEntry);
+  PL_DHashTableEnumerate(const_cast<PLDHashTable*>(&mAnonBoxRules),
+                         RuleHashTableSizeOfEnumerator, &n);
+
+#ifdef MOZ_XUL
+  n += PL_DHASH_TABLE_SIZE(&mXULTreeRules) * sizeof(RuleHashTagTableEntry);
+  PL_DHashTableEnumerate(const_cast<PLDHashTable*>(&mAnonBoxRules),
+                         RuleHashTableSizeOfEnumerator, &n);
+#endif
+
+  n += mFontFaceRules.SizeOf();
+  n += mKeyframesRules.SizeOf();
+
+  return n;
+}
+
 nsTArray<nsCSSSelector*>*
 RuleCascadeData::AttributeListFor(nsIAtom* aAttribute)
 {
-  AttributeSelectorEntry *entry = static_cast<AttributeSelectorEntry*>
-                                             (PL_DHashTableOperate(&mAttributeSelectors, aAttribute, PL_DHASH_ADD));
+  AtomSelectorEntry *entry =
+    static_cast<AtomSelectorEntry*>
+               (PL_DHashTableOperate(&mAttributeSelectors, aAttribute,
+                                     PL_DHASH_ADD));
   if (!entry)
     return nsnull;
-  if (!entry->mSelectors) {
-    if (!(entry->mSelectors = new nsTArray<nsCSSSelector*>)) {
-      PL_DHashTableRawRemove(&mAttributeSelectors, entry);
-      return nsnull;
-    }
-    entry->mAttribute = aAttribute;
-  }
-  return entry->mSelectors;
+  return &entry->mSelectors;
 }
 
 class nsPrivateBrowsingObserver : nsIObserver,
@@ -961,11 +1035,8 @@ NS_IMPL_ISUPPORTS1(nsCSSRuleProcessor, nsIStyleRuleProcessor)
 /* static */ nsresult
 nsCSSRuleProcessor::Startup()
 {
-  nsContentUtils::AddBoolPrefVarCache(VISITED_PSEUDO_PREF,
-                                      &gSupportVisitedPseudo);
-  // We want to default to true, not false as AddBoolPrefVarCache does.
-  gSupportVisitedPseudo =
-    nsContentUtils::GetBoolPref(VISITED_PSEUDO_PREF, PR_TRUE);
+  Preferences::AddBoolVarCache(&gSupportVisitedPseudo, VISITED_PSEUDO_PREF,
+                               PR_TRUE);
 
   gPrivateBrowsingObserver = new nsPrivateBrowsingObserver();
   NS_ENSURE_TRUE(gPrivateBrowsingObserver, NS_ERROR_OUT_OF_MEMORY);
@@ -1151,14 +1222,9 @@ static void GetLang(nsIContent* aContent, nsString& aLang)
 nsEventStates
 nsCSSRuleProcessor::GetContentState(Element* aElement)
 {
-  nsIPresShell* shell = aElement->GetOwnerDoc()->GetShell();
-  nsPresContext* presContext;
-  nsEventStates state;
-  if (shell && (presContext = shell->GetPresContext())) {
-    state = presContext->EventStateManager()->GetContentState(aElement);
-  } else {
-    state = aElement->IntrinsicState();
-  }
+  // FIXME: RequestLinkStateUpdate is a hack; see bug 660959.
+  aElement->RequestLinkStateUpdate();
+  nsEventStates state = aElement->State();
 
   // If we are not supposed to mark visited links as such, be sure to
   // flip the bits appropriately.  We want to do this here, rather
@@ -1177,7 +1243,9 @@ nsCSSRuleProcessor::GetContentState(Element* aElement)
 PRBool
 nsCSSRuleProcessor::IsLink(Element* aElement)
 {
-  nsEventStates state = aElement->IntrinsicState();
+  // FIXME: RequestLinkStateUpdate is a hack; see bug 660959.
+  aElement->RequestLinkStateUpdate();
+  nsEventStates state = aElement->State();
   return state.HasAtLeastOneOfStates(NS_EVENT_STATE_VISITED | NS_EVENT_STATE_UNVISITED);
 }
 
@@ -2172,7 +2240,7 @@ void ContentEnumFunc(css::StyleRule* aRule, nsCSSSelector* aSelector,
                                      data->mTreeMatchContext,
                                      !nodeContext.mIsRelevantLink)) {
       aRule->RuleMatched();
-      data->mRuleWalker->Forward(static_cast<nsIStyleRule*>(aRule));
+      data->mRuleWalker->Forward(aRule);
       // nsStyleSet will deal with the !important rule
     }
   }
@@ -2219,7 +2287,7 @@ nsCSSRuleProcessor::RulesMatching(AnonBoxRuleProcessorData* aData)
       for (RuleValue *value = rules.Elements(), *end = value + rules.Length();
            value != end; ++value) {
         value->mRule->RuleMatched();
-        aData->mRuleWalker->Forward(static_cast<nsIStyleRule*>(value->mRule));
+        aData->mRuleWalker->Forward(value->mRule);
       }
     }
   }
@@ -2430,12 +2498,13 @@ nsCSSRuleProcessor::HasAttributeDependentStyle(AttributeRuleProcessorData* aData
       }
     }
 
-    AttributeSelectorEntry *entry = static_cast<AttributeSelectorEntry*>
-                                               (PL_DHashTableOperate(&cascade->mAttributeSelectors, aData->mAttribute,
-                             PL_DHASH_LOOKUP));
+    AtomSelectorEntry *entry =
+      static_cast<AtomSelectorEntry*>
+                 (PL_DHashTableOperate(&cascade->mAttributeSelectors,
+                                       aData->mAttribute, PL_DHASH_LOOKUP));
     if (PL_DHASH_ENTRY_IS_BUSY(entry)) {
-      nsCSSSelector **iter = entry->mSelectors->Elements(),
-                    **end = iter + entry->mSelectors->Length();
+      nsCSSSelector **iter = entry->mSelectors.Elements(),
+                    **end = iter + entry->mSelectors.Length();
       for(; iter != end; ++iter) {
         AttributeEnumFunc(*iter, &data);
       }
@@ -2461,6 +2530,20 @@ nsCSSRuleProcessor::MediumFeaturesChanged(nsPresContext* aPresContext)
   return (old != mRuleCascades);
 }
 
+/* virtual */ PRInt64
+nsCSSRuleProcessor::SizeOf() const
+{
+  PRInt64 n = sizeof(*this);
+
+  n += mSheets.SizeOf();
+  for (RuleCascadeData* cascade = mRuleCascades; cascade;
+       cascade = cascade->mNext) {
+    n += cascade->SizeOf();
+  }
+
+  return n;
+}
+
 // Append all the currently-active font face rules to aArray.  Return
 // true for success and false for failure.
 PRBool
@@ -2478,7 +2561,6 @@ nsCSSRuleProcessor::AppendFontFaceRules(
   return PR_TRUE;
 }
 
-#ifdef MOZ_CSS_ANIMATIONS
 // Append all the currently-active keyframes rules to aArray.  Return
 // true for success and false for failure.
 PRBool
@@ -2495,7 +2577,6 @@ nsCSSRuleProcessor::AppendKeyframesRules(
   
   return PR_TRUE;
 }
-#endif
 
 nsresult
 nsCSSRuleProcessor::ClearRuleCascades()
@@ -2773,17 +2854,13 @@ static PLDHashTableOps gRulesByWeightOps = {
 struct CascadeEnumData {
   CascadeEnumData(nsPresContext* aPresContext,
                   nsTArray<nsFontFaceRuleContainer>& aFontFaceRules,
-#ifdef MOZ_CSS_ANIMATIONS
                   nsTArray<nsCSSKeyframesRule*>& aKeyframesRules,
-#endif
                   nsMediaQueryResultCacheKey& aKey,
                   PLArenaPool& aArena,
                   PRUint8 aSheetType)
     : mPresContext(aPresContext),
       mFontFaceRules(aFontFaceRules),
-#ifdef MOZ_CSS_ANIMATIONS
       mKeyframesRules(aKeyframesRules),
-#endif
       mCacheKey(aKey),
       mArena(aArena),
       mSheetType(aSheetType)
@@ -2801,9 +2878,7 @@ struct CascadeEnumData {
 
   nsPresContext* mPresContext;
   nsTArray<nsFontFaceRuleContainer>& mFontFaceRules;
-#ifdef MOZ_CSS_ANIMATIONS
   nsTArray<nsCSSKeyframesRule*>& mKeyframesRules;
-#endif
   nsMediaQueryResultCacheKey& mCacheKey;
   PLArenaPool& mArena;
   // Hooray, a manual PLDHashTable since nsClassHashtable doesn't
@@ -2859,7 +2934,6 @@ CascadeRuleEnumFunc(css::Rule* aRule, void* aData)
     ptr->mRule = fontFaceRule;
     ptr->mSheetType = data->mSheetType;
   }
-#ifdef MOZ_CSS_ANIMATIONS
   else if (css::Rule::KEYFRAMES_RULE == type) {
     nsCSSKeyframesRule *keyframesRule =
       static_cast<nsCSSKeyframesRule*>(aRule);
@@ -2867,7 +2941,6 @@ CascadeRuleEnumFunc(css::Rule* aRule, void* aData)
       return PR_FALSE;
     }
   }
-#endif
 
   return PR_TRUE;
 }
@@ -2968,9 +3041,7 @@ nsCSSRuleProcessor::RefreshRuleCascade(nsPresContext* aPresContext)
                           eCompatibility_NavQuirks == aPresContext->CompatibilityMode()));
     if (newCascade) {
       CascadeEnumData data(aPresContext, newCascade->mFontFaceRules,
-#ifdef MOZ_CSS_ANIMATIONS
                            newCascade->mKeyframesRules,
-#endif
                            newCascade->mCacheKey,
                            newCascade->mRuleHash.Arena(),
                            mSheetType);

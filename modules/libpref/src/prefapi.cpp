@@ -475,7 +475,7 @@ nsresult PREF_GetCharPref(const char *pref_name, char * return_buffer, int * len
                 *length = PL_strlen(stringVal) + 1;
             else
             {
-                PL_strncpy(return_buffer, stringVal, PR_MIN((size_t)*length - 1, PL_strlen(stringVal) + 1));
+                PL_strncpy(return_buffer, stringVal, NS_MIN<size_t>(*length - 1, PL_strlen(stringVal) + 1));
                 return_buffer[*length - 1] = '\0';
             }
             rv = NS_OK;
@@ -992,7 +992,10 @@ void PREF_ReaderCallback(void       *closure,
                          const char *pref,
                          PrefValue   value,
                          PrefType    type,
-                         PRBool      isDefault)
+                         PRBool      isDefault,
+                         PRBool      isLocked)
 {
     pref_HashPref(pref, value, type, isDefault);
+    if (isLocked)
+        PREF_LockPref(pref, PR_TRUE);
 }

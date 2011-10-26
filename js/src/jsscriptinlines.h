@@ -102,7 +102,7 @@ inline const char *
 CurrentScriptFileAndLine(JSContext *cx, uintN *linenop, LineOption opt)
 {
     if (opt == CALLED_FROM_JSOP_EVAL) {
-        JS_ASSERT(*cx->regs().pc == JSOP_EVAL);
+        JS_ASSERT(js_GetOpcode(cx, cx->fp()->script(), cx->regs().pc) == JSOP_EVAL);
         JS_ASSERT(*(cx->regs().pc + JSOP_EVAL_LENGTH) == JSOP_LINENO);
         *linenop = GET_UINT16(cx->regs().pc + JSOP_EVAL_LENGTH);
         return cx->fp()->script()->filename;
@@ -122,6 +122,13 @@ JSScript::getFunction(size_t index)
     JSFunction *fun = (JSFunction *) funobj;
     JS_ASSERT(FUN_INTERPRETED(fun));
     return fun;
+}
+
+inline JSFunction *
+JSScript::getCallerFunction()
+{
+    JS_ASSERT(savedCallerFun);
+    return getFunction(0);
 }
 
 inline JSObject *

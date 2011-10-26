@@ -270,7 +270,7 @@ class JaegerCompartment {
  * setting a flag on the compiler when OOM occurs. The compiler is required
  * to check for OOM only before trying to use the contents of the list.
  */
-class CompilerAllocPolicy : public ContextAllocPolicy
+class CompilerAllocPolicy : public TempAllocPolicy
 {
     bool *oomFlag;
 
@@ -282,12 +282,12 @@ class CompilerAllocPolicy : public ContextAllocPolicy
 
   public:
     CompilerAllocPolicy(JSContext *cx, bool *oomFlag)
-    : ContextAllocPolicy(cx), oomFlag(oomFlag) {}
+    : TempAllocPolicy(cx), oomFlag(oomFlag) {}
     CompilerAllocPolicy(JSContext *cx, Compiler &compiler);
 
-    void *malloc_(size_t bytes) { return checkAlloc(ContextAllocPolicy::malloc_(bytes)); }
-    void *realloc_(void *p, size_t bytes) {
-        return checkAlloc(ContextAllocPolicy::realloc_(p, bytes));
+    void *malloc_(size_t bytes) { return checkAlloc(TempAllocPolicy::malloc_(bytes)); }
+    void *realloc_(void *p, size_t oldBytes, size_t bytes) {
+        return checkAlloc(TempAllocPolicy::realloc_(p, oldBytes, bytes));
     }
 };
 
@@ -382,6 +382,7 @@ struct JITScript {
     uint32          nPICs;
 #endif
     uint32          nCallSites;
+    uint32          nRootedObjects;
 
 #ifdef JS_MONOIC
     // Additional ExecutablePools that IC stubs were generated into.
@@ -403,6 +404,7 @@ struct JITScript {
     ic::PICInfo     *pics() const;
 #endif
     js::mjit::CallSite *callSites() const;
+    JSObject **rootedObjects() const;
 
     ~JITScript();
 
@@ -417,11 +419,9 @@ struct JITScript {
     void purgeMICs();
     void purgePICs();
 
+    void trace(JSTracer *trc);
+
     size_t scriptDataSize();
-#ifdef DEBUG
-    /* length script->length array of execution counters for every JSOp in the compiled script */
-    int             *pcProfile;
-#endif
     jsbytecode *nativeToPC(void *returnAddress) const;
 
   private:
@@ -459,6 +459,9 @@ TryCompile(JSContext *cx, StackFrame *fp);
 
 void
 ReleaseScriptCode(JSContext *cx, JSScript *script);
+
+void
+TraceScript(JSTracer *trc, JSScript *script);
 
 struct CallSite
 {

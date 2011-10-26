@@ -44,7 +44,6 @@
  */
 
 #include "mozilla/layout/RenderFrameParent.h"
-using mozilla::layout::RenderFrameParent;
 
 #include "nsSubDocumentFrame.h"
 #include "nsCOMPtr.h"
@@ -82,7 +81,6 @@ using mozilla::layout::RenderFrameParent;
 #include "nsWeakReference.h"
 #include "nsIDOMWindow.h"
 #include "nsIDOMDocument.h"
-#include "nsIDOMNSHTMLDocument.h"
 #include "nsDisplayList.h"
 #include "nsUnicharUtils.h"
 #include "nsIScrollableFrame.h"
@@ -90,6 +88,8 @@ using mozilla::layout::RenderFrameParent;
 #include "nsLayoutUtils.h"
 #include "FrameLayerBuilder.h"
 #include "nsObjectFrame.h"
+#include "nsIServiceManager.h"
+#include "nsContentUtils.h"
 
 #ifdef MOZ_XUL
 #include "nsXULPopupManager.h"
@@ -99,9 +99,9 @@ using mozilla::layout::RenderFrameParent;
 #ifdef ACCESSIBILITY
 #include "nsAccessibilityService.h"
 #endif
-#include "nsIServiceManager.h"
 
 using namespace mozilla;
+using mozilla::layout::RenderFrameParent;
 
 static nsIDocument*
 GetDocumentFromView(nsIView* aView)
@@ -719,6 +719,11 @@ nsSubDocumentFrame::AttributeChanged(PRInt32 aNameSpaceID,
       return NS_OK;
     }
 
+    if (mFrameLoader->GetRemoteBrowser()) {
+      // TODO: Implement ContentShellAdded for remote browsers (bug 658304)
+      return NS_OK;
+    }
+
     // Note: This logic duplicates a lot of logic in
     // nsFrameLoader::EnsureDocShell.  We should fix that.
 
@@ -1075,12 +1080,10 @@ nsSubDocumentFrame::ObtainIntrinsicSizeFrame()
       }
     }
 
-#ifdef MOZ_SVG
     if (subDocRoot && subDocRoot->GetContent() &&
         subDocRoot->GetContent()->NodeInfo()->Equals(nsGkAtoms::svg, kNameSpaceID_SVG)) {
       return subDocRoot; // SVG documents have an intrinsic size
     }
-#endif
   }
   return nsnull;
 }

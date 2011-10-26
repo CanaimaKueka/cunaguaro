@@ -43,13 +43,9 @@
 #include "nsIDOMDocument.h"
 #include "nsIDOMHTMLElement.h"
 #include "nsIDOMNSHTMLElement.h"
-#include "nsIDOMEventTarget.h"
 #include "nsIDOMNSEvent.h"
-#include "nsPIDOMEventTarget.h"
 #include "nsIMEStateManager.h"
 #include "nsFocusManager.h"
-#include "nsIPrefBranch.h"
-#include "nsIPrefService.h"
 #include "nsUnicharUtils.h"
 #include "nsReadableUtils.h"
 
@@ -62,7 +58,6 @@
 #include "nsIDOMNodeList.h"
 #include "nsIDOMRange.h"
 #include "nsIDOMHTMLBRElement.h"
-#include "nsIDOMEventTarget.h"
 #include "nsIDocument.h"
 #include "nsITransactionManager.h"
 #include "nsIAbsorbingTransaction.h"
@@ -116,6 +111,8 @@
 #include "nsTextEditUtils.h"
 
 #include "mozilla/FunctionTimer.h"
+#include "mozilla/Preferences.h"
+#include "mozilla/dom/Element.h"
 
 #define NS_ERROR_EDITOR_NO_SELECTION NS_ERROR_GENERATE_FAILURE(NS_ERROR_MODULE_EDITOR,1)
 #define NS_ERROR_EDITOR_NO_TEXTNODE  NS_ERROR_GENERATE_FAILURE(NS_ERROR_MODULE_EDITOR,2)
@@ -128,6 +125,7 @@ static PRBool gNoisy = PR_FALSE;
 #include "nsIDOMHTMLDocument.h"
 #endif
 
+using namespace mozilla;
 
 // Defined in nsEditorRegistration.cpp
 extern nsIParserService *sParserService;
@@ -291,14 +289,7 @@ nsEditor::PostCreate()
     mDidPostCreate = PR_TRUE;
 
     // Set up listeners
-    rv = CreateEventListeners();
-    if (NS_FAILED(rv))
-    {
-      RemoveEventListeners();
-
-      return rv;
-    }
-
+    CreateEventListeners();
     rv = InstallEventListeners();
     NS_ENSURE_SUCCESS(rv, rv);
 
@@ -330,16 +321,14 @@ nsEditor::PostCreate()
   return NS_OK;
 }
 
-nsresult
+/* virtual */
+void
 nsEditor::CreateEventListeners()
 {
   // Don't create the handler twice
-  if (mEventListener)
-    return NS_OK;
-  mEventListener = do_QueryInterface(
-    static_cast<nsIDOMKeyListener*>(new nsEditorEventListener()));
-  NS_ENSURE_TRUE(mEventListener, NS_ERROR_OUT_OF_MEMORY);
-  return NS_OK;
+  if (!mEventListener) {
+    mEventListener = new nsEditorEventListener();
+  }
 }
 
 nsresult
@@ -378,13 +367,7 @@ nsEditor::GetDesiredSpellCheckState()
   }
 
   // Check user preferences
-  nsresult rv;
-  nsCOMPtr<nsIPrefBranch> prefBranch =
-    do_GetService(NS_PREFSERVICE_CONTRACTID, &rv);
-  PRInt32 spellcheckLevel = 1;
-  if (NS_SUCCEEDED(rv) && prefBranch) {
-    prefBranch->GetIntPref("layout.spellcheckDefault", &spellcheckLevel);
-  }
+  PRInt32 spellcheckLevel = Preferences::GetInt("layout.spellcheckDefault", 1);
 
   if (spellcheckLevel == 0) {
     return PR_FALSE;                    // Spellchecking forced off globally
@@ -3410,54 +3393,52 @@ nsEditor::GetNextNodeImpl(nsIDOMNode  *aCurrentNode,
 }
 
 
-nsCOMPtr<nsIDOMNode>
+already_AddRefed<nsIDOMNode>
 nsEditor::GetRightmostChild(nsIDOMNode *aCurrentNode, 
                             PRBool bNoBlockCrossing)
 {
   NS_ENSURE_TRUE(aCurrentNode, nsnull);
-  nsCOMPtr<nsIDOMNode> resultNode, temp=aCurrentNode;
+  nsCOMPtr<nsIDOMNode> resultNode, temp = aCurrentNode;
   PRBool hasChildren;
   aCurrentNode->HasChildNodes(&hasChildren);
-  while (hasChildren)
-  {
+  while (hasChildren) {
     temp->GetLastChild(getter_AddRefs(resultNode));
-    if (resultNode)
-    {
-      if (bNoBlockCrossing && IsBlockNode(resultNode))
-         return resultNode;
+    if (resultNode) {
+      if (bNoBlockCrossing && IsBlockNode(resultNode)) {
+        return resultNode.forget();
+      }
       resultNode->HasChildNodes(&hasChildren);
       temp = resultNode;
-    }
-    else 
+    } else {
       hasChildren = PR_FALSE;
+    }
   }
 
-  return resultNode;
+  return resultNode.forget();
 }
 
-nsCOMPtr<nsIDOMNode>
+already_AddRefed<nsIDOMNode>
 nsEditor::GetLeftmostChild(nsIDOMNode *aCurrentNode,
                            PRBool bNoBlockCrossing)
 {
   NS_ENSURE_TRUE(aCurrentNode, nsnull);
-  nsCOMPtr<nsIDOMNode> resultNode, temp=aCurrentNode;
+  nsCOMPtr<nsIDOMNode> resultNode, temp = aCurrentNode;
   PRBool hasChildren;
   aCurrentNode->HasChildNodes(&hasChildren);
-  while (hasChildren)
-  {
+  while (hasChildren) {
     temp->GetFirstChild(getter_AddRefs(resultNode));
-    if (resultNode)
-    {
-      if (bNoBlockCrossing && IsBlockNode(resultNode))
-         return resultNode;
+    if (resultNode) {
+      if (bNoBlockCrossing && IsBlockNode(resultNode)) {
+        return resultNode.forget();
+      }
       resultNode->HasChildNodes(&hasChildren);
       temp = resultNode;
-    }
-    else 
+    } else {
       hasChildren = PR_FALSE;
+    }
   }
 
-  return resultNode;
+  return resultNode.forget();
 }
 
 PRBool 
@@ -3810,7 +3791,20 @@ nsEditor::GetChildAt(nsIDOMNode *aParent, PRInt32 aOffset)
 
   return resultNode;
 }
-  
+
+///////////////////////////////////////////////////////////////////////////
+// GetNodeAtRangeOffsetPoint: returns the node at this position in a range,
+// assuming that aParentOrNode is the node itself if it's a text node, or
+// the node's parent otherwise.
+//
+nsCOMPtr<nsIDOMNode>
+nsEditor::GetNodeAtRangeOffsetPoint(nsIDOMNode* aParentOrNode, PRInt32 aOffset)
+{
+  if (IsTextNode(aParentOrNode)) {
+    return aParentOrNode;
+  }
+  return GetChildAt(aParentOrNode, aOffset);
+}
 
 
 ///////////////////////////////////////////////////////////////////////////
@@ -5243,7 +5237,7 @@ nsEditor::GetNativeKeyEvent(nsIDOMKeyEvent* aDOMKeyEvent)
 already_AddRefed<nsIContent>
 nsEditor::GetFocusedContent()
 {
-  nsCOMPtr<nsPIDOMEventTarget> piTarget = GetPIDOMEventTarget();
+  nsCOMPtr<nsIDOMEventTarget> piTarget = GetDOMEventTarget();
   if (!piTarget) {
     return nsnull;
   }
@@ -5258,7 +5252,7 @@ nsEditor::GetFocusedContent()
 PRBool
 nsEditor::IsActiveInDOMWindow()
 {
-  nsCOMPtr<nsPIDOMEventTarget> piTarget = GetPIDOMEventTarget();
+  nsCOMPtr<nsIDOMEventTarget> piTarget = GetDOMEventTarget();
   if (!piTarget) {
     return PR_FALSE;
   }

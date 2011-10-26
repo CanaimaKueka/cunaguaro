@@ -54,7 +54,7 @@ using mozilla::GraphicsFilterType;
 using mozilla::layers::FrameMetrics;
 using mozilla::layers::SurfaceDescriptorX11;
 using mozilla::null_t;
-using mozilla::LayersBackend;
+using mozilla::WindowsHandle;
 
 /**
  * The layers protocol is spoken between thread contexts that manage
@@ -73,13 +73,14 @@ struct OpCreateContainerLayer  { PLayer layer; };
 struct OpCreateImageLayer      { PLayer layer; };
 struct OpCreateColorLayer      { PLayer layer; };
 struct OpCreateCanvasLayer     { PLayer layer; };
- 
-// For the "buffer creation" operations, we send an initial front
-// buffer that only contains (transparent) black pixels just so that
-// we can swap it back after the first OpPaint without a special case.
+
+struct SurfaceDescriptorD3D10 {
+  WindowsHandle handle;
+};
 
 union SurfaceDescriptor {
   Shmem;
+  SurfaceDescriptorD3D10;
   SurfaceDescriptorX11;
 };
 
@@ -87,6 +88,7 @@ struct YUVImage {
   Shmem Ydata;
   Shmem Udata;
   Shmem Vdata;
+  nsIntRect picture;
 };
 
 union SharedImage {
@@ -101,12 +103,14 @@ struct ThebesBuffer {
 };
 union OptionalThebesBuffer { ThebesBuffer; null_t; };
 
+// For the "buffer creation" operations, we send an initial front
+// buffer that only contains (transparent) black pixels just so that
+// we can swap it back after the first OpPaint without a special case.
+
 struct OpCreateThebesBuffer {
   PLayer layer;
   OptionalThebesBuffer initialFront;
   nsIntRegion frontValidRegion;
-  float xResolution;
-  float yResolution;
 };
 struct OpDestroyThebesFrontBuffer { PLayer layer; };
 
@@ -114,6 +118,7 @@ struct OpCreateCanvasBuffer {
   PLayer layer;
   nsIntSize size;
   SurfaceDescriptor initialFront;
+  bool needYFlip;
 };
 struct OpDestroyCanvasFrontBuffer { PLayer layer; };
 
@@ -140,8 +145,6 @@ struct CommonLayerAttributes {
 
 struct ThebesLayerAttributes {
   nsIntRegion validRegion;
-  float xResolution;
-  float yResolution;
 };
 struct ContainerLayerAttributes{ FrameMetrics metrics; };
 struct ColorLayerAttributes    { gfxRGBA color; };
@@ -229,8 +232,6 @@ struct OpThebesBufferSwap {
   PLayer layer;
   ThebesBuffer newBackBuffer;
   nsIntRegion newValidRegion;
-  float newXResolution;
-  float newYResolution;
   // If the parent took the child's old back buffer and returned its
   // old front buffer, |readOnlyFrontBuffer| may (if non-null) contain
   // the child's old back buffer (parent's new front buffer).  This
@@ -259,9 +260,6 @@ parent:
 
   sync Update(Edit[] cset)
     returns (EditReply[] reply);
-
-  sync GetParentType()
-    returns (LayersBackend backend);
 
   async __delete__();
 };

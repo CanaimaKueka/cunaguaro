@@ -70,8 +70,14 @@ pref("extensions.blocklist.interval", 86400);
 pref("extensions.blocklist.level", 2);
 pref("extensions.blocklist.url", "https://addons.mozilla.org/blocklist/3/%APP_ID%/%APP_VERSION%/%PRODUCT%/%BUILD_ID%/%BUILD_TARGET%/%LOCALE%/%CHANNEL%/%OS_VERSION%/%DISTRIBUTION%/%DISTRIBUTION_VERSION%/%PING_COUNT%/%TOTAL_PING_COUNT%/%DAYS_SINCE_LAST_PING%/");
 pref("extensions.blocklist.detailsURL", "https://www.mozilla.com/%LOCALE%/blocklist/");
+pref("extensions.blocklist.itemURL", "https://addons.mozilla.org/%LOCALE%/%APP%/blocked/%blockID%");
 
 pref("extensions.update.autoUpdateDefault", true);
+
+// Disable add-ons installed into the shared user and shared system areas by
+// default. This does not include the application directory. See the SCOPE
+// constants in AddonManager.jsm for values to use here
+pref("extensions.autoDisableScopes", 10);
 
 // Dictionary download preference
 pref("browser.dictionaries.download.url", "https://addons.mozilla.org/%LOCALE%/firefox/dictionaries/");
@@ -164,13 +170,8 @@ pref("app.update.url", "https://aus3.mozilla.org/update/3/%PRODUCT%/%VERSION%/%B
 //pref("app.update.url.override", "");
 
 // app.update.interval is in branding section
+// app.update.promptWaitTime is in branding section
 
-// Interval: Time before prompting the user again to restart to install the
-//           latest download (in seconds) default=1 day
-pref("app.update.nagTimer.restart", 86400);
-
-// Give the user x seconds to react before showing the big UI. default=12 hours
-pref("app.update.promptWaitTime", 43200);
 // Show the Update Checking/Ready UI when the user was idle for x seconds
 pref("app.update.idletime", 60);
 
@@ -217,7 +218,6 @@ pref("keyword.enabled", true);
 // "use the search service's default engine"
 pref("keyword.URL", "");
 
-pref("general.useragent.locale", "@AB_CD@");
 pref("general.skins.selectedSkin", "classic/1.0");
 
 pref("general.smoothScroll", false);
@@ -300,6 +300,7 @@ pref("browser.urlbar.match.url", "@");
 pref("browser.urlbar.default.behavior", 0);
 
 pref("browser.urlbar.formatting.enabled", true);
+pref("browser.urlbar.trimURLs", true);
 
 // Number of milliseconds to wait for the http headers (and thus
 // the Content-Disposition filename) before giving up and falling back to 
@@ -569,6 +570,7 @@ pref("plugins.hide_infobar_for_missing_plugin", false);
 pref("plugins.hide_infobar_for_outdated_plugin", false);
 
 #ifdef XP_MACOSX
+pref("plugins.use_layers", true);
 pref("plugins.hide_infobar_for_carbon_failure_plugin", false);
 #endif
 
@@ -723,7 +725,11 @@ pref("urlclassifier.alternate_error_page", "blocked");
 pref("urlclassifier.gethashnoise", 4);
 
 // The list of tables that use the gethash request to confirm partial results.
+#ifdef MOZ_OFFICIAL_BRANDING
 pref("urlclassifier.gethashtables", "goog-phish-shavar,goog-malware-shavar");
+#else
+pref("urlclassifier.gethashtables", "googpub-phish-shavar,goog-malware-shavar");
+#endif
 
 // If an urlclassifier table has not been updated in this number of seconds,
 // a gethash request will be forced to check that the result is still in
@@ -779,12 +785,12 @@ pref("browser.sessionstore.max_windows_undo", 3);
 // number of crashes that can occur before the about:sessionrestore page is displayed
 // (this pref has no effect if more than 6 hours have passed since the last crash)
 pref("browser.sessionstore.max_resumed_crashes", 1);
-// The number of tabs that can restore concurrently:
-// < 0 = All tabs can restore at the same time
-//   0 = Only the selected tab in each window will be restored
-//       Other tabs won't be restored until they are selected
-//   N = The number of tabs to restore at the same time
-pref("browser.sessionstore.max_concurrent_tabs", 3);
+// restore_on_demand overrides MAX_CONCURRENT_TAB_RESTORES (sessionstore constant)
+// and restore_hidden_tabs. When true, tabs will not be restored until they are
+// focused (also applies to tabs that aren't visible). When false, the values
+// for MAX_CONCURRENT_TAB_RESTORES and restore_hidden_tabs are respected.
+// Selected tabs are always restored regardless of this pref.
+pref("browser.sessionstore.restore_on_demand", false);
 // Whether to automatically restore hidden tabs (i.e., tabs in other tab groups) or not
 pref("browser.sessionstore.restore_hidden_tabs", false);
 
@@ -901,6 +907,10 @@ pref("dom.ipc.plugins.enabled.x86_64", true);
 pref("dom.ipc.plugins.enabled", true);
 #endif
 
+#ifdef MOZ_E10S_COMPAT
+pref("browser.tabs.remote", true);
+#endif
+
 // This pref governs whether we attempt to work around problems caused by
 // plugins using OS calls to manipulate the cursor while running out-of-
 // process.  These workarounds all involve intercepting (hooking) certain
@@ -1001,9 +1011,11 @@ pref("services.sync.prefs.sync.spellchecker.dictionary", true);
 pref("services.sync.prefs.sync.xpinstall.whitelist.required", true);
 #endif
 
-// Disable the error console and inspector
+// Disable the error console
 pref("devtools.errorconsole.enabled", false);
-pref("devtools.inspector.enabled", false);
+
+// Enable the Inspector
+pref("devtools.inspector.enabled", true);
 
 // Enable the Scratchpad tool.
 pref("devtools.scratchpad.enabled", true);
@@ -1028,6 +1040,23 @@ pref("devtools.hud.loglimit.network", 200);
 pref("devtools.hud.loglimit.cssparser", 200);
 pref("devtools.hud.loglimit.exception", 200);
 pref("devtools.hud.loglimit.console", 200);
+
+// The developer tools editor configuration:
+// - tabsize: how many spaces to use when a Tab character is displayed.
+// - expandtab: expand Tab characters to spaces.
+pref("devtools.editor.tabsize", 4);
+pref("devtools.editor.expandtab", true);
+
+// Tells which component you want to use for source editing in developer tools.
+//
+// Available components:
+//   "textarea" - this is a basic text editor, like an HTML <textarea>.
+//
+//   "orion" - this is the Orion source code editor from the Eclipse project. It
+//   provides programmer-specific editor features such as syntax highlighting,
+//   indenting and bracket recognition. It may not be appropriate for all
+//   locales (esp. RTL) or a11y situations.
+pref("devtools.editor.component", "textarea");
 
 // Whether the character encoding menu is under the main Firefox button. This
 // preference is a string so that localizers can alter it.

@@ -108,7 +108,8 @@ public:
     PRUint32       PhishyUserPassLength()    { return mPhishyUserPassLength; }
     PRUint8        GetQoSBits()              { return mQoSBits; }
     PRUint16       GetIdleSynTimeout()       { return mIdleSynTimeout; }
-    
+    PRBool         FastFallbackToIPv4()      { return mFastFallbackToIPv4; }
+
     PRBool         IsPersistentHttpsCachingEnabled() { return mEnablePersistentHttpsCaching; }
 
     PRBool         PromptTempRedirect()      { return mPromptTempRedirect; }
@@ -229,7 +230,6 @@ private:
     nsresult SetAccept(const char *);
     nsresult SetAcceptLanguages(const char *);
     nsresult SetAcceptEncodings(const char *);
-    nsresult SetAcceptCharsets(const char *);
 
     nsresult InitConnectionMgr();
 
@@ -260,6 +260,8 @@ private:
     PRUint8  mCapabilities;
     PRUint8  mProxyCapabilities;
     PRUint8  mReferrerLevel;
+
+    PRPackedBool mFastFallbackToIPv4;
 
     PRUint16 mIdleTimeout;
     PRUint16 mMaxRequestAttempts;
@@ -294,7 +296,6 @@ private:
     nsCString mAccept;
     nsCString mAcceptLanguages;
     nsCString mAcceptEncodings;
-    nsCString mAcceptCharsets;
 
     nsXPIDLCString mDefaultSocketType;
 

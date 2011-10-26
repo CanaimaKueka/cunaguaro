@@ -228,7 +228,7 @@
                     tooltiptext="&view.recentUpdates.label;" disabled="true"/>
     </richlistbox>
 
-    <box id="view-port-container" flex="1">
+    <box id="view-port-container" class="main-content" flex="1">
 
       <!-- view port -->
       <deck id="view-port" flex="1" selectedIndex="0">
@@ -326,7 +326,7 @@
             <spacer class="alert-spacer-before"/>
             <vbox class="alert">
               <label value="&listEmpty.search.label;"/>
-              <button label="&listEmpty.button.label;" class="addon-control"
+              <button label="&listEmpty.button.label;"
                       command="cmd_goToDiscoverPane"/>
             </vbox>
             <spacer class="alert-spacer-after"/>
@@ -373,9 +373,8 @@
             </hbox>
           </hbox>
           <hbox class="view-header global-info-container">
-            <hbox class="global-info-plugincheck" flex="1" align="center"
-                  tooltiptext="Update plugins">
-              <button class="button-link"
+            <hbox class="global-info" flex="1" align="center">
+              <button class="button-link global-info-plugincheck"
                       label="&info.plugincheck.label;"
                       tooltiptext="&info.plugincheck.tooltip;"
                       command="cmd_pluginCheck"/>
@@ -387,7 +386,7 @@
             <spacer class="alert-spacer-before"/>
             <vbox class="alert">
               <label value="&listEmpty.installed.label;"/>
-              <button label="&listEmpty.button.label;" class="addon-control"
+              <button label="&listEmpty.button.label;"
                       command="cmd_goToDiscoverPane"/>
             </vbox>
             <spacer class="alert-spacer-after"/>
@@ -438,7 +437,7 @@
             <vbox class="alert">
               <label id="empty-availableUpdates-msg" value="&listEmpty.availableUpdates.label;"/>
               <label id="empty-recentUpdates-msg" value="&listEmpty.recentUpdates.label;"/>
-              <button label="&listEmpty.findUpdates.label;" class="addon-control"
+              <button label="&listEmpty.findUpdates.label;"
                       command="cmd_findAllUpdates"/>
             </vbox>
             <spacer class="alert-spacer-after"/>
@@ -564,7 +563,7 @@
                        <column flex="1"/>
                        <column flex="2"/>
                     </columns>
-                    <rows>
+                    <rows id="detail-rows">
                       <row class="detail-row-complex" id="detail-updates-row">
                         <label class="detail-row-label" value="&detail.updateType;"/>
                         <hbox align="center">

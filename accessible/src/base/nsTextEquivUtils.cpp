@@ -39,6 +39,7 @@
 
 #include "nsTextEquivUtils.h"
 
+#include "AccIterator.h"
 #include "nsAccessibilityService.h"
 #include "nsAccessible.h"
 #include "nsAccUtils.h"
@@ -519,7 +520,7 @@ PRUint32 nsTextEquivUtils::gRoleToNameRulesMap[] =
   eNoRule,           // ROLE_AUTOCOMPLETE
   eNoRule,           // ROLE_EDITBAR
   eFromValue,        // ROLE_ENTRY
-  eNoRule,           // ROLE_CAPTION
+  eFromSubtreeIfRec, // ROLE_CAPTION
   eNoRule,           // ROLE_DOCUMENT_FRAME
   eFromSubtreeIfRec, // ROLE_HEADING
   eNoRule,           // ROLE_PAGE

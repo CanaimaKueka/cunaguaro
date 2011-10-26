@@ -78,20 +78,20 @@ struct nsCSSValueList;
 
 // Bits for each struct.
 // NS_STYLE_INHERIT_BIT defined in nsStyleStructFwd.h
-#define NS_STYLE_INHERIT_MASK             0x00ffffff
+#define NS_STYLE_INHERIT_MASK             0x007fffff
 
 // Additional bits for nsStyleContext's mBits:
 // See nsStyleContext::HasTextDecorationLines
-#define NS_STYLE_HAS_TEXT_DECORATION_LINES 0x01000000
+#define NS_STYLE_HAS_TEXT_DECORATION_LINES 0x00800000
 // See nsStyleContext::HasPseudoElementData.
-#define NS_STYLE_HAS_PSEUDO_ELEMENT_DATA  0x02000000
+#define NS_STYLE_HAS_PSEUDO_ELEMENT_DATA  0x01000000
 // See nsStyleContext::RelevantLinkIsVisited
-#define NS_STYLE_RELEVANT_LINK_VISITED    0x04000000
+#define NS_STYLE_RELEVANT_LINK_VISITED    0x02000000
 // See nsStyleContext::IsStyleIfVisited
-#define NS_STYLE_IS_STYLE_IF_VISITED      0x08000000
+#define NS_STYLE_IS_STYLE_IF_VISITED      0x04000000
 // See nsStyleContext::GetPseudoEnum
-#define NS_STYLE_CONTEXT_TYPE_MASK        0xf0000000
-#define NS_STYLE_CONTEXT_TYPE_SHIFT       28
+#define NS_STYLE_CONTEXT_TYPE_MASK        0xf8000000
+#define NS_STYLE_CONTEXT_TYPE_SHIFT       27
 
 // Additional bits for nsRuleNode's mDependentBits:
 #define NS_RULE_NODE_GC_MARK              0x02000000
@@ -138,14 +138,12 @@ struct nsStyleFont {
   PRUint8 mGenericID;   // [inherited] generic CSS font family, if any;
                         // value is a kGenericFont_* constant, see nsFont.h.
 
-#ifdef MOZ_MATHML
   // MathML scriptlevel support
   PRInt8  mScriptLevel;          // [inherited]
   // The value mSize would have had if scriptminsize had never been applied
   nscoord mScriptUnconstrainedSize;
   nscoord mScriptMinSize;        // [inherited] length
   float   mScriptSizeMultiplier; // [inherited]
-#endif
 };
 
 struct nsStyleGradientStop {
@@ -378,13 +376,32 @@ struct nsStyleBackground {
   struct Size;
   friend struct Size;
   struct Size {
-    typedef nsStyleCoord::Calc Dimension;
+    struct Dimension : public nsStyleCoord::Calc {
+      nscoord ResolveLengthPercentage(nscoord aAvailable) const {
+        double d = double(mPercent) * double(aAvailable) + double(mLength);
+        if (d < 0.0)
+          return 0;
+        return NSToCoordRoundWithClamp(float(d));
+      }
+    };
     Dimension mWidth, mHeight;
+
+    nscoord ResolveWidthLengthPercentage(const nsSize& aBgPositioningArea) const {
+      NS_ABORT_IF_FALSE(mWidthType == eLengthPercentage,
+                        "resolving non-length/percent dimension!");
+      return mWidth.ResolveLengthPercentage(aBgPositioningArea.width);
+    }
+
+    nscoord ResolveHeightLengthPercentage(const nsSize& aBgPositioningArea) const {
+      NS_ABORT_IF_FALSE(mHeightType == eLengthPercentage,
+                        "resolving non-length/percent dimension!");
+      return mHeight.ResolveLengthPercentage(aBgPositioningArea.height);
+    }
 
     // Except for eLengthPercentage, Dimension types which might change
     // how a layer is painted when the corresponding frame's dimensions
     // change *must* precede all dimension types which are agnostic to
-    // frame size; see DependsOnFrameSize below.
+    // frame size; see DependsOnFrameSize.
     enum DimensionType {
       // If one of mWidth and mHeight is eContain or eCover, then both are.
       // Also, these two values must equal the corresponding values in
@@ -397,28 +414,10 @@ struct nsStyleBackground {
     };
     PRUint8 mWidthType, mHeightType;
 
-    // True if the effective image size described by this depends on
-    // the size of the corresponding frame.  Gradients depend on the
-    // frame size when their dimensions are 'auto', images don't; both
-    // types depend on the frame size when their dimensions are
-    // 'contain', 'cover', or a percentage.
-    // -moz-element also depends on the frame size when the dimensions
-    // are 'auto' since it could be an SVG gradient or pattern which
-    // behaves exactly like a CSS gradient.
-    bool DependsOnFrameSize(nsStyleImageType aType) const {
-      if ((mWidthType == eLengthPercentage && mWidth.mPercent != 0.0f) ||
-          (mHeightType == eLengthPercentage && mHeight.mPercent != 0.0f)) {
-        return true;
-      }
-      if (aType == eStyleImageType_Image) {
-        return mWidthType <= eCover || mHeightType <= eCover;
-      } else {
-        NS_ABORT_IF_FALSE(aType == eStyleImageType_Gradient ||
-                          aType == eStyleImageType_Element,
-                          "unrecognized image type");
-        return mWidthType <= eAuto || mHeightType <= eAuto;
-      }
-    }
+    // True if the effective image size described by this depends on the size of
+    // the corresponding frame, when aImage (which must not have null type) is
+    // the background image.
+    bool DependsOnFrameSize(const nsStyleImage& aImage) const;
 
     // Initialize nothing
     Size() {}
@@ -1132,6 +1131,22 @@ private:
   }
 };
 
+struct nsStyleTextOverflow {
+  nsStyleTextOverflow() : mType(NS_STYLE_TEXT_OVERFLOW_CLIP) {}
+
+  bool operator==(const nsStyleTextOverflow& aOther) const {
+    return mType == aOther.mType &&
+           (mType != NS_STYLE_TEXT_OVERFLOW_STRING ||
+            mString == aOther.mString);
+  }
+  bool operator!=(const nsStyleTextOverflow& aOther) const {
+    return !(*this == aOther);
+  }
+
+  nsString mString;
+  PRUint8  mType;
+};
+
 struct nsStyleTextReset {
   nsStyleTextReset(void);
   nsStyleTextReset(const nsStyleTextReset& aOther);
@@ -1189,6 +1204,7 @@ struct nsStyleTextReset {
   static PRBool ForceCompare() { return PR_FALSE; }
 
   nsStyleCoord  mVerticalAlign;         // [reset] coord, percent, calc, enum (see nsStyleConsts.h)
+  nsStyleTextOverflow mTextOverflow;    // [reset] enum, string
 
   PRUint8 mTextBlink;                   // [reset] see nsStyleConsts.h
   PRUint8 mTextDecorationLine;          // [reset] see nsStyleConsts.h
@@ -1413,7 +1429,6 @@ private:
                                       // eCSSProperty_UNKNOWN
 };
 
-#ifdef MOZ_CSS_ANIMATIONS
 struct nsAnimation {
   nsAnimation() { /* leaves uninitialized; see also SetInitialValues */ }
   explicit nsAnimation(const nsAnimation& aCopy);
@@ -1454,7 +1469,6 @@ private:
   PRUint8 mPlayState;
   float mIterationCount; // NS_IEEEPositiveInfinity() means infinite
 };
-#endif
 
 struct nsStyleDisplay {
   nsStyleDisplay();
@@ -1501,8 +1515,10 @@ struct nsStyleDisplay {
   // initial are replaced by an actual list of transform functions, or
   // null, as appropriate.) (owned by the style rule)
   const nsCSSValueList *mSpecifiedTransform; // [reset]
-  nsStyleTransformMatrix mTransform; // [reset] The stored transform matrix
-  nsStyleCoord mTransformOrigin[2]; // [reset] percent, coord, calc
+  nsStyleCoord mTransformOrigin[3]; // [reset] percent, coord, calc, 3rd param is coord, calc only
+  nsStyleCoord mChildPerspective; // [reset] coord
+  nsStyleCoord mPerspectiveOrigin[2]; // [reset] percent, coord, calc
+  PRUint8 mBackfaceVisibility;
 
   nsAutoTArray<nsTransition, 1> mTransitions; // [reset]
   // The number of elements in mTransitions that are not from repeating
@@ -1512,7 +1528,6 @@ struct nsStyleDisplay {
            mTransitionDelayCount,
            mTransitionPropertyCount;
 
-#ifdef MOZ_CSS_ANIMATIONS
   nsAutoTArray<nsAnimation, 1> mAnimations; // [reset]
   // The number of elements in mAnimations that are not from repeating
   // a list due to another property being longer.
@@ -1524,7 +1539,6 @@ struct nsStyleDisplay {
            mAnimationFillModeCount,
            mAnimationPlayStateCount,
            mAnimationIterationCountCount;
-#endif
 
   PRBool IsBlockInside() const {
     return NS_STYLE_DISPLAY_BLOCK == mDisplay ||
@@ -1541,13 +1555,21 @@ struct nsStyleDisplay {
            NS_STYLE_DISPLAY_TABLE == mDisplay;
   }
 
+  static PRBool IsDisplayTypeInlineOutside(PRUint8 aDisplay) {
+    return NS_STYLE_DISPLAY_INLINE == aDisplay ||
+           NS_STYLE_DISPLAY_INLINE_BLOCK == aDisplay ||
+           NS_STYLE_DISPLAY_INLINE_TABLE == aDisplay ||
+           NS_STYLE_DISPLAY_INLINE_BOX == aDisplay ||
+           NS_STYLE_DISPLAY_INLINE_GRID == aDisplay ||
+           NS_STYLE_DISPLAY_INLINE_STACK == aDisplay;
+  }
+
   PRBool IsInlineOutside() const {
-    return NS_STYLE_DISPLAY_INLINE == mDisplay ||
-           NS_STYLE_DISPLAY_INLINE_BLOCK == mDisplay ||
-           NS_STYLE_DISPLAY_INLINE_TABLE == mDisplay ||
-           NS_STYLE_DISPLAY_INLINE_BOX == mDisplay ||
-           NS_STYLE_DISPLAY_INLINE_GRID == mDisplay ||
-           NS_STYLE_DISPLAY_INLINE_STACK == mDisplay;
+    return IsDisplayTypeInlineOutside(mDisplay);
+  }
+
+  PRBool IsOriginalDisplayInlineOutside() const {
+    return IsDisplayTypeInlineOutside(mOriginalDisplay);
   }
 
   PRBool IsFloating() const {
