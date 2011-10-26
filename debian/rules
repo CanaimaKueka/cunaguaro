@@ -45,8 +45,8 @@ include $(OFFICIAL_BRANDING)/configure.sh
 export MOZ_UA_BUILDID
 endif
 
-LIB_DIR := /usr/lib/cunaguaro
-SHARE_DIR := /usr/share/cunaguaro
+LIB_DIR := /usr/lib/iceweasel
+SHARE_DIR := /usr/share/iceweasel
 
 MAIN_LDFLAGS := -Wl,--as-needed
 
@@ -171,26 +171,26 @@ stamps/build-xulrunner:: stamps/configure-check-xulrunner
 stamps/build-xulrunner-extra:: stamps/build-xulrunner build-xulrunner/debian/extra-stuff/Makefile
 	$(MAKE) -C build-xulrunner/debian/extra-stuff
 
-stamps/configure-cunaguaro:: stamps/build-xulrunner-extra
-	MOZCONFIG=$(CURDIR)/debian/cunaguaro.mozconfig \
-	dh_auto_configure --builddirectory=build-cunaguaro -- $(CONFIGURE_FLAGS) \
+stamps/configure-iceweasel:: stamps/build-xulrunner-extra
+	MOZCONFIG=$(CURDIR)/debian/iceweasel.mozconfig \
+	dh_auto_configure --builddirectory=build-iceweasel -- $(CONFIGURE_FLAGS) \
 		--with-libxul-sdk=$(CURDIR)/build-xulrunner/dist \
 		--with-system-libxul --with-system-nspr --with-system-nss
-	sed -i '/^OS_LDFLAGS/s|=|& $(MAIN_LDFLAGS)|' build-cunaguaro/config/autoconf.mk
+	sed -i '/^OS_LDFLAGS/s|=|& $(MAIN_LDFLAGS)|' build-iceweasel/config/autoconf.mk
 
-stamps/build-cunaguaro:: stamps/configure-cunaguaro
-	dh_auto_build --builddirectory=build-cunaguaro
+stamps/build-iceweasel:: stamps/configure-iceweasel
+	dh_auto_build --builddirectory=build-iceweasel
 
-build-cunaguaro/%/filelist: stamps/build-cunaguaro build-cunaguaro/%/Makefile
-	rm -rf build-cunaguaro/$*/dist
-	$(MAKE) -C build-cunaguaro/$* MOZ_CHROME_FILE_FORMAT=flat DIST=$(CURDIR)/build-cunaguaro/$*/dist BRANDING_TEST=1
-	cd build-cunaguaro/$*/dist/bin && find -type f | sort > $(CURDIR)/$@
+build-iceweasel/%/filelist: stamps/build-iceweasel build-iceweasel/%/Makefile
+	rm -rf build-iceweasel/$*/dist
+	$(MAKE) -C build-iceweasel/$* MOZ_CHROME_FILE_FORMAT=flat DIST=$(CURDIR)/build-iceweasel/$*/dist BRANDING_TEST=1
+	cd build-iceweasel/$*/dist/bin && find -type f | sort > $(CURDIR)/$@
 
-stamps/build-check-cunaguaro:: build-cunaguaro/$(OFFICIAL_BRANDING)/filelist build-cunaguaro/debian/branding/filelist
-# Ensure the cunaguaro branding contains everything it's supposed to
+stamps/build-check-iceweasel:: build-iceweasel/$(OFFICIAL_BRANDING)/filelist build-iceweasel/debian/branding/filelist
+# Ensure the iceweasel branding contains everything it's supposed to
 	diff $^
 
-override_dh_auto_build: stamps/build-check-cunaguaro
+override_dh_auto_build: stamps/build-check-iceweasel
 
 ifeq (,$(filter nocheck,$(DEB_BUILD_OPTIONS)))
 include debian/test.mk
@@ -201,7 +201,7 @@ override_dh_auto_clean::
 	rm -f $(GENERATED_FILES)
 	rm -rf stamps
 
-	dh_auto_clean --builddirectory=build-cunaguaro
+	dh_auto_clean --builddirectory=build-iceweasel
 	dh_auto_clean --builddirectory=build-xulrunner
 	find . -name "*.pyc" | xargs rm -f
 
@@ -211,7 +211,7 @@ override_dh_auto_clean::
 		done; \
 	done
 
-override_dh_auto_install: stamps/install-cunaguaro stamps/install-xulrunner
+override_dh_auto_install: stamps/install-iceweasel stamps/install-xulrunner
 
 stamps/install-xulrunner:: build-xulrunner/debian/installer/package-manifest
 	dh_auto_install --sourcedirectory=build-xulrunner/xulrunner/installer -- \
@@ -235,6 +235,7 @@ stamps/install-xulrunner:: build-xulrunner/debian/installer/package-manifest
 	done
 
 	dh_auto_install --sourcedirectory=build-xulrunner/js/src -- prefix=/usr MODULE=mozjs FORCE_STATIC_LIB=
+	cp -r debian/tmp/usr/include/xulrunner-$(GRE_VERSION)/vm debian/tmp/usr/include/mozjs
 	rm debian/tmp/usr/bin/js-config
 	find debian/tmp/usr/include/mozjs -type f -printf %P\\n | while read f; do \
 		file=$$(echo debian/tmp/usr/include/xulrunner-$(GRE_VERSION)/$$f); \
@@ -249,15 +250,14 @@ stamps/install-xulrunner:: build-xulrunner/debian/installer/package-manifest
 		rm -rf debian/tmp/usr/include/xulrunner-$(GRE_VERSION)/$$h; \
 	done
 
-	rm debian/tmp/usr/lib/xulrunner-$(GRE_VERSION)/libmozjs.so*
 	mv debian/tmp/usr/bin/js debian/tmp/usr/bin/smjs
 
 	sed -i '/^Cflags/ s,$${includedir},/usr/include/mozjs,' debian/tmp/usr/lib/pkgconfig/mozilla-js.pc
 
-stamps/install-cunaguaro:: build-cunaguaro/debian/installer/package-manifest
-	dh_auto_install --builddirectory=build-cunaguaro -- installdir=$(LIB_DIR) \
+stamps/install-iceweasel:: build-iceweasel/debian/installer/package-manifest
+	dh_auto_install --builddirectory=build-iceweasel -- installdir=$(LIB_DIR) \
 		MOZ_PKG_MANIFEST=$(CURDIR)/$<
-	chmod 755 debian/cunaguaro-xremote-client
+	chmod 755 debian/iceweasel-xremote-client
 
 MPL: LICENSE
 	cp -f $< $@
@@ -270,28 +270,28 @@ stamps/dh_install:: debian/dh/dh_xulrunner debian/noinstall build-xulrunner/dist
 	dh_install --fail-missing
 
 #Install helpers
-	install -m 755 debian/cunaguaro-runner \
-		debian/cunaguaro/$(LIB_DIR)/cunaguaro
+	install -m 755 debian/iceweasel-runner \
+		debian/iceweasel/$(LIB_DIR)/iceweasel
 
 # Install icons
-	install -d -m 755 debian/cunaguaro/usr/share/icons/hicolor/16x16/apps
-	install -m 644 build-cunaguaro/debian/branding/default16.png \
-		debian/cunaguaro/usr/share/icons/hicolor/16x16/apps/cunaguaro.png
-	install -d -m 755 debian/cunaguaro/usr/share/icons/hicolor/32x32/apps
-	install -m 644 build-cunaguaro/debian/branding/default32.png \
-		debian/cunaguaro/usr/share/icons/hicolor/32x32/apps/cunaguaro.png
-	install -d -m 755 debian/cunaguaro/usr/share/icons/hicolor/64x64/apps
-	install -m 644 build-cunaguaro/debian/branding/default64.png \
-		debian/cunaguaro/usr/share/icons/hicolor/64x64/apps/cunaguaro.png
-	install -d -m 755 debian/cunaguaro/usr/share/icons/hicolor/scalable/apps
-	install -m 644 debian/branding/cunaguaro_icon.svg \
-		debian/cunaguaro/usr/share/icons/hicolor/scalable/apps/cunaguaro.svg
+	install -d -m 755 debian/iceweasel/usr/share/icons/hicolor/16x16/apps
+	install -m 644 build-iceweasel/debian/branding/default16.png \
+		debian/iceweasel/usr/share/icons/hicolor/16x16/apps/iceweasel.png
+	install -d -m 755 debian/iceweasel/usr/share/icons/hicolor/32x32/apps
+	install -m 644 build-iceweasel/debian/branding/default32.png \
+		debian/iceweasel/usr/share/icons/hicolor/32x32/apps/iceweasel.png
+	install -d -m 755 debian/iceweasel/usr/share/icons/hicolor/64x64/apps
+	install -m 644 build-iceweasel/debian/branding/default64.png \
+		debian/iceweasel/usr/share/icons/hicolor/64x64/apps/iceweasel.png
+	install -d -m 755 debian/iceweasel/usr/share/icons/hicolor/scalable/apps
+	install -m 644 debian/branding/iceweasel_icon.svg \
+		debian/iceweasel/usr/share/icons/hicolor/scalable/apps/iceweasel.svg
 
 # Remove unneeded configs
-	rm -f debian/cunaguaro/$(SHARE_DIR)/defaults/pref/firefox-l10n.js
+	rm -f debian/iceweasel/$(SHARE_DIR)/defaults/pref/firefox-l10n.js
 
 # Commented out for the beta release
-#	sed -i 's/\(MinVersion=$(GRE_VERSION)\).*/\1/;s/\(MaxVersion=$(GRE_VERSION)\).*/\1.*/' debian/cunaguaro/$(LIB_DIR)/application.ini
+#	sed -i 's/\(MinVersion=$(GRE_VERSION)\).*/\1/;s/\(MaxVersion=$(GRE_VERSION)\).*/\1.*/' debian/iceweasel/$(LIB_DIR)/application.ini
 
 CMP_AWK := '$$0 !~ /^\t/ { txt = txt ? txt "\n" $$0 : $$0 } END { if (txt != expected) { print "Expected:\n" expected "\nGot:\n" txt; exit 1 }}'
 
@@ -302,19 +302,19 @@ stamps/check-dh_xulrunner-glue:: stamps/dh_install debian/dh/dh_xulrunner
 stamps/check-dh_xulrunner-npapi:: stamps/dh_install debian/dh/dh_xulrunner build-xulrunner/dist/bin/npapi_getinfo
 	$(if $(wildcard build-xulrunner/tmp/usr/lib/mozilla),,mkdir -p build-xulrunner/tmp/usr/lib/mozilla/)
 	$(if $(wildcard build-xulrunner/tmp/usr/lib/mozilla/plugins),,ln -s $(CURDIR)/build-xulrunner/dist/bin/plugins build-xulrunner/tmp/usr/lib/mozilla)
-	PATH=build-xulrunner/dist/bin:$(PATH) perl debian/dh/dh_xulrunner_test -pcunaguaro -Pbuild-xulrunner/tmp | awk -v expected='addsubstvar("cunaguaro", "npapi:Mimetypes", "application/x-test");' $(CMP_AWK)
+	PATH=build-xulrunner/dist/bin:$(PATH) perl debian/dh/dh_xulrunner_test -piceweasel -Pbuild-xulrunner/tmp | awk -v expected='addsubstvar("iceweasel", "npapi:Mimetypes", "application/x-test");' $(CMP_AWK)
 
 override_dh_install: stamps/check-dh_xulrunner-glue stamps/check-dh_xulrunner-npapi
 
 override_dh_strip:
-	dh_strip -a -Ncunaguaro -Nlibmozjs$(SO_VERSION) -Nspidermonkey-bin --dbg-package=xulrunner-$(GRE_VERSION)-dbg
-	dh_strip -pcunaguaro --dbg-package=cunaguaro-dbg
+	dh_strip -a -Niceweasel -Nlibmozjs$(SO_VERSION) -Nspidermonkey-bin --dbg-package=xulrunner-$(GRE_VERSION)-dbg
+	dh_strip -piceweasel --dbg-package=iceweasel-dbg
 	dh_strip -plibmozjs$(SO_VERSION) --dbg-package=libmozjs$(SO_VERSION)-dbg
 	dh_strip -pspidermonkey-bin
 
 override_dh_shlibdeps:
-	dh_shlibdeps -a -l$(CURDIR)/debian/tmp/usr/lib/xulrunner-$(GRE_VERSION) -Xlibmozgnome -Xlibnkgnomevfs -Xlibdbusservice
-	LD_LIBRARY_PATH=$(CURDIR)/debian/tmp/usr/lib/xulrunner-$(GRE_VERSION) dpkg-shlibdeps -Tdebian/xulrunner-$(GRE_VERSION).substvars -dDepends -pgnome $(foreach lib,dbusservice mozgnome nkgnomevfs,debian/xulrunner-$(GRE_VERSION)/usr/lib/xulrunner-$(GRE_VERSION)/components/lib$(lib).so)
+	dh_shlibdeps -a -l$(CURDIR)/debian/tmp/usr/lib/xulrunner-$(GRE_VERSION) -Xlibdbusservice
+	LD_LIBRARY_PATH=$(CURDIR)/debian/tmp/usr/lib/xulrunner-$(GRE_VERSION) dpkg-shlibdeps -Tdebian/xulrunner-$(GRE_VERSION).substvars -dDepends -pgnome $(foreach lib,dbusservice,debian/xulrunner-$(GRE_VERSION)/usr/lib/xulrunner-$(GRE_VERSION)/components/lib$(lib).so)
 
 install binary binary-arch binary-indep: $(GENERATED_FILES)
 

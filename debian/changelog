@@ -1,31 +1,122 @@
-cunaguaro (6.0.2+1) unstable; urgency=medium
+iceweasel (8.0~b4-1~bpo60+1) UNRELEASED; urgency=low
 
-  * Versión inicial para Canaima GNU/Linux
-  * [ccb02ee] Removiendo residuos de compilación.
+  * Rebuild for squeeze-backports.
 
- -- Luis Alejandro Martínez Faneyth <martinez.faneyth@gmail.com>  Mon, 26 Sep 2011 16:45:22 -0430
+ -- Mike Hommey <glandium@debian.org>  Fri, 21 Oct 2011 16:18:38 +0000
 
-cunaguaro (6.0.2-1) unstable; urgency=medium
+iceweasel (8.0~b4-1) experimental; urgency=low
+
+  * New upstream beta release.
+
+  * config/config.mk, config/rules.mk, js/src/config/config.mk,
+    js/src/config/rules.mk: (Statically) link jemalloc to all programs. This
+    will solve FTBFS on ia64, and fits what is done in 9.0.
+  * xpcom/reflect/xptcall/src/md/unix/xptcinvoke_linux_s390.cpp: Reimplement
+    NS_InvokeByIndex in C on S390 Linux. This will fix FTBFS on S390.
+
+ -- Mike Hommey <glandium@debian.org>  Fri, 21 Oct 2011 18:06:23 +0200
+
+iceweasel (8.0~b3-2) experimental; urgency=low
+
+  * xpcom/base/nscore.h, xpcom/glue/nsID.h: Don't force nsID to align to
+    64-bit boundary ; instead, use 32-bits comparisons in nsID::Equals,
+    effectively reverting bz#164580.
+
+ -- Mike Hommey <glandium@debian.org>  Fri, 14 Oct 2011 21:24:37 +0200
+
+iceweasel (8.0~b3-1) experimental; urgency=low
+
+  * New upstream beta release.
+  * debian/noinstall.in: README.txt is not shipped anymore.
+
+  * configure*: Disable dead symbol removal when failing to test for bz#670659.
+    bz#690682.
+  * js/src/jsscan.cpp: Properly handle EOF in TokenStream::getAtSourceMappingURL
+    on platforms with unsigned chars. bz#686283.
+  * js/src/assembler/assembler/ARMAssembler.h: LDRH/STRH/LDRSB/STRSB are
+    supported on ARMv5-. bz#694533.
+
+ -- Mike Hommey <glandium@debian.org>  Fri, 14 Oct 2011 18:32:24 +0200
+
+iceweasel (7.0.1-3) unstable; urgency=low
+
+  * debian/branding/configure.sh: Set MOZ_APP_DISPLAYNAME in Iceweasel
+    branding. Closes: #644801.
+  * debian/xulrunner.mozconfig, debian/xulrunner-GRE_VERSION.install.in,
+    debian/rules: Enable GIO instead of gnome-vfs and GConf.
+    Partially fixes #410671.
+
+  * ipc/chromium/src/build/build_config.h: Update supported architectures
+    for IPC, as landed upstream. Closes: #644939.
+  * xpcom/base/nscore.h, xpcom/glue/nsID.h: Force nsID to align to 64-bit
+    boundary. bz#660335. Closes: #642762.
+
+ -- Mike Hommey <glandium@debian.org>  Fri, 14 Oct 2011 17:22:42 +0200
+
+iceweasel (7.0.1-2) unstable; urgency=low
+
+  * debian/repack.py: Improved in several ways.
+  * debian/rules: Install vm/* headers under /usr/include/mozjs.
+    Closes: #644086.
+
+ -- Mike Hommey <glandium@debian.org>  Tue, 04 Oct 2011 08:32:20 +0200
+
+iceweasel (7.0.1-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Mike Hommey <glandium@debian.org>  Fri, 30 Sep 2011 08:32:09 +0200
+
+iceweasel (7.0-1) unstable; urgency=low
+
+  * New upstream release.
+  * Fixes various security issues, which CVE ids are not published yet.
+
+  * debian/branding/Makefile.in, debian/iceweasel.install: Remove document.png,
+    as it is not used anymore.
+  * debian/branding/content/Makefile.in, debian/branding/content/jar.mn: Stop
+    jarring up a copy of mozicon128.png that aboutHome no longer uses.
+  * debian/rules: Don't remove /usr/lib/xulrunner-7.0/libmozjs.so*, they're not
+    installed there anymore.
+  * debian/iceweasel.mozconfig: Add --disable-libjpeg-turbo to work around
+    configure checking for yasm on APP build.
+
+  * js/src/Makefile.in: Only add -DENABLE_JIT=1 to CXXFLAGS if any of
+    trace/method/regex jit is enabled. bz#670719. Fixes FTBFSes on
+    powerpc and s390.
+  * js/src/jsregexpinlines.h, js/src/yarr/OSAllocatorPosix.cpp,
+    js/src/yarr/wtfbridge.h: build fix for ENABLE_YARR_JIT=0. bz#665819.
+  * xpcom/glue/pldhash.c: Work around recent ARM GNU ld bug with
+    -fdata-sections and variables names starting with "stub" leading to crash.
+    bz#675618. Also avoids elfhack crash during build.
+  * js/src/assembler/wtf/Platform.h: Don't enable YARR JIT on MIPS, as the
+    implementation is missing. bz#680642.
+  * js/src/yarr/BumpPointerAllocator.h: Use a pool size of 16kB on ia64 for
+    bump pointer allocator. bz#680917.
+
+ -- Mike Hommey <glandium@debian.org>  Wed, 28 Sep 2011 08:51:02 +0200
+
+iceweasel (6.0.2-1) unstable; urgency=medium
 
   * New upstream release to strengthen the libnss3 response to the
     DigiNotargate.
 
  -- Mike Hommey <glandium@debian.org>  Tue, 06 Sep 2011 08:32:55 +0200
 
-cunaguaro (6.0-4) unstable; urgency=low
+iceweasel (6.0-4) unstable; urgency=low
 
   * js/src/jsstrinlines.h: Fix-up bz#589735 backport. Should fix ia64 FTBFS.
 
  -- Mike Hommey <glandium@debian.org>  Sat, 27 Aug 2011 09:07:06 +0200
 
-cunaguaro (6.0-3) unstable; urgency=low
+iceweasel (6.0-3) unstable; urgency=low
 
   * debian/libmozjs-dev.install: Add more missing headers to libmozjs-dev.
   * debian/rules, debian/xulrunner-GRE_VERSION.install.in: Install
     plugin-container on all architectures. Closes: #639289.
   * debian/extra-stuff/reportbug-helper-script: Avoid listing all debian
     packages in the reportbug helper when no addons are installed.
-  * debian/duckduckgo.xml, debian/cunaguaro.install: Add DuckDuckGo search
+  * debian/duckduckgo.xml, debian/iceweasel.install: Add DuckDuckGo search
     plugin. Closes: #616115.
 
   * js/src/jsgcinlines.h, js/src/jsnum.cpp, js/src/jsstr.cpp, js/src/jsstr.h,
@@ -33,21 +124,21 @@ cunaguaro (6.0-3) unstable; urgency=low
     js/src/tracejit/Writer.cpp: Allow static JS strings to be turned off;
     turn off on ia64. bz#589735.
   * memory/jemalloc/jemalloc.c: Allocate memory with an address with high 17
-    bits clear on ia64. bz#589735. This should finally make Cunaguaro
+    bits clear on ia64. bz#589735. This should finally make Iceweasel
     actually work on ia64.
   * js/src/jsval.h, js/src/jsvalue.h: Fix jsval_layout on 64-bit big-endian
     platforms. bz#674522. Closes: #638623.
 
  -- Mike Hommey <glandium@debian.org>  Fri, 26 Aug 2011 09:48:52 +0200
 
-cunaguaro (6.0-2) unstable; urgency=low
+iceweasel (6.0-2) unstable; urgency=low
 
   * debian/libmozjs-dev.install: Install mfbt/* files under
     /usr/include/mozjs/mozilla. Closes: #637984.
 
  -- Mike Hommey <glandium@debian.org>  Sat, 20 Aug 2011 09:13:06 +0200
 
-cunaguaro (6.0-1) unstable; urgency=low
+iceweasel (6.0-1) unstable; urgency=low
 
   * New upstream release.
   * Fixes for mfsa2011-29, including:
@@ -70,7 +161,7 @@ cunaguaro (6.0-1) unstable; urgency=low
   * debian/xulrunner-GRE_VERSION.install.in,
     debian/xulrunner-GRE_VERSION.links.in: Add hyphenation dictionary. This is
     temporary until we use libreoffice.org's.
-  * debian/cunaguaro.desktop: Add german translation for the Cunaguaro menu
+  * debian/iceweasel.desktop: Add german translation for the Iceweasel menu
     item. Thanks Ronny Standtke. Closes: #629924.
 
   * layout/build/Makefile.in, toolkit/library/Makefile.in: Unbreak build for
@@ -83,14 +174,14 @@ cunaguaro (6.0-1) unstable; urgency=low
 
  -- Mike Hommey <glandium@debian.org>  Mon, 15 Aug 2011 18:16:55 +0200
 
-cunaguaro (5.0-6) unstable; urgency=low
+iceweasel (5.0-6) unstable; urgency=low
 
   * debian/rules: ia64 doesn't support stabs debugging information, so use a
     different workaround: use -O2 instead of -Os.
 
  -- Mike Hommey <glandium@debian.org>  Sat, 30 Jul 2011 10:31:55 +0200
 
-cunaguaro (5.0-5) unstable; urgency=low
+iceweasel (5.0-5) unstable; urgency=low
 
   * debian/rules:
     - Don't add -g to CFLAGS, the upstream build system does it.
@@ -100,7 +191,7 @@ cunaguaro (5.0-5) unstable; urgency=low
 
  -- Mike Hommey <glandium@debian.org>  Sat, 30 Jul 2011 08:48:19 +0200
 
-cunaguaro (5.0-4) unstable; urgency=low
+iceweasel (5.0-4) unstable; urgency=low
 
   * debian/rules: Don't create a versioned shlibs for libmozjs.
   * debian/xulrunner-dev.preinst.in: Add a preinst script to remove
@@ -125,14 +216,14 @@ cunaguaro (5.0-4) unstable; urgency=low
 
  -- Mike Hommey <glandium@debian.org>  Fri, 22 Jul 2011 15:48:09 +0200
 
-cunaguaro (5.0-3) unstable; urgency=low
+iceweasel (5.0-3) unstable; urgency=low
 
   * Upload to unstable.
   * debian/control*: Fix build dependency on libsqlite3-dev.
   * debian/rules:
     - Replace sdk/bin files also in /usr/lib/xulrunner-5.0 with symbolic links.
     - Use dist/include to find npapi.h when building npapi_getinfo.
-  * debian/control*, debian/rules: Use ${binary:Version} for cunaguaro
+  * debian/control*, debian/rules: Use ${binary:Version} for iceweasel
     dependency on xulrunner, now that they have the same version.
   * debian/test.mk:
     - Set the application directory for xpcshell tests.
@@ -187,12 +278,12 @@ cunaguaro (5.0-3) unstable; urgency=low
 
  -- Mike Hommey <glandium@debian.org>  Fri, 15 Jul 2011 12:04:39 +0200
 
-cunaguaro (5.0-2) experimental; urgency=low
+iceweasel (5.0-2) experimental; urgency=low
 
   * debian/rules: Fix configure permissions for source tarballs generated from
     mercurial.
   * debian/test.mk: Create a xulrunner symbolic link in
-    build-cunaguaro/dist/bin so that reftests work.
+    build-iceweasel/dist/bin so that reftests work.
   * debian/watch: Always get the latest release.
 
   * js/src/nanojit/njconfig.cpp: Allow ARMv4T in nanojit.
@@ -203,7 +294,7 @@ cunaguaro (5.0-2) experimental; urgency=low
 
  -- Mike Hommey <glandium@debian.org>  Fri, 01 Jul 2011 14:43:39 +0200
 
-cunaguaro (5.0-1) experimental; urgency=low
+iceweasel (5.0-1) experimental; urgency=low
 
   * New upstream release.
   * Fixes for mfsa2011-{09,19-22,25-28}, also known as
@@ -214,7 +305,7 @@ cunaguaro (5.0-1) experimental; urgency=low
   * debian/xulrunner-GRE_VERSION.install.in: /etc/gre.d is not used anymore.
   * debian/branding/content/aboutDialog.css, debian/branding/content/jar.mn:
     Updated branding.
-  * debian/rules: xulrunner and cunaguaro now have the same version.
+  * debian/rules: xulrunner and iceweasel now have the same version.
   * debian/dh/dh_xulrunner.in: Modify the strings we try to find in the xpcom
     standalone glue.
 
@@ -233,7 +324,7 @@ cunaguaro (5.0-1) experimental; urgency=low
 
  -- Mike Hommey <glandium@debian.org>  Mon, 20 Jun 2011 17:17:04 +0900
 
-cunaguaro (4.0.1-4) experimental; urgency=low
+iceweasel (4.0.1-4) experimental; urgency=low
 
   * The 'I meant that to be in previous release but forgot' release.
   * xulrunner/installer/Makefile.in: Add -lmozalloc in link flags provided in
@@ -244,7 +335,7 @@ cunaguaro (4.0.1-4) experimental; urgency=low
 
  -- Mike Hommey <glandium@debian.org>  Mon, 20 Jun 2011 15:29:09 +0900
 
-cunaguaro (4.0.1-3) experimental; urgency=low
+iceweasel (4.0.1-3) experimental; urgency=low
 
   * debian/installer/Makefile.in: Remove MOZ_IPC ifdef, it's not strictly
     required, and won't be defined anymore in 5.0.
@@ -257,7 +348,7 @@ cunaguaro (4.0.1-3) experimental; urgency=low
 
  -- Mike Hommey <glandium@debian.org>  Fri, 17 Jun 2011 11:39:56 +0900
 
-cunaguaro (4.0.1-2) experimental; urgency=low
+iceweasel (4.0.1-2) experimental; urgency=low
 
   * xpcom/base/nsDebugImpl.h, xpcom/base/nsTraceRefcntImpl.h,
     xpcom/glue/nsEnumeratorUtils.cpp, xpcom/io/nsUnicharInputStream.h,
@@ -273,7 +364,7 @@ cunaguaro (4.0.1-2) experimental; urgency=low
 
  -- Mike Hommey <glandium@debian.org>  Sat, 30 Apr 2011 19:29:34 +0200
 
-cunaguaro (4.0.1-1) experimental; urgency=low
+iceweasel (4.0.1-1) experimental; urgency=low
 
   * New upstream release.
   * Fixes for mfsa2011-{12,17-18}, also known as
@@ -328,7 +419,7 @@ cunaguaro (4.0.1-1) experimental; urgency=low
 
  -- Mike Hommey <glandium@debian.org>  Fri, 29 Apr 2011 08:01:15 +0200
 
-cunaguaro (4.0-3) experimental; urgency=low
+iceweasel (4.0-3) experimental; urgency=low
 
   * accessible/src/base/TextUpdater.cpp: Fix crash @nsAccessible::AsHyperText()
     bz#643906. Closes: #619637.
@@ -341,14 +432,14 @@ cunaguaro (4.0-3) experimental; urgency=low
 
  -- Mike Hommey <glandium@debian.org>  Sun, 27 Mar 2011 14:23:44 +0200
 
-cunaguaro (4.0-2) experimental; urgency=low
+iceweasel (4.0-2) experimental; urgency=low
 
   * debian/rules: Define __ARM_PCS when building on armel. Fixes FTBFS with
     gcc 4.5 not declaring either __ARM_PCS or __ARM_PCS_VFP.
 
  -- Mike Hommey <glandium@debian.org>  Wed, 23 Mar 2011 15:45:17 +0100
 
-cunaguaro (4.0-1) experimental; urgency=low
+iceweasel (4.0-1) experimental; urgency=low
 
   * New upstream release. It's actually the same as rc2.
 
@@ -360,7 +451,7 @@ cunaguaro (4.0-1) experimental; urgency=low
 
  -- Mike Hommey <glandium@debian.org>  Tue, 22 Mar 2011 21:06:29 +0100
 
-cunaguaro (4.0~rc2-2) experimental; urgency=low
+iceweasel (4.0~rc2-2) experimental; urgency=low
 
   * debian/rules: Actually disable methodjit on armel, instead of all other
     architectures.
@@ -369,7 +460,7 @@ cunaguaro (4.0~rc2-2) experimental; urgency=low
 
  -- Mike Hommey <glandium@debian.org>  Sat, 19 Mar 2011 11:42:44 +0100
 
-cunaguaro (4.0~rc2-1) experimental; urgency=low
+iceweasel (4.0~rc2-1) experimental; urgency=low
 
   * New upstream release candidate.
   * debian/rules: Modify gross hack on the version checks to make it work with
@@ -388,7 +479,7 @@ cunaguaro (4.0~rc2-1) experimental; urgency=low
 
  -- Mike Hommey <glandium@debian.org>  Sat, 19 Mar 2011 09:01:30 +0100
 
-cunaguaro (4.0~rc1-1) experimental; urgency=low
+iceweasel (4.0~rc1-1) experimental; urgency=low
 
   * New upstream release candidate.
     - Long link URLs are cropped in the middle instead of at the end.
@@ -400,7 +491,7 @@ cunaguaro (4.0~rc1-1) experimental; urgency=low
 
  -- Mike Hommey <glandium@debian.org>  Thu, 10 Mar 2011 10:19:52 +0100
 
-cunaguaro (4.0~b12-1) experimental; urgency=low
+iceweasel (4.0~b12-1) experimental; urgency=low
 
   * New upstream beta release.
     - Properly build documents with overflow:hidden elements. Closes: #562996.
@@ -447,10 +538,10 @@ cunaguaro (4.0~b12-1) experimental; urgency=low
     - Use internal png library. Works-around: #486827.
     - Use system libvpx.
     - Build with shared js library.
-  * debian/cunaguaro.mozconfig:
+  * debian/iceweasel.mozconfig:
     - Disable webm support to avoid failure to build against libxul. This
       doesn't remove webm support from underlying xulrunner.
-    - Build cunaguaro without omni.jar until I figure out what to do with the
+    - Build iceweasel without omni.jar until I figure out what to do with the
       default profile.
   * debian/xulrunner-GRE_VERSION.prerm.in,
     debian/xulrunner-GRE_VERSION.postinst.in: Fit to new component
@@ -468,18 +559,18 @@ cunaguaro (4.0~b12-1) experimental; urgency=low
     - Add missing contentaccessible=yes in content/jar.mn.
     - Modify for the new about dialog.
     - Use about:home as homepage.
-  * debian/cunaguaro.install, debian/cunaguaro.links.in: Don't install
-    browserconfig.properties from usr/lib/cunaguaro, it's not shipped
+  * debian/iceweasel.install, debian/iceweasel.links.in: Don't install
+    browserconfig.properties from usr/lib/iceweasel, it's not shipped
     anymore.
-  * debian/cunaguaro.install:
+  * debian/iceweasel.install:
     - Don't install .autoreg, it isn't used anymore.
   * debian/installer/Makefile.in: Define JAREXT when building package manifest.
   * debian/noinstall.in: LICENSE file is not installed anymore.
-  * debian/cunaguaro.install, debian/xulrunner-GRE_VERSION.install.in:
+  * debian/iceweasel.install, debian/xulrunner-GRE_VERSION.install.in:
     Install chrome.manifest in GRE and APP directories.
   * debian/rules, debian/vendor.js: Set general.useragent.compatMode.firefox
     instead of general.useragent.extra.firefoxComment.
-  * debian/rules, debian/cunaguaro.install: Install vendor.js with dh_install
+  * debian/rules, debian/iceweasel.install: Install vendor.js with dh_install
     instead of manually in debian/rules.
   * debian/watch: Updated.
   * debian/xulrunner-GRE_VERSION.install.in,
@@ -527,7 +618,7 @@ cunaguaro (4.0~b12-1) experimental; urgency=low
 
  -- Mike Hommey <glandium@debian.org>  Sat, 26 Feb 2011 11:13:10 +0100
 
-cunaguaro (3.6.13-3) UNRELEASED; urgency=low
+iceweasel (3.6.13-3) UNRELEASED; urgency=low
 
   * debian/branding/locales/en-US/brand.*: Changed vendorShortName to
     Mozilla to fit upstream.
@@ -537,13 +628,13 @@ cunaguaro (3.6.13-3) UNRELEASED; urgency=low
   * debian/extra-stuff/Makefile.in, debian/extra-stuff/addonsInfo.*,
     debian/extra-stuff/packages-static.xulrunner: Prepare extra components
     to the XPCOM changes in Gecko 2.0.
-  * debian/cunaguaro.install, debian/rules: Install vendor.js with dh_install
+  * debian/iceweasel.install, debian/rules: Install vendor.js with dh_install
     instead of manually in debian/rules.
   * debian/extra-stuff/Makefile.in,
-    debian/extra-stuff/packages-static.xulrunner, debian/cunaguaro.install,
+    debian/extra-stuff/packages-static.xulrunner, debian/iceweasel.install,
     debian/installer/Makefile.in, debian/installer/package-manifest.*,
-    debian/rules: Use packager.mk to install about:cunaguaro files.
-  * debian/cunaguaro.desktop: Add x-scheme-handler/http* MimeTypes.
+    debian/rules: Use packager.mk to install about:iceweasel files.
+  * debian/iceweasel.desktop: Add x-scheme-handler/http* MimeTypes.
     Closes: #613109.
 
   * browser/components/nsBrowserGlue.js: Unbrand Browser Glue Service.
@@ -566,11 +657,11 @@ cunaguaro (3.6.13-3) UNRELEASED; urgency=low
     depending on MOZ_OFFICIAL.
 
   * debian/branding/configure.sh, debian/branding/locales/en-US/brand.dtd:
-    Adjust Cunaguaro branding to unbranding changes above.
+    Adjust Iceweasel branding to unbranding changes above.
 
  -- Mike Hommey <glandium@debian.org>  Sat, 19 Feb 2011 13:47:22 +0100
 
-cunaguaro (3.6.13-2) experimental; urgency=low
+iceweasel (3.6.13-2) experimental; urgency=low
 
   * debian/control: Refresh from debian/control.in.
   * debian/*.mozconfig: Add a comment on top of mozconfig files to avoid
@@ -578,8 +669,8 @@ cunaguaro (3.6.13-2) experimental; urgency=low
   * debian/remove.nonfree, debian/repack.py, debian/source.filter,
     debian/watch: Update debian/watch and provide a script repacking
     upstream source tarballs.
-  * debian/cunaguaro.README.Debian: Fix for the default dsp wrapper behaviour.
-  * debian/cunaguaro.desktop: Add russian translation. Closes: #608876.
+  * debian/iceweasel.README.Debian: Fix for the default dsp wrapper behaviour.
+  * debian/iceweasel.desktop: Add russian translation. Closes: #608876.
     Thanks Alexander Sashanov.
   * debian/control.in, debian/rules, debian/xulrunner-GRE_VERSION.links.in:
     Use /usr/share/myspell/dicts for dictionaries when building for lenny.
@@ -600,7 +691,7 @@ cunaguaro (3.6.13-2) experimental; urgency=low
 
  -- Mike Hommey <glandium@debian.org>  Sun, 09 Jan 2011 13:46:07 +0100
 
-cunaguaro (3.6.13-1) experimental; urgency=low
+iceweasel (3.6.13-1) experimental; urgency=low
 
   * New upstream release.
   * Fixes for mfsa2010-{74-84}, also known as
@@ -612,7 +703,7 @@ cunaguaro (3.6.13-1) experimental; urgency=low
 
  -- Mike Hommey <glandium@debian.org>  Fri, 10 Dec 2010 00:11:50 +0100
 
-cunaguaro (3.6.12-2) experimental; urgency=low
+iceweasel (3.6.12-2) experimental; urgency=low
 
   * layout/base/tests/TestPoisonArea.cpp: Allow TestPoisonArea to work on
     more architectures.
@@ -621,14 +712,14 @@ cunaguaro (3.6.12-2) experimental; urgency=low
 
  -- Mike Hommey <glandium@debian.org>  Sat, 30 Oct 2010 10:46:09 +0200
 
-cunaguaro (3.6.12-1) experimental; urgency=low
+iceweasel (3.6.12-1) experimental; urgency=low
 
   * New upstream release.
   * Fix for mfsa2010-73, also known as CVE-2010-3765.
 
  -- Mike Hommey <glandium@debian.org>  Thu, 28 Oct 2010 09:21:33 +0200
 
-cunaguaro (3.6.11-1) experimental; urgency=low
+iceweasel (3.6.11-1) experimental; urgency=low
 
   * New upstream release.
   * Fixes for mfsa2010-{64-69}, also known as
@@ -639,7 +730,7 @@ cunaguaro (3.6.11-1) experimental; urgency=low
 
  -- Mike Hommey <glandium@debian.org>  Wed, 20 Oct 2010 02:15:38 +0200
 
-cunaguaro (3.6.10-1) experimental; urgency=low
+iceweasel (3.6.10-1) experimental; urgency=low
 
   * New upstream release.
   * config/JarMaker.py: Use errno.ENOENT instead of "2" in JarMaker.py.
@@ -651,7 +742,7 @@ cunaguaro (3.6.10-1) experimental; urgency=low
 
  -- Mike Hommey <glandium@debian.org>  Thu, 16 Sep 2010 09:15:51 +0200
 
-cunaguaro (3.6.9-1) experimental; urgency=low
+iceweasel (3.6.9-1) experimental; urgency=low
 
   * New upstream release.
   * Fixes for mfsa2010-{49-51,53-57,59-63}, also known as
@@ -660,7 +751,7 @@ cunaguaro (3.6.9-1) experimental; urgency=low
     CVE-2010-2762, CVE-2010-2763, CVE-2010-2768, CVE-2010-2769,
     CVE-2010-2764.
 
-  * debian/README.Debian: Move to debian/cunaguaro.README.Debian.
+  * debian/README.Debian: Move to debian/iceweasel.README.Debian.
   * debian/branding/content/*.png.uu (removed),
     debian/branding/content/*-base.png, debian/source/include-binaries,
     debian/branding/content/Makefile.in: Replace .uu files with their binary
@@ -669,7 +760,7 @@ cunaguaro (3.6.9-1) experimental; urgency=low
   * debian/control*:
     - Remove build dependency on sharutils.
     - Install libmozjs debug symbols together with the xulrunner ones.
-    - Remove extra ~ in cunaguaro version dependency on xulrunner, which
+    - Remove extra ~ in iceweasel version dependency on xulrunner, which
       was only required for 3.6.4~build2.
   * debian/rules:
     - Refactor file preprocessing.
@@ -692,14 +783,14 @@ cunaguaro (3.6.9-1) experimental; urgency=low
     - Force armel JIT to compile ARMv4T instructions during tests.
     - Define generic -skip rules for tests.
     - Put all tests requiring an application in a separate variable.
-    - Use cunaguaro for reftest/crashtest.
+    - Use iceweasel for reftest/crashtest.
   * debian/reftest-app: Remove our custom reftest-app.
   * debian/extra-stuff/Makefile.in: Remove duplicated variables definitions.
   * debian/branding/content/jar.mn: Add missing aboutFooter.png to branding.
   * debian/rules, debian/noinstall.in: Move testsuite related header field
     removal to noinstall.in.
   * debian/rules, debian/branding/jar.mn, debian/branding/Makefile.in: Check
-    the cunaguaro branding installs all files provided by upstream unofficial
+    the iceweasel branding installs all files provided by upstream unofficial
     branding.
   * debian/dh/dh_xulrunner.in:
     - Fix small formatting issue in dh_xulrunner manual page.
@@ -740,16 +831,16 @@ cunaguaro (3.6.9-1) experimental; urgency=low
 
  -- Mike Hommey <glandium@debian.org>  Wed, 08 Sep 2010 09:05:03 +0200
 
-cunaguaro (3.6.8-2) experimental; urgency=low
+iceweasel (3.6.8-2) experimental; urgency=low
 
   * New upstream release.
 
-  [ cunaguaro ]
-  * debian/cunaguaro.install, debian/rules: Build in a subdirectory instead
+  [ iceweasel ]
+  * debian/iceweasel.install, debian/rules: Build in a subdirectory instead
     of within the source directory.
-  * debian/cunaguaro.mozconfig, debian/rules: Move most configure options
+  * debian/iceweasel.mozconfig, debian/rules: Move most configure options
     to a separate mozconfig file.
-  * debian/cunaguaro.install: Install blocklist.xml.
+  * debian/iceweasel.install: Install blocklist.xml.
   * debian/noinstall, debian/rules: Remove some installed files from
     debian/tmp, and use dh_install --fail-missing.
   * debian/rules: Add --with-system-libxul configure option.
@@ -757,7 +848,7 @@ cunaguaro (3.6.8-2) experimental; urgency=low
   * debian/control*:
     - Reformat.
     - Remove Eric Dorland from the Uploaders field. Given his limited time
-      and lost interest, Eric agreed to formally retire from cunaguaro
+      and lost interest, Eric agreed to formally retire from iceweasel
       maintenance. Thanks for all these years, Eric.
 
   * build/Makefile.in, build/automation-build.mk: Revert cleaning patches.
@@ -784,27 +875,27 @@ cunaguaro (3.6.8-2) experimental; urgency=low
     the previous patch didn't do.
 
   [ merged packages ]
-  * debian/control*, debian/rules: Merged cunaguaro and xulrunner source
+  * debian/control*, debian/rules: Merged iceweasel and xulrunner source
     packages. Binary packages are kept as they were before.
-  * debian/copyright, debian/watch: Use Cunaguaro's version.
-  * debian/changelog: Keep Cunaguaro changelog. Xulrunner's go in a separate
+  * debian/copyright, debian/watch: Use Iceweasel's version.
+  * debian/changelog: Keep Iceweasel changelog. Xulrunner's go in a separate
     debian/changelog.xulrunner file, for historical purpose. The file is not
     installed in binary packages.
   * debian/control*: Fix xulrunner-dev dependencies. As ${source:*Version}
-    will return cunaguaro version, ${binary:Version} is better to use. It
+    will return iceweasel version, ${binary:Version} is better to use. It
     turns out it is safe to use now xulrunner-dev is not Arch: all.
   * debian/extra-stuff/Makefile.in:
     - Fix to support subdirectory build.
     - Avoid duplicated entries in generated jar manifest.
   * debian/rules:
-    - Set LDFLAGS for cunaguaro the same way xulrunner does.
+    - Set LDFLAGS for iceweasel the same way xulrunner does.
     - Export CFLAGS and CXXFLAGS directly from rules instead of setting them
       when calling configure.
   * debian/extra-stuff/Makefile.in, debian/noinstall*, debian/rules: Use
     debian/noinstall to avoid installing some xulrunner files, instead of
     filtering the package manifest.
   * debian/rules, debian/*.manpages*: Use .manpages files instead of calling
-    dh_installman manually. Cunaguaro was doing that, but not xulrunner.
+    dh_installman manually. Iceweasel was doing that, but not xulrunner.
   * Skip version 3.6.8-1, as xulrunner packages versions numbers would then
     be 1.9.2.8-1, which was already used.
   * debian/reftest-app/defaults/preferences/reftest-app.js: Add a default
@@ -816,7 +907,7 @@ cunaguaro (3.6.8-2) experimental; urgency=low
 
  -- Mike Hommey <glandium@debian.org>  Fri, 20 Aug 2010 21:57:53 +0200
 
-cunaguaro (3.6.7-1) experimental; urgency=low
+iceweasel (3.6.7-1) experimental; urgency=low
 
   * New upstream release.
   * Fixes mfsa-2009-45, also known as CVE-2010-1206.
@@ -826,22 +917,22 @@ cunaguaro (3.6.7-1) experimental; urgency=low
 
  -- Mike Hommey <glandium@debian.org>  Wed, 21 Jul 2010 00:21:17 +0200
 
-cunaguaro (3.6.4-1) experimental; urgency=low
+iceweasel (3.6.4-1) experimental; urgency=low
 
   * New upstream release.
 
  -- Mike Hommey <glandium@debian.org>  Wed, 23 Jun 2010 15:27:03 +0200
 
-cunaguaro (3.6.4~build2-1) experimental; urgency=low
+iceweasel (3.6.4~build2-1) experimental; urgency=low
 
   * debian/copyright, debian/remove.nonfree: Update to fit new upstream
     (pre)release.
-  * debian/cunaguaro-runner: Don't override MOZ_APP_LAUNCHER, which was
+  * debian/iceweasel-runner: Don't override MOZ_APP_LAUNCHER, which was
     already set.
-  * debian/firefox, debian/cunaguaro.install, debian/cunaguaro.postrm,
-    debian/cunaguaro.preinst: Divert /usr/bin/firefox and put a wrapper script
+  * debian/firefox, debian/iceweasel.install, debian/iceweasel.postrm,
+    debian/iceweasel.preinst: Divert /usr/bin/firefox and put a wrapper script
     instead. The wrapper script runs the diverted firefox if it exists, and
-    cunaguaro otherwise. Closes: #576392.
+    iceweasel otherwise. Closes: #576392.
   * debian/README.Debian: Add a note about safe browsing in README.Debian.
     Closes: #575039.
   * debian/rules:
@@ -849,16 +940,16 @@ cunaguaro (3.6.4~build2-1) experimental; urgency=low
     - Don't check for libiw, necko wifi is part of libxul already.
   * debian/control*:
     - Remove dependency on psmisc as we've not been using fuser for years.
-    - Cunaguaro 3.6.4~build2 needs to depend on xulrunner 1.9.2.4~build2.
+    - Iceweasel 3.6.4~build2 needs to depend on xulrunner 1.9.2.4~build2.
   * debian/branding/Makefile.in, debian/branding/aboutIce.js,
-    debian/branding/ice.*, debian/branding/jar.mn, debian/cunaguaro.install:
-    Add a about:cunaguaro page similar to about:mozilla. Closes: #413725.
+    debian/branding/ice.*, debian/branding/jar.mn, debian/iceweasel.install:
+    Add a about:iceweasel page similar to about:mozilla. Closes: #413725.
 
   * configure.in: Revert change to force not to use -fshort-wchar.
 
  -- Mike Hommey <glandium@debian.org>  Mon, 03 May 2010 13:44:40 +0200
 
-cunaguaro (3.6.3-1) experimental; urgency=low
+iceweasel (3.6.3-1) experimental; urgency=low
 
   * New upstream release.
   * debian/rules, debian/control: Bump GRE version to 1.9.2.
@@ -869,33 +960,33 @@ cunaguaro (3.6.3-1) experimental; urgency=low
 
  -- Mike Hommey <glandium@debian.org>  Fri, 02 Apr 2010 21:44:36 +0200
 
-cunaguaro (3.5.9-2) unstable; urgency=low
+iceweasel (3.5.9-2) unstable; urgency=low
 
   * debian/remove.nonfree: There are still some .cvsignore files in the
     upstream tarballs.
-  * debian/rules, debian/cunaguaro.links.in, debian/cunaguaro.bug-script.in,
-    debian/cunaguaro.bug-control.in, debian/control.in, debian/control:
+  * debian/rules, debian/iceweasel.links.in, debian/iceweasel.bug-script.in,
+    debian/iceweasel.bug-control.in, debian/control.in, debian/control:
     Generate GRE version dependent information from GRE_VERSION set in
     debian/rules.
-  * debian/rules, debian/control*: Have cunaguaro 3.5.x depend on xulrunner
-    1.9.1.x at least. This will force upgrades of xulrunner when cunaguaro
+  * debian/rules, debian/control*: Have iceweasel 3.5.x depend on xulrunner
+    1.9.1.x at least. This will force upgrades of xulrunner when iceweasel
     is upgraded.
 
  -- Mike Hommey <glandium@debian.org>  Fri, 02 Apr 2010 20:08:22 +0200
 
-cunaguaro (3.5.9-1) unstable; urgency=low
+iceweasel (3.5.9-1) unstable; urgency=low
 
   * New upstream release.
   * config/autoconf.mk.in: Revert previous changes to install in an
     unversioned directory.
   * debian/rules: Pass an installdir variable to install into
-    /usr/lib/cunaguaro.
+    /usr/lib/iceweasel.
   * debian/control:
     - Suggest libkrb53 for backports.
     - Build-depend on xulrunner-dev << 1.9.2.
-  * debian/cunaguaro.prerm, debian/cunaguaro.postinst: Remove old mozilla
+  * debian/iceweasel.prerm, debian/iceweasel.postinst: Remove old mozilla
     alternative. I think there is no reason to keep this anymore.
-  * debian/cunaguaro.links: Remove firefox and mozilla-firefox links.
+  * debian/iceweasel.links: Remove firefox and mozilla-firefox links.
     It will help make transition to Firefox easier if that ever happens.
   * debian/remove.nonfree: We now remove more non-free data. Also cleaned up
     outdated stuff. Closes: #567915
@@ -911,7 +1002,7 @@ cunaguaro (3.5.9-1) unstable; urgency=low
 
  -- Mike Hommey <glandium@debian.org>  Thu, 01 Apr 2010 16:23:51 +0200
 
-cunaguaro (3.5.8-1) unstable; urgency=low
+iceweasel (3.5.8-1) unstable; urgency=low
 
   * New upstream release.
   * browser/components/nsBrowserContentHandler.js: Revert temporary hack to
@@ -935,7 +1026,7 @@ cunaguaro (3.5.8-1) unstable; urgency=low
   * build/automation-build.mk: Remove automation.py in make clean. bz#541768.
 
   * debian/control:
-    - cunaguaro provides gnome-www-browser: Closes: #568320.
+    - iceweasel provides gnome-www-browser: Closes: #568320.
     - Bump Standards-Version to 3.8.4.0.
   * debian/branding/firefox-branding.js:
     - Add a release notes URL.
@@ -944,17 +1035,17 @@ cunaguaro (3.5.8-1) unstable; urgency=low
     - Remove Debian revision from the User Agent string.
     - Don't set distribution-id, it's only used in toolkit, i.e. xulrunner.
     - Remove uneffective --disable-gtktest flag.
-  * debian/cunaguaro.install, debian/wikipedia-en.xml: Remove
+  * debian/iceweasel.install, debian/wikipedia-en.xml: Remove
     wikipedia-en.xml searchplugin. There is now a better search plugin (with
     suggestions) provided upstream.
-  * debian/rules, debian/cunaguaro.install, debian/debsearch.*: Refresh
+  * debian/rules, debian/iceweasel.install, debian/debsearch.*: Refresh
     debsearch search plugin.
-  * debian/cunaguaro.1: Improve manual page for -P option. Closes: #568677.
-  * debian/cunaguaro-xremote-client: Don't need to set LD_LIBRARY_PATH.
-  * debian/cunaguaro.install, debian/rules: Don't install xpm files in
+  * debian/iceweasel.1: Improve manual page for -P option. Closes: #568677.
+  * debian/iceweasel-xremote-client: Don't need to set LD_LIBRARY_PATH.
+  * debian/iceweasel.install, debian/rules: Don't install xpm files in
     chrome/icons/default. They are not provided there upstream anymore,
     there is no reason to do so.
-  * debian/rules, debian/*.svg, debian/cunaguaro.install, debian/*.png.uu,
+  * debian/rules, debian/*.svg, debian/iceweasel.install, debian/*.png.uu,
     debian/branding: Move images generation and cleanup in debian/branding.
   * debian/rules:
     - Remove unused variables in debian/rules.
@@ -969,7 +1060,7 @@ cunaguaro (3.5.8-1) unstable; urgency=low
     - Don't fix permissions that don't need to be fixed.
   * debian/README.Debian: Remove mostly irrelevant parts of README.Debian.
   * debian/compat, debian/rules: Switch to dh.
-  * debian/cunaguaro.postinst: Remove /usr/lib/cunaguaro/updates on upgrades.
+  * debian/iceweasel.postinst: Remove /usr/lib/iceweasel/updates on upgrades.
   * debian/rules:
     - There is no bashism in debian/rules anymore.
     - Use make dependency to "generate" the MPL file.
@@ -978,47 +1069,47 @@ cunaguaro (3.5.8-1) unstable; urgency=low
     release notes link in about:, the debAbout generated links are pointless,
     especially since they create problems in the target web pages
     (e.g. unstyled BTS).
-  * debian/cunaguaro-gnome-support.{prerm,postinst},
-    debian/cunaguaro.{prerm,postinst}: Merge cunaguaro-gnome-support
-    maintainer scripts into cunaguaro ones.
+  * debian/iceweasel-gnome-support.{prerm,postinst},
+    debian/iceweasel.{prerm,postinst}: Merge iceweasel-gnome-support
+    maintainer scripts into iceweasel ones.
 
  -- Mike Hommey <glandium@debian.org>  Wed, 17 Feb 2010 22:46:30 +0100
 
-cunaguaro (3.5.6-2) unstable; urgency=low
+iceweasel (3.5.6-2) unstable; urgency=low
 
-  * debian/cunaguaro-runner:
-    - Allow cunaguaro-runner not to hardcode the cunaguaro base directory.
+  * debian/iceweasel-runner:
+    - Allow iceweasel-runner not to hardcode the iceweasel base directory.
       Closes: #507120.
     - Remove old compatibility stuff.
-  * debian/cunaguaro.desktop: Only put the name in the Name field of the
+  * debian/iceweasel.desktop: Only put the name in the Name field of the
     freedesktop application file. Closes: #507961.
-  * debian/cunaguaro.dirs:
+  * debian/iceweasel.dirs:
     - Make it clear that plugins should live in /usr/lib/mozilla/plugins/
-      by shipping the directory in the cunaguaro package. Closes: #520676.
+      by shipping the directory in the iceweasel package. Closes: #520676.
     - Likewise for extensions in /usr/{lib,share}/mozilla/extensions/$app-id.
       Closes: #564669.
   * debian/control:
     - Suggest ttf-lyx | latex-xft-fonts (latex-xft-fonts is kept for stable
       users). Closes: #539537.
     - Replace libkrb53 suggestion with libgssapi-krb5-2.
-    - Remove the cunaguaro-gnome-support package.
+    - Remove the iceweasel-gnome-support package.
     - Rewrite the short description. Also slightly modify the long
       description. Closes: #400858.
     - Build conflict with libhildonmime-dev and libosso-dev. Closes: #544369
-  * debian/cunaguaro.1:
+  * debian/iceweasel.1:
     - Fix trivial typo in the manual page. Closes: #528789.
-    - Synchronize manual page with cunaguaro --help output, and add various
+    - Synchronize manual page with iceweasel --help output, and add various
       other information. Closes: #362020, #520660, #556258.
-  * debian/homepagereset.js, debian/cunaguaro.install: Remove the
+  * debian/homepagereset.js, debian/iceweasel.install: Remove the
     homepagereset component. It was used to reset the homepage user settings
     if it were a very old value. Anyone using these old homepages should have
     had their homepage reset by now.
-  * debian/control, debian/cunaguaro.bug-presubj, debian/cunaguaro.install,
+  * debian/control, debian/iceweasel.bug-presubj, debian/iceweasel.install,
     debian/rules: Use dh_bugfiles instead of installing reportbug-related
     files by hand.
-  * debian/cunaguaro.bug-script: Add reportbug script to list addons.
+  * debian/iceweasel.bug-script: Add reportbug script to list addons.
     This uses a new helper in xulrunner-1.9.1. Closes: #356647.
-  * debian/cunaguaro.bug-control: Request xulrunner-1.9.1 dependency list in
+  * debian/iceweasel.bug-control: Request xulrunner-1.9.1 dependency list in
     bug reports.
   * debian/branding/Makefile.in, debian/branding/firefox-branding.js:
     Use http://mozilla.debian.net pages for homepage_override and welcome.
@@ -1026,12 +1117,12 @@ cunaguaro (3.5.6-2) unstable; urgency=low
     homepage_override to be triggered. This hack is to be removed in next
     release. Its sole purpose is to get people to see the pages on
     http://mozilla.debian.net/ despite the upstream version not being bumped.
-  * debian/cunaguaro.prerm: When removing the package, cleanup files
-    cunaguaro creates if run as root.
-  * debian/cunaguaro.install, debian/cunaguaro.prerm: Make .autoreg part of
+  * debian/iceweasel.prerm: When removing the package, cleanup files
+    iceweasel creates if run as root.
+  * debian/iceweasel.install, debian/iceweasel.prerm: Make .autoreg part of
     the package.
-  * debian/cunaguaro-restart-required.update-notifier,
-    debian/cunaguaro.install, debian/cunaguaro.postinst: Remove update
+  * debian/iceweasel-restart-required.update-notifier,
+    debian/iceweasel.install, debian/iceweasel.postinst: Remove update
     notification through update-notifier
   * browser/components/nsBrowserContentHandler.js,
     browser/components/shell/src/nsSetDefaultBrowser.js: Fix misalignments
@@ -1041,26 +1132,26 @@ cunaguaro (3.5.6-2) unstable; urgency=low
 
  -- Mike Hommey <glandium@debian.org>  Wed, 03 Feb 2010 07:55:01 +0100
 
-cunaguaro (3.5.6-1) unstable; urgency=low
+iceweasel (3.5.6-1) unstable; urgency=low
 
   * New upstream release.
 
  -- Mike Hommey <glandium@debian.org>  Wed, 16 Dec 2009 11:08:01 +0100
 
-cunaguaro (3.5.5-1) unstable; urgency=low
+iceweasel (3.5.5-1) unstable; urgency=low
 
   * New upstream release.
   * debian/remove.nonfree: Synchronize with Iceape 2.0.
   * debian/copyright: Update with missing information, and remove lcms
     licensing as it was dropped in 3.5.
-  * debian/cunaguaro-runner: Synchronize with Iceape 2.0's iceape-runner:
+  * debian/iceweasel-runner: Synchronize with Iceape 2.0's iceape-runner:
     - Remove obsolete (and commented) Xprint support.
     - Only handle --verbose, -V, -g and --debugger options.
     - Output less variables when running verbosely.
   * debian/README.Debian: Point to the proper file containing the
     app.update.enabled setting.
   * debian/rules: Properly modify {Min,Max}Version in application.ini.
-  * debian/control, debian/cunaguaro.preinst: Removed upgrade path from
+  * debian/control, debian/iceweasel.preinst: Removed upgrade path from
     old firefox packages.
   * debian/rules: Add a "like Firefox/version" string to the UA.
     Closes: #399633.
@@ -1073,34 +1164,34 @@ cunaguaro (3.5.5-1) unstable; urgency=low
 
  -- Mike Hommey <glandium@debian.org>  Thu, 12 Nov 2009 17:32:42 +0100
 
-cunaguaro (3.5.4-1) unstable; urgency=low
+iceweasel (3.5.4-1) unstable; urgency=low
 
   * New upstream release.
 
  -- Mike Hommey <glandium@debian.org>  Wed, 28 Oct 2009 16:36:06 +0100
 
-cunaguaro (3.5.3-2) unstable; urgency=low
+iceweasel (3.5.3-2) unstable; urgency=low
 
-  * debian/cunaguaro-runner: Set the MOZ_APP_LAUNCHER in the runner script to
+  * debian/iceweasel-runner: Set the MOZ_APP_LAUNCHER in the runner script to
     register the proper name with XSMP. Closes: #437999.
   * debian/watch: Fix to fit new upstream tarball names.
     Thanks Yan Morin <progysm@gmail.com>. Closes: #550482.
 
  -- Mike Hommey <glandium@debian.org>  Sat, 10 Oct 2009 16:03:21 +0200
 
-cunaguaro (3.5.3-1) experimental; urgency=low
+iceweasel (3.5.3-1) experimental; urgency=low
 
   * New upstream release.
 
  -- Mike Hommey <glandium@debian.org>  Thu, 10 Sep 2009 22:04:25 +0200
 
-cunaguaro (3.5.2-1) experimental; urgency=low
+iceweasel (3.5.2-1) experimental; urgency=low
 
   * New upstream release.
 
  -- Mike Hommey <glandium@debian.org>  Thu, 20 Aug 2009 07:30:00 +0200
 
-cunaguaro (3.5.1-1) experimental; urgency=low
+iceweasel (3.5.1-1) experimental; urgency=low
 
   * New upstream release.
   * debian/copyright:
@@ -1108,19 +1199,19 @@ cunaguaro (3.5.1-1) experimental; urgency=low
     - Update copyright information.
   * debian/control:
     - Add ${misc:Depends} in all binary packages dependencies.
-    - Set cunaguaro-dbg's section to debug.
+    - Set iceweasel-dbg's section to debug.
     - Bumped Standards-Version to 3.8.2.0.
   * debian/rules: Removed call to deprecated dh_desktop.
-  * debian/cunaguaro.postinst: Remove call to update-desktop-database, which
+  * debian/iceweasel.postinst: Remove call to update-desktop-database, which
     is not in /usr/sbin anyways, and is called automatically (was added by
     dh_desktop before, and run by desktop-file-utils triggers now).
 
  -- Mike Hommey <glandium@debian.org>  Fri, 17 Jul 2009 20:49:41 +0200
 
-cunaguaro (3.5-1) experimental; urgency=low
+iceweasel (3.5-1) experimental; urgency=low
 
   * New upstream release.
-  * debian/control, debian/rules, debian/cunaguaro.links: Build against and
+  * debian/control, debian/rules, debian/iceweasel.links: Build against and
     depend on xulrunner 1.9.1.
   * configure.in, configure: Don't check for libasound.
   * debian/branding/locales/en-US/brand.dtd: Add missing entity.
@@ -1128,34 +1219,34 @@ cunaguaro (3.5-1) experimental; urgency=low
 
  -- Mike Hommey <glandium@debian.org>  Wed, 08 Jul 2009 07:59:42 +0200
 
-cunaguaro (3.0.11-1) unstable; urgency=low
+iceweasel (3.0.11-1) unstable; urgency=low
 
   * New upstream release.
 
  -- Mike Hommey <glandium@debian.org>  Sat, 13 Jun 2009 20:33:30 +0200
 
-cunaguaro (3.0.9-1) unstable; urgency=high
+iceweasel (3.0.9-1) unstable; urgency=high
 
   * New upstream release.
   * Fixes mfsa-2009-20, also known as CVE-2009-1310.
 
  -- Mike Hommey <glandium@debian.org>  Wed, 22 Apr 2009 21:18:38 +0200
 
-cunaguaro (3.0.7-1) unstable; urgency=high
+iceweasel (3.0.7-1) unstable; urgency=high
 
   * New upstream release.
   * Fixes mfsa-2009-11, also known as CVE-2009-0777.
 
  -- Mike Hommey <glandium@debian.org>  Sun, 08 Mar 2009 11:23:28 +0100
 
-cunaguaro (3.0.6-1) unstable; urgency=low
+iceweasel (3.0.6-1) unstable; urgency=low
 
   * New upstream release.
   * Fixes mfsa-2009-03, also known as CVE-2009-0355.
 
  -- Mike Hommey <glandium@debian.org>  Wed, 04 Feb 2009 08:19:24 +0100
 
-cunaguaro (3.0.5-1) unstable; urgency=low
+iceweasel (3.0.5-1) unstable; urgency=low
 
   * New upstream release.
   * Fixes mfsa-2008-{63,69}, also known as CVE-2008-5505 and CVE-2008-5513.
@@ -1164,13 +1255,13 @@ cunaguaro (3.0.5-1) unstable; urgency=low
 
  -- Mike Hommey <glandium@debian.org>  Sat, 20 Dec 2008 13:40:23 +0100
 
-cunaguaro (3.0.4-1) unstable; urgency=low
+iceweasel (3.0.4-1) unstable; urgency=low
 
   * New upstream release. (Closes: #505557)
   
   [ Mike Hommey ]
-  * debian/cunaguaro-gnome-support.postinst,
-    debian/cunaguaro-gnome-support.prerm: Handle gnome-www-browser alternative.
+  * debian/iceweasel-gnome-support.postinst,
+    debian/iceweasel-gnome-support.prerm: Handle gnome-www-browser alternative.
     Restored from 3.0~b5-3. Closes: #492286.
   * debian/branding/locales/browserconfig.properties: Change the homepage to
     about:. Closes: #499346
@@ -1178,19 +1269,19 @@ cunaguaro (3.0.4-1) unstable; urgency=low
     previous change, this is not the installed file.
   * debian/homepagereset.js: Force homepage reset if it was previously set to
     the granparadiso homepage.
-  * debian/cunaguaro-restart-required.update-notifier: Added japanese
+  * debian/iceweasel-restart-required.update-notifier: Added japanese
     translation. Thanks Hideki Yamane. Closes: #503595.
   * browser/components/shell/src/nsGNOMEShellService.cpp: Fix various problems
     in the handling of GNOME background color. Closes: #495897.
 
   [ Eric Dorland ]
-  * debian/cunaguaro.desktop: Just specify "cunaguaro" as the icon, so it
+  * debian/iceweasel.desktop: Just specify "iceweasel" as the icon, so it
     can pick the scalable one under certain circumstances. (Closes:
     #451943)
 
  -- Eric Dorland <eric@debian.org>  Sun, 23 Nov 2008 01:32:40 -0500
 
-cunaguaro (3.0.3-3) unstable; urgency=low
+iceweasel (3.0.3-3) unstable; urgency=low
 
   * browser/app/profile/firefox.js: Replace %APP% with firefox in some places.
     Closes: #501540, #502450.
@@ -1207,34 +1298,34 @@ cunaguaro (3.0.3-3) unstable; urgency=low
 
  -- Mike Hommey <glandium@debian.org>  Fri, 24 Oct 2008 08:16:02 +0200
 
-cunaguaro (3.0.3-2) unstable; urgency=low
+iceweasel (3.0.3-2) unstable; urgency=low
 
-  * debian/cunaguaro-xremote-client, debian/cunaguaro-runner: Use 'cunaguaro'
+  * debian/iceweasel-xremote-client, debian/iceweasel-runner: Use 'iceweasel'
     as default application id instead of 'firefox'.
-  * debian/cunaguaro.1: Update the manpage accordingly.
+  * debian/iceweasel.1: Update the manpage accordingly.
   * Thanks to Sven Hartge. Closes: #501304, #501363, #501394, #501445.
 
  -- Mike Hommey <glandium@debian.org>  Wed, 08 Oct 2008 07:36:53 +0200
 
-cunaguaro (3.0.3-1) unstable; urgency=high
+iceweasel (3.0.3-1) unstable; urgency=high
 
   * New upstream release. (Closes: #500374)
   
   * debian/presubj: Fix typo. Thanks Rémi Vanicat. (Closes: #444736)
-  * browser/app/application.ini: Our name should be Cunaguaro and not
+  * browser/app/application.ini: Our name should be Iceweasel and not
     Firefox. This name here is used early in the startup, for things like
     the group leader window name. (Closes: #428836)
   * browser/app/application.ini: Set the profile path explicitely now that
     we have a different application name.
-  * debian/cunaguaro-runner: Add the -profile and
+  * debian/iceweasel-runner: Add the -profile and
     -install-global-extension to the list of single arg flags for
-    cunaguaro. (Closes: #425874, #440455)
-  * debian/cunaguaro.desktop: Fixed Finnish desktop file
+    iceweasel. (Closes: #425874, #440455)
+  * debian/iceweasel.desktop: Fixed Finnish desktop file
     translation. Thanks Timo Jyrinki. (Closes: #483941)
 
  -- Eric Dorland <eric@debian.org>  Mon, 06 Oct 2008 01:59:30 -0400
 
-cunaguaro (3.0.1-1) unstable; urgency=low
+iceweasel (3.0.1-1) unstable; urgency=low
 
   * New upstream release.
   * debian/rules:
@@ -1244,27 +1335,27 @@ cunaguaro (3.0.1-1) unstable; urgency=low
     in application handlers configuration pane.
   * browser/components/preferences/applicationManager.xul: Fix breakage of the
     application manager by change to applications.js in 3.0~rc2-2.
-  * debian/cunaguaro-runner: Don't set MOZILLA_NO_JEMALLOC when using aoss.
+  * debian/iceweasel-runner: Don't set MOZILLA_NO_JEMALLOC when using aoss.
   * debian/control:
     - Depend on a version of xulrunner with a fixed jemalloc.
     - Updated Standards-Version to 3.8.0.1. No changes required.
   * debian/remove.nonfree: Don't remove files that don't exist anymore, and
     properly remove some files with spaces in their name.
-  * debian/cunaguaro.links: /usr/share/icons/hicolor/64x64/apps/cunaguaro.png
+  * debian/iceweasel.links: /usr/share/icons/hicolor/64x64/apps/iceweasel.png
     is not a link anymore.
 
  -- Mike Hommey <glandium@debian.org>  Mon, 14 Jul 2008 22:51:39 +0200
 
-cunaguaro (3.0~rc2-2) unstable; urgency=low
+iceweasel (3.0~rc2-2) unstable; urgency=low
 
-  * debian/cunaguaro-runner:
-    - Fix startup with aoss as CUNAGUARO_DSP. Closes: #485623.
+  * debian/iceweasel-runner:
+    - Fix startup with aoss as ICEWEASEL_DSP. Closes: #485623.
     - Use MOZILLA_NO_JEMALLOC instead of LD_PRELOAD to disable jemalloc.
   * browser/components/preferences/applications.js: Avoid failure to
     initialize the applications preferences pane when the shell service is not
     loaded, which happens when xulrunner-1.9-gnome-support is not installed.
     Closes: #485765.
-  * browser/confvars.sh: Set MOZ_APP_NAME to cunaguaro. This will make the
+  * browser/confvars.sh: Set MOZ_APP_NAME to iceweasel. This will make the
     shell service use the proper path when setting the default browser.
     Closes: #399632.
   * configure, configure.in: Force to not use -fshort-wchar. Closes: #474281.
@@ -1272,53 +1363,53 @@ cunaguaro (3.0~rc2-2) unstable; urgency=low
     - Build depend on version of xulrunner-dev that doesn't use -fshort-wchar.
     - Depend on version of xulrunner-1.9 implementing MOZILLA_NO_JEMALLOC and
       lockPref in preferences.
-  * debian/cunaguaro.cfg: Removed.
-  * debian/cunaguaro.install: Don't install cunaguaro.cfg.
+  * debian/iceweasel.cfg: Removed.
+  * debian/iceweasel.install: Don't install iceweasel.cfg.
   * debian/vendor.js: Moved the locked preference for app.update.enabled here,
     now that can be done here with newest xulrunner-1.9. Note that
-    cunaguaro.cfg was not taken into account due to general.config.filename
+    iceweasel.cfg was not taken into account due to general.config.filename
     mistakenly not being set.
-  * debian/cunaguaro.js: Fixed preferences location in /usr/lib/cunaguaro and
+  * debian/iceweasel.js: Fixed preferences location in /usr/lib/iceweasel and
     added a note about lockPref.
-  * debian/rules, debian/cunaguaro.install: Now that we don't have flat
+  * debian/rules, debian/iceweasel.install: Now that we don't have flat
     chrome, we can't use icons from chrome/browser/content. Change links to
     point to a proper location, and install missing 64x64 icon. Thanks
     Franklin PIAT. Closes: #486521.
 
  -- Mike Hommey <glandium@debian.org>  Sat, 21 Jun 2008 15:57:49 +0200
 
-cunaguaro (3.0~rc2-1) unstable; urgency=low
+iceweasel (3.0~rc2-1) unstable; urgency=low
 
   * New upstream release candidate.
 
  -- Mike Hommey <glandium@debian.org>  Sat, 07 Jun 2008 12:46:43 +0200
 
-cunaguaro (3.0~rc1-1) experimental; urgency=low
+iceweasel (3.0~rc1-1) experimental; urgency=low
 
   * configure.in, configure: Fix LIBXUL_SDK_DIR variable use. Closes: #479041.
-  * debian/cunaguaro-runner: Work around problems with aoss and libjemalloc by
+  * debian/iceweasel-runner: Work around problems with aoss and libjemalloc by
     preloading the glibc. Closes: #475166.
-  * debian/cunaguaro.postinst:
+  * debian/iceweasel.postinst:
     - Remove any compreg.dat and xpti.dat that would be left from earlier runs
-      of cunaguaro as root, causing possible random crashes with xpcom.
+      of iceweasel as root, causing possible random crashes with xpcom.
       Closes: #481020.
     - Touch .autoreg on install/upgrade, so that components registration is
-      triggered for the components provided by cunaguaro.
+      triggered for the components provided by iceweasel.
   * debian/control:
     - Build depend on xulrunner-dev 1.9~rc1 and stop build depending on
       xulrunner-1.9-common which was only required because of incompatible
       platform.ini in xulrunner-1.9-common 1.9~b5-1.
-    - cunaguaro depends on xulrunner >= 1.9~rc1.
+    - iceweasel depends on xulrunner >= 1.9~rc1.
   * debian/about_debian.js: Removed, as this component will be provided by
     xulrunner.
-  * debian/cunaguaro.install: Don't install about_debian.js.
+  * debian/iceweasel.install: Don't install about_debian.js.
   * debian/rules: Use proper flag to disable optimization.
   * debian/branding/branding.nsi, debian/branding/content/contents.rdf:
     Removed useless branding files.
   * debian/branding/locales/en-US/brand.dtd: Removed useless entity.
   * debian/vendor.js:
     - Add package name for debAbout.js component.
-    - Avoid displaying useless EULA at cunaguaro startup.
+    - Avoid displaying useless EULA at iceweasel startup.
   * debian/rules: Install debian/vendor.js and append
     general.useragent.extra.firefoxComment there.
   * configure.in, configure: Don't build libjemalloc when building against
@@ -1326,23 +1417,23 @@ cunaguaro (3.0~rc1-1) experimental; urgency=low
   * browser/base/content/baseMenuOverlay.xul,
     browser/components/safebrowsing/content/report-phishing-overlay.xul,
     extensions/reporter/resources/content/reporter/reporterOverlay.xul:
-    Arrange menu overlays so that nothing ends up after "About Cunaguaro".
+    Arrange menu overlays so that nothing ends up after "About Iceweasel".
 
  -- Mike Hommey <glandium@debian.org>  Sat, 24 May 2008 22:48:48 +0200
 
-cunaguaro (3.0~b5-4) experimental; urgency=low
+iceweasel (3.0~b5-4) experimental; urgency=low
 
   [ Eric Dorland ]
   * debian/control:
-    - Add Replaces on cunaguaro-gnome-support for imgicon move.
+    - Add Replaces on iceweasel-gnome-support for imgicon move.
       (Closes: #478084)
     - Fix GNOME spelling errors.
     - Remove binutils and dpkg-dev build dependencies that were workarounds
       for broken version that are no longer in Debian.
   * debian/rules: Add calls to dh_desktop.
-  * debian/cunaguaro.postinst: Fix inverted check for a running
-    cunaguaro. Thanks Andreas Beckmann. (Closes: #473756)
-  * debian/cunaguaro.desktop: Add trailing semicolons to Categories and
+  * debian/iceweasel.postinst: Fix inverted check for a running
+    iceweasel. Thanks Andreas Beckmann. (Closes: #473756)
+  * debian/iceweasel.desktop: Add trailing semicolons to Categories and
     Mimetype to comply the standard. Thanks Michael Biebl. (Closes:
     #468117)
 
@@ -1351,61 +1442,61 @@ cunaguaro (3.0~b5-4) experimental; urgency=low
     - Replace a bunch of build dependencies with xulrunner-dev and
       xulrunner-1.9-common (a versioned dependency is required for this one
       because of an incompatible platform.ini in 1.9~b5-1).
-    - cunaguaro now depends on xulrunner-1.9 (we rely on xulrunner-stub from
+    - iceweasel now depends on xulrunner-1.9 (we rely on xulrunner-stub from
       version 1.9~b5-4).
-    - cunaguaro-dbg depends on xulrunner-1.9-dbg.
-    - cunaguaro-gnome-support is transformed into a dummy package to install
+    - iceweasel-dbg depends on xulrunner-1.9-dbg.
+    - iceweasel-gnome-support is transformed into a dummy package to install
       xulrunner-1.9-gnome-support.
-  * debian/cunaguaro-gnome-support.*: Removed.
-  * debian/cunaguaro.install, debian/cunaguaro.links:
+  * debian/iceweasel-gnome-support.*: Removed.
+  * debian/iceweasel.install, debian/iceweasel.links:
     - Don't install files that are provided by xulrunner-1.9, including the
       firefox binary, which is a copy of xulrunner-stub.
     - defaults/pref is now defaults/preferences.
-    - Install application.ini in /usr/lib/cunaguaro instead of
-      /usr/share/cunaguaro. Xulrunner following symlinks, it fails running
-      cunaguaro without the file being in /usr/lib/cunaguaro.
+    - Install application.ini in /usr/lib/iceweasel instead of
+      /usr/share/iceweasel. Xulrunner following symlinks, it fails running
+      iceweasel without the file being in /usr/lib/iceweasel.
   * debian/rules:
     - Build against xulrunner-1.9.
-    - Don't install files in the cunaguaro-gnome-support package and don't
-      filter anything in the cunaguaro package.
+    - Don't install files in the iceweasel-gnome-support package and don't
+      filter anything in the iceweasel package.
     - Don't set general.useragent.product and general.useragent.productSub,
       they have no effect anymore.
     - defaults/pref is now defaults/preferences.
     - Remove specific CFLAGS for alpha and ppc64, since we don't build from
       code that may require it.
     - Properly cleanup debian/branding with clean rule.
-  * debian/cunaguaro.links:
-    - Install the xulrunner-stub as a /usr/lib/cunaguaro/firefox-bin symlink.
+  * debian/iceweasel.links:
+    - Install the xulrunner-stub as a /usr/lib/iceweasel/firefox-bin symlink.
       It will also allow smooth upgrade for those whose session manager stored
-      firefox-bin as cunaguaro main executable.
+      firefox-bin as iceweasel main executable.
     - Help xulrunner-stub by pointing to xulrunner's home with a
-      /usr/lib/cunaguaro/xulrunner symlink to /usr/lib/xulrunner-1.9.
-  * debian/cunaguaro.postinst: Remove /usr/lib/cunaguaro/.autoreg on upgrade.
-  * debian/cunaguaro-xremote-client: Don't set MOZILLA_FIVE_HOME anymore.
+      /usr/lib/iceweasel/xulrunner symlink to /usr/lib/xulrunner-1.9.
+  * debian/iceweasel.postinst: Remove /usr/lib/iceweasel/.autoreg on upgrade.
+  * debian/iceweasel-xremote-client: Don't set MOZILLA_FIVE_HOME anymore.
   * toolkit/library/Makefile.in,
     xpcom/reflect/xptcall/src/md/unix/Makefile.in: Revert changes to these
     files, as they are not used for the build anymore.
 
  -- Mike Hommey <glandium@debian.org>  Thu, 01 May 2008 18:56:40 +0200
 
-cunaguaro (3.0~b5-3) experimental; urgency=low
+iceweasel (3.0~b5-3) experimental; urgency=low
 
   * debian/README.Debian: Change the paragraph about pango, since this is now
     the only font backend and MOZ_DISABLE_PANGO is effectless.
   * debian/presubj: Remove the paragraph about MOZ_DISABLE_PANGO.
-  * debian/cunaguaro-runner: Don't export the MOZ_DISABLE_PANGO variable.
+  * debian/iceweasel-runner: Don't export the MOZ_DISABLE_PANGO variable.
   * debian/rules:
     - Remove old unused stuff.
     - Use upstream optimization flags.
     - Arrange LDFLAGS so that -Wl,--as-needed appears before -lpthread.
-  * debian/cunaguaro-gnome-support.install: Remove the imgicon component from
-    the cunaguaro-gnome-support package. (Closes: #477661)
+  * debian/iceweasel-gnome-support.install: Remove the imgicon component from
+    the iceweasel-gnome-support package. (Closes: #477661)
   * xpcom/reflect/xptcall/src/md/unix/Makefile.in: Fix FTBFS on hppa.
     (Closes: #473766)
 
  -- Mike Hommey <glandium@debian.org>  Sat, 26 Apr 2008 09:35:27 +0200
 
-cunaguaro (3.0~b5-2) experimental; urgency=low
+iceweasel (3.0~b5-2) experimental; urgency=low
 
   [ Mike Hommey ]
   * allmakefiles.sh: Make the branding directory cleanup properly.
@@ -1417,7 +1508,7 @@ cunaguaro (3.0~b5-2) experimental; urgency=low
   
   [ Eric Dorland ]
   * debian/rules: Install the libimgicon.so component in the regular
-    cunaguaro package and not cunaguaro-gnome-support. It's needed to
+    iceweasel package and not iceweasel-gnome-support. It's needed to
     display the icons and doesn't actually depend on anything gnome
     specific. (Closes: #474728)
   * debian/rules: Suggest xfonts-mathml and ttf-mathematica4.1 for mathml
@@ -1425,7 +1516,7 @@ cunaguaro (3.0~b5-2) experimental; urgency=low
 
  -- Eric Dorland <eric@debian.org>  Tue, 22 Apr 2008 01:26:06 -0400
 
-cunaguaro (3.0~b5-1) experimental; urgency=low
+iceweasel (3.0~b5-1) experimental; urgency=low
 
   * New upstream beta release.
   * debian/branding/locales/Makefile.in: Fix location of the branding
@@ -1433,9 +1524,9 @@ cunaguaro (3.0~b5-1) experimental; urgency=low
 
  -- Eric Dorland <eric@debian.org>  Wed, 02 Apr 2008 22:58:08 -0400
 
-cunaguaro (3.0~b4-2) experimental; urgency=low
+iceweasel (3.0~b4-2) experimental; urgency=low
 
-  * debian/branding/*, debian/rules, debian/cunaguaro.install: Use the
+  * debian/branding/*, debian/rules, debian/iceweasel.install: Use the
     --with-branding flag, create a branding directory and generate all of
     our snazy icons inside of it.
   * debian/filter-globe.xsl: Remove, no longer needed.
@@ -1447,7 +1538,7 @@ cunaguaro (3.0~b4-2) experimental; urgency=low
 
  -- Eric Dorland <eric@debian.org>  Tue, 01 Apr 2008 01:42:10 -0400
 
-cunaguaro (3.0~b4-1) experimental; urgency=low
+iceweasel (3.0~b4-1) experimental; urgency=low
 
   * New upstream beta release.
   
@@ -1462,22 +1553,22 @@ cunaguaro (3.0~b4-1) experimental; urgency=low
     browser/locales/en-US/chrome/overrides/appstrings.properties,
     browser/locales/en-US/searchplugins/answers.xml,
     browser/locales/en-US/searchplugins/google.xml: Re-port a bunch of
-    Firefox to Cunaguaro renames.
-  * debian/cunaguaro-dom-inspector.install,
-    debian/cunaguaro-dom-inspector.links, debian/control, debian/rules:
+    Firefox to Iceweasel renames.
+  * debian/iceweasel-dom-inspector.install,
+    debian/iceweasel-dom-inspector.links, debian/control, debian/rules:
     The dom-inspector has been removed from 3.0, so remove the package and
     conflict against the old one.
 
  -- Eric Dorland <eric@debian.org>  Sun, 23 Mar 2008 23:09:32 -0400
 
-cunaguaro (3.0~b3-1) experimental; urgency=low
+iceweasel (3.0~b3-1) experimental; urgency=low
 
   * New upstream beta release.
   * debian/rules: Remove the --enable-chrome-format=flat for now.
 
  -- Eric Dorland <eric@debian.org>  Tue, 04 Mar 2008 01:36:37 -0500
 
-cunaguaro (3.0~b2-1) UNRELEASED; urgency=low
+iceweasel (3.0~b2-1) UNRELEASED; urgency=low
 
   * New upstream beta release.
   * debian/remove.nonfree: Don't remove atk components from other-licenses.
@@ -1491,22 +1582,22 @@ cunaguaro (3.0~b2-1) UNRELEASED; urgency=low
       doesn't exist anymore.
   * toolkit/library/Makefile.in: Include -lXrender, the GTK libs don't
     seem to pull it in and we need it.
-  * debian/cunaguaro.install: 
+  * debian/iceweasel.install: 
     - Apparently the unixprintplugin isn't there anymore, remove the line.
     - Collapse the chrome installation, the manifest files there are the only 
       ones we want.
-  * debian/cunaguaro.install, debian/cunaguaro.links:
+  * debian/iceweasel.install, debian/iceweasel.links:
     - Install and link to the new modules directory.
     - Install and link to new .ini files.
 
  -- Eric Dorland <eric@debian.org>  Mon, 21 Jan 2008 17:56:50 -0500
 
-cunaguaro (2.0.0.11-1) unstable; urgency=low
+iceweasel (2.0.0.11-1) unstable; urgency=low
 
   * New upstream release, not actually different from 2.0.0.10-2.  
   
   [ Eric Dorland ]
-  * debian/cunaguaro.desktop: Set the Category to Network;WebBrowser and
+  * debian/iceweasel.desktop: Set the Category to Network;WebBrowser and
     remove invalid Applcation.
   * debian/rules: Don't unilaterally ignore make distclean errors.
 
@@ -1516,14 +1607,14 @@ cunaguaro (2.0.0.11-1) unstable; urgency=low
 
  -- Eric Dorland <eric@debian.org>  Sat, 01 Dec 2007 20:40:54 -0500
 
-cunaguaro (2.0.0.10-2) unstable; urgency=low
+iceweasel (2.0.0.10-2) unstable; urgency=low
 
   * content/canvas/src/nsCanvasRenderingContext2D.cpp: Apply patch from
     bz#391028 to fix bz#405584, a regression in Canvas.drawImage.
 
  -- Eric Dorland <eric@debian.org>  Tue, 27 Nov 2007 13:13:56 -0500
 
-cunaguaro (2.0.0.10-1) unstable; urgency=low
+iceweasel (2.0.0.10-1) unstable; urgency=low
 
   * New upstream release.
     - Fix the following security issues: CVE-2007-5960, CVE-2007-5959,
@@ -1540,7 +1631,7 @@ cunaguaro (2.0.0.10-1) unstable; urgency=low
 
  -- Eric Dorland <eric@debian.org>  Tue, 27 Nov 2007 03:13:22 -0500
 
-cunaguaro (2.0.0.9-2) unstable; urgency=low
+iceweasel (2.0.0.9-2) unstable; urgency=low
 
   * configure, configure.in, content/canvas/src/Makefile.in,
     layout/svg/renderer/src/cairo/Makefile.in,
@@ -1555,13 +1646,13 @@ cunaguaro (2.0.0.9-2) unstable; urgency=low
 
  -- Mike Hommey <glandium@debian.org>  Fri, 23 Nov 2007 20:40:22 +0100
 
-cunaguaro (2.0.0.9-1) unstable; urgency=low
+iceweasel (2.0.0.9-1) unstable; urgency=low
 
   * New upstream release. (Closes: #449195)
 
  -- Eric Dorland <eric@debian.org>  Sun, 04 Nov 2007 22:53:03 -0500
 
-cunaguaro (2.0.0.8-1) unstable; urgency=low
+iceweasel (2.0.0.8-1) unstable; urgency=low
 
   * New upstream release.
     - Fixes the following security issues: CVE-2007-4841, CVE-2007-5338,
@@ -1571,26 +1662,26 @@ cunaguaro (2.0.0.8-1) unstable; urgency=low
 
  -- Eric Dorland <eric@debian.org>  Sat, 20 Oct 2007 02:04:01 -0400
 
-cunaguaro (2.0.0.7-2) unstable; urgency=low
+iceweasel (2.0.0.7-2) unstable; urgency=low
 
   * gfx/src/gtk/gtk2drawing.c: Add patch from bz#389801 for gtk problems
     with gtk 2.12. (Closes: #444149)
 
  -- Eric Dorland <eric@debian.org>  Thu, 27 Sep 2007 22:26:44 -0400
 
-cunaguaro (2.0.0.7-1) unstable; urgency=low
+iceweasel (2.0.0.7-1) unstable; urgency=low
 
   * The "pointlessly following upstream" release.
   * New upstream security release, fixes a Windows only vulnerability.
   
-  * debian/cunaguaro.menu: Drop the Web Browser menu hint in the face of
+  * debian/iceweasel.menu: Drop the Web Browser menu hint in the face of
     the menu reorg. (Closes: #435106)
   * debian/debsearch.src: Fix for new packages.debian.org, thanks Hristo
     Hristov. (Closes: #440826)
   * debian/wikipedia-en.xml: Update to newer Wikipedia search engine
     plugin. (Closes: #443465)
-  * debian/cunaguaro.NEWS: Remove, it is now quite outdated. (Closes: #434526)
-  * debian/control, debian/cunaguaro.postinst: Add dependency on procps,
+  * debian/iceweasel.NEWS: Remove, it is now quite outdated. (Closes: #434526)
+  * debian/control, debian/iceweasel.postinst: Add dependency on procps,
     and check if firefox is running before printing the message about
     restarting. (Closes: #435119)
   * configure.in, configure: Steal asac's patch to work around visibility
@@ -1598,7 +1689,7 @@ cunaguaro (2.0.0.7-1) unstable; urgency=low
 
  -- Eric Dorland <eric@debian.org>  Mon, 24 Sep 2007 00:07:12 -0400
 
-cunaguaro (2.0.0.6-1) unstable; urgency=high
+iceweasel (2.0.0.6-1) unstable; urgency=high
 
   * New security/stability upstream release (v2.0.0.6)
   * MFSA 2007-26 aka CVE-2007-3844
@@ -1607,7 +1698,7 @@ cunaguaro (2.0.0.6-1) unstable; urgency=high
 
  -- Mike Hommey <glandium@debian.org>  Wed, 01 Aug 2007 08:30:37 +0200
 
-cunaguaro (2.0.0.5-2) unstable; urgency=high
+iceweasel (2.0.0.5-2) unstable; urgency=high
 
   * configure, configure.in: Make sure we won't be bitten by upstream
     changing libjpeg, libpng or zlib internal version, which makes system
@@ -1618,7 +1709,7 @@ cunaguaro (2.0.0.5-2) unstable; urgency=high
 
  -- Mike Hommey <glandium@debian.org>  Sat, 21 Jul 2007 22:15:43 +0200
 
-cunaguaro (2.0.0.5-1) unstable; urgency=high
+iceweasel (2.0.0.5-1) unstable; urgency=high
 
   [ Mike Hommey ]
   * New security/stability upstream release (v2.0.0.5)
@@ -1634,11 +1725,11 @@ cunaguaro (2.0.0.5-1) unstable; urgency=high
     (Partially fixes #428282)
 
   [ Eric Dorland ]
-  * debian/cunaguaro.menu: Change section for the new menu hierarchy.
+  * debian/iceweasel.menu: Change section for the new menu hierarchy.
 
  -- Mike Hommey <glandium@debian.org>  Thu, 19 Jul 2007 23:30:11 +0200
 
-cunaguaro (2.0.0.4-1) unstable; urgency=low
+iceweasel (2.0.0.4-1) unstable; urgency=low
 
   * New upstream release. (Closes: #427785)
   * Fixes mfsa-2007-{12-14}, mfsa-2007-{16-17}, also known as
@@ -1648,13 +1739,13 @@ cunaguaro (2.0.0.4-1) unstable; urgency=low
     that are deprecated by upstream changes.
   * uriloader/exthandler/unix/nsGNOMERegistry.h: Adapt so that our changes
     build correctly.
-  * debian/cunaguaro.desktop: Add Swedish translation. Thanks Daniel
+  * debian/iceweasel.desktop: Add Swedish translation. Thanks Daniel
     Nylander. (Closes: #420051)
   * security/manager/ssl/src/nsCertVerificationThread.cpp,
     security/manager/ssl/src/nsSSLThread.cpp: Avoid some cpu wake ups in
     PSM. bz#380558
   * modules/libpref/src/init/all.js: Set layout.css.dpi to 0 instead of -1.
-    Cunaguaro will use system DPI and avoid using huge fonts on systems where
+    Iceweasel will use system DPI and avoid using huge fonts on systems where
     DPI < 96. (Closes: #409074)
   * debian/control:
     + Build depend on libnspr4-dev and libnss3-dev.
@@ -1663,7 +1754,7 @@ cunaguaro (2.0.0.4-1) unstable; urgency=low
   * debian/rules:
     + Use system nspr and nss.
     + Don't shlibsign.
-    + Install symlinks for nspr and nss libraries in /usr/lib/cunaguaro.
+    + Install symlinks for nspr and nss libraries in /usr/lib/iceweasel.
   * shlibs.local: Force versioned dependencies on libnss because of our use
     of the libnssckbi.so file under /usr/lib/nss which appeared in version
     3.11.5-1.
@@ -1673,9 +1764,9 @@ cunaguaro (2.0.0.4-1) unstable; urgency=low
 
  -- Mike Hommey <glandium@debian.org>  Sat, 09 Jun 2007 08:26:05 +0200
 
-cunaguaro (2.0.0.3-2) unstable; urgency=low
+iceweasel (2.0.0.3-2) unstable; urgency=low
 
-  * debian/README.Debian: CUNAGUARO_DSP default is none, not auto.
+  * debian/README.Debian: ICEWEASEL_DSP default is none, not auto.
   * debian/copyright: Updated part about removed files.
   * configure, configure.in, config/autoconf.mk.in,
     extensions/spellchecker/myspell/src/Makefile.in,
@@ -1690,7 +1781,7 @@ cunaguaro (2.0.0.3-2) unstable; urgency=low
 
  -- Mike Hommey <glandium@debian.org>  Fri, 23 Mar 2007 20:01:19 +0100
 
-cunaguaro (2.0.0.3-1) unstable; urgency=low
+iceweasel (2.0.0.3-1) unstable; urgency=low
 
   * New upstream release. Fixes mfsa-2007-11.
   * Cleaned up the orig.tar.gz from non-free files.
@@ -1703,15 +1794,15 @@ cunaguaro (2.0.0.3-1) unstable; urgency=low
     + Build Conflict on graphicsmagick-imagemagick-compat to avoid bug
       #413954.
     + Bumped Standards-Version to 3.7.2.2. No changes.
-  * debian/cunaguaro.install: Don't install cunaguaro.png in
+  * debian/iceweasel.install: Don't install iceweasel.png in
     /usr/share/pixmaps.
   * debian/rules: Install several icons in the hicolor theme.
-  * debian/cunaguaro.links:
+  * debian/iceweasel.links:
     + Change links for /usr/share/pixmaps/firefox.png and
       /usr/share/pixmaps/mozilla-firefox.png.
-    + Link some icons in cunaguaro directories into the appropriate hicolor
+    + Link some icons in iceweasel directories into the appropriate hicolor
       directory.
-    + Make /usr/share/pixmaps/cunaguaro.png a link to the appropriate hicolor
+    + Make /usr/share/pixmaps/iceweasel.png a link to the appropriate hicolor
       icon.
     (Closes: #414012)
   * browser/locales/en-US/searchplugins/answers.xml,
@@ -1721,14 +1812,14 @@ cunaguaro (2.0.0.3-1) unstable; urgency=low
 
  -- Mike Hommey <glandium@debian.org>  Wed, 21 Mar 2007 20:29:33 +0100
 
-cunaguaro (2.0.0.2+dfsg-3) unstable; urgency=low
+iceweasel (2.0.0.2+dfsg-3) unstable; urgency=low
 
-  * debian/cunaguaro-runner: Fix the previous fix, so that arguments are not
+  * debian/iceweasel-runner: Fix the previous fix, so that arguments are not
     doubled. (Closes: #413162)
-  * debian/Options.png.uu, debian/cunaguaro.png.uu, debian/cunaguaro48.png.uu,
+  * debian/Options.png.uu, debian/iceweasel.png.uu, debian/iceweasel48.png.uu,
     debian/document.png.uu, debian/mozicon128.png.uu, debian/mozicon16.xpm,
-    debian/mozicon50.xpm, debian/default.xpm, debian/cunaguaro.xpm: Removed.
-  * debian/cunaguaro_icon.svg, debian/cunaguaro_logo.svg: Added source SVG
+    debian/mozicon50.xpm, debian/default.xpm, debian/iceweasel.xpm: Removed.
+  * debian/iceweasel_icon.svg, debian/iceweasel_logo.svg: Added source SVG
     files for the logo and the icon, and changed the color of the globe.
     (Closes: #404882, #408108, #409035)
   * debian/filter-globe.xsl: Added XSLT stylesheet to filter the globe out of
@@ -1744,17 +1835,17 @@ cunaguaro (2.0.0.2+dfsg-3) unstable; urgency=low
   * debian/homepagereset.js: Custom component to reset the browser homepage
     if it is set to the old localstart.html page from the mozilla-browser
     package, which doesn't exist any more. (Closes: #410841)
-  * debian/cunaguaro.install: Install the homepagereset component.
+  * debian/iceweasel.install: Install the homepagereset component.
   * browser/base/content/browserconfig.properties: Set home page to about:.
   * toolkit/content/about.xhtml: Add links to about:bugs and
     about:README.Debian to the about: page. Also remove the non-link to
     upstream release notes.
   * debian/about_debian.js: Custom component to add support for
     about:README.Debian and about:bugs addresses.
-  * debian/cunaguaro.install: Install the about_debian component.
+  * debian/iceweasel.install: Install the about_debian component.
   * layout/base/nsPresContext.cpp, layout/base/nsPresContext.h: Fix for hang
     up when switching GTK theme. bz#352096. Thanks Alexander Sack.
-  * debian/cunaguaro.install, debian/cunaguaro.links: Install the
+  * debian/iceweasel.install, debian/iceweasel.links: Install the
     browserconfig.properties file.
   * debian/rules: Avoid compressing README.Debian for it to be seen in
     about:README.Debian.
@@ -1788,22 +1879,22 @@ cunaguaro (2.0.0.2+dfsg-3) unstable; urgency=low
 
  -- Mike Hommey <glandium@debian.org>  Sun,  4 Mar 2007 22:29:59 +0100
 
-cunaguaro (2.0.0.2+dfsg-2) unstable; urgency=low
+iceweasel (2.0.0.2+dfsg-2) unstable; urgency=low
 
   [ Mike Hommey ]
-  * debian/cunaguaro-runner: Use of a dummy argument is useless now set -- is
+  * debian/iceweasel-runner: Use of a dummy argument is useless now set -- is
     being used. Plus, it avoids an ill side effect of now using set --.
     (Closes: #412344, #412404, #412418, #412585, #412711, #412746, #412876)
     
   [ Eric Dorland ]
-  * debian/cunaguaro-runner: 
+  * debian/iceweasel-runner: 
     - Patch from Sam Pennyto fix firefox reference. Clean up wording a 
       bit too. (Closes: #412475)
     - Don't lose $prev in some cases. Thanks Loic Grenie.
 
  -- Eric Dorland <eric@debian.org>  Fri,  2 Mar 2007 03:36:58 -0500
 
-cunaguaro (2.0.0.2+dfsg-1) unstable; urgency=high
+iceweasel (2.0.0.2+dfsg-1) unstable; urgency=high
 
   * New upstream release. Fixes security vulnerabilities: CVE-2007-0775,
     CVE-2007-0776, CVE-2007-0777, CVE-2007-0995, CVE-2006-6077,
@@ -1811,27 +1902,27 @@ cunaguaro (2.0.0.2+dfsg-1) unstable; urgency=high
     CVE-2007-0008, CVE-2007-0009, CVE-2007-0981.
   * browser/app/firefox-branding.js: Set app.releaseNotesURL to the
     correct url for release notes. (Closes: #411226)
-  * debian/cunaguaro-runner: Use set -- everywhere. Thanks Loic Grenie. 
+  * debian/iceweasel-runner: Use set -- everywhere. Thanks Loic Grenie. 
 
  -- Eric Dorland <eric@debian.org>  Sun, 25 Feb 2007 06:08:04 -0500
 
-cunaguaro (2.0.0.1+dfsg-4) unstable; urgency=low
+iceweasel (2.0.0.1+dfsg-4) unstable; urgency=low
 
-  * debian/cunaguaro.menu: Add a longtitle. 
+  * debian/iceweasel.menu: Add a longtitle. 
   * browser/app/nsBrowserApp.cpp, toolkit/xre/nsXULAppAPI.h,
     toolkit/xre/nsAppRunner.cpp: Add a new displayName field and set it to
-    "Cunaguaro". Use it in a number of places instead of name for
+    "Iceweasel". Use it in a number of places instead of name for
     display. (Closes: #411493)
 
  -- Eric Dorland <eric@debian.org>  Tue, 20 Feb 2007 18:33:58 -0500
 
-cunaguaro (2.0.0.1+dfsg-3) unstable; urgency=high
+iceweasel (2.0.0.1+dfsg-3) unstable; urgency=high
 
   * debian/README.Debian: Fix typo, thanks Joey "I See All!"
     Hess. (Closes: #407366)
   * debian/presubj: Fix embarrassing typos and wording. Thanks Ross
     Boylan. (Closes: #407726)
-  * debian/cunaguaro.1: Mention "aoss" as a dsp wrapper, and fix esd and
+  * debian/iceweasel.1: Mention "aoss" as a dsp wrapper, and fix esd and
     arts references. Thanks Alain Kalker. (Closes: #407662)
   * intl/unicharutil/util/nsUnicharUtils.h: Patch from David
     Mosberger-Tang to fix unaligned access on ia64.
@@ -1840,7 +1931,7 @@ cunaguaro (2.0.0.1+dfsg-3) unstable; urgency=high
   * browser/app/firefox-branding.js: Set startup.homepage_override_url and
     startup.homepage_welcome_url to "" to really disable the upgrade page
     overrides. (Closes: #407533)
-  * debian/control: Call cunaguaro-gnome-support a component rather than an
+  * debian/control: Call iceweasel-gnome-support a component rather than an
     extension. Thanks Axel Beckert. (Closes: #409950)
   * gfx/src/gtk/nsFontMetricsPango.cpp: Patch from bz#335810 to preserve
     horizontal position in text input fields. (Closes: #409634, 406612)
@@ -1850,7 +1941,7 @@ cunaguaro (2.0.0.1+dfsg-3) unstable; urgency=high
 
  -- Eric Dorland <eric@debian.org>  Sun, 18 Feb 2007 20:56:27 -0500
 
-cunaguaro (2.0.0.1+dfsg-2) unstable; urgency=high
+iceweasel (2.0.0.1+dfsg-2) unstable; urgency=high
 
   [ Eric Dorland ]
   * debian/rules: Use chmod a-x instead of just -x. (Closes: #404548)
@@ -1868,20 +1959,20 @@ cunaguaro (2.0.0.1+dfsg-2) unstable; urgency=high
     "browser.startup.homepage_override.mstone" to "ignore" to prevent
     annoying Firefox branded firstrun and upgrade pages. (Closes: #404649)
   * debian/README.Debian: Document why we're now called
-    Cunaguaro. (Closes: #399814)
+    Iceweasel. (Closes: #399814)
   * debian/copyright: Indicate that the debian directory is licensed like
     firefox, under the GPL/LGPL/MPL. (Closes: #406846)
 
   [ Mike Hommey ]
-  * debian/cunaguaro-runner: Removed bashisms.
-  * debian/README.Debian: Updated information about CUNAGUARO_DSP setting and
-    java plugin. Also replaced Firefox by Cunaguaro where appropriate.
-  * debian/cunaguaro.links: Removed /usr/{lib|share}/firefox links.
+  * debian/iceweasel-runner: Removed bashisms.
+  * debian/README.Debian: Updated information about ICEWEASEL_DSP setting and
+    java plugin. Also replaced Firefox by Iceweasel where appropriate.
+  * debian/iceweasel.links: Removed /usr/{lib|share}/firefox links.
     (Closes: #404733)
 
  -- Eric Dorland <eric@debian.org>  Tue, 16 Jan 2007 00:02:34 -0500
 
-cunaguaro (2.0.0.1+dfsg-1) unstable; urgency=high
+iceweasel (2.0.0.1+dfsg-1) unstable; urgency=high
 
   [ Eric Dorland ]
   * New upstream release. Fixes mfsa-2006-{68-73,74,75} also known as
@@ -1899,80 +1990,80 @@ cunaguaro (2.0.0.1+dfsg-1) unstable; urgency=high
     browser/locales/en-US/chrome/overrides/appstrings.properties,
     browser/components/nsBrowserGlue.js,
     toolkit/locales/en-US/chrome/mozapps/extensions/extensions.properties:
-    Rename Firefox to Cunaguaro. (Closes: #399656, #400721)
+    Rename Firefox to Iceweasel. (Closes: #399656, #400721)
   * browser/locales/en-US/chrome/browser/aboutDialog.dtd,
     browser/base/content/credits.xhtml: Remove references to Firefox
     trademarks.
   * debian/wikipedia-en.xml, debian/wikipedia.gif.uu,
-    debian/wikipedia.src, debian/cunaguaro.install, debian/rules: Add new
+    debian/wikipedia.src, debian/iceweasel.install, debian/rules: Add new
     style Wikipedia search plugin and remove old one.
   * debian/presubj: Fix references to Firefox. (Closes: #399817)
   * debian/control: 
-    - Clearify relationship to Firefox in the Cunaguaro description. 
+    - Clearify relationship to Firefox in the Iceweasel description. 
       (Closes: #399678)
     - Add Recommends on some myspell dictionaries. (Closes: #400622)
-  * debian/cunaguaro-dom-inspector.links: Fix mistaken link to
+  * debian/iceweasel-dom-inspector.links: Fix mistaken link to
     /usr/lib/firefox. (Closes: #399631)
   * browser/locales/en-US/chrome/browser/preferences/advanced.dtd: Fix
-    accelerator key for "Cunaguaro". (Closes: #400308)
-  * debian/cunaguaro.1: 
+    accelerator key for "Iceweasel". (Closes: #400308)
+  * debian/iceweasel.1: 
     - Fix some incorrect references to Firefox. Thanks Chris Neugebauer. 
       (Closes: #400708)
-    - CUNAGUARO_DSP default is none, not auto. Thanks Rafal Rutkowski.
+    - ICEWEASEL_DSP default is none, not auto. Thanks Rafal Rutkowski.
   * debian/debsearch.png.uu, debian/debsearch.gif.uu,
-    debian/cunaguaro.install, debian/rules: Install a .png version of the
+    debian/iceweasel.install, debian/rules: Install a .png version of the
     debsearch logo, with better transparency. Thanks Daniel Hess. (Closes:
     #400248)
-  * debian/cunaguaro-runner: Fix CUNAGUARO_DSP set from the
+  * debian/iceweasel-runner: Fix ICEWEASEL_DSP set from the
     environment. Thanks Rafal Rutkowski. (Closes: #404356)
 
   [ Mike Hommey ]
   * debian/watch: Updated for non experimental versions.
   * browser/base/branding/searchconfig.properties: Replaced firefox with
-    cunaguaro.
+    iceweasel.
   * debian/firefox.prerm, debian/firefox.postinst: Removed. (Closes: #402407)
   * debian/firefox/preinst: Remove old generated files from firefox.
-  * debian/cunaguaro-gnome-support.postinst, debian/cunaguaro.prerm,
-    debian/cunaguaro-gnome-support.prerm: Replaced firefox by cunaguaro.
+  * debian/iceweasel-gnome-support.postinst, debian/iceweasel.prerm,
+    debian/iceweasel-gnome-support.prerm: Replaced firefox by iceweasel.
   * configure, configure.in: Fix OS_TARGET so that it is correctly set
     to Linux for things that expect this value instead of linux-gnu, such as
     the extensions manager (Closes: #401987)
-  * debian/cunaguaro.preinst: Applied patch from Peter Green to fix some
+  * debian/iceweasel.preinst: Applied patch from Peter Green to fix some
     issues with upgrades where doesn't /etc/firefox contain firefox's config
     files for some reason (Closes: #399670). Also replace FIREFOX with
-    CUNAGUARO in /etc/cunaguaro/cunaguarorc.
+    ICEWEASEL in /etc/iceweasel/iceweaselrc.
 
   [ Alexander Sack ]
   * debian/default.xpm, debian/mozicon16.xpm, debian/mozicon50.xpm,
-    debian/cunaguaro.png.uu, debian/about.png.uu, debian/mozicon128.png.uu,
-    debian/document.png.uu, debian/cunaguaro48.png.uu, debian/Options.png.uu
-    debian/aboutCredits.png.uu: Added unicko cunaguaro artwork.
-  * debian/cunaguaro.install: installing appropriate artwork files from
-    above to /usr/share/cunaguaro/chrome/icons/default and
-    /usr/share/cunaguaro/icons/.
+    debian/iceweasel.png.uu, debian/about.png.uu, debian/mozicon128.png.uu,
+    debian/document.png.uu, debian/iceweasel48.png.uu, debian/Options.png.uu
+    debian/aboutCredits.png.uu: Added unicko iceweasel artwork.
+  * debian/iceweasel.install: installing appropriate artwork files from
+    above to /usr/share/iceweasel/chrome/icons/default and
+    /usr/share/iceweasel/icons/.
   * debian/rules: uudecoding artwork files from above. Installing appropriate
     files in build tree in 'build-stamp' and cleaning them up in 'clean'
 
  -- Eric Dorland <eric@debian.org>  Mon, 25 Dec 2006 15:30:04 -0500
 
-cunaguaro (2.0+dfsg-1) unstable; urgency=low
+iceweasel (2.0+dfsg-1) unstable; urgency=low
 
   * New upstream release. This release dedicated to Mike Connor.
 
   [ Eric Dorland ]
-  * Too many renames of firefox to cunaguaro to count. 
-  * debian/cunaguaro.desktop: Remove duplicate pt_BR entries and replace
-    Firefox with Cunaguaro.
-  * debian/cunaguarorc: Rename FIREFOX_DSP to CUNAGUARO_DSP.
-  * configure.in: MOZ_APP_DISPLAYNAME=Cunaguaro.
-  * config/autoconf.mk.in: Set mozappdir to /usr/lib/cunaguaro.
-  * debian/cunaguaro.preinst: Copy /etc/firefox into /etc/cunaguaro
-  * modules/libpref/src/init/all.js: Use cunaguaro.cfg instead of
+  * Too many renames of firefox to iceweasel to count. 
+  * debian/iceweasel.desktop: Remove duplicate pt_BR entries and replace
+    Firefox with Iceweasel.
+  * debian/iceweaselrc: Rename FIREFOX_DSP to ICEWEASEL_DSP.
+  * configure.in: MOZ_APP_DISPLAYNAME=Iceweasel.
+  * config/autoconf.mk.in: Set mozappdir to /usr/lib/iceweasel.
+  * debian/iceweasel.preinst: Copy /etc/firefox into /etc/iceweasel
+  * modules/libpref/src/init/all.js: Use iceweasel.cfg instead of
     firefox.cfg.
-  * cunaguaro.png.uu: Generate cunaguaro.png, not firefox.png.
+  * iceweasel.png.uu: Generate iceweasel.png, not firefox.png.
   * browser/locales/en-US/chrome/branding/brand.properties,
     browser/locales/en-US/chrome/branding/brand.dtd: Switch Bon Echo to
-    Cunaguaro.
+    Iceweasel.
 
   [ Mike Hommey ]
   * gfx/src/gtk/mozilla-decoder.cpp, config/autoconf.mk.in: Revert changes
@@ -3386,7 +3477,7 @@ mozilla-firefox (1.0-4) unstable; urgency=medium
 mozilla-firefox (1.0-3) unstable; urgency=low
 
   * Changes by Mike Hommey
-  * The "becoming more and more an cunaguaro" release.
+  * The "becoming more and more an iceweasel" release.
   * debian/firefox.js:
     + Enable firefox's internal locale autodetection.
     + Disable default browser question at startup. (Closes: #280752)

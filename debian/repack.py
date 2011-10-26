@@ -8,6 +8,35 @@ import re
 import os
 import sys
 import rfc822
+import urllib2
+from urlparse import urlparse
+
+class URLFile(object):
+    '''Simple proxy to urllib2.urlopen, that responds to seek only if
+       it's called before read. This is enough for tarfile to be happy'''
+
+    def __init__(self, url):
+        self.file = urllib2.urlopen(url)
+
+    def seek(self, offset, whence = os.SEEK_SET):
+        if whence != os.SEEK_SET or offset != 0 or self.read == self._read:
+            raise "unsupported"
+
+    def _read(self, size = -1):
+        return self.file.read(size)
+
+    def read(self, size = -1):
+        self.read = self._read
+        return self._read(size)
+
+    def close(self):
+        self.file.close()
+
+def dirname(filespec):
+    '''Returns os.path.dirname if a file, and '' if an url'''
+    if urlparse(filespec).scheme:
+        return ''
+    return os.path.dirname(filespec)
 
 class TarFilterList(object):
     def __init__(self, filename):
@@ -56,10 +85,16 @@ class TarFilterList(object):
                     return cmd
         return False
 
+def file_extension(name):
+    return os.path.splitext(name)[1][1:]
+
 def filter_tar(orig, new, filt):
     filt = TarFilterList(filt)
-    tar = tarfile.open(orig, "r:*")
-    new = tarfile.open(new, "w:bz2")
+    if urlparse(orig).scheme:
+        tar = tarfile.open(orig, "r:" + file_extension(orig), URLFile(orig))
+    else:
+        tar = tarfile.open(orig, "r:" + file_extension(orig))
+    new_tar = tarfile.open(new + ".new", "w:" + file_extension(new))
 
     while True:
         info = tar.next()
@@ -88,21 +123,27 @@ def filter_tar(orig, new, filt):
                 file.writelines(map(the_filt, orig.readlines()))
                 file.seek(0);
                 info.size = len(file.buf)
-            new.addfile(info, file)
+            new_tar.addfile(info, file)
         else:
-            new.addfile(info)
+            new_tar.addfile(info)
 
     tar.close()
-    new.close()
+    new_tar.close()
+    os.rename(new_tar.name, new)
 
 def get_package_name():
-    return rfc822.Message(open("debian/control"))["Source"]
+    control = os.path.join(os.path.dirname(__file__), "control")
+    return rfc822.Message(open(control))["Source"]
 
 def main():
     parser = OptionParser()
     parser.add_option("-u", "--upstream-version", dest="upstream_version",
         help="define upstream version number to use when creating the file",
         metavar="VERSION")
+    parser.add_option("-f", "--filter", dest="filter",
+        help="use the given filter list", metavar="FILE")
+    parser.add_option("-p", "--package", dest="package",
+        help="use the given package name", metavar="NAME")
     (options, args) = parser.parse_args()
 
     if not options.upstream_version:
@@ -116,16 +157,21 @@ def main():
         parser.error("Too many arguments")
         return
 
+    if not options.filter:
+        options.filter = os.path.join(os.path.dirname(__file__), "source.filter")
+    if not options.package:
+        options.package = get_package_name()
+
     if os.path.islink(args[0]):
         orig = os.path.realpath(args[0])
         new_file = args[0]
     else:
         orig = args[0]
-        new_file = get_package_name() + "_" + options.upstream_version + ".orig.tar.bz2"
-        new_file = os.path.realpath(os.path.join(os.path.dirname(orig), new_file))
+        compression = file_extension(orig)
+        new_file = options.package + "_" + options.upstream_version + ".orig.tar." + compression
+        new_file = os.path.realpath(os.path.join(dirname(orig), new_file))
     print orig, new_file
-    filter_tar(orig, new_file + ".new", "debian/source.filter")
-    os.rename(new_file + ".new", new_file)
+    filter_tar(orig, new_file, options.filter)
 
 if __name__ == '__main__':
     main()

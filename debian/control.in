@@ -1,4 +1,4 @@
-Source: cunaguaro
+Source: iceweasel
 Section: web
 Priority: optional
 Maintainer: Maintainers of Mozilla-related packages <pkg-mozilla-maintainers@lists.alioth.debian.org>
@@ -50,10 +50,10 @@ Build-Conflicts: graphicsmagick-imagemagick-compat,
                  libhildonmime-dev,
                  libosso-dev
 Standards-Version: 3.9.2.0
-Vcs-Git: git://git.debian.org/git/pkg-mozilla/cunaguaro.git
-Vcs-Browser: http://git.debian.org/?p=pkg-mozilla/cunaguaro.git
+Vcs-Git: git://git.debian.org/git/pkg-mozilla/iceweasel.git
+Vcs-Browser: http://git.debian.org/?p=pkg-mozilla/iceweasel.git
 
-Package: cunaguaro
+Package: iceweasel
 Architecture: any
 Depends: ${shlibs:Depends},
          ${misc:Depends},
@@ -69,21 +69,21 @@ Suggests: ttf-lyx | latex-xft-fonts,
 Provides: www-browser,
           gnome-www-browser
 Description: Web browser based on Firefox
- Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
+ Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
 
-Package: cunaguaro-dbg
+Package: iceweasel-dbg
 Architecture: any
 Priority: extra
 Section: debug
 Depends: ${misc:Depends},
-         cunaguaro (= ${binary:Version}),
+         iceweasel (= ${binary:Version}),
          xulrunner-##GRE_VERSION##-dbg
-Description: debugging symbols for cunaguaro
- Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
+Description: debugging symbols for iceweasel
+ Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the debugging symbols for cunaguaro.
+ This package contains the debugging symbols for iceweasel.
 
 Package: xulrunner-##GRE_VERSION##
 Section: libs
@@ -123,7 +123,7 @@ Depends: ${shlibs:Depends},
          ${misc:Depends}
 Description: Mozilla SpiderMonkey JavaScript library
  This library provides the embeddable JavaScript/ECMAScript engine from
- the Mozilla project (used among others by the Cunaguaro (Firefox) browser
+ the Mozilla project (used among others by the Iceweasel (Firefox) browser
  as well as by the iPlanet WebServer).
 Homepage: http://www.mozilla.org/js/
 
@@ -135,7 +135,7 @@ Depends: ${misc:Depends},
          libnspr4-dev
 Description: Development files for the Mozilla SpiderMonkey JavaScript library
  This library provides the embeddable JavaScript/ECMAScript engine from
- the Mozilla project (used among others by the Cunaguaro (Firefox) browser
+ the Mozilla project (used among others by the Iceweasel (Firefox) browser
  as well as by the iPlanet WebServer).
  .
  Install this package if you wish to develop your own programs using the
@@ -150,7 +150,7 @@ Depends: libmozjs##SO_VERSION## (= ${binary:Version}),
          ${misc:Depends}
 Description: Development files for the Mozilla SpiderMonkey JavaScript library
  This library provides the embeddable JavaScript/ECMAScript engine from
- the Mozilla project (used among others by the Cunaguaro (Firefox) browser
+ the Mozilla project (used among others by the Iceweasel (Firefox) browser
  as well as by the iPlanet WebServer).
  .
  This package provides the debugging symbols for the library and for

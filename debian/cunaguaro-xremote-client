@@ -1,3 +1,0 @@
-#!/bin/sh
-
-exec /usr/lib/cunaguaro/firefox-bin -a cunaguaro -remote "$1"
