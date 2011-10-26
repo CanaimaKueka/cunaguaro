@@ -2,8 +2,8 @@ cunaguaro (8.0~b4-1) stable; urgency=low
 
   * Versión 8.0~b4-1 de Cunaguaro para Canaima GNU/Linux
 
- -- Luis Alejandro Martínez Faneyth <martinez.faneyth@gmail.com>  Thu, 29 Sep 2011 04:03:08 +0000
- 
+ -- Luis Alejandro Martínez Faneyth <martinez.faneyth@gmail.com>  Wed, 26 Oct 2011 16:47:55 -0430
+
 cunaguaro (8.0~b4-1~bpo60+1) stable; urgency=low
 
   * Rebuild for squeeze-backports.
