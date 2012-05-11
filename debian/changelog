@@ -6,8 +6,14 @@ cunaguaro (8.0-2) stable; urgency=low
     defecto. Agregando certificados de SUSCERTE. Agregando extensión
     'AdBlock Plus'. Agregando marcadores adicionales relativos al estado
     venezolano.
+  * [3015596] Agregando parches para la personalización de Cunaguaro:
+    Búsqueda, Marcadores, Página de Inicio. Habilitando WebGL por
+    defecto. Habilitando soporte para certificados personales por
+    defecto. Agregando certificados de SUSCERTE. Agregando extensión
+    'AdBlock Plus'. Agregando marcadores adicionales relativos al estado
+    venezolano.
 
- -- Luis Alejandro Martínez Faneyth <martinez.faneyth@gmail.com>  Fri, 11 May 2012 16:40:04 +0000
+ -- Luis Alejandro Martínez Faneyth <martinez.faneyth@gmail.com>  Fri, 11 May 2012 16:42:01 +0000
 
 cunaguaro (8.0-1) stable; urgency=low
 
