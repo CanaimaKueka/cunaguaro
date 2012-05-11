@@ -8,11 +8,11 @@ Subject: Modify search plugins depending on MOZ_APP_NAME
  browser/locales/en-US/searchplugins/google.xml  |    6 +++++-
  3 files changed, 13 insertions(+), 4 deletions(-)
 
-diff --git a/browser/locales/Makefile.in b/browser/locales/Makefile.in
-index 9f7befb..e6422b8 100644
---- a/browser/locales/Makefile.in
-+++ b/browser/locales/Makefile.in
-@@ -162,8 +162,13 @@ install:: $(call MERGE_FILES,$(addprefix profile/chrome/,$(PROFILE_CHROME)))
+Index: cunaguaro-8.0-1/browser/locales/Makefile.in
+===================================================================
+--- cunaguaro-8.0-1.orig/browser/locales/Makefile.in	2012-05-11 11:40:17.000000000 -0430
++++ cunaguaro-8.0-1/browser/locales/Makefile.in	2012-05-11 11:40:32.455402752 -0430
+@@ -162,8 +162,13 @@
  
  SEARCH_PLUGINS = $(shell cat $(call MERGE_FILE,/searchplugins/list.txt))
  
@@ -28,22 +28,10 @@ index 9f7befb..e6422b8 100644
  
  install:: $(addsuffix .xml,$(SEARCH_PLUGINS))
  	$(SYSINSTALL) $(IFLAGS1) $^ $(DESTDIR)$(mozappdir)/searchplugins
-diff --git a/browser/locales/en-US/searchplugins/answers.xml b/browser/locales/en-US/searchplugins/answers.xml
-index ea32303..2da83aa 100644
---- a/browser/locales/en-US/searchplugins/answers.xml
-+++ b/browser/locales/en-US/searchplugins/answers.xml
-@@ -8,6 +8,6 @@
-   <Param name="gwp" value="13"/>
- </Url>
- <Url type="application/x-suggestions+json" method="GET"
--     template="http://www.answers.com/main/startswith?output=json&amp;client=firefox&amp;s={searchTerms}"/>
-+#expand     template="http://www.answers.com/main/startswith?output=json&amp;client=__MOZ_APP_NAME__&amp;s={searchTerms}"/>
- <SearchForm>http://www.answers.com/</SearchForm>
- </SearchPlugin>
-diff --git a/browser/locales/en-US/searchplugins/google.xml b/browser/locales/en-US/searchplugins/google.xml
-index 1803902..8ea2079 100644
---- a/browser/locales/en-US/searchplugins/google.xml
-+++ b/browser/locales/en-US/searchplugins/google.xml
+Index: cunaguaro-8.0-1/browser/locales/en-US/searchplugins/google.xml
+===================================================================
+--- cunaguaro-8.0-1.orig/browser/locales/en-US/searchplugins/google.xml	2012-05-11 09:34:17.000000000 -0430
++++ cunaguaro-8.0-1/browser/locales/en-US/searchplugins/google.xml	2012-05-11 11:40:32.455402752 -0430
 @@ -3,7 +3,11 @@
  <Description>Google Search</Description>
  <InputEncoding>UTF-8</InputEncoding>

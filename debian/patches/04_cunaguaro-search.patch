@@ -1,0 +1,198 @@
+Index: cunaguaro-8.0-1/browser/locales/en-US/searchplugins/eBay.xml
+===================================================================
+--- cunaguaro-8.0-1.orig/browser/locales/en-US/searchplugins/eBay.xml	2012-05-11 10:41:41.478495265 -0430
++++ /dev/null	1970-01-01 00:00:00.000000000 +0000
+@@ -1,15 +0,0 @@
+-<SearchPlugin xmlns="http://www.mozilla.org/2006/browser/search/">
+-<ShortName>eBay</ShortName>
+-<Description>eBay - Online auctions</Description>
+-<InputEncoding>ISO-8859-1</InputEncoding>
+-<Image width="16" height="16" type="image/x-icon">http://www.ebay.com/favicon.ico</Image>
+-<Url type="application/x-suggestions+json" method="GET" template="http://anywhere.ebay.com/services/suggest/">
+-  <Param name="s" value="0"/>
+-  <Param name="q" value="{searchTerms}"/>
+-</Url>
+-<Url type="text/html" method="GET" template="http://rover.ebay.com/rover/1/711-47294-18009-3/4">
+-  <Param name="mpre" value="http://shop.ebay.com/?_nkw={searchTerms}"/>
+-</Url>
+-<SearchForm>http://search.ebay.com/</SearchForm>
+-</SearchPlugin>
+-
+Index: cunaguaro-8.0-1/browser/locales/en-US/searchplugins/amazondotcom.xml
+===================================================================
+--- cunaguaro-8.0-1.orig/browser/locales/en-US/searchplugins/amazondotcom.xml	2012-05-11 10:41:41.462384261 -0430
++++ /dev/null	1970-01-01 00:00:00.000000000 +0000
+@@ -1,13 +0,0 @@
+-<SearchPlugin xmlns="http://www.mozilla.org/2006/browser/search/">
+-<ShortName>Amazon.com</ShortName>
+-<Description>Amazon.com Search</Description>
+-<InputEncoding>ISO-8859-1</InputEncoding>
+-<Image width="16" height="16" type="image/x-icon">http://www.amazon.com/favicon.ico</Image>
+-<Url type="text/html" method="GET" template="http://www.amazon.com/exec/obidos/external-search/">
+-  <Param name="field-keywords" value="{searchTerms}"/>
+-  <Param name="mode" value="blended"/>
+-  <Param name="tag" value="mozilla-20"/>
+-  <Param name="sourceid" value="Mozilla-search"/>
+-</Url>
+-<SearchForm>http://www.amazon.com/</SearchForm>
+-</SearchPlugin>
+Index: cunaguaro-8.0-1/browser/locales/en-US/searchplugins/answers.xml
+===================================================================
+--- cunaguaro-8.0-1.orig/browser/locales/en-US/searchplugins/answers.xml	2012-05-11 10:41:41.450470107 -0430
++++ /dev/null	1970-01-01 00:00:00.000000000 +0000
+@@ -1,13 +0,0 @@
+-<SearchPlugin xmlns="http://www.mozilla.org/2006/browser/search/">
+-<ShortName>Answers.com</ShortName>
+-<Description>Dictionary Search on Answers.com</Description>
+-<InputEncoding>UTF-8</InputEncoding>
+-<Image width="16" height="16" type="image/x-icon">http://www.answers.com/favicon.ico</Image>
+-<Url type="text/html" method="GET" template="http://www.answers.com/main/ntquery">
+-  <Param name="s" value="{searchTerms}"/>
+-  <Param name="gwp" value="13"/>
+-</Url>
+-<Url type="application/x-suggestions+json" method="GET"
+-     template="http://www.answers.com/main/startswith?output=json&amp;client=firefox&amp;s={searchTerms}"/>
+-<SearchForm>http://www.answers.com/</SearchForm>
+-</SearchPlugin>
+Index: cunaguaro-8.0-1/browser/locales/en-US/searchplugins/bing.xml
+===================================================================
+--- cunaguaro-8.0-1.orig/browser/locales/en-US/searchplugins/bing.xml	2012-05-11 10:41:41.458392071 -0430
++++ /dev/null	1970-01-01 00:00:00.000000000 +0000
+@@ -1,21 +0,0 @@
+-<SearchPlugin xmlns="http://www.mozilla.org/2006/browser/search/">
+-    <ShortName>Bing</ShortName>
+-    <Description>Bing. Search by Microsoft.</Description>
+-    <InputEncoding>UTF-8</InputEncoding>
+-    <Image width="16" height="16" type="image/x-icon">data:image/x-icon;base64,AAABAAEAEBAAAAEAGABoAwAAFgAAACgAAAAQAAAAIAAAAAEAGAAAAAAAAAAAABMLAAATCwAAAAAAAAAAAAAVpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8ysf97zf+24//F6f/F6f/F6f+K0/9QvP8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8krP+Z2P/////////w+f/F6f/F6f/i9P/////////T7v9Bt/8Vpv8Vpv8Vpv8Vpv/T7v/////w+f97zf8Vpv8Vpv8Vpv8Vpv9QvP/T7v/////w+f9Bt/8Vpv8Vpv97zf////////9QvP8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8krP/i9P/////i9P8Vpv8Vpv+24//////i9P8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv+K0/////////8Vpv8Vpv/F6f////////8krP8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv+n3v/////w+f8Vpv8Vpv/F6f////////+n3v8krP8Vpv8Vpv8Vpv8Vpv8Vpv9tx/////////+Z2P8Vpv8Vpv/F6f/////////////i9P+K0/9QvP9QvP9tx//F6f////////+n3v8Vpv8Vpv8Vpv/F6f/////T7v+Z2P/i9P////////////////////+24/9QvP8Vpv8Vpv8Vpv8Vpv/F6f/////F6f8Vpv8Vpv8krP9QvP9QvP9Bt/8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv/F6f/////F6f8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv9Bt/9QvP9Bt/8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8Vpv8AAHBsAABhdAAAbiAAAHJ0AABsaQAAdGkAACBDAABlbgAAUEEAAEVYAAAuQwAAOy4AAEU7AABBVAAAQ00AAC5W</Image>
+-    <Url type="application/x-suggestions+json" template="http://api.bing.com/osjson.aspx">
+-        <Param name="query" value="{searchTerms}"/>
+-        <Param name="form" value="OSDJAS"/>
+-    </Url>
+-    <Url type="text/html" method="GET" template="http://www.bing.com/search">
+-        <Param name="q" value="{searchTerms}"/>
+-        <Param name="form" value="MOZSBR"/>
+-        <MozParam name="pc" condition="pref" pref="ms-pc"/>
+-    </Url>
+-    <Url type="application/x-moz-keywordsearch" method="GET" template="http://www.bing.com/search">
+-        <Param name="q" value="{searchTerms}"/>
+-        <Param name="form" value="MOZLBR"/>
+-        <MozParam name="pc" condition="pref" pref="ms-pc"/>
+-    </Url>
+-    <SearchForm>http://www.bing.com/search</SearchForm>
+-</SearchPlugin>
+Index: cunaguaro-8.0-1/browser/locales/en-US/searchplugins/creativecommons.xml
+===================================================================
+--- cunaguaro-8.0-1.orig/browser/locales/en-US/searchplugins/creativecommons.xml	2012-05-11 10:41:41.434392481 -0430
++++ /dev/null	1970-01-01 00:00:00.000000000 +0000
+@@ -1,11 +0,0 @@
+-<SearchPlugin xmlns="http://www.mozilla.org/2006/browser/search/">
+-<ShortName>Creative Commons</ShortName>
+-<Description>Find photos, movies, music, and text to rip, sample, mash, and share.</Description>
+-<InputEncoding>utf-8</InputEncoding>
+-<Image width="16" height="16" type="image/x-icon">http://www.creativecommons.org/favicon.ico</Image>
+-<Url type="text/html" method="GET" template="http://search.creativecommons.org/">
+-  <Param name="q" value="{searchTerms}"/>
+-  <Param name="sourceid" value="Mozilla-search"/>
+-</Url>
+-<SearchForm>http://search.creativecommons.org/</SearchForm>
+-</SearchPlugin>
+Index: cunaguaro-8.0-1/browser/locales/en-US/searchplugins/wikipedia.xml
+===================================================================
+--- cunaguaro-8.0-1.orig/browser/locales/en-US/searchplugins/wikipedia.xml	2012-05-11 10:41:41.430381493 -0430
++++ /dev/null	1970-01-01 00:00:00.000000000 +0000
+@@ -1,15 +0,0 @@
+-<SearchPlugin xmlns="http://www.mozilla.org/2006/browser/search/">
+-<ShortName>Wikipedia (en)</ShortName>
+-<Description>Wikipedia, the free encyclopedia</Description>
+-<InputEncoding>UTF-8</InputEncoding>
+-<Image width="16" height="16" type="image/x-icon">http://en.wikipedia.org/favicon.ico</Image>
+-<Url type="application/x-suggestions+json" method="GET" template="http://en.wikipedia.org/w/api.php">
+-  <Param name="action" value="opensearch"/>
+-  <Param name="search" value="{searchTerms}"/>
+-</Url>
+-<Url type="text/html" method="GET" template="http://en.wikipedia.org/wiki/Special:Search">
+-  <Param name="search" value="{searchTerms}"/>
+-  <Param name="sourceid" value="Mozilla-search"/>
+-</Url>
+-<SearchForm>http://en.wikipedia.org/wiki/Special:Search</SearchForm>
+-</SearchPlugin>
+Index: cunaguaro-8.0-1/browser/locales/en-US/searchplugins/yahoo.xml
+===================================================================
+--- cunaguaro-8.0-1.orig/browser/locales/en-US/searchplugins/yahoo.xml	2012-05-11 10:41:41.470434448 -0430
++++ /dev/null	1970-01-01 00:00:00.000000000 +0000
+@@ -1,14 +0,0 @@
+-<SearchPlugin xmlns="http://www.mozilla.org/2006/browser/search/">
+-<ShortName>Yahoo</ShortName>
+-<Description>Yahoo Search</Description>
+-<InputEncoding>UTF-8</InputEncoding>
+-<Image width="16" height="16" type="image/x-icon">http://www.yahoo.com/favicon.ico</Image>
+-<Url type="application/x-suggestions+json" method="GET"
+-     template="http://ff.search.yahoo.com/gossip?output=fxjson&amp;command={searchTerms}" />
+-<Url type="text/html" method="GET" template="http://search.yahoo.com/search">
+-  <Param name="p" value="{searchTerms}"/>
+-  <Param name="ei" value="UTF-8"/>
+-  <MozParam name="fr" condition="pref" pref="yahoo-fr" />
+-</Url>
+-<SearchForm>http://search.yahoo.com/</SearchForm>
+-</SearchPlugin>
+Index: cunaguaro-8.0-1/browser/locales/en-US/searchplugins/canaima-wiki.xml
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ cunaguaro-8.0-1/browser/locales/en-US/searchplugins/canaima-wiki.xml	2012-05-11 10:45:47.335901952 -0430
+@@ -0,0 +1,10 @@
++<SearchPlugin xmlns="http://www.mozilla.org/2006/browser/search/">
++<ShortName>Wiki de Canaima</ShortName>
++<Description>Buscar en la Wiki de Canaima GNU/Linux</Description>
++<InputEncoding>UTF-8</InputEncoding>
++<Image width="16" height="16" type="image/x-icon">http://canaima.softwarelibre.gob.ve/favicon.ico</Image>
++<Url type="text/html" method="GET" template="http://wiki.canaima.softwarelibre.gob.ve/wiki/index.php/Especial:Search">
++  <Param name="search" value="{searchTerms}"/>
++</Url>
++<SearchForm>http://wiki.canaima.softwarelibre.gob.ve/wiki/index.php/Especial:Search</SearchForm>
++</SearchPlugin>
+Index: cunaguaro-8.0-1/browser/locales/en-US/searchplugins/canaima.xml
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ cunaguaro-8.0-1/browser/locales/en-US/searchplugins/canaima.xml	2012-05-11 10:45:47.335901952 -0430
+@@ -0,0 +1,10 @@
++<SearchPlugin xmlns="http://www.mozilla.org/2006/browser/search/">
++<ShortName>Canaima</ShortName>
++<Description>Buscar en el Portal de Canaima GNU/Linux</Description>
++<InputEncoding>UTF-8</InputEncoding>
++<Image width="16" height="16" type="image/x-icon">http://canaima.softwarelibre.gob.ve/favicon.ico</Image>
++<Url type="text/html" method="GET" template="http://canaima.softwarelibre.gob.ve/search">
++  <Param name="SearchableText" value="{searchTerms}"/>
++</Url>
++<SearchForm>http://canaima.softwarelibre.gob.ve/search</SearchForm>
++</SearchPlugin>
+Index: cunaguaro-8.0-1/browser/locales/en-US/searchplugins/list.txt
+===================================================================
+--- cunaguaro-8.0-1.orig/browser/locales/en-US/searchplugins/list.txt	2012-05-11 10:41:41.442423224 -0430
++++ cunaguaro-8.0-1/browser/locales/en-US/searchplugins/list.txt	2012-05-11 10:45:47.343901834 -0430
+@@ -1,7 +1,5 @@
+-amazondotcom
+-bing
+-eBay
+ google
+ twitter
+-wikipedia
+-yahoo
++canaima
++canaima-list
++canaima-wiki
+Index: cunaguaro-8.0-1/browser/locales/en-US/searchplugins/canaima-list.xml
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ cunaguaro-8.0-1/browser/locales/en-US/searchplugins/canaima-list.xml	2012-05-11 10:40:42.175433994 -0430
+@@ -0,0 +1,11 @@
++<SearchPlugin xmlns="http://www.mozilla.org/2006/browser/search/">
++<ShortName>Listas de Canaima</ShortName>
++<Description>Buscar en las Listas de Canaima GNU/Linux</Description>
++<InputEncoding>UTF-8</InputEncoding>
++<Image width="16" height="16" type="image/x-icon">http://canaima.softwarelibre.gob.ve/favicon.ico</Image>
++<Url type="text/html" method="GET" template="http://www.google.com/cse">
++  <Param name="cx" value="003372241951899458374:s315dpslfik"/>
++  <Param name="q" value="{searchTerms}"/>
++</Url>
++<SearchForm>http://www.google.com/cse</SearchForm>
++</SearchPlugin>

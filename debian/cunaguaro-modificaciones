@@ -1,0 +1,22 @@
+# Para agregar la página de inicio
+./browser/branding/unofficial/locales/browserconfig.properties
+./browser/branding/nightly/locales/browserconfig.properties
+./debian/branding/locales/browserconfig.properties
+./debian/branding/firefox-branding.js
+
+# Renego pref
+./netwerk/base/public/security-prefs.js
+
+# Huevo de Pascua
+./debian/branding/ice.dtd
+
+# Para modificar los bookmarks
+./browser/locales/generic/profile/bookmarks.html.in
+./browser/locales/en-US/profile/bookmarks.inc
+
+# Plugins de búsqueda
+./browser/locales/en-US/searchplugins/
+
+# Para Optimizar procesos
+./browser/app/profile/firefox.js
+./modules/libpref/src/init/all.js

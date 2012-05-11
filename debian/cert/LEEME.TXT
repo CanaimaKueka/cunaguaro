@@ -1,0 +1,5 @@
+Superintendencia de Servicios de Certificacion Electronica
+Direccion de Desarrollo e Investigacion Tecnologica
+Autor: Alejandro Tovar - Especialista en Programacion e Investigacion Tecnologica
+
+La libreria libnssckbi.so es el resultado de la compilacion del modulo ckbi del NSS (Network Security Services) de Cunaguaro. La misma contiene los certificados de la AC Raiz del estado Venezolano. 
