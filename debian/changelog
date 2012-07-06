@@ -1,3 +1,10 @@
+cunaguaro (8.0-3) stable; urgency=low
+
+  * [6f2056d] Deshabilitando extensión de AdBlock Plus y certificados de
+    SUSCERTE temporalmente.
+
+ -- Luis Alejandro Martínez Faneyth <luis@huntingbears.com.ve>  Fri, 06 Jul 2012 17:47:20 -0430
+
 cunaguaro (8.0-2) stable; urgency=low
 
   * [8d32b71] Agregando parches para la personalización de Cunaguaro:
@@ -641,7 +648,7 @@ cunaguaro (4.0~b12-1) experimental; urgency=low
   * toolkit/xre/nsAppRunner.cpp: Restore DESKTOP_STARTUP_ID if a restart is
     required. bz#607900.
 
- -- Mike Hommey <glandium@debian.org>  Sat, 26 Feb 2011 11:13:10 +0100
+ -- Mike Hommey <glandium@dejian.org>  Sat, 26 Feb 2011 11:13:10 +0100
 
 cunaguaro (3.6.13-3) UNRELEASED; urgency=low
 
