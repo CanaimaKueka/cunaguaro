@@ -286,9 +286,11 @@ stamps/dh_install:: debian/dh/dh_xulrunner debian/noinstall build-xulrunner/dist
 	install -d -m 755 debian/cunaguaro/usr/share/icons/hicolor/scalable/apps
 	install -m 644 debian/branding/cunaguaro_icon.svg \
 		debian/cunaguaro/usr/share/icons/hicolor/scalable/apps/cunaguaro.svg
-	cp -r debian/extensions/* debian/cunaguaro/usr/lib/cunaguaro/extensions/
-	mkdir -p debian/cunaguaro/usr/lib/mozilla/plugins/
-	cp debian/cert/libnssckbi.so debian/cunaguaro/usr/lib/mozilla/plugins/
+
+	# Necesita investigación
+	#cp -r debian/extensions/* debian/cunaguaro/usr/lib/cunaguaro/extensions/
+	#mkdir -p debian/cunaguaro/usr/lib/mozilla/plugins/
+	#cp debian/cert/libnssckbi.so debian/cunaguaro/usr/lib/mozilla/plugins/
 
 # Remove unneeded configs
 	rm -f debian/cunaguaro/$(SHARE_DIR)/defaults/pref/firefox-l10n.js
