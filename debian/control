@@ -62,6 +62,8 @@ Depends: ${shlibs:Depends},
          procps,
          libosmesa6,
          libosmesa6-dev,
+         xul-ext-adblock-plus,
+         xul-ext-downloadstatusbar,
          debianutils (>= 1.16),
          xulrunner-8.0 (>= ${binary:Version})
 Suggests: ttf-lyx | latex-xft-fonts,
@@ -69,11 +71,12 @@ Suggests: ttf-lyx | latex-xft-fonts,
           ttf-mathematica4.1,
           mozplugger,
           libgssapi-krb5-2 | libkrb53
+Conflicts: firefox, iceweasel
+Replaces: firefox, iceweasel
 Provides: www-browser,
           gnome-www-browser,
           firefox,
           iceweasel
-Conflicts: firefox, iceweasel
 Description: Navegador Web basado en Iceweasel
  Cunaguaro es un navegador web para el sistema operativo Canaima diseñado
  para integrase a su plataforma tecnológica, aumentar el rendimiento de su
