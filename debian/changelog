@@ -2,8 +2,10 @@ cunaguaro (8.0-3) stable; urgency=low
 
   * [6f2056d] Deshabilitando extensión de AdBlock Plus y certificados de
     SUSCERTE temporalmente.
+  * [78159c3] Agregando parche que incluye la autoridad certificadora de
+    PROCERT
 
- -- Luis Alejandro Martínez Faneyth <luis@huntingbears.com.ve>  Fri, 06 Jul 2012 17:47:20 -0430
+ -- Luis Alejandro Martínez Faneyth <luis@huntingbears.com.ve>  Fri, 10 Aug 2012 11:38:36 -0430
 
 cunaguaro (8.0-2) stable; urgency=low
 
