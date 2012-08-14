@@ -4,8 +4,10 @@ cunaguaro (8.0-5) stable; urgency=low
     agregando dependencia en debian/control
   * [fb15ade] Nueva versión
   * [17bb013] Removiendo reftests
+  * [ffb7e23] [ canaima-desarrollador ] Los siguientes archivos han sido
+    modificados/añadidos: nsXPCOMPrivate.h
 
- -- Luis Alejandro Martínez Faneyth <luis@huntingbears.com.ve>  Tue, 14 Aug 2012 19:41:30 +0000
+ -- Luis Alejandro Martínez Faneyth <luis@huntingbears.com.ve>  Tue, 14 Aug 2012 22:30:05 +0000
 
 cunaguaro (8.0-4) stable; urgency=low
 
