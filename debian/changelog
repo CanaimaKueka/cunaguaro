@@ -1,3 +1,12 @@
+cunaguaro (8.0-5) stable; urgency=low
+
+  * [2867b9a] Removiendo extensión Adblock Plus del código fuente,
+    agregando dependencia en debian/control
+  * [fb15ade] Nueva versión
+  * [17bb013] Removiendo reftests
+
+ -- Luis Alejandro Martínez Faneyth <luis@huntingbears.com.ve>  Tue, 14 Aug 2012 19:41:30 +0000
+
 cunaguaro (8.0-4) stable; urgency=low
 
   * [2867b9a] Removiendo extensión Adblock Plus del código fuente,
