@@ -6,8 +6,11 @@ cunaguaro (8.0-5) stable; urgency=low
   * [17bb013] Removiendo reftests
   * [ffb7e23] [ canaima-desarrollador ] Los siguientes archivos han sido
     modificados/añadidos: nsXPCOMPrivate.h
+  * [5fa348b] [ canaima-desarrollador ] Los siguientes archivos han sido
+    modificados/añadidos: file_util.cc file_util_linux.cc
+    message_pump_libevent.cc time_posix.cc
 
- -- Luis Alejandro Martínez Faneyth <luis@huntingbears.com.ve>  Tue, 14 Aug 2012 22:30:05 +0000
+ -- Luis Alejandro Martínez Faneyth <luis@huntingbears.com.ve>  Tue, 14 Aug 2012 22:56:09 +0000
 
 cunaguaro (8.0-4) stable; urgency=low
 
