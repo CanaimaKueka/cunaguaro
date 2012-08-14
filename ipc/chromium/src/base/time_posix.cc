@@ -8,6 +8,7 @@
 #include <mach/mach_time.h>
 #endif
 #include <sys/time.h>
+#include <unistd.h>
 #ifdef ANDROID
 #include <time64.h>
 #else
