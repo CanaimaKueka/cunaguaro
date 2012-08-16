@@ -4,8 +4,11 @@ cunaguaro (8.0-5) stable; urgency=low
     agregando dependencia en debian/control
   * [fb15ade] Nueva versión
   * [17bb013] Removiendo reftests
+  * [1aa417d] Removiendo parche para certificados de SUSCERTE, deben ser
+    agregados en el paquete fuente de NSS, para que sean reconocidos
+    correctamente.
 
- -- Luis Alejandro Martínez Faneyth <luis@huntingbears.com.ve>  Tue, 14 Aug 2012 19:41:30 +0000
+ -- Luis Alejandro Martínez Faneyth <luis@huntingbears.com.ve>  Thu, 16 Aug 2012 07:03:27 +0000
 
 cunaguaro (8.0-4) stable; urgency=low
 
