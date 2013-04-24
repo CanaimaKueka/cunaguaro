@@ -7,12 +7,12 @@ var gTests = [
   {
     name: "normal search (search service)",
     testText: "test search",
-    searchURL: Services.search.originalDefaultEngine.getSubmission("test search").uri.spec
+    searchURL: Services.search.originalDefaultEngine.getSubmission("test search", null, "keyword").uri.spec
   },
   {
     name: "?-prefixed search (search service)",
     testText: "?   foo  ",
-    searchURL: Services.search.originalDefaultEngine.getSubmission("foo").uri.spec
+    searchURL: Services.search.originalDefaultEngine.getSubmission("foo", null, "keyword").uri.spec
   },
   {
     name: "normal search (keyword.url)",

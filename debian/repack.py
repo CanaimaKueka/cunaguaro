@@ -50,14 +50,13 @@ class TarFilterList(object):
                 [pat, cmd] = f
 
             pat = pat.split(os.sep)
-            self.patterns['t'] = "A"
             self.add_pattern(pat, self.patterns, cmd)
 
     def add_pattern(self, pat, patterns, cmd):
         if re.search(r'[\[\?\*]', pat[0]):
             if not '*' in patterns:
                 patterns['*'] = []
-            patterns['*'].append([os.sep.join(pat), cmd])
+            patterns['*'].append([os.sep.join(pat), cmd, False])
         else:
             if not pat[0] in patterns:
                 patterns[pat[0]] = {}
@@ -66,7 +65,7 @@ class TarFilterList(object):
             else:
                 if not '*' in patterns[pat[0]]:
                     patterns[pat[0]]['*'] = []
-                patterns[pat[0]]['*'].append([os.sep.join(pat[1:]), cmd])
+                patterns[pat[0]]['*'].append([os.sep.join(pat[1:]), cmd, False])
 
     def match(self, name):
         name = name.split(os.sep)[1:]
@@ -80,15 +79,31 @@ class TarFilterList(object):
             if cmd != False:
                 return cmd
         if '*' in patterns:
-            for [pat, cmd] in patterns['*']:
-                if fnmatch.fnmatch(name[0], pat) or fnmatch.fnmatch(os.sep.join(name), pat):
-                    return cmd
+            for pat in patterns['*']:
+                if fnmatch.fnmatch(name[0], pat[0]) or fnmatch.fnmatch(os.sep.join(name), pat[0]):
+                    pat[2] = True
+                    return pat[1]
         return False
+
+    def unused(self, patterns=None, root=''):
+        result = []
+        if root:
+            root += '/'
+        if not patterns:
+            patterns = self.patterns
+        for pat in patterns:
+            if pat != '*':
+                result += self.unused(patterns[pat], root + pat)
+            else:
+                for p in patterns[pat]:
+                    if not p[2]:
+                        result.append(root + p[0])
+        return result
 
 def file_extension(name):
     return os.path.splitext(name)[1][1:]
 
-def filter_tar(orig, new, filt):
+def filter_tar(orig, new, filt, topdir = None):
     filt = TarFilterList(filt)
     if urlparse(orig).scheme:
         tar = tarfile.open(orig, "r:" + file_extension(orig), URLFile(orig))
@@ -100,6 +115,8 @@ def filter_tar(orig, new, filt):
         info = tar.next()
         if not info:
             break
+        if topdir:
+            info.name = "/".join([topdir] + info.name.split("/")[1:])
         do_filt = filt.match(info.name)
         if do_filt == None:
             print >> sys.stderr, "Removing %s" % (info.name)
@@ -130,6 +147,10 @@ def filter_tar(orig, new, filt):
     tar.close()
     new_tar.close()
     os.rename(new_tar.name, new)
+    unused = filt.unused()
+    if unused:
+        print 'Unused filters:'
+        print '', '\n '.join(unused)
 
 def get_package_name():
     control = os.path.join(os.path.dirname(__file__), "control")
@@ -144,9 +165,13 @@ def main():
         help="use the given filter list", metavar="FILE")
     parser.add_option("-p", "--package", dest="package",
         help="use the given package name", metavar="NAME")
+    parser.add_option("-o", "--output", dest="new_file",
+        help="save the filtered tarball as the given file name", metavar="FILE")
+    parser.add_option("-t", "--topdir", dest="topdir",
+        help="replace the top directory with the given name", metavar="NAME")
     (options, args) = parser.parse_args()
 
-    if not options.upstream_version:
+    if not options.upstream_version and not options.new_file:
         parser.error("Need an upstream version")
         return
 
@@ -162,16 +187,21 @@ def main():
     if not options.package:
         options.package = get_package_name()
 
+    if options.new_file:
+        new_file = options.new_file
+
     if os.path.islink(args[0]):
         orig = os.path.realpath(args[0])
-        new_file = args[0]
+        if not new_file:
+            new_file = args[0]
     else:
         orig = args[0]
         compression = file_extension(orig)
-        new_file = options.package + "_" + options.upstream_version + ".orig.tar." + compression
-        new_file = os.path.realpath(os.path.join(dirname(orig), new_file))
+        if not new_file:
+            new_file = options.package + "_" + options.upstream_version + ".orig.tar." + compression
+            new_file = os.path.realpath(os.path.join(dirname(orig), new_file))
     print orig, new_file
-    filter_tar(orig, new_file, options.filter)
+    filter_tar(orig, new_file, options.filter, options.topdir)
 
 if __name__ == '__main__':
     main()

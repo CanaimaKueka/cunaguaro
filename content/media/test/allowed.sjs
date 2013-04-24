@@ -1,16 +1,32 @@
+function parseQuery(request, key) {
+  var params = request.queryString.split('&');
+  for (var j = 0; j < params.length; ++j) {
+    var p = params[j];
+	if (p == key)
+	  return true;
+    if (p.indexOf(key + "=") == 0)
+	  return p.substring(key.length + 1);
+	if (p.indexOf("=") < 0 && key == "")
+	  return p;
+  }
+  return false;
+}
+
 var types = {
   ogg: "video/ogg",
   ogv: "video/ogg",
   oga: "audio/ogg",
   webm: "video/webm",
-  wav: "audio/x-wav"
+  wav: "audio/x-wav",
+  mpd: "application/dash+xml"
 };
 
 // Return file with name as per the query string with access control
 // allow headers.
 function handleRequest(request, response)
 {
-  var resource = request.queryString;
+  var resource = parseQuery(request, "");
+
   var file = Components.classes["@mozilla.org/file/directory_service;1"].
                         getService(Components.interfaces.nsIProperties).
                         get("CurWorkD", Components.interfaces.nsILocalFile);

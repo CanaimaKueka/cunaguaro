@@ -65,7 +65,8 @@ reflectBoolean({
 
 // TODO: form (HTMLFormElement)
 // TODO: files (FileList)
-// TODO: formAction (URL)
+// TODO: formAction (URL).  But note that we currently reflect it weirdly; see
+// content/html/content/test/test_bug607145.html
 
 // .formEnctype
 reflectLimitedEnumerated({
@@ -74,7 +75,7 @@ reflectLimitedEnumerated({
   validValues: [ "application/x-www-form-urlencoded", "multipart/form-data",
                  "text/plain" ],
   invalidValues: [ "", "foo", "tulip", "multipart/foo" ],
-  defaultValue: "application/x-www-form-urlencoded"
+  defaultValue: { invalid: "application/x-www-form-urlencoded", missing: "" }
 });
 
 // .formMethod
@@ -83,7 +84,7 @@ reflectLimitedEnumerated({
   attribute: "formMethod",
   validValues: [ "get", "post" ],
   invalidValues: [ "", "foo", "tulip" ],
-  defaultValue: "get"
+  defaultValue: { invalid: "get", missing: "" }
 });
 
 // .formNoValidate
@@ -99,19 +100,44 @@ reflectString({
   otherValues: [ "_blank", "_self", "_parent", "_top" ],
 });
 
-// TODO: height (non-negative integer)
+// .height
+reflectUnsignedInt({
+  element: document.createElement("input"),
+  attribute: "height",
+  nonZero: false
+});
 
 // .indeterminate doesn't reflect a content attribute.
+
+// .inputmode
+reflectLimitedEnumerated({
+  element: document.createElement("input"),
+  attribute: "inputMode",
+  validValues: [ "numeric", "digit", "uppercase", "lowercase", "titlecase", "autocapitalized", "auto" ],
+  invalidValues: [ "", "foo", "tulip" ],
+  defaultValue: "auto"
+});
 
 // TODO: list (HTMLElement)
 
 // .max
-todo("max" in document.createElement("input"), "max isn't implemented yet");
+reflectString({
+  element: document.createElement('input'),
+  attribute: 'max',
+});
 
-// TODO: maxLength (long)
+// .maxLength
+reflectInt({
+  element: document.createElement("input"),
+  attribute: "maxLength",
+  nonNegative: true,
+});
 
 // .min
-todo("min" in document.createElement("input"), "min isn't implemented yet");
+reflectString({
+  element: document.createElement('input'),
+  attribute: 'min',
+});
 
 // .multiple
 reflectBoolean({
@@ -160,10 +186,17 @@ reflectUnsignedInt({
   defaultValue: 20,
 });
 
-// TODO: src (URL)
+// .src (URL)
+reflectURL({
+  element: document.createElement('input'),
+  attribute: 'src',
+});
 
 // .step
-todo("step" in document.createElement("input"), "step isn't implemented yet");
+reflectString({
+  element: document.createElement('input'),
+  attribute: 'step',
+});
 
 // .type
 reflectLimitedEnumerated({
@@ -171,11 +204,11 @@ reflectLimitedEnumerated({
   attribute: "type",
   validValues: [ "hidden", "text", "search", "tel", "url", "email", "password",
                  "checkbox", "radio", "file", "submit", "image", "reset",
-                 "button" ],
+                 "button", "date", "time", "number", "range" ],
   invalidValues: [ "this-is-probably-a-wrong-type", "", "tulip" ],
   defaultValue: "text",
-  unsupportedValues: [ "datetime", "date", "month", "week", "time",
-                       "datetime-local", "number", "range", "color" ]
+  unsupportedValues: [ "datetime", "month", "week", "datetime-local",
+                       "color" ]
 });
 
 // .defaultValue
@@ -188,18 +221,23 @@ reflectString({
 // .value doesn't reflect a content attribute.
 
 // .valueAsDate
-todo("valueAsDate" in document.createElement("input"),
-     "valueAsDate isn't implemented yet");
+is("valueAsDate" in document.createElement("input"), true,
+   "valueAsDate should be available");
 
-// .valueAsNumber
-todo("valueAsNumber" in document.createElement("input"),
-     "valueAsNumber isn't implemented yet");
+// Deeper check will be done with bug 763305.
+is('valueAsNumber' in document.createElement("input"), true,
+   "valueAsNumber should be available");
 
 // .selectedOption
 todo("selectedOption" in document.createElement("input"),
      "selectedOption isn't implemented yet");
 
-// TODO: width (non-negative integer)
+// .width
+reflectUnsignedInt({
+  element: document.createElement("input"),
+  attribute: "width",
+  nonZero: false
+});
 
 // .willValidate doesn't reflect a content attribute.
 // .validity doesn't reflect a content attribute.

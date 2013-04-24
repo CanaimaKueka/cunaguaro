@@ -1,0 +1,29 @@
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+
+<!ENTITY  SSLProtocolVersions.caption       "Versions del protocol SSL">
+<!ENTITY  SSLWarnings.caption               "Avisos SSL">
+<!ENTITY  SSLClientAuthMethod.caption       "Selecció de certificats de client">
+
+<!ENTITY pref.ssl.title                     "Capa de sòcols segurs (SSL)">
+<!ENTITY enable.ssl30.label                 "Habilita SSL 3.0">
+<!ENTITY enable.ssl30.accesskey             "3">
+<!ENTITY enable.tls10.label                 "Habilita TLS 1.0">
+<!ENTITY enable.tls10.accesskey             "T">
+
+<!ENTITY warn.description                   "El &brandShortName; pot avisar-vos de l'estat de seguretat de la pàgina web que estigueu visitant. Pot fer-se que el &brandShortName; mostri un avís i demani permís abans de:">
+<!ENTITY warn.enteringsecure                "Carregar una pàgina xifrada">
+<!ENTITY warn.enteringsecure.accesskey      "C">
+<!ENTITY warn.insecurepost                  "Enviar dades de formulari d'una pàgina sense xifrar a una altra que tampoc ho estigui">
+<!ENTITY warn.insecurepost.accesskey        "s">
+<!ENTITY warn.leavingsecure                 "Abandonar una pàgina amb xifratge">
+<!ENTITY warn.leavingsecure.accesskey       "A">
+<!ENTITY warn.viewmixed                     "Visualitzar una pàgina que conté tant contingut xifrat com sense xifrar">
+<!ENTITY warn.viewmixed.accesskey           "V">
+
+<!ENTITY certselect.description             "Decideix com el &brandShortName; selecciona un certificat de seguretat per presentar als llocs web que en requereixin:">
+<!ENTITY certselect.auto                    "Seleccioneu-ho automàticament">
+<!ENTITY certselect.auto.accesskey          "a">
+<!ENTITY certselect.ask                     "Demana-m'ho cada vegada">
+<!ENTITY certselect.ask.accesskey           "e">

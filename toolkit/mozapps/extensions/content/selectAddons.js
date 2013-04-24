@@ -1,43 +1,13 @@
-# ***** BEGIN LICENSE BLOCK *****
-# Version: MPL 1.1/GPL 2.0/LGPL 2.1
-#
-# The contents of this file are subject to the Mozilla Public License Version
-# 1.1 (the "License"); you may not use this file except in compliance with
-# the License. You may obtain a copy of the License at
-# http://www.mozilla.org/MPL/
-#
-# Software distributed under the License is distributed on an "AS IS" basis,
-# WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
-# for the specific language governing rights and limitations under the
-# License.
-#
-# The Original Code is The Extension Update Service.
-#
-# The Initial Developer of the Original Code is
-# the Mozilla Foundation.
-# Portions created by the Initial Developer are Copyright (C) 2011
-# the Initial Developer. All Rights Reserved.
-#
-# Contributor(s):
-#   Dave Townsend <dtownsend@oxymoronical.com>
-#
-# Alternatively, the contents of this file may be used under the terms of
-# either the GNU General Public License Version 2 or later (the "GPL"), or
-# the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
-# in which case the provisions of the GPL or the LGPL are applicable instead
-# of those above. If you wish to allow use of your version of this file only
-# under the terms of either the GPL or the LGPL, and not to allow others to
-# use your version of this file under the terms of the MPL, indicate your
-# decision by deleting the provisions above and replace them with the notice
-# and other provisions required by the GPL or the LGPL. If you do not delete
-# the provisions above, a recipient may use your version of this file under
-# the terms of any one of the MPL, the GPL or the LGPL.
-#
-# ***** END LICENSE BLOCK *****
+// -*- Mode: Java; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*-
+
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 "use strict";
 
 Components.utils.import("resource://gre/modules/AddonManager.jsm");
+Components.utils.import("resource://gre/modules/AddonRepository.jsm");
 Components.utils.import("resource://gre/modules/Services.jsm");
 
 const Cc = Components.classes;
@@ -80,13 +50,7 @@ function isAddonDistroInstalled(aID) {
 }
 
 function orderForScope(aScope) {
-  switch (aScope) {
-  case AddonManager.SCOPE_PROFILE:
-  case AddonManager.SCOPE_APPLICATION:
-    return 1;
-  default:
-    return 0;
-  }
+  return aScope == AddonManager.SCOPE_PROFILE ? 1 : 0;
 }
 
 var gAddons = {};
@@ -98,19 +62,19 @@ var gChecking = {
   _addonCount: 0,
   _completeCount: 0,
 
-  show: function() {
+  show: function gChecking_show() {
     showButtons(true, false, false, false);
     this._progress = document.getElementById("checking-progress");
 
     let self = this;
-    AddonManager.getAllAddons(function(aAddons) {
+    AddonManager.getAllAddons(function gChecking_getAllAddons(aAddons) {
       if (aAddons.length == 0) {
         window.close();
         return;
       }
 
-      aAddons = aAddons.filter(function(aAddon) {
-        if (aAddon.type == "plugin")
+      aAddons = aAddons.filter(function gChecking_filterAddons(aAddon) {
+        if (aAddon.type == "plugin" || aAddon.type == "service")
           return false;
 
         if (aAddon.type == "theme") {
@@ -130,28 +94,36 @@ var gChecking = {
       self._progress.max = aAddons.length;
       self._progress.mode = "determined";
 
-      aAddons.forEach(function(aAddon) {
-        // Ignore disabled themes
-        if (aAddon.type != "theme" || !aAddon.userDisabled) {
-          gAddons[aAddon.id] = {
-            addon: aAddon,
-            install: null,
-            wasActive: aAddon.isActive
-          }
-        }
+      // Ensure compatibility overrides are up to date before checking for
+      // individual addon updates.
+      let ids = [addon.id for each (addon in aAddons)];
+      AddonRepository.repopulateCache(ids, function gChecking_repopulateCache() {
+        AddonManagerPrivate.updateAddonRepositoryData(function gChecking_updateAddonRepositoryData() {
 
-        aAddon.findUpdates(self, AddonManager.UPDATE_WHEN_NEW_APP_INSTALLED);
+          for (let addonItem of aAddons) {
+            // Ignore disabled themes
+            if (addonItem.type != "theme" || !addonItem.userDisabled) {
+              gAddons[addonItem.id] = {
+                addon: addonItem,
+                install: null,
+                wasActive: addonItem.isActive
+              }
+            }
+
+            addonItem.findUpdates(self, AddonManager.UPDATE_WHEN_NEW_APP_INSTALLED);
+          }
+        });
       });
     });
   },
 
-  onUpdateAvailable: function(aAddon, aInstall) {
+  onUpdateAvailable: function gChecking_onUpdateAvailable(aAddon, aInstall) {
     // If the add-on can be upgraded then remember the new version
     if (aAddon.permissions & AddonManager.PERM_CAN_UPGRADE)
       gAddons[aAddon.id].install = aInstall;
   },
 
-  onUpdateFinished: function(aAddon, aError) {
+  onUpdateFinished: function gChecking_onUpdateFinished(aAddon, aError) {
     this._completeCount++;
     this._progress.value = this._completeCount;
 
@@ -160,7 +132,7 @@ var gChecking = {
 
     var addons = [gAddons[id] for (id in gAddons)];
 
-    addons.sort(function(a, b) {
+    addons.sort(function sortAddons(a, b) {
       let orderA = orderForScope(a.addon.scope);
       let orderB = orderForScope(b.addon.scope);
 
@@ -172,25 +144,25 @@ var gChecking = {
 
     let rows = document.getElementById("select-rows");
     let lastAddon = null;
-    addons.forEach(function(aEntry) {
+    for (let entry of addons) {
       if (lastAddon &&
-          orderForScope(aEntry.addon.scope) != orderForScope(lastAddon.scope)) {
+          orderForScope(entry.addon.scope) != orderForScope(lastAddon.scope)) {
         let separator = document.createElement("separator");
         rows.appendChild(separator);
       }
 
       let row = document.createElement("row");
-      row.setAttribute("id", aEntry.addon.id);
+      row.setAttribute("id", entry.addon.id);
       row.setAttribute("class", "addon");
       rows.appendChild(row);
-      row.setAddon(aEntry.addon, aEntry.install, aEntry.wasActive,
-                   isAddonDistroInstalled(aEntry.addon.id));
+      row.setAddon(entry.addon, entry.install, entry.wasActive,
+                   isAddonDistroInstalled(entry.addon.id));
 
-      if (aEntry.install)
-        aEntry.install.addListener(gUpdate);
+      if (entry.install)
+        entry.install.addListener(gUpdate);
 
-      lastAddon = aEntry.addon;
-    });
+      lastAddon = entry.addon;
+    }
 
     showView(gSelect);
   }
@@ -199,11 +171,11 @@ var gChecking = {
 var gSelect = {
   nodeID: "select",
 
-  show: function() {
+  show: function gSelect_show() {
     this.updateButtons();
   },
 
-  updateButtons: function() {
+  updateButtons: function gSelect_updateButtons() {
     for (let row = document.getElementById("select-rows").firstChild;
          row; row = row.nextSibling) {
       if (row.localName == "separator")
@@ -218,11 +190,11 @@ var gSelect = {
     showButtons(false, false, false, true);
   },
 
-  next: function() {
+  next: function gSelect_next() {
     showView(gConfirm);
   },
 
-  done: function() {
+  done: function gSelect_done() {
     window.close();
   }
 };
@@ -230,7 +202,7 @@ var gSelect = {
 var gConfirm = {
   nodeID: "confirm",
 
-  show: function() {
+  show: function gConfirm_show() {
     showButtons(false, true, false, true);
 
     let box = document.getElementById("confirm-scrollbox").firstChild;
@@ -267,15 +239,15 @@ var gConfirm = {
     }
   },
 
-  back: function() {
+  back: function gConfirm_back() {
     showView(gSelect);
   },
 
-  next: function() {
+  next: function gConfirm_next() {
     showView(gUpdate);
   },
 
-  done: function() {
+  done: function gConfirm_done() {
     for (let row = document.getElementById("select-rows").firstChild;
          row; row = row.nextSibling) {
       if (row.localName != "separator")
@@ -294,7 +266,7 @@ var gUpdate = {
   _completeCount: 0,
   _errorCount: 0,
 
-  show: function() {
+  show: function gUpdate_show() {
     showButtons(true, false, false, false);
 
     this._progress = document.getElementById("update-progress");
@@ -310,7 +282,7 @@ var gUpdate = {
     this._progress.value = this._completeCount;
   },
 
-  checkComplete: function() {
+  checkComplete: function gUpdate_checkComplete() {
     this._progress.value = this._completeCount;
     if (this._completeCount < this._waitingCount)
       return;
@@ -323,23 +295,23 @@ var gUpdate = {
     window.close();
   },
 
-  onDownloadStarted: function(aInstall) {
+  onDownloadStarted: function gUpdate_onDownloadStarted(aInstall) {
     this._waitingCount++;
   },
 
-  onDownloadFailed: function(aInstall) {
+  onDownloadFailed: function gUpdate_onDownloadFailed(aInstall) {
     this._errorCount++;
     this._completeCount++;
     this.checkComplete();
   },
 
-  onInstallFailed: function(aInstall) {
+  onInstallFailed: function gUpdate_onInstallFailed(aInstall) {
     this._errorCount++;
     this._completeCount++;
     this.checkComplete();
   },
 
-  onInstallEnded: function(aInstall) {
+  onInstallEnded: function gUpdate_onInstallEnded(aInstall) {
     this._completeCount++;
     this.checkComplete();
   }
@@ -348,19 +320,20 @@ var gUpdate = {
 var gErrors = {
   nodeID: "errors",
 
-  show: function() {
+  show: function gErrors_show() {
     showButtons(false, false, false, true);
   },
 
-  done: function() {
+  done: function gErrors_done() {
     window.close();
   }
 };
 
-window.addEventListener("load", function() { showView(gChecking); }, false);
+window.addEventListener("load", function loadEventListener() {
+                                         showView(gChecking); }, false);
 
 // When closing the window cancel any pending or in-progress installs
-window.addEventListener("unload", function() {
+window.addEventListener("unload", function unloadEventListener() {
   for (let id in gAddons) {
     let entry = gAddons[id];
     if (!entry.install)

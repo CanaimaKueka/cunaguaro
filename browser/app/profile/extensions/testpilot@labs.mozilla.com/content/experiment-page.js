@@ -1,39 +1,6 @@
-/* ***** BEGIN LICENSE BLOCK *****
- * Version: MPL 1.1/GPL 2.0/LGPL 2.1
- *
- * The contents of this file are subject to the Mozilla Public License Version
- * 1.1 (the "License"); you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- * http://www.mozilla.org/MPL/
- *
- * Software distributed under the License is distributed on an "AS IS" basis,
- * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
- * for the specific language governing rights and limitations under the
- * License.
- *
- * The Original Code is Test Pilot.
- *
- * The Initial Developer of the Original Code is Mozilla.
- * Portions created by the Initial Developer are Copyright (C) 2007
- * the Initial Developer. All Rights Reserved.
- *
- * Contributor(s):
- *   Jono X <jono@mozilla.com>
- *   Raymond Lee <raymond@appcoast.com>
- *
- * Alternatively, the contents of this file may be used under the terms of
- * either the GNU General Public License Version 2 or later (the "GPL"), or
- * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
- * in which case the provisions of the GPL or the LGPL are applicable instead
- * of those above. If you wish to allow use of your version of this file only
- * under the terms of either the GPL or the LGPL, and not to allow others to
- * use your version of this file under the terms of the MPL, indicate your
- * decision by deleting the provisions above and replace them with the notice
- * and other provisions required by the GPL or the LGPL. If you do not delete
- * the provisions above, a recipient may use your version of this file under
- * the terms of any one of the MPL, the GPL or the LGPL.
- *
- * ***** END LICENSE BLOCK ***** */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 const PAGE_TYPE_STATUS = 0;
 const PAGE_TYPE_QUIT = 1;
@@ -106,100 +73,103 @@ var stringBundle;
 
   function saveCanvas(canvas) {
     const nsIFilePicker = Components.interfaces.nsIFilePicker;
-    let filePicker = Components.classes["@mozilla.org/filepicker;1"].
-      createInstance(nsIFilePicker);
-    filePicker.init(window, null, nsIFilePicker.modeSave);
-    filePicker.appendFilters(
-	nsIFilePicker.filterImages | nsIFilePicker.filterAll);
-    filePicker.defaultString = "canvas.png";
+    let fp = Components.classes["@mozilla.org/filepicker;1"].
+             createInstance(nsIFilePicker);
+    let fpCallback = function fpCallback_done(aResult) {
+      if (aResult == nsIFilePicker.returnOK ||
+          aResult == nsIFilePicker.returnReplace) {
+        const nsIWebBrowserPersist =
+          Components.interfaces.nsIWebBrowserPersist;
+        let file = fp.file;
 
-    let response = filePicker.show();
-    if (response == nsIFilePicker.returnOK ||
-	response == nsIFilePicker.returnReplace) {
-      const nsIWebBrowserPersist = Components.interfaces.nsIWebBrowserPersist;
-      let file = filePicker.file;
+        // create a data url from the canvas and then create URIs of the
+        // source and targets
+        let io = Components.classes["@mozilla.org/network/io-service;1"].
+                 getService(Components.interfaces.nsIIOService);
+        let source = io.newURI(canvas.toDataURL("image/png"), "UTF8", null);
+        let target = io.newFileURI(file);
 
-      // create a data url from the canvas and then create URIs of the source
-      // and targets
-      let io = Components.classes["@mozilla.org/network/io-service;1"].
-	getService(Components.interfaces.nsIIOService);
-      let source = io.newURI(canvas.toDataURL("image/png"), "UTF8", null);
-      let target = io.newFileURI(file);
+        // prepare to save the canvas data
+        let persist = Components.classes[
+          "@mozilla.org/embedding/browser/nsWebBrowserPersist;1"].
+          createInstance(nsIWebBrowserPersist);
+        persist.persistFlags = nsIWebBrowserPersist.
+          PERSIST_FLAGS_REPLACE_EXISTING_FILES;
+        persist.persistFlags |= nsIWebBrowserPersist.
+          PERSIST_FLAGS_AUTODETECT_APPLY_CONVERSION;
 
-      // prepare to save the canvas data
-      let persist = Components.classes[
-	"@mozilla.org/embedding/browser/nsWebBrowserPersist;1"].
-	  createInstance(nsIWebBrowserPersist);
-      persist.persistFlags = nsIWebBrowserPersist.
-	PERSIST_FLAGS_REPLACE_EXISTING_FILES;
-      persist.persistFlags |= nsIWebBrowserPersist.
-        PERSIST_FLAGS_AUTODETECT_APPLY_CONVERSION;
+        // displays a download dialog (remove these 3 lines for silent download)
+        let xfer = Components.classes["@mozilla.org/transfer;1"].
+                   createInstance(Components.interfaces.nsITransfer);
+        xfer.init(source, target, "", null, null, null, persist, false);
+        persist.progressListener = xfer;
 
-      // displays a download dialog (remove these 3 lines for silent download)
-      let xfer = Components.classes["@mozilla.org/transfer;1"].
-	createInstance(Components.interfaces.nsITransfer);
-      xfer.init(source, target, "", null, null, null, persist);
-      persist.progressListener = xfer;
+        // save the canvas data to the file
+        persist.saveURI(source, null, null, null, null, file, null);
+      }
+    };
 
-      // save the canvas data to the file
-      persist.saveURI(source, null, null, null, null, file);
-    }
+    fp.init(window, null, nsIFilePicker.modeSave);
+    fp.appendFilters(nsIFilePicker.filterImages | nsIFilePicker.filterAll);
+    fp.defaultString = "canvas.png";
+    fp.open(fpCallback);
   }
 
   function exportData() {
     const nsIFilePicker = Components.interfaces.nsIFilePicker;
-    let filePicker = Components.classes["@mozilla.org/filepicker;1"].
-      createInstance(nsIFilePicker);
     let eid = getUrlParam("eid");
     let task = TestPilotSetup.getTaskById(eid);
+    let fp = Components.classes["@mozilla.org/filepicker;1"].
+             createInstance(nsIFilePicker);
+    let fpCallback = function fpCallback_done(aResult) {
+      if (aResult == nsIFilePicker.returnOK ||
+          aResult == nsIFilePicker.returnReplace) {
+        const nsIWebBrowserPersist =
+          Components.interfaces.nsIWebBrowserPersist;
+        let foStream =
+          Components.classes["@mozilla.org/network/file-output-stream;1"].
+          createInstance(Components.interfaces.nsIFileOutputStream);
+        let converter =
+          Components.classes["@mozilla.org/intl/converter-output-stream;1"].
+          createInstance(Components.interfaces.nsIConverterOutputStream);
+        let file = fp.file;
+        let dataStore = task.dataStore;
+        let columnNames = dataStore.getHumanReadableColumnNames();
+        let propertyNames = dataStore.getPropertyNames();
+        let csvString = "";
 
-    filePicker.init(window, null, nsIFilePicker.modeSave);
-    filePicker.appendFilters(
-	nsIFilePicker.filterImages | nsIFilePicker.filterAll);
-    filePicker.defaultString = task.title + ".csv";
-
-    let response = filePicker.show();
-    if (response == nsIFilePicker.returnOK ||
-	response == nsIFilePicker.returnReplace) {
-      const nsIWebBrowserPersist = Components.interfaces.nsIWebBrowserPersist;
-      let foStream =
-        Components.classes["@mozilla.org/network/file-output-stream;1"].
-	  createInstance(Components.interfaces.nsIFileOutputStream);
-      let converter =
-        Components.classes["@mozilla.org/intl/converter-output-stream;1"].
-	  createInstance(Components.interfaces.nsIConverterOutputStream);
-      let file = filePicker.file;
-      let dataStore = task.dataStore;
-      let columnNames = dataStore.getHumanReadableColumnNames();
-      let propertyNames = dataStore.getPropertyNames();
-      let csvString = "";
-
-      // titles
-      for (let i = 0; i < columnNames.length; i++) {
-	csvString += "\"" + columnNames[i] + "\",";
-      }
-      if (csvString.length > 0) {
-	csvString = csvString.substring(0, (csvString.length - 1));
-        csvString += "\n";
-      }
-
-      dataStore.getAllDataAsJSON(true, function(rawData) {
-        // data
-        for (let i = 0; i < rawData.length; i++) {
-          for (let j = 0; j < columnNames.length; j++) {
-	    csvString += "\"" + rawData[i][propertyNames[j]] + "\",";
-          }
-	  csvString = csvString.substring(0, (csvString.length - 1));
+        // titles
+        for (let i = 0; i < columnNames.length; i++) {
+          csvString += "\"" + columnNames[i] + "\",";
+        }
+        if (csvString.length > 0) {
+          csvString = csvString.substring(0, (csvString.length - 1));
           csvString += "\n";
         }
 
-        // write, create, truncate
-        foStream.init(file, 0x02 | 0x08 | 0x20, 0664, 0);
-        converter.init(foStream, "UTF-8", 0, 0);
-        converter.writeString(csvString);
-        converter.close();
-      });
-    }
+        dataStore.getAllDataAsJSON(true, function(rawData) {
+          // data
+          for (let i = 0; i < rawData.length; i++) {
+            for (let j = 0; j < columnNames.length; j++) {
+              csvString += "\"" + rawData[i][propertyNames[j]] + "\",";
+            }
+            csvString = csvString.substring(0, (csvString.length - 1));
+            csvString += "\n";
+          }
+
+          // write, create, truncate
+          foStream.init(file, 0x02 | 0x08 | 0x20, parseInt("0664", 8), 0);
+          converter.init(foStream, "UTF-8", 0, 0);
+          converter.writeString(csvString);
+          converter.close();
+        });
+      }
+    };
+
+    fp.init(window, null, nsIFilePicker.modeSave);
+    fp.appendFilters(nsIFilePicker.filterImages | nsIFilePicker.filterAll);
+    fp.defaultString = task.title + ".csv";
+    fp.open(fpCallback);
   }
 
   function openLink(url) {

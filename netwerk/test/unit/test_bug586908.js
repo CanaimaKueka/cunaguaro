@@ -1,5 +1,9 @@
+const Cc = Components.classes;
+const Ci = Components.interfaces;
+const Cu = Components.utils;
+const Cr = Components.results;
 
-do_load_httpd_js();
+Cu.import("resource://testing-common/httpd.js");
 
 var httpserv = null;
 
@@ -23,6 +27,7 @@ var systemSettings = {
     throw Components.results.NS_ERROR_NOT_IMPLEMENTED;
   },
   
+  mainThreadOnly: true,
   PACURI: "http://localhost:4444/redirect",
   getProxyForURI: function(aURI) {
     throw Components.results.NS_ERROR_NOT_IMPLEMENTED;
@@ -35,12 +40,6 @@ function checkValue(request, data, ctx) {
   httpserv.stop(do_test_finished);
 }
 
-function getCacheService()
-{
-  return Components.classes["@mozilla.org/network/cache-service;1"]
-                   .getService(Components.interfaces.nsICacheService);
-}
-
 function makeChan(url) {
   var ios = Components.classes["@mozilla.org/network/io-service;1"]
                       .getService(Components.interfaces.nsIIOService);
@@ -51,7 +50,7 @@ function makeChan(url) {
 }
 
 function run_test() {
-  httpserv = new nsHttpServer();
+  httpserv = new HttpServer();
   httpserv.registerPathHandler("/redirect", redirect);
   httpserv.registerPathHandler("/pac", pac);
   httpserv.registerPathHandler("/target", target);
@@ -70,8 +69,7 @@ function run_test() {
     Components.interfaces.nsIProtocolProxyService.PROXYCONFIG_SYSTEM);
 
   // clear cache
-  getCacheService().
-    evictEntries(Components.interfaces.nsICache.STORE_ANYWHERE);
+  evict_cache_entries();
 
   var chan = makeChan("http://localhost:4444/target");
   chan.asyncOpen(new ChannelListener(checkValue, null), null);

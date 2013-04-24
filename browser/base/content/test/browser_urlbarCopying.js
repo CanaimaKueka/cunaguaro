@@ -43,7 +43,7 @@ var tests = [
   },
   {
     copyVal: "<example.co>m",
-    copyExpected: "http://example.co"
+    copyExpected: "example.co"
   },
   {
     copyVal: "e<x>ample.com",
@@ -51,7 +51,21 @@ var tests = [
   },
   {
     copyVal: "<e>xample.com",
-    copyExpected: "http://e"
+    copyExpected: "e"
+  },
+
+  {
+    loadURL: "http://example.com/foo",
+    expectedURL: "example.com/foo",
+    copyExpected: "http://example.com/foo"
+  },
+  {
+    copyVal: "<example.com>/foo",
+    copyExpected: "http://example.com"
+  },
+  {
+    copyVal: "<example>.com/foo",
+    copyExpected: "example"
   },
 
   // Test that userPass is stripped out
@@ -88,6 +102,20 @@ var tests = [
   {
     copyVal: "<example.com/\xe9>\xe9",
     copyExpected: "http://example.com/\xe9"
+  },
+
+  {
+    loadURL: "http://example.com/?%C3%B7%C3%B7",
+    expectedURL: "example.com/?\xf7\xf7",
+    copyExpected: "http://example.com/?%C3%B7%C3%B7"
+  },
+  {
+    copyVal: "e<xample.com/?\xf7>\xf7",
+    copyExpected: "xample.com/?\xf7"
+  },
+  {
+    copyVal: "<example.com/?\xf7>\xf7",
+    copyExpected: "http://example.com/?\xf7"
   },
 
   // data: and javsacript: URIs shouldn't be encoded

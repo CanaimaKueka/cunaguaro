@@ -6,6 +6,7 @@
  * here must be in strict JSON format, as it will get parsed by the Python
  * testrunner (no single quotes, extra comma's, etc).
  */
+EnableEngines(["tabs"]);
 
 var phases = { "phase1": "profile1",
                "phase2": "profile2",
@@ -57,14 +58,13 @@ var tabs3 = [
   }
 ];
 
-
 /*
  * Test phases
  */
 
 Phase('phase1', [
   [Tabs.add, tabs1],
-  [Sync, SYNC_WIPE_SERVER]
+  [Sync]
 ]);
 
 Phase('phase2', [
@@ -76,7 +76,7 @@ Phase('phase2', [
 
 Phase('phase3', [
   [Sync],
-  [SetPrivateBrowsing, true],
+  [Windows.add, { private: true }],
   [Tabs.add, tabs3],
   [Sync]
 ]);
@@ -85,4 +85,3 @@ Phase('phase4', [
   [Sync],
   [Tabs.verifyNot, tabs3]
 ]);
-

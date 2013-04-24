@@ -43,8 +43,7 @@ namespace JSC {
 
 class MacroAssemblerARM : public AbstractMacroAssembler<ARMAssembler> {
     static const int DoubleConditionMask = 0x0f;
-    static const int DoubleConditionBitSpecial = 0x10;
-    COMPILE_ASSERT(!(DoubleConditionBitSpecial & DoubleConditionMask), DoubleConditionBitSpecial_should_not_interfere_with_ARMAssembler_Condition_codes);
+    static const int DoubleConditionBitSpecial = 0x8;
 public:
     enum Condition {
         Equal = ARMAssembler::EQ,
@@ -251,6 +250,11 @@ public:
         m_assembler.eors_r(dest, dest, ARMRegisters::S1);
     }
 
+    void load8(BaseIndex address, RegisterID dest)
+    {
+        load8ZeroExtend(address, dest);
+    }
+
     void load8SignExtend(ImplicitAddress address, RegisterID dest)
     {
         m_assembler.dataTransferN(true, true, 8, dest, address.base, address.offset);
@@ -277,6 +281,11 @@ public:
     void load8(ImplicitAddress address, RegisterID dest)
     {
         load8ZeroExtend(address, dest);
+    }
+
+    void load16Unaligned(BaseIndex address, RegisterID dest)
+    {
+        load16(address, dest);
     }
    
     void load16SignExtend(ImplicitAddress address, RegisterID dest)
@@ -501,7 +510,7 @@ public:
 
     void store8(RegisterID src, ImplicitAddress address)
     {
-        m_assembler.dataTransferN(false, false, 16,  src, address.base, address.offset);
+        m_assembler.dataTransferN(false, false, 8,  src, address.base, address.offset);
     }
 
     void store8(RegisterID src, BaseIndex address)
@@ -1124,6 +1133,7 @@ public:
 
     void loadDouble(ImplicitAddress address, FPRegisterID dest)
     {
+        // Load a double from base+offset.
         m_assembler.doubleTransfer(true, dest, address.base, address.offset);
     }
 
@@ -1137,7 +1147,7 @@ public:
     DataLabelPtr loadDouble(const void* address, FPRegisterID dest)
     {
         DataLabelPtr label = moveWithPatch(ImmPtr(address), ARMRegisters::S0);
-        m_assembler.fdtr_u(true, dest, ARMRegisters::S0, 0);
+        m_assembler.doubleTransfer(true, dest, ARMRegisters::S0, 0);
         return label;
     }
 
@@ -1147,36 +1157,38 @@ public:
 
     void loadFloat(ImplicitAddress address, FPRegisterID dest)
     {
-        // as long as this is a sane mapping, (*2) should just work
-        dest = (FPRegisterID) (dest * 2);
         ASSERT((address.offset & 0x3) == 0);
-        m_assembler.floatTransfer(true, dest, address.base, address.offset);
-        m_assembler.vcvt(m_assembler.FloatReg32, m_assembler.FloatReg64, (FPRegisterID)(dest*2), dest);
+        // as long as this is a sane mapping, (*2) should just work
+        m_assembler.floatTransfer(true, floatShadow(dest), address.base, address.offset);
+        m_assembler.vcvt(m_assembler.FloatReg32, m_assembler.FloatReg64, floatShadow(dest), dest);
     }
     void loadFloat(BaseIndex address, FPRegisterID dest)
     {
-        m_assembler.baseIndexFloatTransfer(true, false, (FPRegisterID)(dest*2),
+        FPRegisterID dest_s = floatShadow(dest);
+        m_assembler.baseIndexFloatTransfer(true, false, dest_s,
                                            address.base, address.index,
                                            address.scale, address.offset);
-        m_assembler.vcvt(m_assembler.FloatReg32, m_assembler.FloatReg64, (FPRegisterID)(dest*2), dest);
+        m_assembler.vcvt(m_assembler.FloatReg32, m_assembler.FloatReg64, dest_s, dest);
     }
 
     DataLabelPtr loadFloat(const void* address, FPRegisterID dest)
     {
+        FPRegisterID dest_s = floatShadow(dest);
         DataLabelPtr label = moveWithPatch(ImmPtr(address), ARMRegisters::S0);
-        m_assembler.fmem_imm_off(true, false, true, (FPRegisterID)(dest*2), ARMRegisters::S0, 0);
-        m_assembler.vcvt(m_assembler.FloatReg32, m_assembler.FloatReg64, (FPRegisterID)(dest*2), dest);
+        m_assembler.fmem_imm_off(true, false, true, dest_s, ARMRegisters::S0, 0);
+        m_assembler.vcvt(m_assembler.FloatReg32, m_assembler.FloatReg64, dest_s, dest);
         return label;
     }
  
     void storeDouble(FPRegisterID src, ImplicitAddress address)
     {
+        // Store a double at base+offset.
         m_assembler.doubleTransfer(false, src, address.base, address.offset);
     }
 
-    void storeDouble(FPRegisterID dest, BaseIndex address)
+    void storeDouble(FPRegisterID src, BaseIndex address)
     {
-        m_assembler.baseIndexFloatTransfer(false, true, dest,
+        m_assembler.baseIndexFloatTransfer(false, true, src,
                                            address.base, address.index,
                                            address.scale, address.offset);
     }
@@ -1197,14 +1209,16 @@ public:
         m_assembler.vmov64(true, true, lo, hi, fpReg);
     }
 
+    // the StoreFloat functions take an FPRegisterID that is really of the corresponding Double register.
+    // but the double has already been converted into a float
     void storeFloat(FPRegisterID src, ImplicitAddress address)
     {
-        m_assembler.floatTransfer(false, src, address.base, address.offset);
+        m_assembler.floatTransfer(false, floatShadow(src), address.base, address.offset);
     }
 
     void storeFloat(FPRegisterID src, BaseIndex address)
     {
-        m_assembler.baseIndexFloatTransfer(false, false, src,
+        m_assembler.baseIndexFloatTransfer(false, false, floatShadow(src),
                                            address.base, address.index,
                                            address.scale, address.offset);
     }
@@ -1212,7 +1226,7 @@ public:
     {
         union {
             float f;
-            uint32 u32;
+            uint32_t u32;
         } u;
         u.f = imm.u.d;
         store32(Imm32(u.u32), address);
@@ -1222,7 +1236,7 @@ public:
     {
         union {
             float f;
-            uint32 u32;
+            uint32_t u32;
         } u;
         u.f = imm.u.d;
         store32(Imm32(u.u32), address);
@@ -1278,6 +1292,11 @@ public:
         m_assembler.fnegd_r(dest, src);
     }
 
+    void absDouble(FPRegisterID src, FPRegisterID dest)
+    {
+        m_assembler.fabsd_r(dest, src);
+    }
+
     void sqrtDouble(FPRegisterID src, FPRegisterID dest)
     {
         m_assembler.fsqrtd_r(dest, src);
@@ -1285,14 +1304,14 @@ public:
 
     void convertInt32ToDouble(RegisterID src, FPRegisterID dest)
     {
-        m_assembler.fmsr_r(dest, src);
-        m_assembler.fsitod_r(dest, dest);
+        m_assembler.fmsr_r(floatShadow(dest), src);
+        m_assembler.fsitod_r(dest, floatShadow(dest));
     }
 
     void convertUInt32ToDouble(RegisterID src, FPRegisterID dest)
     {
-        m_assembler.fmsr_r(dest, src);
-        m_assembler.fuitod_r(dest, dest);
+        m_assembler.fmsr_r(floatShadow(dest), src);
+        m_assembler.fuitod_r(dest, floatShadow(dest));
     }
 
     void convertInt32ToDouble(Address src, FPRegisterID dest)
@@ -1313,7 +1332,7 @@ public:
 
     void convertDoubleToFloat(FPRegisterID src, FPRegisterID dest)
     {
-        m_assembler.vcvt(m_assembler.FloatReg64, m_assembler.FloatReg32, src, dest);
+        m_assembler.vcvt(m_assembler.FloatReg64, m_assembler.FloatReg32, src, floatShadow(dest));
     }
 
     Jump branchDouble(DoubleCondition cond, FPRegisterID left, FPRegisterID right)
@@ -1330,11 +1349,11 @@ public:
     // May also branch for some values that are representable in 32 bits
     Jump branchTruncateDoubleToInt32(FPRegisterID src, RegisterID dest)
     {
-        m_assembler.ftosizd_r(ARMRegisters::SD0, src);
+        m_assembler.ftosizd_r(floatShadow(ARMRegisters::SD0), src);
         // If FTOSIZD (VCVT.S32.F64) can't fit the result into a 32-bit
         // integer, it saturates at INT_MAX or INT_MIN. Testing this is
         // probably quicker than testing FPSCR for exception.
-        m_assembler.fmrs_r(dest, ARMRegisters::SD0);
+        m_assembler.fmrs_r(dest, floatShadow(ARMRegisters::SD0));
         m_assembler.cmn_r(dest, ARMAssembler::getOp2(-0x7fffffff));
         m_assembler.cmp_r(dest, ARMAssembler::getOp2(0x80000000), ARMCondition(NonZero));
         return Jump(m_assembler.jmp(ARMCondition(Zero)));
@@ -1346,11 +1365,11 @@ public:
     // (specifically, in this case, 0).
     void branchConvertDoubleToInt32(FPRegisterID src, RegisterID dest, JumpList& failureCases, FPRegisterID fpTemp)
     {
-        m_assembler.ftosid_r(ARMRegisters::SD0, src);
-        m_assembler.fmrs_r(dest, ARMRegisters::SD0);
+        m_assembler.ftosid_r(floatShadow(ARMRegisters::SD0), src);
+        m_assembler.fmrs_r(dest, floatShadow(ARMRegisters::SD0));
 
         // Convert the integer result back to float & compare to the original value - if not equal or unordered (NaN) then jump.
-        m_assembler.fsitod_r(ARMRegisters::SD0, ARMRegisters::SD0);
+        m_assembler.fsitod_r(ARMRegisters::SD0, floatShadow(ARMRegisters::SD0));
         failureCases.append(branchDouble(DoubleNotEqualOrUnordered, src, ARMRegisters::SD0));
 
         // If the result is zero, it might have been -0.0, and 0.0 equals to -0.0
@@ -1373,12 +1392,10 @@ public:
         m_assembler.forceFlushConstantPool();
     }
 
-#ifdef DEBUG
-    void allowPoolFlush(bool allowFlush)
+    int flushCount()
     {
-        m_assembler.allowPoolFlush(allowFlush);
+        return m_assembler.flushCount();
     }
-#endif
 
 protected:
     ARMAssembler::Condition ARMCondition(Condition cond)

@@ -245,6 +245,7 @@
 #endif
 
 #define WTF_ARM_ARCH_AT_LEAST(N) (CPU(ARM) && WTF_ARM_ARCH_VERSION >= N)
+#define WTF_ARM_ARCH_AT_LEAST_5 (WTF_CPU_ARM && WTF_ARM_ARCH_VERSION >= 5)
 
 /* Set WTF_ARM_ARCH_VERSION */
 #if   defined(__ARM_ARCH_4__) \
@@ -329,7 +330,7 @@
 /* WTF_CPU_ARMV5_OR_LOWER - ARM instruction set v5 or earlier */
 /* On ARMv5 and below the natural alignment is required. 
    And there are some other differences for v5 or earlier. */
-#if !defined(ARMV5_OR_LOWER) && WTF_CPU_ARM && WTF_ARM_ARCH_VERSION >= 6
+#if !defined(ARMV5_OR_LOWER) && WTF_CPU_ARM && !(WTF_ARM_ARCH_VERSION >= 6)
 #define WTF_CPU_ARMV5_OR_LOWER 1
 #endif
 
@@ -1026,9 +1027,9 @@
 #define ENABLE_JIT 0
 #endif
 
-/* The JIT is enabled by default on all x86, x64-64, ARM & MIPS platforms. */
+/* The JIT is enabled by default on all x86, x64-64, ARM platforms. */
 #if !defined(ENABLE_JIT) \
-    && (WTF_CPU_X86 || WTF_CPU_X86_64 || WTF_CPU_ARM || WTF_CPU_MIPS || WTF_CPU_SPARC32) \
+    && (WTF_CPU_X86 || WTF_CPU_X86_64 || WTF_CPU_ARM || WTF_CPU_SPARC32 || WTF_CPU_MIPS) \
     && (WTF_OS_DARWIN || !WTF_COMPILER_GCC || GCC_VERSION_AT_LEAST(4, 1, 0)) \
     && !WTF_OS_WINCE
 #define ENABLE_JIT 1
@@ -1102,9 +1103,7 @@
 #if WTF_PLATFORM_CHROMIUM
 #define ENABLE_YARR_JIT 0
 
-#elif ENABLE_JIT && !defined(ENABLE_YARR_JIT)
-#define ENABLE_YARR_JIT 1
-
+#elif ENABLE_YARR_JIT
 /* Setting this flag compares JIT results with interpreter results. */
 #define ENABLE_YARR_JIT_DEBUG 0
 #endif
@@ -1115,7 +1114,8 @@
 /* Setting this flag prevents the assembler from using RWX memory; this may improve
    security but currectly comes at a significant performance cost. */
 #if WTF_PLATFORM_IOS
-#define ENABLE_ASSEMBLER_WX_EXCLUSIVE 1
+//XXX: this doesn't currently compile in the spidermonkey build
+#define ENABLE_ASSEMBLER_WX_EXCLUSIVE 0
 #endif
 
 /* Pick which allocator to use; we only need an executable allocator if the assembler is compiled in.
@@ -1175,6 +1175,11 @@
 #define WARN_UNUSED_RETURN __attribute__ ((warn_unused_result))
 #else
 #define WARN_UNUSED_RETURN
+#endif
+
+/* COMPILER(CLANG) - Clang  */
+#if defined(__clang__)
+#define WTF_COMPILER_CLANG 1
 #endif
 
 #if !ENABLE_NETSCAPE_PLUGIN_API || (ENABLE_NETSCAPE_PLUGIN_API && ((WTF_OS_UNIX && (WTF_PLATFORM_QT || WTF_PLATFORM_WX)) || WTF_PLATFORM_GTK))

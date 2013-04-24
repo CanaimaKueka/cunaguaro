@@ -8,14 +8,14 @@ and fixed (probably in xulrunner).
 
 Closes: #552426, #553453
 ---
- .../components/sessionstore/src/nsSessionStore.js  |    4 +---
- 1 files changed, 1 insertions(+), 3 deletions(-)
+ browser/components/sessionstore/src/SessionStore.jsm |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/browser/components/sessionstore/src/nsSessionStore.js b/browser/components/sessionstore/src/nsSessionStore.js
-index 23ddcc9..98b9fd7 100644
---- a/browser/components/sessionstore/src/nsSessionStore.js
-+++ b/browser/components/sessionstore/src/nsSessionStore.js
-@@ -3373,7 +3373,7 @@ SessionStoreService.prototype = {
+diff --git a/browser/components/sessionstore/src/SessionStore.jsm b/browser/components/sessionstore/src/SessionStore.jsm
+index 5ffa2db..176ebe6 100644
+--- a/browser/components/sessionstore/src/SessionStore.jsm
++++ b/browser/components/sessionstore/src/SessionStore.jsm
+@@ -3552,7 +3552,7 @@ let SessionStoreInternal = {
        aWindow.resizeTo(aWidth, aHeight);
      }
      if (!isNaN(aLeft) && !isNaN(aTop) && (aLeft != win_("screenX") || aTop != win_("screenY"))) {
@@ -24,7 +24,7 @@ index 23ddcc9..98b9fd7 100644
      }
      if (aSizeMode && win_("sizemode") != aSizeMode)
      {
-@@ -3383,8 +3383,6 @@ SessionStoreService.prototype = {
+@@ -3562,8 +3562,6 @@ let SessionStoreInternal = {
          aWindow.maximize();
          break;
        case "minimized":

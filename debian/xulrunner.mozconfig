@@ -5,7 +5,6 @@ ac_add_options --prefix=/usr
 ac_add_options --enable-default-toolkit=cairo-gtk2
 ac_add_options --enable-pango
 ac_add_options --enable-system-cairo # MOZ_TREE_CAIRO=
-ac_add_options --with-system-jpeg # MOZ_NATIVE_JPEG=1
 ac_add_options --with-system-zlib # MOZ_NATIVE_ZLIB=1
 ac_add_options --with-system-bz2 # MOZ_NATIVE_BZ2=1
 ac_add_options --with-system-nspr # MOZ_NATIVE_NSPR=1
@@ -17,7 +16,8 @@ ac_add_options --disable-long-long-warning
 ac_add_options --disable-gnomevfs
 ac_add_options --disable-gconf
 ac_add_options --enable-gio
-ac_add_options --enable-gnomeui
+ac_add_options --enable-extensions="-gnomevfs gio"
+ac_add_options --disable-gnomeui
 ac_add_options --disable-mochitest
 ac_add_options --disable-debug
 ac_add_options --enable-canvas
@@ -36,3 +36,4 @@ ac_add_options --enable-system-ffi # MOZ_NATIVE_FFI=1
 ac_add_options --with-system-libevent # MOZ_NATIVE_LIBEVENT=1
 ac_add_options --with-system-libvpx # MOZ_NATIVE_LIBVPX=1
 ac_add_options --enable-shared-js
+ac_add_options --with-system-ply # MOZ_SYSTEM_PLY=1

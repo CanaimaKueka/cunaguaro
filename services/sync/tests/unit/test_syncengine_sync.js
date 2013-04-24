@@ -1,37 +1,73 @@
-Cu.import("resource://services-sync/record.js");
+/* Any copyright is dedicated to the Public Domain.
+ * http://creativecommons.org/publicdomain/zero/1.0/ */
+
 Cu.import("resource://services-sync/constants.js");
 Cu.import("resource://services-sync/engines.js");
-Cu.import("resource://services-sync/identity.js");
-Cu.import("resource://services-sync/resource.js");
-Cu.import("resource://services-sync/util.js");
 Cu.import("resource://services-sync/policies.js");
+Cu.import("resource://services-sync/record.js");
+Cu.import("resource://services-sync/resource.js");
 Cu.import("resource://services-sync/service.js");
+Cu.import("resource://services-sync/util.js");
+Cu.import("resource://testing-common/services/sync/rotaryengine.js");
+Cu.import("resource://testing-common/services/sync/utils.js");
 
 function makeRotaryEngine() {
-  return new RotaryEngine();
+  return new RotaryEngine(Service);
 }
 
 function cleanAndGo(server) {
   Svc.Prefs.resetBranch("");
-  Records.clearCache();
+  Svc.Prefs.set("log.logger.engine.rotary", "Trace");
+  Service.recordManager.clearCache();
   server.stop(run_next_test);
 }
 
+function configureService(username, password) {
+  Service.clusterURL = TEST_CLUSTER_URL;
+
+  Service.identity.account = username || "foo";
+  Service.identity.basicPassword = password || "password";
+}
+
+function createServerAndConfigureClient() {
+  let engine = new RotaryEngine(Service);
+
+  let contents = {
+    meta: {global: {engines: {rotary: {version: engine.version,
+                                       syncID:  engine.syncID}}}},
+    crypto: {},
+    rotary: {}
+  };
+
+  const USER = "foo";
+  Service.serverURL = TEST_SERVER_URL;
+  Service.clusterURL = TEST_CLUSTER_URL;
+  Service.identity.username = USER;
+
+  let server = new SyncServer();
+  server.registerUser(USER, "password");
+  server.createContents(USER, contents);
+  server.start();
+
+  return [engine, server, USER];
+}
+
 function run_test() {
-  generateNewKeys();
+  generateNewKeys(Service.collectionKeys);
+  Svc.Prefs.set("log.logger.engine.rotary", "Trace");
   run_next_test();
 }
 
 /*
  * Tests
- * 
+ *
  * SyncEngine._sync() is divided into four rather independent steps:
  *
  * - _syncStartup()
  * - _processIncoming()
  * - _uploadOutgoing()
  * - _syncFinish()
- * 
+ *
  * In the spirit of unit testing, these are tested individually for
  * different scenarios below.
  */
@@ -40,17 +76,18 @@ add_test(function test_syncStartup_emptyOrOutdatedGlobalsResetsSync() {
   _("SyncEngine._syncStartup resets sync and wipes server data if there's no or an outdated global record");
 
   let syncTesting = new SyncTestingInfrastructure();
-  Svc.Prefs.set("clusterURL", "http://localhost:8080/");
-  Svc.Prefs.set("username", "foo");
+  Service.serverURL = TEST_SERVER_URL;
+  Service.clusterURL = TEST_CLUSTER_URL;
+  Service.identity.username = "foo";
 
   // Some server side data that's going to be wiped
   let collection = new ServerCollection();
-  collection.wbos.flying = new ServerWBO(
-      'flying', encryptPayload({id: 'flying',
-                                denomination: "LNER Class A3 4472"}));
-  collection.wbos.scotsman = new ServerWBO(
-      'scotsman', encryptPayload({id: 'scotsman',
-                                  denomination: "Flying Scotsman"}));
+  collection.insert('flying',
+                    encryptPayload({id: 'flying',
+                                    denomination: "LNER Class A3 4472"}));
+  collection.insert('scotsman',
+                    encryptPayload({id: 'scotsman',
+                                    denomination: "Flying Scotsman"}));
 
   let server = sync_httpd_setup({
       "/1.1/foo/storage/rotary": collection.handler()
@@ -62,14 +99,14 @@ add_test(function test_syncStartup_emptyOrOutdatedGlobalsResetsSync() {
 
     // Confirm initial environment
     do_check_eq(engine._tracker.changedIDs["rekolok"], undefined);
-    let metaGlobal = Records.get(engine.metaURL);
+    let metaGlobal = Service.recordManager.get(engine.metaURL);
     do_check_eq(metaGlobal.payload.engines, undefined);
-    do_check_true(!!collection.wbos.flying.payload);
-    do_check_true(!!collection.wbos.scotsman.payload);
+    do_check_true(!!collection.payload("flying"));
+    do_check_true(!!collection.payload("scotsman"));
 
     engine.lastSync = Date.now() / 1000;
     engine.lastSyncLocal = Date.now();
-    
+
     // Trying to prompt a wipe -- we no longer track CryptoMeta per engine,
     // so it has nothing to check.
     engine._syncStartup();
@@ -81,8 +118,8 @@ add_test(function test_syncStartup_emptyOrOutdatedGlobalsResetsSync() {
 
     // Sync was reset and server data was wiped
     do_check_eq(engine.lastSync, 0);
-    do_check_eq(collection.wbos.flying.payload, undefined);
-    do_check_eq(collection.wbos.scotsman.payload, undefined);
+    do_check_eq(collection.payload("flying"), undefined);
+    do_check_eq(collection.payload("scotsman"), undefined);
 
   } finally {
     cleanAndGo(server);
@@ -93,8 +130,9 @@ add_test(function test_syncStartup_serverHasNewerVersion() {
   _("SyncEngine._syncStartup ");
 
   let syncTesting = new SyncTestingInfrastructure();
-  Svc.Prefs.set("clusterURL", "http://localhost:8080/");
-  Svc.Prefs.set("username", "foo");
+  Service.serverURL = TEST_SERVER_URL;
+  Service.clusterURL = TEST_CLUSTER_URL;
+  Service.identity.username = "foo";
   let global = new ServerWBO('global', {engines: {rotary: {version: 23456}}});
   let server = httpd_setup({
       "/1.1/foo/storage/meta/global": global.handler()
@@ -123,8 +161,9 @@ add_test(function test_syncStartup_syncIDMismatchResetsClient() {
   _("SyncEngine._syncStartup resets sync if syncIDs don't match");
 
   let syncTesting = new SyncTestingInfrastructure();
-  Svc.Prefs.set("clusterURL", "http://localhost:8080/");
-  Svc.Prefs.set("username", "foo");
+  Service.serverURL = TEST_SERVER_URL;
+  Service.clusterURL = TEST_CLUSTER_URL;
+  Service.identity.username = "foo";
   let server = sync_httpd_setup({});
 
   // global record with a different syncID than our engine has
@@ -144,7 +183,7 @@ add_test(function test_syncStartup_syncIDMismatchResetsClient() {
     engine.lastSyncLocal = Date.now();
     engine._syncStartup();
 
-    // The engine has assumed the server's syncID 
+    // The engine has assumed the server's syncID
     do_check_eq(engine.syncID, 'foobar');
 
     // Sync was reset
@@ -160,8 +199,9 @@ add_test(function test_processIncoming_emptyServer() {
   _("SyncEngine._processIncoming working with an empty server backend");
 
   let syncTesting = new SyncTestingInfrastructure();
-  Svc.Prefs.set("clusterURL", "http://localhost:8080/");
-  Svc.Prefs.set("username", "foo");
+  Service.serverURL = TEST_SERVER_URL;
+  Service.clusterURL = TEST_CLUSTER_URL;
+  Service.identity.username = "foo";
   let collection = new ServerCollection();
 
   let server = sync_httpd_setup({
@@ -185,33 +225,35 @@ add_test(function test_processIncoming_createFromServer() {
   _("SyncEngine._processIncoming creates new records from server data");
 
   let syncTesting = new SyncTestingInfrastructure();
-  Svc.Prefs.set("clusterURL", "http://localhost:8080/");
-  Svc.Prefs.set("username", "foo");
-  
-  generateNewKeys();
+  Service.serverURL = TEST_SERVER_URL;
+  Service.clusterURL = TEST_CLUSTER_URL;
+  Service.identity.username = "foo";
+
+  generateNewKeys(Service.collectionKeys);
 
   // Some server records that will be downloaded
   let collection = new ServerCollection();
-  collection.wbos.flying = new ServerWBO(
-      'flying', encryptPayload({id: 'flying',
-                                denomination: "LNER Class A3 4472"}));
-  collection.wbos.scotsman = new ServerWBO(
-      'scotsman', encryptPayload({id: 'scotsman',
-                                  denomination: "Flying Scotsman"}));
+  collection.insert('flying',
+                    encryptPayload({id: 'flying',
+                                    denomination: "LNER Class A3 4472"}));
+  collection.insert('scotsman',
+                    encryptPayload({id: 'scotsman',
+                                    denomination: "Flying Scotsman"}));
 
   // Two pathological cases involving relative URIs gone wrong.
-  collection.wbos['../pathological'] = new ServerWBO(
-      '../pathological', encryptPayload({id: '../pathological',
-                                         denomination: "Pathological Case"}));
+  let pathologicalPayload = encryptPayload({id: '../pathological',
+                                            denomination: "Pathological Case"});
+  collection.insert('../pathological', pathologicalPayload);
 
   let server = sync_httpd_setup({
       "/1.1/foo/storage/rotary": collection.handler(),
-      "/1.1/foo/storage/rotary/flying": collection.wbos.flying.handler(),
-      "/1.1/foo/storage/rotary/scotsman": collection.wbos.scotsman.handler()
+      "/1.1/foo/storage/rotary/flying": collection.wbo("flying").handler(),
+      "/1.1/foo/storage/rotary/scotsman": collection.wbo("scotsman").handler()
   });
 
   let engine = makeRotaryEngine();
-  let meta_global = Records.set(engine.metaURL, new WBORecord(engine.metaURL));
+  let meta_global = Service.recordManager.set(engine.metaURL,
+                                              new WBORecord(engine.metaURL));
   meta_global.payload.engines = {rotary: {version: engine.version,
                                          syncID: engine.syncID}};
 
@@ -246,54 +288,48 @@ add_test(function test_processIncoming_reconcile() {
   _("SyncEngine._processIncoming updates local records");
 
   let syncTesting = new SyncTestingInfrastructure();
-  Svc.Prefs.set("clusterURL", "http://localhost:8080/");
-  Svc.Prefs.set("username", "foo");
+  Service.serverURL = TEST_SERVER_URL;
+  Service.clusterURL = TEST_CLUSTER_URL;
+  Service.identity.username = "foo";
   let collection = new ServerCollection();
 
   // This server record is newer than the corresponding client one,
   // so it'll update its data.
-  collection.wbos.newrecord = new ServerWBO(
-      'newrecord', encryptPayload({id: 'newrecord',
-                                   denomination: "New stuff..."}));
+  collection.insert('newrecord',
+                    encryptPayload({id: 'newrecord',
+                                    denomination: "New stuff..."}));
 
   // This server record is newer than the corresponding client one,
   // so it'll update its data.
-  collection.wbos.newerserver = new ServerWBO(
-      'newerserver', encryptPayload({id: 'newerserver',
-                                     denomination: "New data!"}));
+  collection.insert('newerserver',
+                    encryptPayload({id: 'newerserver',
+                                    denomination: "New data!"}));
 
   // This server record is 2 mins older than the client counterpart
   // but identical to it, so we're expecting the client record's
   // changedID to be reset.
-  collection.wbos.olderidentical = new ServerWBO(
-      'olderidentical', encryptPayload({id: 'olderidentical',
-                                        denomination: "Older but identical"}));
-  collection.wbos.olderidentical.modified -= 120;
+  collection.insert('olderidentical',
+                    encryptPayload({id: 'olderidentical',
+                                    denomination: "Older but identical"}));
+  collection._wbos.olderidentical.modified -= 120;
 
   // This item simply has different data than the corresponding client
   // record (which is unmodified), so it will update the client as well
-  collection.wbos.updateclient = new ServerWBO(
-      'updateclient', encryptPayload({id: 'updateclient',
-                                      denomination: "Get this!"}));
+  collection.insert('updateclient',
+                    encryptPayload({id: 'updateclient',
+                                    denomination: "Get this!"}));
 
-  // This is a dupe of 'original' but with a longer GUID, so we're
-  // expecting it to be marked for deletion from the server
-  collection.wbos.duplication = new ServerWBO(
-      'duplication', encryptPayload({id: 'duplication',
-                                     denomination: "Original Entry"}));
-
-  // This is a dupe of 'long_original' but with a shorter GUID, so we're
-  // expecting it to replace 'long_original'.
-  collection.wbos.dupe = new ServerWBO(
-      'dupe', encryptPayload({id: 'dupe',
-                              denomination: "Long Original Entry"}));  
+  // This is a dupe of 'original'.
+  collection.insert('duplication',
+                    encryptPayload({id: 'duplication',
+                                    denomination: "Original Entry"}));
 
   // This record is marked as deleted, so we're expecting the client
   // record to be removed.
-  collection.wbos.nukeme = new ServerWBO(
-      'nukeme', encryptPayload({id: 'nukeme',
-                                denomination: "Nuke me!",
-                                deleted: true}));
+  collection.insert('nukeme',
+                    encryptPayload({id: 'nukeme',
+                                    denomination: "Nuke me!",
+                                    deleted: true}));
 
   let server = sync_httpd_setup({
       "/1.1/foo/storage/rotary": collection.handler()
@@ -311,7 +347,8 @@ add_test(function test_processIncoming_reconcile() {
   // This record has been changed 2 mins later than the one on the server
   engine._tracker.addChangedID('olderidentical', Date.now()/1000);
 
-  let meta_global = Records.set(engine.metaURL, new WBORecord(engine.metaURL));
+  let meta_global = Service.recordManager.set(engine.metaURL,
+                                              new WBORecord(engine.metaURL));
   meta_global.payload.engines = {rotary: {version: engine.version,
                                          syncID: engine.syncID}};
 
@@ -346,27 +383,235 @@ add_test(function test_processIncoming_reconcile() {
     // Updated with server data.
     do_check_eq(engine._store.items.updateclient, "Get this!");
 
-    // The dupe with the shorter ID is kept, the longer one is slated
-    // for deletion.
-    do_check_eq(engine._store.items.long_original, undefined);
-    do_check_eq(engine._store.items.dupe, "Long Original Entry");
-    do_check_neq(engine._delete.ids.indexOf('duplication'), -1);
+    // The incoming ID is preferred.
+    do_check_eq(engine._store.items.original, undefined);
+    do_check_eq(engine._store.items.duplication, "Original Entry");
+    do_check_neq(engine._delete.ids.indexOf("original"), -1);
 
     // The 'nukeme' record marked as deleted is removed.
     do_check_eq(engine._store.items.nukeme, undefined);
-
   } finally {
     cleanAndGo(server);
   }
 });
 
+add_test(function test_processIncoming_reconcile_local_deleted() {
+  _("Ensure local, duplicate ID is deleted on server.");
+
+  // When a duplicate is resolved, the local ID (which is never taken) should
+  // be deleted on the server.
+  let [engine, server, user] = createServerAndConfigureClient();
+
+  let now = Date.now() / 1000 - 10;
+  engine.lastSync = now;
+  engine.lastModified = now + 1;
+
+  let record = encryptPayload({id: "DUPE_INCOMING", denomination: "incoming"});
+  let wbo = new ServerWBO("DUPE_INCOMING", record, now + 2);
+  server.insertWBO(user, "rotary", wbo);
+
+  let record = encryptPayload({id: "DUPE_LOCAL", denomination: "local"});
+  let wbo = new ServerWBO("DUPE_LOCAL", record, now - 1);
+  server.insertWBO(user, "rotary", wbo);
+
+  engine._store.create({id: "DUPE_LOCAL", denomination: "local"});
+  do_check_true(engine._store.itemExists("DUPE_LOCAL"));
+  do_check_eq("DUPE_LOCAL", engine._findDupe({id: "DUPE_INCOMING"}));
+
+  engine._sync();
+
+  do_check_attribute_count(engine._store.items, 1);
+  do_check_true("DUPE_INCOMING" in engine._store.items);
+
+  let collection = server.getCollection(user, "rotary");
+  do_check_eq(1, collection.count());
+  do_check_neq(undefined, collection.wbo("DUPE_INCOMING"));
+
+  cleanAndGo(server);
+});
+
+add_test(function test_processIncoming_reconcile_equivalent() {
+  _("Ensure proper handling of incoming records that match local.");
+
+  let [engine, server, user] = createServerAndConfigureClient();
+
+  let now = Date.now() / 1000 - 10;
+  engine.lastSync = now;
+  engine.lastModified = now + 1;
+
+  let record = encryptPayload({id: "entry", denomination: "denomination"});
+  let wbo = new ServerWBO("entry", record, now + 2);
+  server.insertWBO(user, "rotary", wbo);
+
+  engine._store.items = {entry: "denomination"};
+  do_check_true(engine._store.itemExists("entry"));
+
+  engine._sync();
+
+  do_check_attribute_count(engine._store.items, 1);
+
+  cleanAndGo(server);
+});
+
+add_test(function test_processIncoming_reconcile_locally_deleted_dupe_new() {
+  _("Ensure locally deleted duplicate record newer than incoming is handled.");
+
+  // This is a somewhat complicated test. It ensures that if a client receives
+  // a modified record for an item that is deleted locally but with a different
+  // ID that the incoming record is ignored. This is a corner case for record
+  // handling, but it needs to be supported.
+  let [engine, server, user] = createServerAndConfigureClient();
+
+  let now = Date.now() / 1000 - 10;
+  engine.lastSync = now;
+  engine.lastModified = now + 1;
+
+  let record = encryptPayload({id: "DUPE_INCOMING", denomination: "incoming"});
+  let wbo = new ServerWBO("DUPE_INCOMING", record, now + 2);
+  server.insertWBO(user, "rotary", wbo);
+
+  // Simulate a locally-deleted item.
+  engine._store.items = {};
+  engine._tracker.addChangedID("DUPE_LOCAL", now + 3);
+  do_check_false(engine._store.itemExists("DUPE_LOCAL"));
+  do_check_false(engine._store.itemExists("DUPE_INCOMING"));
+  do_check_eq("DUPE_LOCAL", engine._findDupe({id: "DUPE_INCOMING"}));
+
+  engine._sync();
+
+  // After the sync, the server's payload for the original ID should be marked
+  // as deleted.
+  do_check_empty(engine._store.items);
+  let collection = server.getCollection(user, "rotary");
+  do_check_eq(1, collection.count());
+  let wbo = collection.wbo("DUPE_INCOMING");
+  do_check_neq(null, wbo);
+  let payload = JSON.parse(JSON.parse(wbo.payload).ciphertext);
+  do_check_true(payload.deleted);
+
+  cleanAndGo(server);
+});
+
+add_test(function test_processIncoming_reconcile_locally_deleted_dupe_old() {
+  _("Ensure locally deleted duplicate record older than incoming is restored.");
+
+  // This is similar to the above test except it tests the condition where the
+  // incoming record is newer than the local deletion, therefore overriding it.
+
+  let [engine, server, user] = createServerAndConfigureClient();
+
+  let now = Date.now() / 1000 - 10;
+  engine.lastSync = now;
+  engine.lastModified = now + 1;
+
+  let record = encryptPayload({id: "DUPE_INCOMING", denomination: "incoming"});
+  let wbo = new ServerWBO("DUPE_INCOMING", record, now + 2);
+  server.insertWBO(user, "rotary", wbo);
+
+  // Simulate a locally-deleted item.
+  engine._store.items = {};
+  engine._tracker.addChangedID("DUPE_LOCAL", now + 1);
+  do_check_false(engine._store.itemExists("DUPE_LOCAL"));
+  do_check_false(engine._store.itemExists("DUPE_INCOMING"));
+  do_check_eq("DUPE_LOCAL", engine._findDupe({id: "DUPE_INCOMING"}));
+
+  engine._sync();
+
+  // Since the remote change is newer, the incoming item should exist locally.
+  do_check_attribute_count(engine._store.items, 1);
+  do_check_true("DUPE_INCOMING" in engine._store.items);
+  do_check_eq("incoming", engine._store.items.DUPE_INCOMING);
+
+  let collection = server.getCollection(user, "rotary");
+  do_check_eq(1, collection.count());
+  let wbo = collection.wbo("DUPE_INCOMING");
+  let payload = JSON.parse(JSON.parse(wbo.payload).ciphertext);
+  do_check_eq("incoming", payload.denomination);
+
+  cleanAndGo(server);
+});
+
+add_test(function test_processIncoming_reconcile_changed_dupe() {
+  _("Ensure that locally changed duplicate record is handled properly.");
+
+  let [engine, server, user] = createServerAndConfigureClient();
+
+  let now = Date.now() / 1000 - 10;
+  engine.lastSync = now;
+  engine.lastModified = now + 1;
+
+  // The local record is newer than the incoming one, so it should be retained.
+  let record = encryptPayload({id: "DUPE_INCOMING", denomination: "incoming"});
+  let wbo = new ServerWBO("DUPE_INCOMING", record, now + 2);
+  server.insertWBO(user, "rotary", wbo);
+
+  engine._store.create({id: "DUPE_LOCAL", denomination: "local"});
+  engine._tracker.addChangedID("DUPE_LOCAL", now + 3);
+  do_check_true(engine._store.itemExists("DUPE_LOCAL"));
+  do_check_eq("DUPE_LOCAL", engine._findDupe({id: "DUPE_INCOMING"}));
+
+  engine._sync();
+
+  // The ID should have been changed to incoming.
+  do_check_attribute_count(engine._store.items, 1);
+  do_check_true("DUPE_INCOMING" in engine._store.items);
+
+  // On the server, the local ID should be deleted and the incoming ID should
+  // have its payload set to what was in the local record.
+  let collection = server.getCollection(user, "rotary");
+  do_check_eq(1, collection.count());
+  let wbo = collection.wbo("DUPE_INCOMING");
+  do_check_neq(undefined, wbo);
+  let payload = JSON.parse(JSON.parse(wbo.payload).ciphertext);
+  do_check_eq("local", payload.denomination);
+
+  cleanAndGo(server);
+});
+
+add_test(function test_processIncoming_reconcile_changed_dupe_new() {
+  _("Ensure locally changed duplicate record older than incoming is ignored.");
+
+  // This test is similar to the above except the incoming record is younger
+  // than the local record. The incoming record should be authoritative.
+  let [engine, server, user] = createServerAndConfigureClient();
+
+  let now = Date.now() / 1000 - 10;
+  engine.lastSync = now;
+  engine.lastModified = now + 1;
+
+  let record = encryptPayload({id: "DUPE_INCOMING", denomination: "incoming"});
+  let wbo = new ServerWBO("DUPE_INCOMING", record, now + 2);
+  server.insertWBO(user, "rotary", wbo);
+
+  engine._store.create({id: "DUPE_LOCAL", denomination: "local"});
+  engine._tracker.addChangedID("DUPE_LOCAL", now + 1);
+  do_check_true(engine._store.itemExists("DUPE_LOCAL"));
+  do_check_eq("DUPE_LOCAL", engine._findDupe({id: "DUPE_INCOMING"}));
+
+  engine._sync();
+
+  // The ID should have been changed to incoming.
+  do_check_attribute_count(engine._store.items, 1);
+  do_check_true("DUPE_INCOMING" in engine._store.items);
+
+  // On the server, the local ID should be deleted and the incoming ID should
+  // have its payload retained.
+  let collection = server.getCollection(user, "rotary");
+  do_check_eq(1, collection.count());
+  let wbo = collection.wbo("DUPE_INCOMING");
+  do_check_neq(undefined, wbo);
+  let payload = JSON.parse(JSON.parse(wbo.payload).ciphertext);
+  do_check_eq("incoming", payload.denomination);
+  cleanAndGo(server);
+});
 
 add_test(function test_processIncoming_mobile_batchSize() {
   _("SyncEngine._processIncoming doesn't fetch everything at once on mobile clients");
 
   let syncTesting = new SyncTestingInfrastructure();
-  Svc.Prefs.set("clusterURL", "http://localhost:8080/");
-  Svc.Prefs.set("username", "foo");
+  Service.serverURL = TEST_SERVER_URL;
+  Service.clusterURL = TEST_CLUSTER_URL;
+  Service.identity.username = "foo";
   Svc.Prefs.set("client.type", "mobile");
 
   // A collection that logs each GET
@@ -380,12 +625,12 @@ add_test(function test_processIncoming_mobile_batchSize() {
 
   // Let's create some 234 server side records. They're all at least
   // 10 minutes old.
-  for (var i = 0; i < 234; i++) {
+  for (let i = 0; i < 234; i++) {
     let id = 'record-no-' + i;
     let payload = encryptPayload({id: id, denomination: "Record No. " + i});
     let wbo = new ServerWBO(id, payload);
     wbo.modified = Date.now()/1000 - 60*(i+10);
-    collection.wbos[id] = wbo;
+    collection.insertWBO(wbo);
   }
 
   let server = sync_httpd_setup({
@@ -393,7 +638,8 @@ add_test(function test_processIncoming_mobile_batchSize() {
   });
 
   let engine = makeRotaryEngine();
-  let meta_global = Records.set(engine.metaURL, new WBORecord(engine.metaURL));
+  let meta_global = Service.recordManager.set(engine.metaURL,
+                                              new WBORecord(engine.metaURL));
   meta_global.payload.engines = {rotary: {version: engine.version,
                                          syncID: engine.syncID}};
 
@@ -402,7 +648,7 @@ add_test(function test_processIncoming_mobile_batchSize() {
     _("On a mobile client, we get new records from the server in batches of 50.");
     engine._syncStartup();
     engine._processIncoming();
-    do_check_eq([id for (id in engine._store.items)].length, 234);
+    do_check_attribute_count(engine._store.items, 234);
     do_check_true('record-no-0' in engine._store.items);
     do_check_true('record-no-49' in engine._store.items);
     do_check_true('record-no-50' in engine._store.items);
@@ -434,8 +680,9 @@ add_test(function test_processIncoming_mobile_batchSize() {
 add_test(function test_processIncoming_store_toFetch() {
   _("If processIncoming fails in the middle of a batch on mobile, state is saved in toFetch and lastSync.");
   let syncTesting = new SyncTestingInfrastructure();
-  Svc.Prefs.set("clusterURL", "http://localhost:8080/");
-  Svc.Prefs.set("username", "foo");
+  Service.serverURL = TEST_SERVER_URL;
+  Service.clusterURL = TEST_CLUSTER_URL;
+  Service.identity.username = "foo";
   Svc.Prefs.set("client.type", "mobile");
 
   // A collection that throws at the fourth get.
@@ -456,13 +703,14 @@ add_test(function test_processIncoming_store_toFetch() {
     let payload = encryptPayload({id: id, denomination: "Record No. " + id});
     let wbo = new ServerWBO(id, payload);
     wbo.modified = Date.now()/1000 + 60 * (i - MOBILE_BATCH_SIZE * 3);
-    collection.wbos[id] = wbo;
+    collection.insertWBO(wbo);
   }
 
   let engine = makeRotaryEngine();
   engine.enabled = true;
 
-  let meta_global = Records.set(engine.metaURL, new WBORecord(engine.metaURL));
+  let meta_global = Service.recordManager.set(engine.metaURL,
+                                              new WBORecord(engine.metaURL));
   meta_global.payload.engines = {rotary: {version: engine.version,
                                          syncID: engine.syncID}};
   let server = sync_httpd_setup({
@@ -473,7 +721,7 @@ add_test(function test_processIncoming_store_toFetch() {
 
     // Confirm initial environment
     do_check_eq(engine.lastSync, 0);
-    do_check_eq([id for (id in engine._store.items)].length, 0);
+    do_check_empty(engine._store.items);
 
     let error;
     try {
@@ -484,13 +732,13 @@ add_test(function test_processIncoming_store_toFetch() {
     do_check_true(!!error);
 
     // Only the first two batches have been applied.
-    do_check_eq([id for (id in engine._store.items)].length,
+    do_check_eq(Object.keys(engine._store.items).length,
                 MOBILE_BATCH_SIZE * 2);
 
     // The third batch is stuck in toFetch. lastSync has been moved forward to
     // the last successful item's timestamp.
     do_check_eq(engine.toFetch.length, MOBILE_BATCH_SIZE);
-    do_check_eq(engine.lastSync, collection.wbos["record-no-99"].modified);
+    do_check_eq(engine.lastSync, collection.wbo("record-no-99").modified);
 
   } finally {
     cleanAndGo(server);
@@ -501,33 +749,34 @@ add_test(function test_processIncoming_store_toFetch() {
 add_test(function test_processIncoming_resume_toFetch() {
   _("toFetch and previousFailed items left over from previous syncs are fetched on the next sync, along with new items.");
   let syncTesting = new SyncTestingInfrastructure();
-  Svc.Prefs.set("clusterURL", "http://localhost:8080/");
-  Svc.Prefs.set("username", "foo");
+  Service.serverURL = TEST_SERVER_URL;
+  Service.clusterURL = TEST_CLUSTER_URL;
+  Service.identity.username = "foo";
 
   const LASTSYNC = Date.now() / 1000;
 
   // Server records that will be downloaded
   let collection = new ServerCollection();
-  collection.wbos.flying = new ServerWBO(
-      'flying', encryptPayload({id: 'flying',
-                                denomination: "LNER Class A3 4472"}));
-  collection.wbos.scotsman = new ServerWBO(
-      'scotsman', encryptPayload({id: 'scotsman',
-                                  denomination: "Flying Scotsman"}));
-  collection.wbos.rekolok = new ServerWBO(
-      'rekolok', encryptPayload({id: 'rekolok',
-                                 denomination: "Rekonstruktionslokomotive"}));
-  for (var i = 0; i < 3; i++) {
+  collection.insert('flying',
+                    encryptPayload({id: 'flying',
+                                    denomination: "LNER Class A3 4472"}));
+  collection.insert('scotsman',
+                    encryptPayload({id: 'scotsman',
+                                    denomination: "Flying Scotsman"}));
+  collection.insert('rekolok',
+                    encryptPayload({id: 'rekolok',
+                                    denomination: "Rekonstruktionslokomotive"}));
+  for (let i = 0; i < 3; i++) {
     let id = 'failed' + i;
     let payload = encryptPayload({id: id, denomination: "Record No. " + i});
     let wbo = new ServerWBO(id, payload);
     wbo.modified = LASTSYNC - 10;
-    collection.wbos[id] = wbo;
+    collection.insertWBO(wbo);
   }
 
-  collection.wbos.flying.modified = collection.wbos.scotsman.modified
-    = LASTSYNC - 10;
-  collection.wbos.rekolok.modified = LASTSYNC + 10;
+  collection.wbo("flying").modified =
+    collection.wbo("scotsman").modified = LASTSYNC - 10;
+  collection._wbos.rekolok.modified = LASTSYNC + 10;
 
   // Time travel 10 seconds into the future but still download the above WBOs.
   let engine = makeRotaryEngine();
@@ -535,7 +784,8 @@ add_test(function test_processIncoming_resume_toFetch() {
   engine.toFetch = ["flying", "scotsman"];
   engine.previousFailed = ["failed0", "failed1", "failed2"];
 
-  let meta_global = Records.set(engine.metaURL, new WBORecord(engine.metaURL));
+  let meta_global = Service.recordManager.set(engine.metaURL,
+                                              new WBORecord(engine.metaURL));
   meta_global.payload.engines = {rotary: {version: engine.version,
                                          syncID: engine.syncID}};
   let server = sync_httpd_setup({
@@ -569,8 +819,9 @@ add_test(function test_processIncoming_resume_toFetch() {
 add_test(function test_processIncoming_applyIncomingBatchSize_smaller() {
   _("Ensure that a number of incoming items less than applyIncomingBatchSize is still applied.");
   let syncTesting = new SyncTestingInfrastructure();
-  Svc.Prefs.set("clusterURL", "http://localhost:8080/");
-  Svc.Prefs.set("username", "foo");
+  Service.serverURL = TEST_SERVER_URL;
+  Service.clusterURL = TEST_CLUSTER_URL;
+  Service.identity.username = "foo";
 
   // Engine that doesn't like the first and last record it's given.
   const APPLY_BATCH_SIZE = 10;
@@ -589,10 +840,11 @@ add_test(function test_processIncoming_applyIncomingBatchSize_smaller() {
   for (let i = 0; i < APPLY_BATCH_SIZE - 1; i++) {
     let id = 'record-no-' + i;
     let payload = encryptPayload({id: id, denomination: "Record No. " + id});
-    collection.wbos[id] = new ServerWBO(id, payload);
+    collection.insert(id, payload);
   }
 
-  let meta_global = Records.set(engine.metaURL, new WBORecord(engine.metaURL));
+  let meta_global = Service.recordManager.set(engine.metaURL,
+                                              new WBORecord(engine.metaURL));
   meta_global.payload.engines = {rotary: {version: engine.version,
                                          syncID: engine.syncID}};
   let server = sync_httpd_setup({
@@ -602,14 +854,13 @@ add_test(function test_processIncoming_applyIncomingBatchSize_smaller() {
   try {
 
     // Confirm initial environment
-    do_check_eq([id for (id in engine._store.items)].length, 0);
+    do_check_empty(engine._store.items);
 
     engine._syncStartup();
     engine._processIncoming();
 
     // Records have been applied and the expected failures have failed.
-    do_check_eq([id for (id in engine._store.items)].length,
-                APPLY_BATCH_SIZE - 1 - 2);
+    do_check_attribute_count(engine._store.items, APPLY_BATCH_SIZE - 1 - 2);
     do_check_eq(engine.toFetch.length, 0);
     do_check_eq(engine.previousFailed.length, 2);
     do_check_eq(engine.previousFailed[0], "record-no-0");
@@ -624,8 +875,8 @@ add_test(function test_processIncoming_applyIncomingBatchSize_smaller() {
 add_test(function test_processIncoming_applyIncomingBatchSize_multiple() {
   _("Ensure that incoming items are applied according to applyIncomingBatchSize.");
   let syncTesting = new SyncTestingInfrastructure();
-  Svc.Prefs.set("clusterURL", "http://localhost:8080/");
-  Svc.Prefs.set("username", "foo");
+  Service.clusterURL = TEST_CLUSTER_URL;
+  Service.identity.username = "foo";
 
   const APPLY_BATCH_SIZE = 10;
 
@@ -645,10 +896,11 @@ add_test(function test_processIncoming_applyIncomingBatchSize_multiple() {
   for (let i = 0; i < APPLY_BATCH_SIZE * 3; i++) {
     let id = 'record-no-' + i;
     let payload = encryptPayload({id: id, denomination: "Record No. " + id});
-    collection.wbos[id] = new ServerWBO(id, payload);
+    collection.insert(id, payload);
   }
 
-  let meta_global = Records.set(engine.metaURL, new WBORecord(engine.metaURL));
+  let meta_global = Service.recordManager.set(engine.metaURL,
+                                              new WBORecord(engine.metaURL));
   meta_global.payload.engines = {rotary: {version: engine.version,
                                          syncID: engine.syncID}};
   let server = sync_httpd_setup({
@@ -658,15 +910,14 @@ add_test(function test_processIncoming_applyIncomingBatchSize_multiple() {
   try {
 
     // Confirm initial environment
-    do_check_eq([id for (id in engine._store.items)].length, 0);
+    do_check_empty(engine._store.items);
 
     engine._syncStartup();
     engine._processIncoming();
 
     // Records have been applied in 3 batches.
     do_check_eq(batchCalls, 3);
-    do_check_eq([id for (id in engine._store.items)].length,
-                APPLY_BATCH_SIZE * 3);
+    do_check_attribute_count(engine._store.items, APPLY_BATCH_SIZE * 3);
 
   } finally {
     cleanAndGo(server);
@@ -677,9 +928,10 @@ add_test(function test_processIncoming_applyIncomingBatchSize_multiple() {
 add_test(function test_processIncoming_notify_count() {
   _("Ensure that failed records are reported only once.");
   let syncTesting = new SyncTestingInfrastructure();
-  Svc.Prefs.set("clusterURL", "http://localhost:8080/");
-  Svc.Prefs.set("username", "foo");
-  
+  Service.serverURL = TEST_SERVER_URL;
+  Service.clusterURL = TEST_CLUSTER_URL;
+  Service.identity.username = "foo";
+
   const APPLY_BATCH_SIZE = 5;
   const NUMBER_OF_RECORDS = 15;
 
@@ -697,10 +949,11 @@ add_test(function test_processIncoming_notify_count() {
   for (var i = 0; i < NUMBER_OF_RECORDS; i++) {
     let id = 'record-no-' + i;
     let payload = encryptPayload({id: id, denomination: "Record No. " + id});
-    collection.wbos[id] = new ServerWBO(id, payload);
+    collection.insert(id, payload);
   }
 
-  let meta_global = Records.set(engine.metaURL, new WBORecord(engine.metaURL));
+  let meta_global = Service.recordManager.set(engine.metaURL,
+                                              new WBORecord(engine.metaURL));
   meta_global.payload.engines = {rotary: {version: engine.version,
                                          syncID: engine.syncID}};
   let server = sync_httpd_setup({
@@ -712,7 +965,7 @@ add_test(function test_processIncoming_notify_count() {
     do_check_eq(engine.lastSync, 0);
     do_check_eq(engine.toFetch.length, 0);
     do_check_eq(engine.previousFailed.length, 0);
-    do_check_eq([id for (id in engine._store.items)].length, 0);
+    do_check_empty(engine._store.items);
 
     let called = 0;
     let counts;
@@ -726,9 +979,9 @@ add_test(function test_processIncoming_notify_count() {
     // Do sync.
     engine._syncStartup();
     engine._processIncoming();
-    
+
     // Confirm failures.
-    do_check_eq([id for (id in engine._store.items)].length, 12);
+    do_check_attribute_count(engine._store.items, 12);
     do_check_eq(engine.previousFailed.length, 3);
     do_check_eq(engine.previousFailed[0], "record-no-0");
     do_check_eq(engine.previousFailed[1], "record-no-5");
@@ -739,12 +992,13 @@ add_test(function test_processIncoming_notify_count() {
     do_check_eq(counts.failed, 3);
     do_check_eq(counts.applied, 15);
     do_check_eq(counts.newFailed, 3);
+    do_check_eq(counts.succeeded, 12);
 
     // Sync again, 1 of the failed items are the same, the rest didn't fail.
     engine._processIncoming();
-    
+
     // Confirming removed failures.
-    do_check_eq([id for (id in engine._store.items)].length, 14);
+    do_check_attribute_count(engine._store.items, 14);
     do_check_eq(engine.previousFailed.length, 1);
     do_check_eq(engine.previousFailed[0], "record-no-0");
 
@@ -752,6 +1006,7 @@ add_test(function test_processIncoming_notify_count() {
     do_check_eq(counts.failed, 1);
     do_check_eq(counts.applied, 3);
     do_check_eq(counts.newFailed, 0);
+    do_check_eq(counts.succeeded, 2);
 
     Svc.Obs.remove("weave:engine:sync:applied", onApplied);
   } finally {
@@ -763,16 +1018,17 @@ add_test(function test_processIncoming_notify_count() {
 add_test(function test_processIncoming_previousFailed() {
   _("Ensure that failed records are retried.");
   let syncTesting = new SyncTestingInfrastructure();
-  Svc.Prefs.set("clusterURL", "http://localhost:8080/");
-  Svc.Prefs.set("username", "foo");
+  Service.serverURL = TEST_SERVER_URL;
+  Service.clusterURL = TEST_CLUSTER_URL;
+  Service.identity.username = "foo";
   Svc.Prefs.set("client.type", "mobile");
-  
+
   const APPLY_BATCH_SIZE = 4;
   const NUMBER_OF_RECORDS = 14;
 
   // Engine that fails the first 2 records.
   let engine = makeRotaryEngine();
-  engine.mobileGUIDFetchBatchSize = engine.applyIncomingBatchSize = APPLY_BATCH_SIZE;  
+  engine.mobileGUIDFetchBatchSize = engine.applyIncomingBatchSize = APPLY_BATCH_SIZE;
   engine._store._applyIncomingBatch = engine._store.applyIncomingBatch;
   engine._store.applyIncomingBatch = function (records) {
     engine._store._applyIncomingBatch(records.slice(2));
@@ -784,10 +1040,11 @@ add_test(function test_processIncoming_previousFailed() {
   for (var i = 0; i < NUMBER_OF_RECORDS; i++) {
     let id = 'record-no-' + i;
     let payload = encryptPayload({id: id, denomination: "Record No. " + i});
-    collection.wbos[id] = new ServerWBO(id, payload);
+    collection.insert(id, payload);
   }
 
-  let meta_global = Records.set(engine.metaURL, new WBORecord(engine.metaURL));
+  let meta_global = Service.recordManager.set(engine.metaURL,
+                                              new WBORecord(engine.metaURL));
   meta_global.payload.engines = {rotary: {version: engine.version,
                                          syncID: engine.syncID}};
   let server = sync_httpd_setup({
@@ -799,7 +1056,7 @@ add_test(function test_processIncoming_previousFailed() {
     do_check_eq(engine.lastSync, 0);
     do_check_eq(engine.toFetch.length, 0);
     do_check_eq(engine.previousFailed.length, 0);
-    do_check_eq([id for (id in engine._store.items)].length, 0);
+    do_check_empty(engine._store.items);
 
     // Initial failed items in previousFailed to be reset.
     let previousFailed = [Utils.makeGUID(), Utils.makeGUID(), Utils.makeGUID()];
@@ -811,7 +1068,7 @@ add_test(function test_processIncoming_previousFailed() {
     engine._processIncoming();
 
     // Expected result: 4 sync batches with 2 failures each => 8 failures
-    do_check_eq([id for (id in engine._store.items)].length, 6);
+    do_check_attribute_count(engine._store.items, 6);
     do_check_eq(engine.previousFailed.length, 8);
     do_check_eq(engine.previousFailed[0], "record-no-0");
     do_check_eq(engine.previousFailed[1], "record-no-1");
@@ -827,7 +1084,7 @@ add_test(function test_processIncoming_previousFailed() {
 
     // A second sync with the same failed items should not add the same items again.
     // Items that did not fail a second time should no longer be in previousFailed.
-    do_check_eq([id for (id in engine._store.items)].length, 10);
+    do_check_attribute_count(engine._store.items, 10);
     do_check_eq(engine.previousFailed.length, 4);
     do_check_eq(engine.previousFailed[0], "record-no-0");
     do_check_eq(engine.previousFailed[1], "record-no-1");
@@ -848,18 +1105,19 @@ add_test(function test_processIncoming_previousFailed() {
 add_test(function test_processIncoming_failed_records() {
   _("Ensure that failed records from _reconcile and applyIncomingBatch are refetched.");
   let syncTesting = new SyncTestingInfrastructure();
-  Svc.Prefs.set("clusterURL", "http://localhost:8080/");
-  Svc.Prefs.set("username", "foo");
+  Service.serverURL = TEST_SERVER_URL;
+  Service.clusterURL = TEST_CLUSTER_URL;
+  Service.identity.username = "foo";
 
   // Let's create three and a bit batches worth of server side records.
   let collection = new ServerCollection();
   const NUMBER_OF_RECORDS = MOBILE_BATCH_SIZE * 3 + 5;
-  for (var i = 0; i < NUMBER_OF_RECORDS; i++) {
+  for (let i = 0; i < NUMBER_OF_RECORDS; i++) {
     let id = 'record-no-' + i;
     let payload = encryptPayload({id: id, denomination: "Record No. " + id});
     let wbo = new ServerWBO(id, payload);
     wbo.modified = Date.now()/1000 + 60 * (i - MOBILE_BATCH_SIZE * 3);
-    collection.wbos[id] = wbo;
+    collection.insertWBO(wbo);
   }
 
   // Engine that batches but likes to throw on a couple of records,
@@ -891,7 +1149,8 @@ add_test(function test_processIncoming_failed_records() {
     return this._applyIncoming.apply(this, arguments);
   };
 
-  let meta_global = Records.set(engine.metaURL, new WBORecord(engine.metaURL));
+  let meta_global = Service.recordManager.set(engine.metaURL,
+                                              new WBORecord(engine.metaURL));
   meta_global.payload.engines = {rotary: {version: engine.version,
                                          syncID: engine.syncID}};
 
@@ -916,7 +1175,7 @@ add_test(function test_processIncoming_failed_records() {
     do_check_eq(engine.lastSync, 0);
     do_check_eq(engine.toFetch.length, 0);
     do_check_eq(engine.previousFailed.length, 0);
-    do_check_eq([id for (id in engine._store.items)].length, 0);
+    do_check_empty(engine._store.items);
 
     let observerSubject;
     let observerData;
@@ -930,8 +1189,8 @@ add_test(function test_processIncoming_failed_records() {
     engine._processIncoming();
 
     // Ensure that all records but the bogus 4 have been applied.
-    do_check_eq([id for (id in engine._store.items)].length,
-                NUMBER_OF_RECORDS - BOGUS_RECORDS.length);
+    do_check_attribute_count(engine._store.items,
+                             NUMBER_OF_RECORDS - BOGUS_RECORDS.length);
 
     // Ensure that the bogus records will be fetched again on the next sync.
     do_check_eq(engine.previousFailed.length, BOGUS_RECORDS.length);
@@ -957,7 +1216,7 @@ add_test(function test_processIncoming_failed_records() {
       _("Tried again. Requests: " + count + "; URIs: " + JSON.stringify(uris));
       return count;
     }
-    
+
     // There are 8 bad records, so this needs 3 fetches.
     _("Test batching with ID batch size 3, normal mobile batch size.");
     do_check_eq(batchDownload(3), 3);
@@ -982,22 +1241,23 @@ add_test(function test_processIncoming_decrypt_failed() {
   _("Ensure that records failing to decrypt are either replaced or refetched.");
 
   let syncTesting = new SyncTestingInfrastructure();
-  Svc.Prefs.set("clusterURL", "http://localhost:8080/");
-  Svc.Prefs.set("username", "foo");
+  Service.serverURL = TEST_SERVER_URL;
+  Service.clusterURL = TEST_CLUSTER_URL;
+  Service.identity.username = "foo";
 
   // Some good and some bogus records. One doesn't contain valid JSON,
   // the other will throw during decrypt.
   let collection = new ServerCollection();
-  collection.wbos.flying = new ServerWBO(
+  collection._wbos.flying = new ServerWBO(
       'flying', encryptPayload({id: 'flying',
                                 denomination: "LNER Class A3 4472"}));
-  collection.wbos.nojson = new ServerWBO("nojson", "This is invalid JSON");
-  collection.wbos.nojson2 = new ServerWBO("nojson2", "This is invalid JSON");
-  collection.wbos.scotsman = new ServerWBO(
+  collection._wbos.nojson = new ServerWBO("nojson", "This is invalid JSON");
+  collection._wbos.nojson2 = new ServerWBO("nojson2", "This is invalid JSON");
+  collection._wbos.scotsman = new ServerWBO(
       'scotsman', encryptPayload({id: 'scotsman',
                                   denomination: "Flying Scotsman"}));
-  collection.wbos.nodecrypt = new ServerWBO("nodecrypt", "Decrypt this!");
-  collection.wbos.nodecrypt2 = new ServerWBO("nodecrypt2", "Decrypt this!");
+  collection._wbos.nodecrypt = new ServerWBO("nodecrypt", "Decrypt this!");
+  collection._wbos.nodecrypt2 = new ServerWBO("nodecrypt2", "Decrypt this!");
 
   // Patch the fake crypto service to throw on the record above.
   Svc.Crypto._decrypt = Svc.Crypto.decrypt;
@@ -1014,7 +1274,8 @@ add_test(function test_processIncoming_decrypt_failed() {
   engine._store.items = {nojson: "Valid JSON",
                          nodecrypt: "Valid ciphertext"};
 
-  let meta_global = Records.set(engine.metaURL, new WBORecord(engine.metaURL));
+  let meta_global = Service.recordManager.set(engine.metaURL,
+                                              new WBORecord(engine.metaURL));
   meta_global.payload.engines = {rotary: {version: engine.version,
                                          syncID: engine.syncID}};
   let server = sync_httpd_setup({
@@ -1035,7 +1296,7 @@ add_test(function test_processIncoming_decrypt_failed() {
       observerData = data;
     });
 
-    engine.lastSync = collection.wbos.nojson.modified - 1;
+    engine.lastSync = collection.wbo("nojson").modified - 1;
     engine.sync();
 
     do_check_eq(engine.previousFailed.length, 4);
@@ -1059,27 +1320,29 @@ add_test(function test_uploadOutgoing_toEmptyServer() {
   _("SyncEngine._uploadOutgoing uploads new records to server");
 
   let syncTesting = new SyncTestingInfrastructure();
-  Svc.Prefs.set("clusterURL", "http://localhost:8080/");
-  Svc.Prefs.set("username", "foo");
+  Service.serverURL = TEST_SERVER_URL;
+  Service.clusterURL = TEST_CLUSTER_URL;
+  Service.identity.username = "foo";
   let collection = new ServerCollection();
-  collection.wbos.flying = new ServerWBO('flying');
-  collection.wbos.scotsman = new ServerWBO('scotsman');
+  collection._wbos.flying = new ServerWBO('flying');
+  collection._wbos.scotsman = new ServerWBO('scotsman');
 
   let server = sync_httpd_setup({
       "/1.1/foo/storage/rotary": collection.handler(),
-      "/1.1/foo/storage/rotary/flying": collection.wbos.flying.handler(),
-      "/1.1/foo/storage/rotary/scotsman": collection.wbos.scotsman.handler()
+      "/1.1/foo/storage/rotary/flying": collection.wbo("flying").handler(),
+      "/1.1/foo/storage/rotary/scotsman": collection.wbo("scotsman").handler()
   });
-  generateNewKeys();
+  generateNewKeys(Service.collectionKeys);
 
   let engine = makeRotaryEngine();
   engine.lastSync = 123; // needs to be non-zero so that tracker is queried
   engine._store.items = {flying: "LNER Class A3 4472",
                          scotsman: "Flying Scotsman"};
-  // Mark one of these records as changed 
+  // Mark one of these records as changed
   engine._tracker.addChangedID('scotsman', 0);
 
-  let meta_global = Records.set(engine.metaURL, new WBORecord(engine.metaURL));
+  let meta_global = Service.recordManager.set(engine.metaURL,
+                                              new WBORecord(engine.metaURL));
   meta_global.payload.engines = {rotary: {version: engine.version,
                                          syncID: engine.syncID}};
 
@@ -1087,8 +1350,8 @@ add_test(function test_uploadOutgoing_toEmptyServer() {
 
     // Confirm initial environment
     do_check_eq(engine.lastSyncLocal, 0);
-    do_check_eq(collection.wbos.flying.payload, undefined);
-    do_check_eq(collection.wbos.scotsman.payload, undefined);
+    do_check_eq(collection.payload("flying"), undefined);
+    do_check_eq(collection.payload("scotsman"), undefined);
 
     engine._syncStartup();
     engine._uploadOutgoing();
@@ -1098,14 +1361,14 @@ add_test(function test_uploadOutgoing_toEmptyServer() {
 
     // Ensure the marked record ('scotsman') has been uploaded and is
     // no longer marked.
-    do_check_eq(collection.wbos.flying.payload, undefined);
-    do_check_true(!!collection.wbos.scotsman.payload);
-    do_check_eq(JSON.parse(collection.wbos.scotsman.data.ciphertext).id,
-                'scotsman');
-    do_check_eq(engine._tracker.changedIDs['scotsman'], undefined);
+    do_check_eq(collection.payload("flying"), undefined);
+    do_check_true(!!collection.payload("scotsman"));
+    do_check_eq(JSON.parse(collection.wbo("scotsman").data.ciphertext).id,
+                "scotsman");
+    do_check_eq(engine._tracker.changedIDs["scotsman"], undefined);
 
     // The 'flying' record wasn't marked so it wasn't uploaded
-    do_check_eq(collection.wbos.flying.payload, undefined);
+    do_check_eq(collection.payload("flying"), undefined);
 
   } finally {
     cleanAndGo(server);
@@ -1117,12 +1380,13 @@ add_test(function test_uploadOutgoing_failed() {
   _("SyncEngine._uploadOutgoing doesn't clear the tracker of objects that failed to upload.");
 
   let syncTesting = new SyncTestingInfrastructure();
-  Svc.Prefs.set("clusterURL", "http://localhost:8080/");
-  Svc.Prefs.set("username", "foo");
+  Service.serverURL = TEST_SERVER_URL;
+  Service.clusterURL = TEST_CLUSTER_URL;
+  Service.identity.username = "foo";
   let collection = new ServerCollection();
   // We only define the "flying" WBO on the server, not the "scotsman"
   // and "peppercorn" ones.
-  collection.wbos.flying = new ServerWBO('flying');
+  collection._wbos.flying = new ServerWBO('flying');
 
   let server = sync_httpd_setup({
       "/1.1/foo/storage/rotary": collection.handler()
@@ -1133,7 +1397,7 @@ add_test(function test_uploadOutgoing_failed() {
   engine._store.items = {flying: "LNER Class A3 4472",
                          scotsman: "Flying Scotsman",
                          peppercorn: "Peppercorn Class"};
-  // Mark these records as changed 
+  // Mark these records as changed
   const FLYING_CHANGED = 12345;
   const SCOTSMAN_CHANGED = 23456;
   const PEPPERCORN_CHANGED = 34567;
@@ -1141,7 +1405,8 @@ add_test(function test_uploadOutgoing_failed() {
   engine._tracker.addChangedID('scotsman', SCOTSMAN_CHANGED);
   engine._tracker.addChangedID('peppercorn', PEPPERCORN_CHANGED);
 
-  let meta_global = Records.set(engine.metaURL, new WBORecord(engine.metaURL));
+  let meta_global = Service.recordManager.set(engine.metaURL,
+                                              new WBORecord(engine.metaURL));
   meta_global.payload.engines = {rotary: {version: engine.version,
                                          syncID: engine.syncID}};
 
@@ -1149,7 +1414,7 @@ add_test(function test_uploadOutgoing_failed() {
 
     // Confirm initial environment
     do_check_eq(engine.lastSyncLocal, 0);
-    do_check_eq(collection.wbos.flying.payload, undefined);
+    do_check_eq(collection.payload("flying"), undefined);
     do_check_eq(engine._tracker.changedIDs['flying'], FLYING_CHANGED);
     do_check_eq(engine._tracker.changedIDs['scotsman'], SCOTSMAN_CHANGED);
     do_check_eq(engine._tracker.changedIDs['peppercorn'], PEPPERCORN_CHANGED);
@@ -1161,7 +1426,7 @@ add_test(function test_uploadOutgoing_failed() {
     do_check_true(engine.lastSyncLocal > 0);
 
     // Ensure the 'flying' record has been uploaded and is no longer marked.
-    do_check_true(!!collection.wbos.flying.payload);
+    do_check_true(!!collection.payload("flying"));
     do_check_eq(engine._tracker.changedIDs['flying'], undefined);
 
     // The 'scotsman' and 'peppercorn' records couldn't be uploaded so
@@ -1179,8 +1444,9 @@ add_test(function test_uploadOutgoing_MAX_UPLOAD_RECORDS() {
   _("SyncEngine._uploadOutgoing uploads in batches of MAX_UPLOAD_RECORDS");
 
   let syncTesting = new SyncTestingInfrastructure();
-  Svc.Prefs.set("clusterURL", "http://localhost:8080/");
-  Svc.Prefs.set("username", "foo");
+  Service.serverURL = TEST_SERVER_URL;
+  Service.clusterURL = TEST_CLUSTER_URL;
+  Service.identity.username = "foo";
   let collection = new ServerCollection();
 
   // Let's count how many times the client posts to the server
@@ -1198,10 +1464,11 @@ add_test(function test_uploadOutgoing_MAX_UPLOAD_RECORDS() {
     let id = 'record-no-' + i;
     engine._store.items[id] = "Record No. " + i;
     engine._tracker.addChangedID(id, 0);
-    collection.wbos[id] = new ServerWBO(id);
+    collection.insert(id);
   }
 
-  let meta_global = Records.set(engine.metaURL, new WBORecord(engine.metaURL));
+  let meta_global = Service.recordManager.set(engine.metaURL,
+                                              new WBORecord(engine.metaURL));
   meta_global.payload.engines = {rotary: {version: engine.version,
                                          syncID: engine.syncID}};
 
@@ -1211,18 +1478,18 @@ add_test(function test_uploadOutgoing_MAX_UPLOAD_RECORDS() {
 
   try {
 
-    // Confirm initial environment
+    // Confirm initial environment.
     do_check_eq(noOfUploads, 0);
 
     engine._syncStartup();
     engine._uploadOutgoing();
 
-    // Ensure all records have been uploaded
+    // Ensure all records have been uploaded.
     for (i = 0; i < 234; i++) {
-      do_check_true(!!collection.wbos['record-no-'+i].payload);
+      do_check_true(!!collection.payload('record-no-' + i));
     }
 
-    // Ensure that the uploads were performed in batches of MAX_UPLOAD_RECORDS
+    // Ensure that the uploads were performed in batches of MAX_UPLOAD_RECORDS.
     do_check_eq(noOfUploads, Math.ceil(234/MAX_UPLOAD_RECORDS));
 
   } finally {
@@ -1250,16 +1517,17 @@ add_test(function test_syncFinish_deleteByIds() {
   _("SyncEngine._syncFinish deletes server records slated for deletion (list of record IDs).");
 
   let syncTesting = new SyncTestingInfrastructure();
-  Svc.Prefs.set("clusterURL", "http://localhost:8080/");
-  Svc.Prefs.set("username", "foo");
+  Service.serverURL = TEST_SERVER_URL;
+  Service.clusterURL = TEST_CLUSTER_URL;
+  Service.identity.username = "foo";
   let collection = new ServerCollection();
-  collection.wbos.flying = new ServerWBO(
+  collection._wbos.flying = new ServerWBO(
       'flying', encryptPayload({id: 'flying',
                                 denomination: "LNER Class A3 4472"}));
-  collection.wbos.scotsman = new ServerWBO(
+  collection._wbos.scotsman = new ServerWBO(
       'scotsman', encryptPayload({id: 'scotsman',
                                   denomination: "Flying Scotsman"}));
-  collection.wbos.rekolok = new ServerWBO(
+  collection._wbos.rekolok = new ServerWBO(
       'rekolok', encryptPayload({id: 'rekolok',
                                 denomination: "Rekonstruktionslokomotive"}));
 
@@ -1274,9 +1542,9 @@ add_test(function test_syncFinish_deleteByIds() {
 
     // The 'flying' and 'rekolok' records were deleted while the
     // 'scotsman' one wasn't.
-    do_check_eq(collection.wbos.flying.payload, undefined);
-    do_check_true(!!collection.wbos.scotsman.payload);
-    do_check_eq(collection.wbos.rekolok.payload, undefined);
+    do_check_eq(collection.payload("flying"), undefined);
+    do_check_true(!!collection.payload("scotsman"));
+    do_check_eq(collection.payload("rekolok"), undefined);
 
     // The deletion todo list has been reset.
     do_check_eq(engine._delete.ids, undefined);
@@ -1291,8 +1559,9 @@ add_test(function test_syncFinish_deleteLotsInBatches() {
   _("SyncEngine._syncFinish deletes server records in batches of 100 (list of record IDs).");
 
   let syncTesting = new SyncTestingInfrastructure();
-  Svc.Prefs.set("clusterURL", "http://localhost:8080/");
-  Svc.Prefs.set("username", "foo");
+  Service.serverURL = TEST_SERVER_URL;
+  Service.clusterURL = TEST_CLUSTER_URL;
+  Service.identity.username = "foo";
   let collection = new ServerCollection();
 
   // Let's count how many times the client does a DELETE request to the server
@@ -1311,7 +1580,7 @@ add_test(function test_syncFinish_deleteLotsInBatches() {
     let payload = encryptPayload({id: id, denomination: "Record No. " + i});
     let wbo = new ServerWBO(id, payload);
     wbo.modified = now / 1000 - 60 * (i + 110);
-    collection.wbos[id] = wbo;
+    collection.insertWBO(wbo);
   }
 
   let server = httpd_setup({
@@ -1340,9 +1609,9 @@ add_test(function test_syncFinish_deleteLotsInBatches() {
     for (i = 0; i < 234; i++) {
       let id = 'record-no-' + i;
       if (i <= 90 || i >= 100) {
-        do_check_eq(collection.wbos[id].payload, undefined);
+        do_check_eq(collection.payload(id), undefined);
       } else {
-        do_check_true(!!collection.wbos[id].payload);
+        do_check_true(!!collection.payload(id));
       }
     }
 
@@ -1362,14 +1631,15 @@ add_test(function test_sync_partialUpload() {
   _("SyncEngine.sync() keeps changedIDs that couldn't be uploaded.");
 
   let syncTesting = new SyncTestingInfrastructure();
-  Svc.Prefs.set("clusterURL", "http://localhost:8080/");
-  Svc.Prefs.set("username", "foo");
+  Service.serverURL = TEST_SERVER_URL;
+  Service.clusterURL = TEST_CLUSTER_URL;
+  Service.identity.username = "foo";
 
   let collection = new ServerCollection();
   let server = sync_httpd_setup({
       "/1.1/foo/storage/rotary": collection.handler()
   });
-  generateNewKeys();
+  generateNewKeys(Service.collectionKeys);
 
   let engine = makeRotaryEngine();
   engine.lastSync = 123; // needs to be non-zero so that tracker is queried
@@ -1392,11 +1662,13 @@ add_test(function test_sync_partialUpload() {
     engine._store.items[id] = "Record No. " + i;
     engine._tracker.addChangedID(id, i);
     // Let two items in the first upload batch fail.
-    if ((i != 23) && (i != 42))
-      collection.wbos[id] = new ServerWBO(id);
+    if ((i != 23) && (i != 42)) {
+      collection.insert(id);
+    }
   }
 
-  let meta_global = Records.set(engine.metaURL, new WBORecord(engine.metaURL));
+  let meta_global = Service.recordManager.set(engine.metaURL,
+                                              new WBORecord(engine.metaURL));
   meta_global.payload.engines = {rotary: {version: engine.version,
                                          syncID: engine.syncID}};
 
@@ -1434,14 +1706,15 @@ add_test(function test_sync_partialUpload() {
 add_test(function test_canDecrypt_noCryptoKeys() {
   _("SyncEngine.canDecrypt returns false if the engine fails to decrypt items on the server, e.g. due to a missing crypto key collection.");
   let syncTesting = new SyncTestingInfrastructure();
-  Svc.Prefs.set("clusterURL", "http://localhost:8080/");
-  Svc.Prefs.set("username", "foo");
+  Service.serverURL = TEST_SERVER_URL;
+  Service.clusterURL = TEST_CLUSTER_URL;
+  Service.identity.username = "foo";
 
-  // Wipe CollectionKeys so we can test the desired scenario.
-  CollectionKeys.clear();
+  // Wipe collection keys so we can test the desired scenario.
+  Service.collectionKeys.clear();
 
   let collection = new ServerCollection();
-  collection.wbos.flying = new ServerWBO(
+  collection._wbos.flying = new ServerWBO(
       'flying', encryptPayload({id: 'flying',
                                 denomination: "LNER Class A3 4472"}));
 
@@ -1462,14 +1735,14 @@ add_test(function test_canDecrypt_noCryptoKeys() {
 add_test(function test_canDecrypt_true() {
   _("SyncEngine.canDecrypt returns true if the engine can decrypt the items on the server.");
   let syncTesting = new SyncTestingInfrastructure();
-  Svc.Prefs.set("clusterURL", "http://localhost:8080/");
-  Svc.Prefs.set("username", "foo");
+  Service.serverURL = TEST_SERVER_URL;
+  Service.clusterURL = TEST_CLUSTER_URL;
+  Service.identity.username = "foo";
 
-  // Set up CollectionKeys, as service.js does.
-  generateNewKeys();
-  
+  generateNewKeys(Service.collectionKeys);
+
   let collection = new ServerCollection();
-  collection.wbos.flying = new ServerWBO(
+  collection._wbos.flying = new ServerWBO(
       'flying', encryptPayload({id: 'flying',
                                 denomination: "LNER Class A3 4472"}));
 
@@ -1490,8 +1763,9 @@ add_test(function test_canDecrypt_true() {
 
 add_test(function test_syncapplied_observer() {
   let syncTesting = new SyncTestingInfrastructure();
-  Svc.Prefs.set("clusterURL", "http://localhost:8080/");
-  Svc.Prefs.set("username", "foo");
+  Service.serverURL = TEST_SERVER_URL;
+  Service.clusterURL = TEST_CLUSTER_URL;
+  Service.identity.username = "foo";
 
   const NUMBER_OF_RECORDS = 10;
 
@@ -1502,10 +1776,11 @@ add_test(function test_syncapplied_observer() {
   for (var i = 0; i < NUMBER_OF_RECORDS; i++) {
     let id = 'record-no-' + i;
     let payload = encryptPayload({id: id, denomination: "Record No. " + id});
-    collection.wbos[id] = new ServerWBO(id, payload);
+    collection.insert(id, payload);
   }
 
-  let meta_global = Records.set(engine.metaURL, new WBORecord(engine.metaURL));
+  let meta_global = Service.recordManager.set(engine.metaURL,
+                                              new WBORecord(engine.metaURL));
   meta_global.payload.engines = {rotary: {version: engine.version,
                                          syncID: engine.syncID}};
   let server = httpd_setup({
@@ -1524,22 +1799,22 @@ add_test(function test_syncapplied_observer() {
   Svc.Obs.add("weave:engine:sync:applied", onApplied);
 
   try {
-    SyncScheduler.hasIncomingItems = false;
+    Service.scheduler.hasIncomingItems = false;
 
     // Do sync.
     engine._syncStartup();
     engine._processIncoming();
 
-    do_check_eq([id for (id in engine._store.items)].length, 10);
+    do_check_attribute_count(engine._store.items, 10);
 
     do_check_eq(numApplyCalls, 1);
     do_check_eq(engine_name, "rotary");
     do_check_eq(count.applied, 10);
 
-    do_check_true(SyncScheduler.hasIncomingItems);
+    do_check_true(Service.scheduler.hasIncomingItems);
   } finally {
     cleanAndGo(server);
-    SyncScheduler.hasIncomingItems = false;
+    Service.scheduler.hasIncomingItems = false;
     Svc.Obs.remove("weave:engine:sync:applied", onApplied);
   }
 });

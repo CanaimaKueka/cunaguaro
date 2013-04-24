@@ -1,78 +1,13 @@
 /* -*- Mode: Java; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- /
 /* vim: set shiftwidth=4 tabstop=8 autoindent cindent expandtab: */
-/* ***** BEGIN LICENSE BLOCK *****
- * Version: MPL 1.1/GPL 2.0/LGPL 2.1
- *
- * The contents of this file are subject to the Mozilla Public License Version
- * 1.1 (the "License"); you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- * http://www.mozilla.org/MPL/
- *
- * Software distributed under the License is distributed on an "AS IS" basis,
- * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
- * for the specific language governing rights and limitations under the
- * License.
- *
- * The Original Code is Mozilla's layout acceptance tests.
- *
- * The Initial Developer of the Original Code is the Mozilla Foundation.
- * Portions created by the Initial Developer are Copyright (C) 2006
- * the Initial Developer. All Rights Reserved.
- *
- * Contributor(s):
- *   L. David Baron <dbaron@dbaron.org>, Mozilla Corporation (original author)
- *
- * Alternatively, the contents of this file may be used under the terms of
- * either the GNU General Public License Version 2 or later (the "GPL"), or
- * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
- * in which case the provisions of the GPL or the LGPL are applicable instead
- * of those above. If you wish to allow use of your version of this file only
- * under the terms of either the GPL or the LGPL, and not to allow others to
- * use your version of this file under the terms of the MPL, indicate your
- * decision by deleting the provisions above and replace them with the notice
- * and other provisions required by the GPL or the LGPL. If you do not delete
- * the provisions above, a recipient may use your version of this file under
- * the terms of any one of the MPL, the GPL or the LGPL.
- *
- * ***** END LICENSE BLOCK ***** */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 const CC = Components.classes;
 const CI = Components.interfaces;
 const CR = Components.results;
-
-/**
- * FIXME/bug 622224: work around lack of reliable setTimeout available
- * to frame scripts.
- */
-// This gives us >=2^30 unique timer IDs, enough for 1 per ms for 12.4
-// days.  Should be fine as a temporary workaround.
-var gNextTimeoutId = 0;
-var gTimeoutTable = { };        // int -> nsITimer
-
-function setTimeout(callbackFn, delayMs) {
-    var id = gNextTimeoutId++;
-    var timer = CC["@mozilla.org/timer;1"].createInstance(CI.nsITimer);
-    timer.initWithCallback({
-        notify: function notify_callback() {
-                    clearTimeout(id);
-                    callbackFn();
-                }
-        },
-        delayMs,
-        timer.TYPE_ONE_SHOT);
-
-    gTimeoutTable[id] = timer;
-
-    return id;
-}
-
-function clearTimeout(id) {
-    var timer = gTimeoutTable[id];
-    if (timer) {
-        timer.cancel();
-        delete gTimeoutTable[id];
-    }
-}
+const CU = Components.utils;
 
 const XHTML_NS = "http://www.w3.org/1999/xhtml";
 
@@ -80,7 +15,9 @@ const DEBUG_CONTRACTID = "@mozilla.org/xpcom/debug;1";
 const PRINTSETTINGS_CONTRACTID = "@mozilla.org/gfx/printsettings-service;1";
 
 // "<!--CLEAR-->"
-const BLANK_URL_FOR_CLEARING = "data:text/html,%3C%21%2D%2DCLEAR%2D%2D%3E";
+const BLANK_URL_FOR_CLEARING = "data:text/html;charset=UTF-8,%3C%21%2D%2DCLEAR%2D%2D%3E";
+
+CU.import("resource://gre/modules/Timer.jsm");
 
 var gBrowserIsRemote;
 var gHaveCanvasSnapshot = false;
@@ -107,7 +44,7 @@ var gClearingForAssertionCheck = false;
 
 const TYPE_SCRIPT = 'script'; // test contains individual test results
 
-function markupDocumentViewer() { 
+function markupDocumentViewer() {
     return docShell.contentViewer.QueryInterface(CI.nsIMarkupDocumentViewer);
 }
 
@@ -151,7 +88,9 @@ function PaintWaitFinishedListener(event)
 
 function OnInitialLoad()
 {
+#ifndef REFTEST_B2G
     removeEventListener("load", OnInitialLoad, true);
+#endif
 
     gDebug = CC[DEBUG_CONTRACTID].getService(CI.nsIDebug2);
 
@@ -164,7 +103,7 @@ function OnInitialLoad()
 
     addEventListener("MozPaintWait", PaintWaitListener, true);
     addEventListener("MozPaintWaitFinished", PaintWaitFinishedListener, true);
- 
+
     LogWarning("Using browser remote="+ gBrowserIsRemote +"\n");
 }
 
@@ -202,11 +141,16 @@ function resetZoom() {
 }
 
 function doPrintMode(contentRootElement) {
+#if REFTEST_B2G
+    // nsIPrintSettings not available in B2G
+    return false;
+#else
     // use getAttribute because className works differently in HTML and SVG
     return contentRootElement &&
            contentRootElement.hasAttribute('class') &&
            contentRootElement.getAttribute('class').split(/\s+/)
                              .indexOf("reftest-print") != -1;
+#endif
 }
 
 function setupPrintMode() {
@@ -256,6 +200,10 @@ function setupDisplayport(contentRootElement) {
     if (dpw !== 0 || dph !== 0) {
         LogInfo("Setting displayport to <x="+ dpx +", y="+ dpy +", w="+ dpw +", h="+ dph +">");
         windowUtils().setDisplayPortForElement(dpx, dpy, dpw, dph, content.document.documentElement);
+    }
+    var asyncScroll = attrOrDefault("reftest-async-scroll", false);
+    if (asyncScroll) {
+      SendEnableAsyncScroll();
     }
 
     // XXX support resolution when needed
@@ -317,7 +265,7 @@ function WaitForTestEnd(contentRootElement, inPrintMode) {
             } catch (e) {
                 LogWarning("flushWindow failed: " + e + "\n");
             }
-            
+
             if (!afterPaintWasPending && utils.isMozAfterPaintPending) {
                 LogInfo("FlushRendering generated paint for window " + win.location.href);
                 anyPendingPaintsGeneratedInDescendants = true;
@@ -408,7 +356,7 @@ function WaitForTestEnd(contentRootElement, inPrintMode) {
             }
 
             state = STATE_WAITING_FOR_REFTEST_WAIT_REMOVAL;
-            var hasReftestWait = shouldWaitForReftestWaitRemoval(contentRootElement);            
+            var hasReftestWait = shouldWaitForReftestWaitRemoval(contentRootElement);
             // Notify the test document that now is a good time to test some invalidation
             LogInfo("MakeProgress: dispatching MozReftestInvalidate");
             if (contentRootElement) {
@@ -507,11 +455,16 @@ function OnDocumentLoad(event)
     }
 
     var contentRootElement = currentDoc ? currentDoc.documentElement : null;
+    currentDoc = null;
     setupZoom(contentRootElement);
     setupDisplayport(contentRootElement);
     var inPrintMode = false;
 
     function AfterOnLoadScripts() {
+        // Regrab the root element, because the document may have changed.
+        var contentRootElement =
+          content.document ? content.document.documentElement : null;
+
         // Take a snapshot now. We need to do this before we check whether
         // we should wait, since this might trigger dispatching of
         // MozPaintWait events and make shouldWaitForExplicitPaintWaiters() true
@@ -667,7 +620,6 @@ function LogInfo(str)
 
 const SYNC_DEFAULT = 0x0;
 const SYNC_ALLOW_DISABLE = 0x1;
-var gDummyCanvas = null;
 function SynchronizeForSnapshot(flags)
 {
     if (flags & SYNC_ALLOW_DISABLE) {
@@ -678,13 +630,11 @@ function SynchronizeForSnapshot(flags)
         }
     }
 
-    if (gDummyCanvas == null) {
-        gDummyCanvas = content.document.createElementNS(XHTML_NS, "canvas");
-        gDummyCanvas.setAttribute("width", 1);
-        gDummyCanvas.setAttribute("height", 1);
-    }
+    var dummyCanvas = content.document.createElementNS(XHTML_NS, "canvas");
+    dummyCanvas.setAttribute("width", 1);
+    dummyCanvas.setAttribute("height", 1);
 
-    var ctx = gDummyCanvas.getContext("2d");
+    var ctx = dummyCanvas.getContext("2d");
     var flags = ctx.DRAWWINDOW_DRAW_CARET | ctx.DRAWWINDOW_DRAW_VIEW | ctx.DRAWWINDOW_USE_WIDGET_LAYERS;
     ctx.drawWindow(content, 0, 0, 1, 1, "rgb(255,255,255)", flags);
 }
@@ -751,6 +701,11 @@ function SendFailedLoad(why)
     sendAsyncMessage("reftest:FailedLoad", { why: why });
 }
 
+function SendEnableAsyncScroll()
+{
+    sendAsyncMessage("reftest:EnableAsyncScroll");
+}
+
 // Return true if a snapshot was taken.
 function SendInitCanvasWithSnapshot()
 {
@@ -771,7 +726,7 @@ function SendInitCanvasWithSnapshot()
     // browser though, it doesn't wrt correctness whether this request
     // is sync or async.
     var ret = sendSyncMessage("reftest:InitCanvasWithSnapshot")[0];
- 
+
     gHaveCanvasSnapshot = ret.painted;
     return ret.painted;
 }
@@ -801,9 +756,10 @@ function SendUpdateCanvasForEvent(event)
 {
     var win = content;
     var scale = markupDocumentViewer().fullZoom;
- 
+
     var rects = [ ];
     var rectList = event.clientRects;
+    LogInfo("SendUpdateCanvasForEvent with " + rectList.length + " rects");
     for (var i = 0; i < rectList.length; ++i) {
         var r = rectList[i];
         // Set left/top/right/bottom to "device pixel" boundaries
@@ -811,6 +767,7 @@ function SendUpdateCanvasForEvent(event)
         var top = Math.floor(roundTo(r.top*scale, 0.001));
         var right = Math.ceil(roundTo(r.right*scale, 0.001));
         var bottom = Math.ceil(roundTo(r.bottom*scale, 0.001));
+        LogInfo("Rect: " + left + " " + top + " " + right + " " + bottom);
 
         rects.push({ left: left, top: top, right: right, bottom: bottom });
     }
@@ -824,5 +781,8 @@ function SendUpdateCanvasForEvent(event)
         sendAsyncMessage("reftest:UpdateCanvasForInvalidation", { rects: rects });
     }
 }
-
+#if REFTEST_B2G
+OnInitialLoad();
+#else
 addEventListener("load", OnInitialLoad, true);
+#endif

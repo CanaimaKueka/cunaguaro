@@ -33,7 +33,6 @@
 #include "assembler/wtf/Platform.h"
 #include "assembler/assembler/MacroAssemblerCodeRef.h"
 #include "assembler/assembler/CodeLocation.h"
-#include "jsstdint.h"
 
 #if ENABLE_ASSEMBLER
 
@@ -248,9 +247,9 @@ public:
         union {
             struct {
 #if WTF_CPU_BIG_ENDIAN || WTF_CPU_MIDDLE_ENDIAN
-                uint32 msb, lsb;
+                uint32_t msb, lsb;
 #else
-                uint32 lsb, msb;
+                uint32_t lsb, msb;
 #endif
             } s;
             uint64_t u64;
@@ -419,6 +418,8 @@ public:
             masm->m_assembler.linkJump(m_jmp, label.m_label);
         }
 
+        bool isSet() const { return m_jmp.isSet(); }
+
     private:
         JmpSrc m_jmp;
     };
@@ -560,6 +561,11 @@ public:
     }
 
     ptrdiff_t differenceBetween(DataLabel32 from, Label to)
+    {
+        return AssemblerType::getDifferenceBetweenLabels(from.m_label, to.m_label);
+    }
+
+    ptrdiff_t differenceBetween(DataLabelPtr from, Label to)
     {
         return AssemblerType::getDifferenceBetweenLabels(from.m_label, to.m_label);
     }

@@ -1,47 +1,11 @@
 /* -*- Mode: C++; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
-/* ***** BEGIN LICENSE BLOCK *****
- * Version: MPL 1.1/GPL 2.0/LGPL 2.1
- *
- * The contents of this file are subject to the Mozilla Public License Version
- * 1.1 (the "License"); you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- * http://www.mozilla.org/MPL/
- *
- * Software distributed under the License is distributed on an "AS IS" basis,
- * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
- * for the specific language governing rights and limitations under the
- * License.
- *
- * The Original Code is Mozilla SVG Project code.
- *
- * The Initial Developer of the Original Code is Jonathan Watt.
- * Portions created by the Initial Developer are Copyright (C) 2005
- * the Initial Developer. All Rights Reserved.
- *
- * Contributor(s):
- *   Jonathan Watt <jonathan.watt@strath.ac.uk> (original author)
- *
- * Alternatively, the contents of this file may be used under the terms of
- * either the GNU General Public License Version 2 or later (the "GPL"), or
- * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
- * in which case the provisions of the GPL or the LGPL are applicable instead
- * of those above. If you wish to allow use of your version of this file only
- * under the terms of either the GPL or the LGPL, and not to allow others to
- * use your version of this file under the terms of the MPL, indicate your
- * decision by deleting the provisions above and replace them with the notice
- * and other provisions required by the GPL or the LGPL. If you do not delete
- * the provisions above, a recipient may use your version of this file under
- * the terms of any one of the MPL, the GPL or the LGPL.
- *
- * ***** END LICENSE BLOCK ***** */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "nsDOMSVGZoomEvent.h"
-#include "nsContentUtils.h"
-#include "nsSVGRect.h"
 #include "DOMSVGPoint.h"
-#include "nsSVGSVGElement.h"
-#include "nsIDOMSVGSVGElement.h"
-#include "nsIContent.h"
+#include "mozilla/dom/SVGSVGElement.h"
 #include "nsIPresShell.h"
 #include "nsIDocument.h"
 #include "mozilla/dom/Element.h"
@@ -52,21 +16,22 @@ using namespace mozilla::dom;
 //----------------------------------------------------------------------
 // Implementation
 
-nsDOMSVGZoomEvent::nsDOMSVGZoomEvent(nsPresContext* aPresContext,
+nsDOMSVGZoomEvent::nsDOMSVGZoomEvent(mozilla::dom::EventTarget* aOwner,
+                                     nsPresContext* aPresContext,
                                      nsGUIEvent* aEvent)
-  : nsDOMUIEvent(aPresContext,
-                 aEvent ? aEvent : new nsGUIEvent(PR_FALSE, NS_SVG_ZOOM, 0))
+  : nsDOMUIEvent(aOwner, aPresContext,
+                 aEvent ? aEvent : new nsGUIEvent(false, NS_SVG_ZOOM, 0))
 {
   if (aEvent) {
-    mEventIsInternal = PR_FALSE;
+    mEventIsInternal = false;
   }
   else {
-    mEventIsInternal = PR_TRUE;
+    mEventIsInternal = true;
     mEvent->eventStructType = NS_SVGZOOM_EVENT;
     mEvent->time = PR_Now();
   }
 
-  mEvent->flags |= NS_EVENT_FLAG_CANT_CANCEL;
+  mEvent->mFlags.mCancelable = false;
 
   // We must store the "Previous" and "New" values before this event is
   // dispatched. Reading the values from the root 'svg' element after we've
@@ -78,29 +43,26 @@ nsDOMSVGZoomEvent::nsDOMSVGZoomEvent(nsPresContext* aPresContext,
     if (doc) {
       Element *rootElement = doc->GetRootElement();
       if (rootElement) {
-        // If the root element isn't an SVG 'svg' element this QI will fail
+        // If the root element isn't an SVG 'svg' element
         // (e.g. if this event was created by calling createEvent on a
-        // non-SVGDocument). In these circumstances the "New" and "Previous"
+        // non-SVGDocument), then the "New" and "Previous"
         // properties will be left null which is probably what we want.
-        nsCOMPtr<nsIDOMSVGSVGElement> svgElement = do_QueryInterface(rootElement);
-        if (svgElement) {
-          nsSVGSVGElement *SVGSVGElement =
-            static_cast<nsSVGSVGElement*>(rootElement);
-  
-          mNewScale = SVGSVGElement->GetCurrentScale();
-          mPreviousScale = SVGSVGElement->GetPreviousScale();
+        if (rootElement->IsSVG(nsGkAtoms::svg)) {
+          SVGSVGElement *SVGSVGElem =
+            static_cast<SVGSVGElement*>(rootElement);
 
-          const nsSVGTranslatePoint& translate =
-            SVGSVGElement->GetCurrentTranslate();
+          mNewScale = SVGSVGElem->GetCurrentScale();
+          mPreviousScale = SVGSVGElem->GetPreviousScale();
+
+          const SVGPoint& translate = SVGSVGElem->GetCurrentTranslate();
           mNewTranslate =
             new DOMSVGPoint(translate.GetX(), translate.GetY());
-          mNewTranslate->SetReadonly(PR_TRUE);
+          mNewTranslate->SetReadonly(true);
 
-          const nsSVGTranslatePoint& prevTranslate =
-            SVGSVGElement->GetPreviousTranslate();
+          const SVGPoint& prevTranslate = SVGSVGElem->GetPreviousTranslate();
           mPreviousTranslate =
             new DOMSVGPoint(prevTranslate.GetX(), prevTranslate.GetY());
-          mPreviousTranslate->SetReadonly(PR_TRUE);
+          mPreviousTranslate->SetReadonly(true);
         }
       }
     }
@@ -125,27 +87,6 @@ NS_INTERFACE_MAP_END_INHERITING(nsDOMUIEvent)
 //----------------------------------------------------------------------
 // nsIDOMSVGZoomEvent methods:
 
-/* readonly attribute SVGRect zoomRectScreen; */
-NS_IMETHODIMP nsDOMSVGZoomEvent::GetZoomRectScreen(nsIDOMSVGRect **aZoomRectScreen)
-{
-  // The spec says about this attribute:
-  //
-  //   The specified zoom rectangle in screen units.
-  //   The object itself and its contents are both readonly.
-  //
-  // This is so badly underspecified we don't implement it. It was probably
-  // thrown in without much thought as a way of finding the zoom box ASV style
-  // zooming uses. I don't see how this is useful though since SVGZoom event's
-  // get dispatched *after* the zoom level has changed.
-  //
-  // Be sure to use NS_NewSVGReadonlyRect and not NS_NewSVGRect if we
-  // eventually do implement this!
-
-  *aZoomRectScreen = nsnull;
-  NS_NOTYETIMPLEMENTED("nsDOMSVGZoomEvent::GetZoomRectScreen");
-  return NS_ERROR_NOT_IMPLEMENTED;
-}
-
 /* readonly attribute float previousScale; */
 NS_IMETHODIMP
 nsDOMSVGZoomEvent::GetPreviousScale(float *aPreviousScale)
@@ -156,7 +97,7 @@ nsDOMSVGZoomEvent::GetPreviousScale(float *aPreviousScale)
 
 /* readonly attribute SVGPoint previousTranslate; */
 NS_IMETHODIMP
-nsDOMSVGZoomEvent::GetPreviousTranslate(nsIDOMSVGPoint **aPreviousTranslate)
+nsDOMSVGZoomEvent::GetPreviousTranslate(nsISupports **aPreviousTranslate)
 {
   *aPreviousTranslate = mPreviousTranslate;
   NS_IF_ADDREF(*aPreviousTranslate);
@@ -172,7 +113,7 @@ NS_IMETHODIMP nsDOMSVGZoomEvent::GetNewScale(float *aNewScale)
 
 /* readonly attribute SVGPoint newTranslate; */
 NS_IMETHODIMP
-nsDOMSVGZoomEvent::GetNewTranslate(nsIDOMSVGPoint **aNewTranslate)
+nsDOMSVGZoomEvent::GetNewTranslate(nsISupports **aNewTranslate)
 {
   *aNewTranslate = mNewTranslate;
   NS_IF_ADDREF(*aNewTranslate);
@@ -185,12 +126,10 @@ nsDOMSVGZoomEvent::GetNewTranslate(nsIDOMSVGPoint **aNewTranslate)
 
 nsresult
 NS_NewDOMSVGZoomEvent(nsIDOMEvent** aInstancePtrResult,
+                      mozilla::dom::EventTarget* aOwner,
                       nsPresContext* aPresContext,
                       nsGUIEvent *aEvent)
 {
-  nsDOMSVGZoomEvent* it = new nsDOMSVGZoomEvent(aPresContext, aEvent);
-  if (!it)
-    return NS_ERROR_OUT_OF_MEMORY;
-
+  nsDOMSVGZoomEvent* it = new nsDOMSVGZoomEvent(aOwner, aPresContext, aEvent);
   return CallQueryInterface(it, aInstancePtrResult);
 }

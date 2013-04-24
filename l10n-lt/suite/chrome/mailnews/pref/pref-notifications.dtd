@@ -1,0 +1,24 @@
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+
+<!ENTITY pref.notifications.title         "Signalai">
+<!ENTITY notifications.caption            "Signalai">
+<!ENTITY newMessagesArrive.label          "Kai atsiunčiami laiškai:">
+<!ENTITY playSound.label                  "įspėti garsu">
+<!ENTITY playSound.accesskey              "g">
+<!ENTITY showAnimatedAlert.label          "rodyti įspėjimo langą">
+<!ENTITY showAnimatedAlert.accesskey      "s">
+<!ENTITY showTrayIcon.label               "rodyti piktogramą pranešimų srityje">
+<!ENTITY showTrayIcon.accesskey           "t">
+<!ENTITY bounceSystemDockIcon.label       "animuoti pritvirtinamą piktogramą">
+<!ENTITY bounceSystemDockIcon.accesskey   "a">
+<!ENTITY playButton.label                 "Perklausyti">
+<!ENTITY playButton.accesskey             "k">
+<!ENTITY systemsound.label                "naudoti sistemoje numatytą garsą">
+<!ENTITY systemsound.accesskey            "s">
+<!ENTITY customsound.label                "parinkti kitą garso failą">
+<!ENTITY customsound.accesskey            "a">
+<!ENTITY browse.label                     "Parinkti…">
+<!ENTITY browse.accesskey                 "r">
+<!ENTITY browse.title                     "Failo parinkimas">

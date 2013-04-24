@@ -31,8 +31,10 @@ SimpleTest.waitForExplicitFinish();
 function doPrincipalTest(id) {
   var doc = $(id).contentDocument;
 
-  netscape.security.PrivilegeManager.enablePrivilege("UniversalXPConnect");
-  is(doc.nodePrincipal, document.nodePrincipal,
+  isnot(SpecialPowers.getNodePrincipal(doc), undefined, "Should have a principal");
+  isnot(SpecialPowers.getNodePrincipal(doc), null, "Should have a non-null principal");
+  is(SpecialPowers.getNodePrincipal(doc),
+     SpecialPowers.getNodePrincipal(document),
      "Wrong principal for document in node with id='" + id + "'");
 }
 
@@ -42,8 +44,7 @@ function doContentTest(id) {
 }
 
 function checkPrincipal() {
-  netscape.security.PrivilegeManager.enablePrivilege("UniversalXPConnect");
-  is(document.nodePrincipal instanceof Components.interfaces.nsIPrincipal,
+  is(SpecialPowers.getNodePrincipal(document) instanceof SpecialPowers.Ci.nsIPrincipal,
      true,
      "Should be a principal");
 }
@@ -51,11 +52,11 @@ function checkPrincipal() {
 addLoadEvent(function() {
   checkPrincipal();
 
-  for each (var i in [ "one", "two", "three", "four" ]) {
+  for (var i of [ "one", "two", "three", "four" ]) {
     doPrincipalTest(i);
   }
 
-  for each (i in [ "five", "six" ]) {
+  for (i of [ "five", "six" ]) {
     doContentTest(i);
   }
 

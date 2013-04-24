@@ -1,39 +1,7 @@
 /* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
-/* ***** BEGIN LICENSE BLOCK *****
- * Version: MPL 1.1/GPL 2.0/LGPL 2.1
- *
- * The contents of this file are subject to the Mozilla Public License Version
- * 1.1 (the "License"); you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- * http://www.mozilla.org/MPL/
- *
- * Software distributed under the License is distributed on an "AS IS" basis,
- * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
- * for the specific language governing rights and limitations under the
- * License.
- *
- * The Original Code is mozilla.org Code.
- *
- * The Initial Developer of the Original Code is
- * Netscape Communications Corporation.
- * Portions created by the Initial Developer are Copyright (C) 1999
- * the Initial Developer. All Rights Reserved.
- *
- * Contributor(s):
- *
- * Alternatively, the contents of this file may be used under the terms of
- * either of the GNU General Public License Version 2 or later (the "GPL"),
- * or the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
- * in which case the provisions of the GPL or the LGPL are applicable instead
- * of those above. If you wish to allow use of your version of this file only
- * under the terms of either the GPL or the LGPL, and not to allow others to
- * use your version of this file under the terms of the MPL, indicate your
- * decision by deleting the provisions above and replace them with the notice
- * and other provisions required by the GPL or the LGPL. If you do not delete
- * the provisions above, a recipient may use your version of this file under
- * the terms of any one of the MPL, the GPL or the LGPL.
- *
- * ***** END LICENSE BLOCK *****
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  * This Original Code has been modified by IBM Corporation.
  * Modifications made by IBM described herein are
  * Copyright (c) International Business Machines
@@ -63,8 +31,7 @@
 #include "nsThreadUtils.h"
 #include "nsTraceRefcntImpl.h"
 
-#include "nsILocalFile.h"
-#include "nsIProxyObjectManager.h"
+#include "nsIFile.h"
 
 #ifdef XP_WIN
 #include <windows.h>
@@ -83,12 +50,22 @@
 #define IMPLEMENT_BREAK_AFTER_LOAD
 #endif
 
-static PRLogModuleInfo *nsNativeModuleLoaderLog =
-    PR_NewLogModule("nsNativeModuleLoader");
+using namespace mozilla;
 
-#define LOG(level, args) PR_LOG(nsNativeModuleLoaderLog, level, args)
+static PRLogModuleInfo *
+GetNativeModuleLoaderLog()
+{
+    static PRLogModuleInfo *sLog;
+    if (!sLog)
+        sLog = PR_NewLogModule("nsNativeModuleLoader");
+    return sLog;
+}
 
-NS_IMPL_QUERY_INTERFACE1(nsNativeModuleLoader, 
+bool gInXPCOMLoadOnMainThread = false;
+
+#define LOG(level, args) PR_LOG(GetNativeModuleLoaderLog(), level, args)
+
+NS_IMPL_QUERY_INTERFACE1(nsNativeModuleLoader,
                          mozilla::ModuleLoader)
 
 NS_IMPL_ADDREF_USING_AGGREGATOR(nsNativeModuleLoader,
@@ -99,18 +76,17 @@ NS_IMPL_RELEASE_USING_AGGREGATOR(nsNativeModuleLoader,
 nsresult
 nsNativeModuleLoader::Init()
 {
-    NS_ASSERTION(NS_IsMainThread(), "Startup not on main thread?");
-
+    MOZ_ASSERT(NS_IsMainThread(), "Startup not on main thread?");
     LOG(PR_LOG_DEBUG, ("nsNativeModuleLoader::Init()"));
-
-    return mLibraries.Init() ? NS_OK : NS_ERROR_OUT_OF_MEMORY;
+    mLibraries.Init();
+    return NS_OK;
 }
 
 class LoadModuleMainThreadRunnable : public nsRunnable
 {
 public:
     LoadModuleMainThreadRunnable(nsNativeModuleLoader* loader,
-                                 nsILocalFile* file)
+                                 FileLocation &file)
         : mLoader(loader)
         , mFile(file)
         , mResult(NULL)
@@ -123,13 +99,18 @@ public:
     }
 
     nsRefPtr<nsNativeModuleLoader> mLoader;
-    nsCOMPtr<nsILocalFile> mFile;
+    FileLocation mFile;
     const mozilla::Module* mResult;
 };
 
 const mozilla::Module*
-nsNativeModuleLoader::LoadModule(nsILocalFile* aFile)
+nsNativeModuleLoader::LoadModule(FileLocation &aFile)
 {
+    if (aFile.IsZip()) {
+        NS_ERROR("Binary components cannot be loaded from JARs");
+        return NULL;
+    }
+    nsCOMPtr<nsIFile> file = aFile.GetBaseFile();
     nsresult rv;
 
     if (!NS_IsMainThread()) {
@@ -140,14 +121,14 @@ nsNativeModuleLoader::LoadModule(nsILocalFile* aFile)
         return r->mResult;
     }
 
-    nsCOMPtr<nsIHashable> hashedFile(do_QueryInterface(aFile));
+    nsCOMPtr<nsIHashable> hashedFile(do_QueryInterface(file));
     if (!hashedFile) {
         NS_ERROR("nsIFile is not nsIHashable");
         return NULL;
     }
 
-    nsCAutoString filePath;
-    aFile->GetNativePath(filePath);
+    nsAutoCString filePath;
+    file->GetNativePath(filePath);
 
     NativeLoadData data;
 
@@ -161,7 +142,9 @@ nsNativeModuleLoader::LoadModule(nsILocalFile* aFile)
 
     // We haven't loaded this module before
 
-    rv = aFile->Load(&data.library);
+    gInXPCOMLoadOnMainThread = true;
+    rv = file->Load(&data.library);
+    gInXPCOMLoadOnMainThread = false;
 
     if (NS_FAILED(rv)) {
         char errorMsg[1024] = "<unknown; can't get error from NSPR>";
@@ -176,15 +159,15 @@ nsNativeModuleLoader::LoadModule(nsILocalFile* aFile)
     }
 
 #ifdef IMPLEMENT_BREAK_AFTER_LOAD
-    nsCAutoString leafName;
-    aFile->GetNativeLeafName(leafName);
+    nsAutoCString leafName;
+    file->GetNativeLeafName(leafName);
 
     char *env = getenv("XPCOM_BREAK_ON_LOAD");
     char *blist;
     if (env && *env && (blist = strdup(env))) {
         char *nextTok = blist;
         while (char *token = NS_strtok(":", &nextTok)) {
-            if (leafName.Find(token, PR_TRUE) != kNotFound) {
+            if (leafName.Find(token, true) != kNotFound) {
                 NS_BREAK();
             }
         }
@@ -214,18 +197,11 @@ nsNativeModuleLoader::LoadModule(nsILocalFile* aFile)
     return data.module;
 }
 
-const mozilla::Module*
-nsNativeModuleLoader::LoadModuleFromJAR(nsILocalFile* aJARFile, const nsACString &aPath)
-{
-    NS_ERROR("Binary components cannot be loaded from JARs");
-    return NULL;
-}
-
 PLDHashOperator
 nsNativeModuleLoader::ReleaserFunc(nsIHashable* aHashedFile,
                                    NativeLoadData& aLoadData, void*)
 {
-    aLoadData.module = nsnull;
+    aLoadData.module = nullptr;
     return PL_DHASH_NEXT;
 }
 
@@ -233,10 +209,10 @@ PLDHashOperator
 nsNativeModuleLoader::UnloaderFunc(nsIHashable* aHashedFile,
                                    NativeLoadData& aLoadData, void*)
 {
-    if (PR_LOG_TEST(nsNativeModuleLoaderLog, PR_LOG_DEBUG)) {
+    if (PR_LOG_TEST(GetNativeModuleLoaderLog(), PR_LOG_DEBUG)) {
         nsCOMPtr<nsIFile> file(do_QueryInterface(aHashedFile));
 
-        nsCAutoString filePath;
+        nsAutoCString filePath;
         file->GetNativePath(filePath);
 
         LOG(PR_LOG_DEBUG,
@@ -244,7 +220,7 @@ nsNativeModuleLoader::UnloaderFunc(nsIHashable* aHashedFile,
     }
 
 #ifdef NS_BUILD_REFCNT_LOGGING
-    nsTraceRefcntImpl::SetActivityIsLegal(PR_FALSE);
+    nsTraceRefcntImpl::SetActivityIsLegal(false);
 #endif
 
 #if 0
@@ -255,7 +231,7 @@ nsNativeModuleLoader::UnloaderFunc(nsIHashable* aHashedFile,
 #endif
 
 #ifdef NS_BUILD_REFCNT_LOGGING
-    nsTraceRefcntImpl::SetActivityIsLegal(PR_TRUE);
+    nsTraceRefcntImpl::SetActivityIsLegal(true);
 #endif
 
     return PL_DHASH_REMOVE;
@@ -264,8 +240,7 @@ nsNativeModuleLoader::UnloaderFunc(nsIHashable* aHashedFile,
 void
 nsNativeModuleLoader::UnloadLibraries()
 {
-    NS_ASSERTION(NS_IsMainThread(), "Shutdown not on main thread?");
-
-    mLibraries.Enumerate(ReleaserFunc, nsnull);
-    mLibraries.Enumerate(UnloaderFunc, nsnull);
+    MOZ_ASSERT(NS_IsMainThread(), "Shutdown not on main thread?");
+    mLibraries.Enumerate(ReleaserFunc, nullptr);
+    mLibraries.Enumerate(UnloaderFunc, nullptr);
 }

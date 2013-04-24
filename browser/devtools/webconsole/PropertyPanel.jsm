@@ -1,317 +1,120 @@
 /* -*- Mode: js2; js2-basic-offset: 2; indent-tabs-mode: nil; -*- */
 /* vim: set ft=javascript ts=2 et sw=2 tw=80: */
-/* ***** BEGIN LICENSE BLOCK *****
- * Version: MPL 1.1/GPL 2.0/LGPL 2.1
- *
- * The contents of this file are subject to the Mozilla Public License Version
- * 1.1 (the "License"); you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- * http://www.mozilla.org/MPL/
- *
- * Software distributed under the License is distributed on an "AS IS" basis,
- * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
- * for the specific language governing rights and limitations under the
- * License.
- *
- * The Original Code is DevTools (HeadsUpDisplay) Console Code
- *
- * The Initial Developer of the Original Code is
- * the Mozilla Foundation.
- * Portions created by the Initial Developer are Copyright (C) 2010
- * the Initial Developer. All Rights Reserved.
- *
- * Contributor(s):
- *   Rob Campbell <rcampbell@mozilla.com>
- *   Julian Viereck <jviereck@mozilla.com>
- *
- * Alternatively, the contents of this file may be used under the terms of
- * either the GNU General Public License Version 2 or later (the "GPL"), or
- * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
- * in which case the provisions of the GPL or the LGPL are applicable instead
- * of those above. If you wish to allow use of your version of this file only
- * under the terms of either the GPL or the LGPL, and not to allow others to
- * use your version of this file under the terms of the MPL, indicate your
- * decision by deleting the provisions above and replace them with the notice
- * and other provisions required by the GPL or the LGPL. If you do not delete
- * the provisions above, a recipient may use your version of this file under
- * the terms of any one of the MPL, the GPL or the LGPL.
- *
- * ***** END LICENSE BLOCK ***** */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+"use strict";
 
 const Cc = Components.classes;
 const Ci = Components.interfaces;
 const Cu = Components.utils;
 
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
-Cu.import("resource://gre/modules/Services.jsm");
 
-var EXPORTED_SYMBOLS = ["PropertyPanel", "PropertyTreeView",
-                        "namesAndValuesOf", "isNonNativeGetter"];
+XPCOMUtils.defineLazyModuleGetter(this, "WebConsoleUtils",
+                                  "resource://gre/modules/devtools/WebConsoleUtils.jsm");
 
-///////////////////////////////////////////////////////////////////////////
-//// Helper for PropertyTreeView
-
-const TYPE_OBJECT = 0, TYPE_FUNCTION = 1, TYPE_ARRAY = 2, TYPE_OTHER = 3;
-
-/**
- * Figures out the type of aObject and the string to display in the tree.
- *
- * @param object aObject
- *        The object to operate on.
- * @returns object
- *          A object with the form:
- *            {
- *              type: TYPE_OBJECT || TYPE_FUNCTION || TYPE_ARRAY || TYPE_OTHER,
- *              display: string for displaying the object in the tree
- *            }
- */
-function presentableValueFor(aObject)
-{
-  if (aObject === null || aObject === undefined) {
-    return {
-      type: TYPE_OTHER,
-      display: aObject === undefined ? "undefined" : "null"
-    };
-  }
-
-  let presentable;
-  switch (aObject.constructor && aObject.constructor.name) {
-    case "Array":
-      return {
-        type: TYPE_ARRAY,
-        display: "Array"
-      };
-
-    case "String":
-      return {
-        type: TYPE_OTHER,
-        display: "\"" + aObject + "\""
-      };
-
-    case "Date":
-    case "RegExp":
-    case "Number":
-    case "Boolean":
-      return {
-        type: TYPE_OTHER,
-        display: aObject
-      };
-
-    case "Iterator":
-      return {
-        type: TYPE_OTHER,
-        display: "Iterator"
-      };
-
-    case "Function":
-      presentable = aObject.toString();
-      return {
-        type: TYPE_FUNCTION,
-        display: presentable.substring(0, presentable.indexOf(')') + 1)
-      };
-
-    default:
-      presentable = aObject.toString();
-      let m = /^\[object (\S+)\]/.exec(presentable);
-
-      try {
-        if (typeof aObject == "object" && typeof aObject.next == "function" &&
-            m && m[1] == "Generator") {
-          return {
-            type: TYPE_OTHER,
-            display: m[1]
-          };
-        }
-      }
-      catch (ex) {
-        // window.history.next throws in the typeof check above.
-        return {
-          type: TYPE_OBJECT,
-          display: m ? m[1] : "Object"
-        };
-      }
-
-      if (typeof aObject == "object" && typeof aObject.__iterator__ == "function") {
-        return {
-          type: TYPE_OTHER,
-          display: "Iterator"
-        };
-      }
-
-      return {
-        type: TYPE_OBJECT,
-        display: m ? m[1] : "Object"
-      };
-  }
-}
-
-/**
- * Tells if the given function is native or not.
- *
- * @param function aFunction
- *        The function you want to check if it is native or not.
- *
- * @return boolean
- *         True if the given function is native, false otherwise.
- */
-function isNativeFunction(aFunction)
-{
-  return typeof aFunction == "function" && !("prototype" in aFunction);
-}
-
-/**
- * Tells if the given property of the provided object is a non-native getter or
- * not.
- *
- * @param object aObject
- *        The object that contains the property.
- *
- * @param string aProp
- *        The property you want to check if it is a getter or not.
- *
- * @return boolean
- *         True if the given property is a getter, false otherwise.
- */
-function isNonNativeGetter(aObject, aProp) {
-  if (typeof aObject != "object") {
-    return false;
-  }
-  let desc;
-  while (aObject) {
-    try {
-      if (desc = Object.getOwnPropertyDescriptor(aObject, aProp)) {
-        break;
-      }
-    }
-    catch (ex) {
-      // Native getters throw here. See bug 520882.
-      if (ex.name == "NS_ERROR_XPC_BAD_CONVERT_JS" ||
-          ex.name == "NS_ERROR_XPC_BAD_OP_ON_WN_PROTO") {
-        return false;
-      }
-      throw ex;
-    }
-    aObject = Object.getPrototypeOf(aObject);
-  }
-  if (desc && desc.get && !isNativeFunction(desc.get)) {
-    return true;
-  }
-  return false;
-}
-
-/**
- * Get an array of property name value pairs for the tree.
- *
- * @param object aObject
- *        The object to get properties for.
- * @returns array of object
- *          Objects have the name, value, display, type, children properties.
- */
-function namesAndValuesOf(aObject)
-{
-  let pairs = [];
-  let value, presentable;
-
-  let isDOMDocument = aObject instanceof Ci.nsIDOMDocument;
-
-  for (var propName in aObject) {
-    // See bug 632275: skip deprecated width and height properties.
-    if (isDOMDocument && (propName == "width" || propName == "height")) {
-      continue;
-    }
-
-    // Also skip non-native getters.
-    if (isNonNativeGetter(aObject, propName)) {
-      value = ""; // Value is never displayed.
-      presentable = {type: TYPE_OTHER, display: "Getter"};
-    }
-    else {
-      try {
-        value = aObject[propName];
-        presentable = presentableValueFor(value);
-      }
-      catch (ex) {
-        continue;
-      }
-    }
-
-    let pair = {};
-    pair.name = propName;
-    pair.display = propName + ": " + presentable.display;
-    pair.type = presentable.type;
-    pair.value = value;
-
-    // Convert the pair.name to a number for later sorting.
-    pair.nameNumber = parseFloat(pair.name)
-    if (isNaN(pair.nameNumber)) {
-      pair.nameNumber = false;
-    }
-
-    pairs.push(pair);
-  }
-
-  pairs.sort(function(a, b)
-  {
-    // Sort numbers.
-    if (a.nameNumber !== false && b.nameNumber === false) {
-      return -1;
-    }
-    else if (a.nameNumber === false && b.nameNumber !== false) {
-      return 1;
-    }
-    else if (a.nameNumber !== false && b.nameNumber !== false) {
-      return a.nameNumber - b.nameNumber;
-    }
-    // Sort string.
-    else if (a.name < b.name) {
-      return -1;
-    }
-    else if (a.name > b.name) {
-      return 1;
-    }
-    else {
-      return 0;
-    }
-  });
-
-  return pairs;
-}
+this.EXPORTED_SYMBOLS = ["PropertyPanel", "PropertyTreeView"];
 
 ///////////////////////////////////////////////////////////////////////////
 //// PropertyTreeView.
-
 
 /**
  * This is an implementation of the nsITreeView interface. For comments on the
  * interface properties, see the documentation:
  * https://developer.mozilla.org/en/XPCOM_Interface_Reference/nsITreeView
  */
-var PropertyTreeView = function() {
+this.PropertyTreeView = function() {
   this._rows = [];
+  this._objectActors = [];
 };
 
 PropertyTreeView.prototype = {
-
   /**
    * Stores the visible rows of the tree.
+   * @private
    */
   _rows: null,
 
   /**
    * Stores the nsITreeBoxObject for this tree.
+   * @private
    */
   _treeBox: null,
 
   /**
+   * Track known object actor IDs. We clean these when the panel is
+   * destroyed/cleaned up.
+   *
+   * @private
+   * @type array
+   */
+  _objectActors: null,
+
+  /**
+   * Map fake object actors to their IDs. This is used when we inspect local
+   * objects.
+   * @private
+   * @type Object
+   */
+  _localObjectActors: null,
+
+  _releaseObject: null,
+  _objectPropertiesProvider: null,
+
+  /**
    * Use this setter to update the content of the tree.
    *
-   * @param object aObject
-   *        The new object to be displayed in the tree.
-   * @returns void
+   * @param object aData
+   *        A meta object that holds information about the object you want to
+   *        display in the property panel. Object properties:
+   *        - object:
+   *        This is the raw object you want to display. You can only provide
+   *        this object if you want the property panel to work in sync mode.
+   *        - objectProperties:
+   *        An array that holds information on the remote object being
+   *        inspected. Each element in this array describes each property in the
+   *        remote object. See WebConsoleUtils.inspectObject() for details.
+   *        - objectPropertiesProvider:
+   *        A function that is invoked when a new object is needed. This is
+   *        called when the user tries to expand an inspectable property. The
+   *        callback must take four arguments:
+   *          - actorID:
+   *          The object actor ID from which we request the properties.
+   *          - callback:
+   *          The callback function to be invoked when the remote object is
+   *          received. This function takes one argument: the array of
+   *          descriptors for each property in the object represented by the
+   *          actor.
+   *        - releaseObject:
+   *        Function to invoke when an object actor should be released. The
+   *        function must take one argument: the object actor ID.
    */
-  set data(aObject) {
+  set data(aData) {
     let oldLen = this._rows.length;
-    this._rows = this.getChildItems(aObject, true);
+
+    this.cleanup();
+
+    if (!aData) {
+      return;
+    }
+
+    if (aData.objectPropertiesProvider) {
+      this._objectPropertiesProvider = aData.objectPropertiesProvider;
+      this._releaseObject = aData.releaseObject;
+      this._propertiesToRows(aData.objectProperties, 0);
+      this._rows = aData.objectProperties;
+    }
+    else if (aData.object) {
+      this._localObjectActors = Object.create(null);
+      this._rows = this._inspectObject(aData.object);
+    }
+    else {
+      throw new Error("First argument must have an objectActor or an " +
+                      "object property!");
+    }
+
     if (this._treeBox) {
       this._treeBox.beginUpdateBatch();
       if (oldLen) {
@@ -323,53 +126,90 @@ PropertyTreeView.prototype = {
   },
 
   /**
-   * Generates the child items for the treeView of a given aItem. If there is
-   * already a children property on the aItem, this cached one is returned.
+   * Update a remote object so it can be used with the tree view. This method
+   * adds properties to each array element.
    *
-   * @param object aItem
-   *        An item of the tree's elements to generate the children for.
-   * @param boolean aRootElement
-   *        If set, aItem is handled as an JS object and not as an item
-   *        element of the tree.
-   * @returns array of objects
-   *        Child items of aItem.
+   * @private
+   * @param array aObject
+   *        The remote object you want prepared for use with the tree view.
+   * @param number aLevel
+   *        The level you want to give to each property in the remote object.
    */
-  getChildItems: function(aItem, aRootElement)
+  _propertiesToRows: function PTV__propertiesToRows(aObject, aLevel)
   {
-    // If item.children is an array, then the children has already been
-    // computed and can get returned directly.
-    // Skip this checking if aRootElement is true. It could happen, that aItem
-    // is passed as ({children:[1,2,3]}) which would be true, although these
-    // "kind" of children has no value/type etc. data as needed to display in
-    // the tree. As the passed ({children:[1,2,3]}) are instanceof
-    // itsWindow.Array and not this modules's global Array
-    // aItem.children instanceof Array can't be true, but for saftey the
-    // !aRootElement is kept here.
-    if (!aRootElement && aItem && aItem.children instanceof Array) {
-      return aItem.children;
-    }
+    aObject.forEach(function(aItem) {
+      aItem._level = aLevel;
+      aItem._open = false;
+      aItem._children = null;
 
-    let pairs;
-    let newPairLevel;
+      if (this._releaseObject) {
+        ["value", "get", "set"].forEach(function(aProp) {
+          let val = aItem[aProp];
+          if (val && val.actor) {
+            this._objectActors.push(val.actor);
+            if (typeof val.displayString == "object" &&
+                val.displayString.type == "longString") {
+              this._objectActors.push(val.displayString.actor);
+            }
+          }
+        }, this);
+      }
+    }, this);
+  },
 
-    if (!aRootElement) {
-      newPairLevel = aItem.level + 1;
-      aItem = aItem.value;
-    }
-    else {
-      newPairLevel = 0;
-    }
+  /**
+   * Inspect a local object.
+   *
+   * @private
+   * @param object aObject
+   *        The object you want to inspect.
+   * @return array
+   *         The array of properties, each being described in a way that is
+   *         usable by the tree view.
+   */
+  _inspectObject: function PTV__inspectObject(aObject)
+  {
+    this._objectPropertiesProvider = this._localPropertiesProvider.bind(this);
+    let children =
+      WebConsoleUtils.inspectObject(aObject, this._localObjectGrip.bind(this));
+    this._propertiesToRows(children, 0);
+    return children;
+  },
 
-    pairs = namesAndValuesOf(aItem);
+  /**
+   * Make a local fake object actor for the given object.
+   *
+   * @private
+   * @param object aObject
+   *        The object to make an actor for.
+   * @return object
+   *         The fake actor grip that represents the given object.
+   */
+  _localObjectGrip: function PTV__localObjectGrip(aObject)
+  {
+    let grip = WebConsoleUtils.getObjectGrip(aObject);
+    grip.actor = "obj" + gSequenceId();
+    this._localObjectActors[grip.actor] = aObject;
+    return grip;
+  },
 
-    for each (var pair in pairs) {
-      pair.level = newPairLevel;
-      pair.isOpened = false;
-      pair.children = pair.type == TYPE_OBJECT || pair.type == TYPE_FUNCTION ||
-                      pair.type == TYPE_ARRAY;
-    }
-
-    return pairs;
+  /**
+   * A properties provider for when the user inspects local objects (not remote
+   * ones).
+   *
+   * @private
+   * @param string aActor
+   *        The ID of the object actor you want.
+   * @param function aCallback
+   *        The function you want to receive the list of properties.
+   */
+  _localPropertiesProvider:
+  function PTV__localPropertiesProvider(aActor, aCallback)
+  {
+    let object = this._localObjectActors[aActor];
+    let properties =
+      WebConsoleUtils.inspectObject(object, this._localObjectGrip.bind(this));
+    aCallback(properties);
   },
 
   /** nsITreeView interface implementation **/
@@ -378,10 +218,21 @@ PropertyTreeView.prototype = {
 
   get rowCount()                     { return this._rows.length; },
   setTree: function(treeBox)         { this._treeBox = treeBox;  },
-  getCellText: function(idx, column) { return this._rows[idx].display; },
-  getLevel: function(idx)            { return this._rows[idx].level; },
-  isContainer: function(idx)         { return !!this._rows[idx].children; },
-  isContainerOpen: function(idx)     { return this._rows[idx].isOpened; },
+  getCellText: function PTV_getCellText(idx, column)
+  {
+    let row = this._rows[idx];
+    return row.name + ": " + WebConsoleUtils.getPropertyPanelValue(row);
+  },
+  getLevel: function(idx) {
+    return this._rows[idx]._level;
+  },
+  isContainer: function(idx) {
+    return typeof this._rows[idx].value == "object" && this._rows[idx].value &&
+           this._rows[idx].value.inspectable;
+  },
+  isContainerOpen: function(idx) {
+    return this._rows[idx]._open;
+  },
   isContainerEmpty: function(idx)    { return false; },
   isSeparator: function(idx)         { return false; },
   isSorted: function()               { return false; },
@@ -393,7 +244,7 @@ PropertyTreeView.prototype = {
     if (this.getLevel(idx) == 0) {
       return -1;
     }
-    for (var t = idx - 1; t >= 0 ; t--) {
+    for (var t = idx - 1; t >= 0; t--) {
       if (this.isContainer(t)) {
         return t;
       }
@@ -403,22 +254,22 @@ PropertyTreeView.prototype = {
 
   hasNextSibling: function(idx, after)
   {
-    var thisLevel = this.getLevel(idx);
-    return this._rows.slice(after + 1).some(function (r) r.level == thisLevel);
+    let thisLevel = this.getLevel(idx);
+    return this._rows.slice(after + 1).some(function (r) r._level == thisLevel);
   },
 
   toggleOpenState: function(idx)
   {
-    var item = this._rows[idx];
-    if (!item.children) {
+    let item = this._rows[idx];
+    if (!this.isContainer(idx)) {
       return;
     }
 
-    this._treeBox.beginUpdateBatch();
-    if (item.isOpened) {
-      item.isOpened = false;
+    if (item._open) {
+      this._treeBox.beginUpdateBatch();
+      item._open = false;
 
-      var thisLevel = item.level;
+      var thisLevel = item._level;
       var t = idx + 1, deleteCount = 0;
       while (t < this._rows.length && this.getLevel(t++) > thisLevel) {
         deleteCount++;
@@ -428,18 +279,34 @@ PropertyTreeView.prototype = {
         this._rows.splice(idx + 1, deleteCount);
         this._treeBox.rowCountChanged(idx + 1, -deleteCount);
       }
+      this._treeBox.invalidateRow(idx);
+      this._treeBox.endUpdateBatch();
     }
     else {
-      item.isOpened = true;
+      let levelUpdate = true;
+      let callback = function _onRemoteResponse(aProperties) {
+        this._treeBox.beginUpdateBatch();
+        if (levelUpdate) {
+          this._propertiesToRows(aProperties, item._level + 1);
+          item._children = aProperties;
+        }
 
-      var toInsert = this.getChildItems(item);
-      item.children = toInsert;
-      this._rows.splice.apply(this._rows, [idx + 1, 0].concat(toInsert));
+        this._rows.splice.apply(this._rows, [idx + 1, 0].concat(item._children));
 
-      this._treeBox.rowCountChanged(idx + 1, toInsert.length);
+        this._treeBox.rowCountChanged(idx + 1, item._children.length);
+        this._treeBox.invalidateRow(idx);
+        this._treeBox.endUpdateBatch();
+        item._open = true;
+      }.bind(this);
+
+      if (!item._children) {
+        this._objectPropertiesProvider(item.value.actor, callback);
+      }
+      else {
+        levelUpdate = false;
+        callback(item._children);
+      }
     }
-    this._treeBox.invalidateRow(idx);
-    this._treeBox.endUpdateBatch();
   },
 
   getImageSrc: function(idx, column) { },
@@ -451,14 +318,33 @@ PropertyTreeView.prototype = {
   performAction: function(action) { },
   performActionOnCell: function(action, index, column) { },
   performActionOnRow: function(action, row) { },
-  getRowProperties: function(idx, column, prop) { },
-  getCellProperties: function(idx, column, prop) { },
-  getColumnProperties: function(column, element, prop) { },
+  getRowProperties: function(idx) { return ""; },
+  getCellProperties: function(idx, column) { return ""; },
+  getColumnProperties: function(column, element) { return ""; },
 
   setCellValue: function(row, col, value)               { },
   setCellText: function(row, col, value)                { },
   drop: function(index, orientation, dataTransfer)      { },
-  canDrop: function(index, orientation, dataTransfer)   { return false; }
+  canDrop: function(index, orientation, dataTransfer)   { return false; },
+
+  /**
+   * Cleanup the property tree view.
+   */
+  cleanup: function PTV_cleanup()
+  {
+    if (this._releaseObject) {
+      this._objectActors.forEach(this._releaseObject);
+      delete this._objectPropertiesProvider;
+      delete this._releaseObject;
+    }
+    if (this._localObjectActors) {
+      delete this._localObjectActors;
+      delete this._objectPropertiesProvider;
+    }
+
+    this._rows = [];
+    this._objectActors = [];
+  },
 };
 
 ///////////////////////////////////////////////////////////////////////////
@@ -511,21 +397,23 @@ function appendChild(aDocument, aParent, aTag, aAttributes)
 /**
  * Creates a new PropertyPanel.
  *
+ * @see PropertyTreeView
  * @param nsIDOMNode aParent
  *        Parent node to append the created panel to.
- * @param nsIDOMDocument aDocument
- *        Document to create the new nodes on.
  * @param string aTitle
  *        Title for the panel.
  * @param string aObject
- *        Object to display in the tree.
+ *        Object to display in the tree. For details about this object please
+ *        see the PropertyTreeView constructor in this file.
  * @param array of objects aButtons
  *        Array with buttons to display at the bottom of the panel.
  */
-function PropertyPanel(aParent, aDocument, aTitle, aObject, aButtons)
+this.PropertyPanel = function PropertyPanel(aParent, aTitle, aObject, aButtons)
 {
+  let document = aParent.ownerDocument;
+
   // Create the underlying panel
-  this.panel = createElement(aDocument, "panel", {
+  this.panel = createElement(document, "panel", {
     label: aTitle,
     titlebar: "normal",
     noautofocus: "true",
@@ -534,13 +422,13 @@ function PropertyPanel(aParent, aDocument, aTitle, aObject, aButtons)
   });
 
   // Create the tree.
-  let tree = this.tree = createElement(aDocument, "tree", {
+  let tree = this.tree = createElement(document, "tree", {
     flex: 1,
     hidecolumnpicker: "true"
   });
 
-  let treecols = aDocument.createElement("treecols");
-  appendChild(aDocument, treecols, "treecol", {
+  let treecols = document.createElement("treecols");
+  appendChild(document, treecols, "treecol", {
     primary: "true",
     flex: 1,
     hideheader: "true",
@@ -548,18 +436,18 @@ function PropertyPanel(aParent, aDocument, aTitle, aObject, aButtons)
   });
   tree.appendChild(treecols);
 
-  tree.appendChild(aDocument.createElement("treechildren"));
+  tree.appendChild(document.createElement("treechildren"));
   this.panel.appendChild(tree);
 
   // Create the footer.
-  let footer = createElement(aDocument, "hbox", { align: "end" });
-  appendChild(aDocument, footer, "spacer", { flex: 1 });
+  let footer = createElement(document, "hbox", { align: "end" });
+  appendChild(document, footer, "spacer", { flex: 1 });
 
   // The footer can have butttons.
   let self = this;
   if (aButtons) {
     aButtons.forEach(function(button) {
-      let buttonNode = appendChild(aDocument, footer, "button", {
+      let buttonNode = appendChild(document, footer, "button", {
         label: button.label,
         accesskey: button.accesskey || "",
         class: button.class || "",
@@ -568,7 +456,7 @@ function PropertyPanel(aParent, aDocument, aTitle, aObject, aButtons)
     });
   }
 
-  appendChild(aDocument, footer, "resizer", { dir: "bottomend" });
+  appendChild(document, footer, "resizer", { dir: "bottomend" });
   this.panel.appendChild(footer);
 
   aParent.appendChild(this.panel);
@@ -593,20 +481,21 @@ function PropertyPanel(aParent, aDocument, aTitle, aObject, aButtons)
 }
 
 /**
- * Destroy the PropertyPanel. This closes the poped up panel and removes
- * it from the browser DOM.
- *
- * @returns void
+ * Destroy the PropertyPanel. This closes the panel and removes it from the
+ * browser DOM.
  */
 PropertyPanel.prototype.destroy = function PP_destroy()
 {
+  this.treeView.data = null;
   this.panel.parentNode.removeChild(this.panel);
   this.treeView = null;
   this.panel = null;
   this.tree = null;
-
-  if (this.linkNode) {
-    this.linkNode._panelOpen = false;
-    this.linkNode = null;
-  }
 }
+
+
+function gSequenceId()
+{
+  return gSequenceId.n++;
+}
+gSequenceId.n = 0;

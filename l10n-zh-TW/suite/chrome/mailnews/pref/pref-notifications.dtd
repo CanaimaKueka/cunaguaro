@@ -1,0 +1,25 @@
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+
+<!ENTITY pref.notifications.title         "通知">
+<!ENTITY notifications.caption            "通知">
+<!ENTITY newMessagesArrive.label          "當有新郵件時:">
+<!ENTITY playSound.label                  "播放音效">
+<!ENTITY playSound.accesskey              "P">
+<!ENTITY showAnimatedAlert.label          "顯示警告視窗">
+<!ENTITY showAnimatedAlert.accesskey      "S">
+<!ENTITY showTrayIcon.label               "顯示工具列圖示">
+<!ENTITY showTrayIcon.accesskey           "t">
+<!ENTITY bounceSystemDockIcon.label       "動態 Dock 圖示">
+<!ENTITY bounceSystemDockIcon.accesskey   "A">
+<!ENTITY playButton.label                 "播放">
+<!ENTITY playButton.accesskey             "l">
+<!ENTITY systemsound.label                "系統新郵件音效">
+<!ENTITY systemsound.accesskey            "m">
+<!ENTITY customsound.label                "自訂聲音檔案">
+<!ENTITY customsound.accesskey            "C">
+<!ENTITY browse.label                     "瀏覽…">
+<!ENTITY browse.accesskey                 "B">
+<!ENTITY browse.title                     "選擇檔案">
+

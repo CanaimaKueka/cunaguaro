@@ -18,13 +18,14 @@
     COMPONENT(PERSISTENTPROPERTIES, nsPersistentProperties::Create)
 
     COMPONENT(SUPPORTSARRAY, nsSupportsArray::Create)
-    COMPONENT(ARRAY, nsArrayConstructor)
+    COMPONENT(ARRAY, nsArray::XPCOMConstructor)
     COMPONENT(CONSOLESERVICE, nsConsoleServiceConstructor)
     COMPONENT(EXCEPTIONSERVICE, nsExceptionServiceConstructor)
     COMPONENT(ATOMSERVICE, nsAtomServiceConstructor)
     COMPONENT(OBSERVERSERVICE, nsObserverService::Create)
-
-    COMPONENT(XPCOMPROXY, nsProxyObjectManager::Create)
+#ifdef MOZ_VISUAL_EVENT_TRACER
+    COMPONENT(VISUALEVENTTRACER, VisualEventTracerConstructor)
+#endif
 
     COMPONENT(TIMER, nsTimerImplConstructor)
 
@@ -64,8 +65,6 @@
     COMPONENT(VARIANT, nsVariantConstructor)
     COMPONENT(INTERFACEINFOMANAGER_SERVICE, nsXPTIInterfaceInfoManagerGetSingleton)
 
-    COMPONENT(RECYCLINGALLOCATOR, nsRecyclingAllocatorImplConstructor)
-
     COMPONENT(HASH_PROPERTY_BAG, nsHashPropertyBagConstructor)
 
     COMPONENT(UUID_GENERATOR, nsUUIDGeneratorConstructor)
@@ -74,11 +73,13 @@
     COMPONENT(WINDOWSREGKEY, nsWindowsRegKeyConstructor)
 #endif
 
-#ifdef XP_MACOSX
+#if defined(MOZ_WIDGET_COCOA)
     COMPONENT(MACUTILSIMPL, nsMacUtilsImplConstructor)
 #endif
 
     COMPONENT(SYSTEMINFO, nsSystemInfoConstructor)
     COMPONENT(MEMORY_REPORTER_MANAGER, nsMemoryReporterManagerConstructor)
+    COMPONENT(MEMORY_INFO_DUMPER, nsMemoryInfoDumperConstructor)
     COMPONENT(IOUTIL, nsIOUtilConstructor)
     COMPONENT(CYCLE_COLLECTOR_LOGGER, nsCycleCollectorLoggerConstructor)
+    COMPONENT(MESSAGE_LOOP, nsMessageLoopConstructor)

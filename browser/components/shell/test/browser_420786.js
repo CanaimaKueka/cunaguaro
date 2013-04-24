@@ -52,7 +52,8 @@ function onPageLoad() {
   checkWallpaper(Ci.nsIShellService.BACKGROUND_TILE, "wallpaper");
   checkWallpaper(Ci.nsIShellService.BACKGROUND_STRETCH, "stretched");
   checkWallpaper(Ci.nsIShellService.BACKGROUND_CENTER, "centered");
-  checkWallpaper(Ci.nsIShellService.BACKGROUND_FILL, "centered");
+  checkWallpaper(Ci.nsIShellService.BACKGROUND_FILL, "zoom");
+  checkWallpaper(Ci.nsIShellService.BACKGROUND_FIT, "scaled");
 
   // Restore GConf and wallpaper
 
@@ -75,6 +76,16 @@ function test() {
     todo(false, "This test is Linux specific for now.");
     return;
   }
+
+  try {
+    // If GSettings is available, then the GConf tests
+    // will fail
+    var gsettings = Cc["@mozilla.org/gsettings-service;1"].
+                    getService(Ci.nsIGSettingsService).
+                    getCollectionForSchema("org.gnome.desktop.background");
+    todo(false, "This test doesn't work when GSettings is available");
+    return;
+  } catch(e) { }
 
   gBrowser.selectedTab = gBrowser.addTab();
   gBrowser.selectedBrowser.addEventListener("load", onPageLoad, true);

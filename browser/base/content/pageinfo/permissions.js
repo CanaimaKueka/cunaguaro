@@ -1,47 +1,17 @@
-# ***** BEGIN LICENSE BLOCK *****
-# Version: MPL 1.1/GPL 2.0/LGPL 2.1
-#
-# The contents of this file are subject to the Mozilla Public License Version
-# 1.1 (the "License"); you may not use this file except in compliance with
-# the License. You may obtain a copy of the License at
-# http://www.mozilla.org/MPL/
-#
-# Software distributed under the License is distributed on an "AS IS" basis,
-# WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
-# for the specific language governing rights and limitations under the
-# License.
-#
-# The Original Code is the permission tab for Page Info.
-#
-# The Initial Developer of the Original Code is
-#   Florian QUEZE <f.qu@queze.net>
-# Portions created by the Initial Developer are Copyright (C) 2006
-# the Initial Developer. All Rights Reserved.
-#
-# Contributor(s):
-#
-# Alternatively, the contents of this file may be used under the terms of
-# either the GNU General Public License Version 2 or later (the "GPL"), or
-# the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
-# in which case the provisions of the GPL or the LGPL are applicable instead
-# of those above. If you wish to allow use of your version of this file only
-# under the terms of either the GPL or the LGPL, and not to allow others to
-# use your version of this file under the terms of the MPL, indicate your
-# decision by deleting the provisions above and replace them with the notice
-# and other provisions required by the LGPL or the GPL. If you do not delete
-# the provisions above, a recipient may use your version of this file under
-# the terms of any one of the MPL, the GPL or the LGPL.
-#
-# ***** END LICENSE BLOCK *****
-const ALLOW = nsIPermissionManager.ALLOW_ACTION;   // 1
-const BLOCK = nsIPermissionManager.DENY_ACTION;    // 2
-const SESSION = nsICookiePermission.ACCESS_SESSION;// 8
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-const nsIIndexedDatabaseManager =
-  Components.interfaces.nsIIndexedDatabaseManager;
+const UNKNOWN = nsIPermissionManager.UNKNOWN_ACTION;   // 0
+const ALLOW = nsIPermissionManager.ALLOW_ACTION;       // 1
+const BLOCK = nsIPermissionManager.DENY_ACTION;        // 2
+const SESSION = nsICookiePermission.ACCESS_SESSION;    // 8
+
+const nsIQuotaManager = Components.interfaces.nsIQuotaManager;
 
 var gPermURI;
 var gPrefs;
+var gUsageRequest;
 
 var gPermObj = {
   image: function getImageDefaultPermission()
@@ -58,6 +28,10 @@ var gPermObj = {
     if (gPrefs.getIntPref("network.cookie.lifetimePolicy") == 2)
       return SESSION;
     return ALLOW;
+  },
+  "desktop-notification": function getNotificationDefaultPermission()
+  {
+    return BLOCK;
   },
   popup: function getPopupDefaultPermission()
   {
@@ -81,8 +55,20 @@ var gPermObj = {
   },
   indexedDB: function getIndexedDBDefaultPermissions()
   {
+    return UNKNOWN;
+  },
+  plugins: function getPluginsDefaultPermissions()
+  {
+    return UNKNOWN;
+  },
+  fullscreen: function getFullscreenDefaultPermissions()
+  {
+    return UNKNOWN;  
+  },
+  pointerLock: function getPointerLockPermissions()
+  {
     return BLOCK;
-  }
+  },
 };
 
 var permissionObserver = {
@@ -90,8 +76,12 @@ var permissionObserver = {
   {
     if (aTopic == "perm-changed") {
       var permission = aSubject.QueryInterface(Components.interfaces.nsIPermission);
-      if (permission.host == gPermURI.host && permission.type in gPermObj)
-        initRow(permission.type);
+      if (permission.host == gPermURI.host) {
+        if (permission.type in gPermObj)
+          initRow(permission.type);
+        else if (permission.type.startsWith("plugin"))
+          setPluginsRadioState();
+      }
     }
   }
 };
@@ -99,11 +89,11 @@ var permissionObserver = {
 function onLoadPermission()
 {
   gPrefs = Components.classes[PREFERENCES_CONTRACTID]
-                     .getService(Components.interfaces.nsIPrefBranch2);
+                     .getService(Components.interfaces.nsIPrefBranch);
 
   var uri = gDocument.documentURIObject;
   var permTab = document.getElementById("permTab");
-  if(/^https?/.test(uri.scheme)) {
+  if (/^https?$/.test(uri.scheme)) {
     gPermURI = uri;
     var hostText = document.getElementById("hostText");
     hostText.value = gPermURI.host;
@@ -126,19 +116,31 @@ function onUnloadPermission()
                      .getService(Components.interfaces.nsIObserverService);
   os.removeObserver(permissionObserver, "perm-changed");
 
-  var dbManager = Components.classes["@mozilla.org/dom/indexeddb/manager;1"]
-                            .getService(nsIIndexedDatabaseManager);
-  dbManager.cancelGetUsageForURI(gPermURI, onIndexedDBUsageCallback);
+  if (gUsageRequest) {
+    gUsageRequest.cancel();
+    gUsageRequest = null;
+  }
 }
 
 function initRow(aPartId)
 {
+  if (aPartId == "plugins") {
+    initPluginsRow();
+    return;
+  }
+
   var permissionManager = Components.classes[PERMISSION_CONTRACTID]
                                     .getService(nsIPermissionManager);
 
   var checkbox = document.getElementById(aPartId + "Def");
   var command  = document.getElementById("cmd_" + aPartId + "Toggle");
-  var perm = permissionManager.testPermission(gPermURI, aPartId);
+  // Geolocation and PointerLock permission consumers use testExactPermission, not testPermission.
+  var perm;
+  if (aPartId == "geo" || aPartId == "pointerLock")
+    perm = permissionManager.testExactPermission(gPermURI, aPartId);
+  else
+    perm = permissionManager.testPermission(gPermURI, aPartId);
+
   if (perm) {
     checkbox.checked = false;
     command.removeAttribute("disabled");
@@ -164,9 +166,6 @@ function onCheckboxClick(aPartId)
   var checkbox = document.getElementById(aPartId + "Def");
   if (checkbox.checked) {
     permissionManager.remove(gPermURI.host, aPartId);
-    if (aPartId == "indexedDB") {
-      permissionManager.remove(gPermURI.host, "indexedDB-unlimited");
-    }
     command.setAttribute("disabled", "true");
     var perm = gPermObj[aPartId]();
     setRadioState(aPartId, perm);
@@ -175,6 +174,10 @@ function onCheckboxClick(aPartId)
     onRadioClick(aPartId);
     command.removeAttribute("disabled");
   }
+}
+
+function onPluginRadioClick(aEvent) {
+  onRadioClick(aEvent.originalTarget.getAttribute("id").split('#')[0]);
 }
 
 function onRadioClick(aPartId)
@@ -186,9 +189,13 @@ function onRadioClick(aPartId)
   var id = radioGroup.selectedItem.id;
   var permission = id.split('#')[1];
   permissionManager.add(gPermURI, aPartId, permission);
-  if (aPartId == "indexedDB" && permission == BLOCK) {
+  if (aPartId == "indexedDB" &&
+      (permission == ALLOW || permission == BLOCK)) {
     permissionManager.remove(gPermURI.host, "indexedDB-unlimited");
   }
+  if (aPartId == "fullscreen" && permission == UNKNOWN) {
+    permissionManager.remove(gPermURI.host, "fullscreen");
+  }  
 }
 
 function setRadioState(aPartId, aValue)
@@ -199,9 +206,10 @@ function setRadioState(aPartId, aValue)
 
 function initIndexedDBRow()
 {
-  var dbManager = Components.classes["@mozilla.org/dom/indexeddb/manager;1"]
-                            .getService(nsIIndexedDatabaseManager);
-  dbManager.getUsageForURI(gPermURI, onIndexedDBUsageCallback);
+  var quotaManager = Components.classes["@mozilla.org/dom/quota/manager;1"]
+                               .getService(nsIQuotaManager);
+  gUsageRequest =
+    quotaManager.getUsageForURI(gPermURI, onIndexedDBUsageCallback);
 
   var status = document.getElementById("indexedDBStatus");
   var button = document.getElementById("indexedDBClear");
@@ -213,18 +221,17 @@ function initIndexedDBRow()
 
 function onIndexedDBClear()
 {
-  Components.classes["@mozilla.org/dom/indexeddb/manager;1"]
-            .getService(nsIIndexedDatabaseManager)
-            .clearDatabasesForURI(gPermURI);
+  Components.classes["@mozilla.org/dom/quota/manager;1"]
+            .getService(nsIQuotaManager)
+            .clearStoragesForURI(gPermURI);
 
   var permissionManager = Components.classes[PERMISSION_CONTRACTID]
                                     .getService(nsIPermissionManager);
-  permissionManager.remove(gPermURI.host, "indexedDB");
   permissionManager.remove(gPermURI.host, "indexedDB-unlimited");
   initIndexedDBRow();
 }
 
-function onIndexedDBUsageCallback(uri, usage)
+function onIndexedDBUsageCallback(uri, usage, fileUsage)
 {
   if (!uri.equals(gPermURI)) {
     throw new Error("Callback received for bad URI: " + uri);
@@ -243,5 +250,100 @@ function onIndexedDBUsageCallback(uri, usage)
                                  DownloadUtils.convertByteUnits(usage));
     status.removeAttribute("hidden");
     button.removeAttribute("hidden");
+  }
+}
+
+// XXX copied this from browser-plugins.js - is there a way to share?
+function makeNicePluginName(aName) {
+  if (aName == "Shockwave Flash")
+    return "Adobe Flash";
+
+  // Clean up the plugin name by stripping off any trailing version numbers
+  // or "plugin". EG, "Foo Bar Plugin 1.23_02" --> "Foo Bar"
+  // Do this by first stripping the numbers, etc. off the end, and then
+  // removing "Plugin" (and then trimming to get rid of any whitespace).
+  // (Otherwise, something like "Java(TM) Plug-in 1.7.0_07" gets mangled)
+  let newName = aName.replace(/[\s\d\.\-\_\(\)]+$/, "").replace(/\bplug-?in\b/i, "").trim();
+  return newName;
+}
+
+function fillInPluginPermissionTemplate(aPluginName, aPermissionString) {
+  let permPluginTemplate = document.getElementById("permPluginTemplate");
+  permPluginTemplate.setAttribute("permString", aPermissionString);
+  let attrs = [
+    [ ".permPluginTemplateLabel", "value", aPluginName ],
+    [ ".permPluginTemplateRadioGroup", "id", aPermissionString + "RadioGroup" ],
+    [ ".permPluginTemplateRadioAsk", "id", aPermissionString + "#0" ],
+    [ ".permPluginTemplateRadioAllow", "id", aPermissionString + "#1" ],
+    [ ".permPluginTemplateRadioBlock", "id", aPermissionString + "#2" ]
+  ];
+
+  for (let attr of attrs) {
+    document.querySelector(attr[0]).setAttribute(attr[1], attr[2]);
+  }
+
+  return permPluginTemplate.cloneNode(true);
+}
+
+function clearPluginPermissionTemplate() {
+  let permPluginTemplate = document.getElementById("permPluginTemplate");
+  permPluginTemplate.hidden = true;
+  permPluginTemplate.removeAttribute("permString");
+  document.querySelector(".permPluginTemplateLabel").removeAttribute("value");
+  document.querySelector(".permPluginTemplateRadioGroup").removeAttribute("id");
+  document.querySelector(".permPluginTemplateRadioAsk").removeAttribute("id");
+  document.querySelector(".permPluginTemplateRadioAllow").removeAttribute("id");
+  document.querySelector(".permPluginTemplateRadioBlock").removeAttribute("id");
+}
+
+function initPluginsRow() {
+  let pluginHost = Components.classes["@mozilla.org/plugin/host;1"].getService(Components.interfaces.nsIPluginHost);
+  let tags = pluginHost.getPluginTags().filter(function(aTag) {
+    let mimeTypes = aTag.getMimeTypes();
+    if (mimeTypes.length < 1)
+      return false;
+    let mimeType = mimeTypes[0].type;
+    return (!aTag.disabled && pluginHost.isPluginClickToPlayForType(mimeType));
+  });
+
+  tags.sort(function(tagA, tagB) {
+    let nameA = makeNicePluginName(tagA.name);
+    let nameB = makeNicePluginName(tagB.name);
+    return nameA < nameB ? -1 : (nameA == nameB ? 0 : 1);
+  });
+
+  let permissionEntries = [];
+  for (let plugin of tags) {
+    let mimeType = plugin.getMimeTypes()[0].type;
+    let permString = pluginHost.getPermissionStringForType(mimeType);
+    let pluginName = makeNicePluginName(plugin.name)
+    let permEntry = fillInPluginPermissionTemplate(pluginName, permString);
+    permissionEntries.push(permEntry);
+  }
+
+  let permPluginsRow = document.getElementById("permPluginsRow");
+  clearPluginPermissionTemplate();
+  if (permissionEntries.length < 1) {
+    permPluginsRow.hidden = true;
+    return;
+  }
+
+  for (let permissionEntry of permissionEntries) {
+    permPluginsRow.appendChild(permissionEntry);
+  }
+
+  setPluginsRadioState();
+}
+
+function setPluginsRadioState() {
+  var permissionManager = Components.classes[PERMISSION_CONTRACTID]
+                                    .getService(nsIPermissionManager);
+  let box = document.getElementById("permPluginsRow");
+  for (let permissionEntry of box.childNodes) {
+    if (permissionEntry.hasAttribute("permString")) {
+      let permString = permissionEntry.getAttribute("permString");
+      let permission = permissionManager.testPermission(gPermURI, permString);
+      setRadioState(permString, permission);
+    }
   }
 }

@@ -1,4 +1,8 @@
 <?xml version="1.0"?>
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+
 
 <bindings id="popupBindings"
    xmlns="http://www.mozilla.org/xbl"
@@ -161,6 +165,19 @@
         </body>
       </method>
 
+      <method name="moveToAnchor">
+        <parameter name="aAnchorElement"/>
+        <parameter name="aPosition"/>
+        <parameter name="aX"/>
+        <parameter name="aY"/>
+        <parameter name="aAttributesOverride"/>
+        <body>
+        <![CDATA[
+          this.popupBoxObject.moveToAnchor(aAnchorElement, aPosition, aX, aY, aAttributesOverride);
+        ]]>
+        </body>
+      </method>
+
       <method name="getOuterScreenRect">
         <body>
         <![CDATA[
@@ -237,7 +254,7 @@
           try {
             let tmp = {};
             Components.utils.import("resource://gre/modules/WindowDraggingUtils.jsm", tmp);
-            let draghandle = new tmp.WindowDraggingElement(this, window);
+            let draghandle = new tmp.WindowDraggingElement(this);
             draghandle.mouseDownCheck = function () this._dragBindingAlive;
           } catch (e) {}
         }
@@ -302,23 +319,22 @@
 
   <binding id="arrowpanel" extends="chrome://global/content/bindings/popup.xml#panel">
     <content flip="both" side="top" position="bottomcenter topleft">
-      <xul:box anonid="container" class="panel-arrowcontainer" flex="1">
+      <xul:box anonid="container" class="panel-arrowcontainer" flex="1"
+               xbl:inherits="side,panelopen">
         <xul:box anonid="arrowbox" class="panel-arrowbox">
           <xul:image anonid="arrow" class="panel-arrow"/>
         </xul:box>
-        <xul:box class="panel-arrowcontent" flex="1">
-          <xul:box class="panel-inner-arrowcontent" xbl:inherits="align,dir,orient,pack" flex="1">
-            <children/>
-            <xul:box class="panel-inner-arrowcontentfooter" xbl:inherits="footertype" hidden="true"/>
-          </xul:box>
+        <xul:box class="panel-arrowcontent" xbl:inherits="side,align,dir,orient,pack" flex="1">
+          <children/>
+          <xul:box class="panel-inner-arrowcontentfooter" xbl:inherits="footertype" hidden="true"/>
         </xul:box>
       </xul:box>
     </content>
     <implementation>
-      <field name="_fadeTimer"/>
+      <field name="_fadeTimer">null</field>
     </implementation>
     <handlers>
-      <handler event="popupshowing">
+      <handler event="popupshowing" phase="target">
       <![CDATA[
         var container = document.getAnonymousElementByAttribute(this, "anonid", "container");
         var arrowbox = document.getAnonymousElementByAttribute(this, "anonid", "arrowbox");
@@ -383,10 +399,10 @@
 
             // If the popup is on the left of the anchor.
             if (smallerTo(popupLeft, anchorLeft, epsilon) && smallerTo(popupRight, anchorRight, epsilon)) {
-              pack = (popupLeft + popupRect.width / 2 < anchorLeft) ? "end" : "start";
+              pack = "end";
             // If the popup is on the right of the anchor.
             } else if (smallerTo(anchorLeft, popupLeft, epsilon) && smallerTo(anchorRight, popupRight, epsilon)) {
-              pack = (popupLeft + popupRect.width / 2 > anchorRight) ? "start" : "end";
+              pack = "start"; //(popupLeft + popupRect.width / 2 > anchorRight) ? "start" : "end";
             // If the popup is not on the right nor on the left.
             // Basically, that means one is above the other and one is bigger
             // than the other.
@@ -420,15 +436,20 @@
             hideAnchor = true;
           }
           else {
+            let dir = "";
             arrowbox.pack = popupTop + popupRect.height / 2 < anchorTop ? "end" : "start";
             if (horizPos == 1) {
-              container.dir = "";
               anchorClass = "left";
             }
             else if (horizPos == -1) {
-              container.dir = "reverse";
+              dir = "reverse";
               anchorClass = "right";
             }
+            // In RTL, everything should be inverted.
+            if (window.getComputedStyle(this).direction == "rtl") {
+              dir = (dir == "") ? "reverse" : "";
+            }
+            container.dir = dir;
           }
         }
         else {
@@ -454,11 +475,18 @@
       </handler>
       <handler event="transitionend" phase="target">
       <![CDATA[
-        if (event.propertyName == "opacity") {
+        if (event.propertyName == "opacity" &&
+            event.originalTarget == this) {
           this.hidePopup();
           this.style.removeProperty("opacity");
         }
       ]]>
+      </handler>
+      <handler event="popupshown" phase="target">
+        this.setAttribute("panelopen", "true");
+      </handler>
+      <handler event="popuphidden" phase="target">
+        this.removeAttribute("panelopen");
       </handler>
     </handlers>
   </binding>
@@ -483,6 +511,134 @@
       <property name="label"
                 onget="return this.getAttribute('label');"
                 onset="this.setAttribute('label', val); return val;"/>
+
+      <property name="page" onset="if (val) this.setAttribute('page', 'true');
+                                   else this.removeAttribute('page');
+                                   return val;"
+                            onget="return this.getAttribute('page') == 'true';"/>
+
+      <!-- Given the supplied element within a page, set the tooltip's text to the text
+           for that element. Returns true if text was assigned, and false if the no text
+           is set, which normally would be used to cancel tooltip display.
+
+           Note that DefaultTooltipTextProvider::GetNodeText() from nsDocShellTreeOwner.cpp
+           also performs the same function, but for embedded clients that don't use a XUL/JS
+           layer. These two should be kept synchronized.
+        --> 
+      <method name="fillInPageTooltip">
+        <parameter name="tipElement"/>
+        <body>
+        <![CDATA[
+          // Don't show the tooltip if the tooltip node is a document or disconnected.
+          if (!tipElement || !tipElement.ownerDocument ||
+              (tipElement.ownerDocument.compareDocumentPosition(tipElement) & document.DOCUMENT_POSITION_DISCONNECTED)) {
+            return false;
+          }
+
+          var defView = tipElement.ownerDocument.defaultView;
+          // XXX Work around bug 350679:
+          // "Tooltips can be fired in documents with no view".
+          if (!defView)
+            return false;
+
+          const XLinkNS = "http://www.w3.org/1999/xlink";
+          const XULNS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
+
+          var titleText = null;
+          var XLinkTitleText = null;
+          var SVGTitleText = null;
+          var lookingForSVGTitle = true;
+          var direction = tipElement.ownerDocument.dir;
+
+          // If the element is invalid per HTML5 Forms specifications and has no title,
+          // show the constraint validation error message.
+          if ((tipElement instanceof HTMLInputElement ||
+               tipElement instanceof HTMLTextAreaElement ||
+               tipElement instanceof HTMLSelectElement ||
+               tipElement instanceof HTMLButtonElement) &&
+              !tipElement.hasAttribute('title') &&
+              (!tipElement.form || !tipElement.form.noValidate)) {
+            // If the element is barred from constraint validation or valid,
+            // the validation message will be the empty string.
+            titleText = tipElement.validationMessage || null;
+          }
+
+          // If the element is an <input type='file'> without a title, we should show
+          // the current file selection.
+          if (!titleText &&
+              tipElement instanceof HTMLInputElement &&
+              tipElement.type == 'file' &&
+              !tipElement.hasAttribute('title')) {
+            let files = tipElement.files;
+
+            if (files.length == 0) {
+              try {
+                var bundle = Components.classes['@mozilla.org/intl/stringbundle;1']
+                                       .getService(Components.interfaces.nsIStringBundleService)
+                                       .createBundle("chrome://global/locale/layout/HtmlForm.properties");
+                if (tipElement.multiple) {
+                  titleText = bundle.GetStringFromName("NoFilesSelected");
+                } else {
+                  titleText = bundle.GetStringFromName("NoFileSelected");
+                }
+              } catch(e) {}
+            } else {
+              titleText = files[0].name;
+              for (let i=1; i<files.length; ++i) {
+                titleText += "\n" + files[i].name;
+              }
+            }
+          }
+
+          while ((titleText == null) && (XLinkTitleText == null) &&
+                 (SVGTitleText == null) && tipElement) {
+            if (tipElement.nodeType == Node.ELEMENT_NODE &&
+                tipElement.namespaceURI != XULNS) {
+              titleText = tipElement.getAttribute("title");
+
+              if ((tipElement instanceof HTMLAnchorElement ||
+                   tipElement instanceof HTMLAreaElement ||
+                   tipElement instanceof HTMLLinkElement ||
+                   tipElement instanceof SVGAElement) && tipElement.href) {
+                XLinkTitleText = tipElement.getAttributeNS(XLinkNS, "title");
+              }
+              if (lookingForSVGTitle &&
+                  (!(tipElement instanceof SVGElement) ||
+                   tipElement.parentNode.nodeType == Node.DOCUMENT_NODE)) {
+                lookingForSVGTitle = false;
+              }
+              if (lookingForSVGTitle) {
+                for (let childNode of tipElement.childNodes) {
+                  if (childNode instanceof SVGTitleElement) {
+                    SVGTitleText = childNode.textContent;
+                    break;
+                  }
+                }
+              }
+
+              direction = defView.getComputedStyle(tipElement, "")
+                                 .getPropertyValue("direction");
+            }
+
+            tipElement = tipElement.parentNode;
+          }
+
+          this.style.direction = direction;
+
+          return [titleText, XLinkTitleText, SVGTitleText].some(function (t) {
+            if (t && /\S/.test(t)) {
+              // Make CRLF and CR render one line break each.
+              this.label = t.replace(/\r\n?/g, '\n');
+              return true;
+            }
+
+            return false;
+          }, this);
+
+          return false;
+        ]]>
+        </body>
+      </method>
     </implementation>
 
     <handlers>
@@ -531,6 +687,12 @@
         if (rel != this && this._isMouseOver) {
           this.hidePopup();
         }        
+      ]]></handler>
+
+      <handler event="popupshowing"><![CDATA[
+        if (this.page && !this.fillInPageTooltip(this.triggerNode)) {
+          event.preventDefault();
+        }
       ]]></handler>
 
       <handler event="popuphiding"><![CDATA[

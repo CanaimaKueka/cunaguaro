@@ -56,8 +56,7 @@
 #include <QtGui/QPixmap>
 #include <QtGui/QBrush>
 #include <QtGui/QPen>
-#include <QtGui/QWidget>
-#include <QtGui/QX11Info>
+#include <QWidget>
 #include <QtCore/QVarLengthArray>
 
 #include <sys/time.h>
@@ -729,7 +728,7 @@ _cairo_qt_surface_set_clip_region (cairo_qt_surface_t *qs,
 	    cairo_region_get_rectangle (clip_region, i, &rect);
 
 	    QRect r(rect.x, rect.y, rect.width, rect.height);
-	    qr = qr.unite(r);
+	    qr = qr.united(r);
 	}
 
 	qs->p->setClipRegion (qr, Qt::IntersectClip);

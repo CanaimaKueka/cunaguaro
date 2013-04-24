@@ -1,0 +1,17 @@
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+
+<!ENTITY pref.security.title "Адасабленне і бяспека">
+<!ENTITY tracking.label "Сачэнне за карыстальнікам">
+<!ENTITY doNotTrack.label "Паведамляць сеціўным пляцоўкам, што я не жадаю, каб за мною сачылі">
+<!ENTITY doNotTrack.accesskey "П">
+<!ENTITY privateData.label "Прыватныя даныя">
+<!ENTITY alwaysClear.label "Заўсёды ачышчаць мае прыватныя даныя перад закрыццём &brandShortName;">
+<!ENTITY alwaysClear.accesskey "ў">
+<!ENTITY askBeforeClear.label "Спытаць мяне перад ачысткаю прыватных даных">
+<!ENTITY askBeforeClear.accesskey "С">
+<!ENTITY clearDataSettings.label "Калі я запытваю &brandShortName; ачысціць мае прыватныя даныя, ён мусіць вынішчыць:">
+<!ENTITY clearDataDialog.label "Ачысціць зараз…">
+<!ENTITY clearDataSilent.label "Ачысціць зараз">
+<!ENTITY clearDataDialog.accesskey "з">

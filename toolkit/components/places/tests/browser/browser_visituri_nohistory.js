@@ -37,22 +37,6 @@ function waitForLoad(callback)
   }, true);
 }
 
-/**
- * Clears history invoking callback when done.
- */
-function waitForClearHistory(aCallback)
-{
-  let observer = {
-    observe: function(aSubject, aTopic, aData)
-    {
-      Services.obs.removeObserver(this, PlacesUtils.TOPIC_EXPIRATION_FINISHED);
-      aCallback(aSubject, aTopic, aData);
-    }
-  };
-  Services.obs.addObserver(observer, PlacesUtils.TOPIC_EXPIRATION_FINISHED, false);
-  PlacesUtils.bhistory.removeAllPages();
-}
-
 function test()
 {
   waitForExplicitFinish();
@@ -66,7 +50,7 @@ function test()
     if (uri.spec != FINAL_URL)
       return;
     gBrowser.removeCurrentTab();
-    waitForClearHistory(finish);
+    promiseClearHistory().then(finish);
   });
 
   Services.prefs.setBoolPref("places.history.enabled", false);

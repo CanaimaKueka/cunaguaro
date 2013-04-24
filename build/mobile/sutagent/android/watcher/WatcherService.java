@@ -1,39 +1,6 @@
-/* ***** BEGIN LICENSE BLOCK *****
- * Version: MPL 1.1/GPL 2.0/LGPL 2.1
- *
- * The contents of this file are subject to the Mozilla Public License Version
- * 1.1 (the "License"); you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- * http://www.mozilla.org/MPL/
- *
- * Software distributed under the License is distributed on an "AS IS" basis,
- * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
- * for the specific language governing rights and limitations under the
- * License.
- *
- * The Original Code is Android SUTAgent code.
- *
- * The Initial Developer of the Original Code is
- * Bob Moss.
- * Portions created by the Initial Developer are Copyright (C) 2010
- * the Initial Developer. All Rights Reserved.
- *
- * Contributor(s):
- *  Bob Moss <bmoss@mozilla.com>
- *
- * Alternatively, the contents of this file may be used under the terms of
- * either the GNU General Public License Version 2 or later (the "GPL"), or
- * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
- * in which case the provisions of the GPL or the LGPL are applicable instead
- * of those above. If you wish to allow use of your version of this file only
- * under the terms of either the GPL or the LGPL, and not to allow others to
- * use your version of this file under the terms of the MPL, indicate your
- * decision by deleting the provisions above and replace them with the notice
- * and other provisions required by the GPL or the LGPL. If you do not delete
- * the provisions above, a recipient may use your version of this file under
- * the terms of any one of the MPL, the GPL or the LGPL.
- *
- * ***** END LICENSE BLOCK ***** */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 package com.mozilla.watcher;
 
 import java.io.BufferedReader;
@@ -41,11 +8,14 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.PrintWriter;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.Date;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -58,6 +28,7 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.ActivityNotFoundException;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.Intent;
@@ -65,21 +36,30 @@ import android.content.pm.ActivityInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
+import android.os.BatteryManager;
+import android.os.Debug;
 import android.os.IBinder;
 import android.os.PowerManager;
 import android.os.RemoteException;
+import android.provider.Settings;
 import android.util.Log;
 import android.view.Gravity;
 import android.widget.Toast;
+import android.os.Environment;
 
 public class WatcherService extends Service
 {
+    private final String prgVersion = "Watcher Version 1.15";
+
     String sErrorPrefix = "##Installer Error## ";
     String currentDir = "/";
     String sPingTarget = "";
-    long    lDelay = 60000;
-    long    lPeriod = 300000;
-    int        nMaxStrikes = 3;
+    long lDelay = 60000;
+    long lPeriod = 300000;
+    int nMaxStrikes = 0; // maximum number of tries before we consider network unreachable (0 means don't check)
+    boolean bStartSUTAgent = true;
+    boolean bStartedTimer = false;
+
     Process    pProc;
     Context myContext = null;
     Timer myTimer = null;
@@ -107,7 +87,6 @@ public class WatcherService extends Service
 
 
     private IWatcherService.Stub stub = new IWatcherService.Stub() {
-        @Override
         public int UpdateApplication(String sAppName, String sFileName, String sOutFile, int bReboot) throws RemoteException
             {
             return UpdtApp(sAppName, sFileName, sOutFile, bReboot);
@@ -133,13 +112,34 @@ public class WatcherService extends Service
         String sIniFile = iniFile.getAbsolutePath();
         String sHold = "";
 
+        Log.i("Watcher", String.format("Loading settings from %s", sIniFile));
         this.sPingTarget = GetIniData("watcher", "PingTarget", sIniFile, "www.mozilla.org");
         sHold = GetIniData("watcher", "delay", sIniFile, "60000");
-           this.lDelay = Long.parseLong(sHold.trim());
+        this.lDelay = Long.parseLong(sHold.trim());
         sHold = GetIniData("watcher", "period", sIniFile,"300000");
-           this.lPeriod = Long.parseLong(sHold.trim());
-        sHold = GetIniData("watcher", "strikes", sIniFile,"3");
-           this.nMaxStrikes = Integer.parseInt(sHold.trim());
+        this.lPeriod = Long.parseLong(sHold.trim());
+        sHold = GetIniData("watcher", "strikes", sIniFile,"0");
+        this.nMaxStrikes = Integer.parseInt(sHold.trim());
+        Log.i("Watcher", String.format("Pinging %s after a delay of %s sec, period of %s sec, max number of failed attempts is %s (if max # of failed attempts is 0, then no checking)",
+                                       this.sPingTarget, this.lDelay / 1000.0, this.lPeriod / 1000.0, nMaxStrikes));
+
+        sHold = GetIniData("watcher", "StartSUTAgent", sIniFile, "true");
+        this.bStartSUTAgent = Boolean.parseBoolean(sHold.trim());
+
+        sHold = GetIniData("watcher", "stayon", sIniFile,"0");
+        int nStayOn = Integer.parseInt(sHold.trim());
+        
+        try {
+            if (nStayOn != 0) {
+                if (!Settings.System.putInt(getContentResolver(), Settings.System.STAY_ON_WHILE_PLUGGED_IN, BatteryManager.BATTERY_PLUGGED_AC | BatteryManager.BATTERY_PLUGGED_USB)) {
+                    doToast("Screen couldn't be set to Always On [stay on while plugged in]");
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            String sExcept = e.getMessage();
+            doToast("Screen couldn't be set to Always On [exception " + sExcept + "]");
+        }
 
         doToast("WatcherService created");
         }
@@ -198,9 +198,15 @@ public class WatcherService extends Service
 
     private void handleCommand(Intent intent)
         {
-        String sCmd = intent.getStringExtra("command");
+        // Note: intent can be null "if the service is being restarted after its process
+        // has gone away". In this case, we will consider that to be equivalent to a start
+        // http://developer.android.com/reference/android/app/Service.html#onStartCommand%28android.content.Intent,%20int,%20int%29
 
-//        Debug.waitForDebugger();
+        String sCmd = "start";
+        if (intent != null)
+            {
+            sCmd = intent.getStringExtra("command");
+            }
 
         if (sCmd != null)
             {
@@ -217,9 +223,13 @@ public class WatcherService extends Service
                 }
             else if (sCmd.equalsIgnoreCase("start"))
                 {
-                doToast("WatcherService started");
-                myTimer = new Timer();
-                myTimer.scheduleAtFixedRate(new MyTime(), lDelay, lPeriod);
+                if (!this.bStartedTimer) {
+                    doToast("WatcherService started");
+                    myTimer = new Timer();
+                    Date startSchedule = new Date(System.currentTimeMillis() + lDelay);
+                    myTimer.schedule(new MyTime(), startSchedule, lPeriod);
+                    this.bStartedTimer = true;
+                }
                 }
             else
                 {
@@ -230,15 +240,33 @@ public class WatcherService extends Service
             doToast("WatcherService created");
         }
 
+    public void writeVersion() {
+        PrintWriter pw = null;
+        String appPath = getApplicationContext().getFilesDir().getAbsolutePath();
+        String versionPath = appPath + "/version.txt";
+        Log.i("Watcher", "writing version string to: " + versionPath);
+        try {
+            pw = new PrintWriter(new FileWriter(versionPath, true));
+            pw.println(this.prgVersion);
+        } catch (IOException ioe) {
+            Log.e("Watcher", "Exception writing version: " + this.prgVersion + " to file: " + versionPath);
+        } finally {
+            if (pw != null) {
+                pw.close();
+            }
+        }
+    }
 
     @Override
     public void onStart(Intent intent, int startId) {
+        writeVersion();
         handleCommand(intent);
         return;
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        writeVersion();
         handleCommand(intent);
         return START_STICKY;
         }
@@ -374,6 +402,7 @@ public class WatcherService extends Service
 
     public void doToast(String sMsg)
         {
+        Log.i("Watcher", sMsg);
         Toast toast = Toast.makeText(this, sMsg, Toast.LENGTH_LONG);
         toast.setGravity(Gravity.TOP|Gravity.CENTER_HORIZONTAL, 0, 100);
         toast.show();
@@ -477,9 +506,12 @@ public class WatcherService extends Service
         boolean bRet = false;
         ActivityManager aMgr = (ActivityManager) getApplicationContext().getSystemService(Activity.ACTIVITY_SERVICE);
         List <ActivityManager.RunningAppProcessInfo> lProcesses = aMgr.getRunningAppProcesses();
-        int    nProcs = lProcesses.size();
+        int    nProcs = 0;
         int lcv = 0;
         String strProcName = "";
+
+        if (lProcesses != null)
+            nProcs = lProcesses.size();
 
         for (lcv = 0; lcv < nProcs; lcv++)
             {
@@ -487,9 +519,9 @@ public class WatcherService extends Service
             if (strProcName.contains(sProcName))
                 {
                 bRet = true;
+                break;
                 }
             }
-
         return (bRet);
         }
 
@@ -501,6 +533,7 @@ public class WatcherService extends Service
         theArgs[0] = "su";
         theArgs[1] = "-c";
         theArgs[2] = "reboot";
+        Log.i("Watcher", "Running reboot!");
 
         try
             {
@@ -536,8 +569,12 @@ public class WatcherService extends Service
         int lcv = 0;
         String strProcName = "";
         int    nPID = 0;
+        int nProcs = 0;
 
-        for (lcv = 0; lcv < lProcesses.size(); lcv++)
+        if (lProcesses != null)
+            nProcs = lProcesses.size();
+
+        for (lcv = 0; lcv < nProcs; lcv++)
             {
             if (lProcesses.get(lcv).processName.contains(sProcName))
                 {
@@ -580,7 +617,10 @@ public class WatcherService extends Service
             {
             sRet = "Successfully killed " + nPID + " " + strProcName + "\n";
             lProcesses = aMgr.getRunningAppProcesses();
-            for (lcv = 0; lcv < lProcesses.size(); lcv++)
+            nProcs = 0;
+            if (lProcesses != null)
+                nProcs = lProcesses.size();
+            for (lcv = 0; lcv < nProcs; lcv++)
                 {
                 if (lProcesses.get(lcv).processName.contains(sProcName))
                     {
@@ -677,15 +717,9 @@ public class WatcherService extends Service
     public String UnInstallApp(String sApp, OutputStream out)
         {
         String sRet = "";
-        String [] theArgs = new String [3];
-
-        theArgs[0] = "su";
-        theArgs[1] = "-c";
-        theArgs[2] = "pm uninstall " + sApp + ";exit";
-
         try
             {
-            pProc = Runtime.getRuntime().exec(theArgs);
+            pProc = Runtime.getRuntime().exec(this.getSuArgs("pm uninstall " + sApp + ";exit"));
 
             RedirOutputThread outThrd = new RedirOutputThread(pProc, out);
             outThrd.start();
@@ -706,19 +740,24 @@ public class WatcherService extends Service
         return (sRet);
         }
 
+    private String [] getSuArgs(String cmdString)
+        {
+        String [] theArgs = new String [3];
+        theArgs[0] = "su";
+        theArgs[1] = "-c";
+        // as a security measure, ICS and later resets LD_LIBRARY_PATH. reset
+        // it here when executing the command
+        theArgs[2] = "LD_LIBRARY_PATH=/vendor/lib:/system/lib " + cmdString;
+        return theArgs;
+        }
+
     public String InstallApp(String sApp, OutputStream out)
         {
         String sRet = "";
         String sHold = "";
-        String [] theArgs = new String [3];
-
-        theArgs[0] = "su";
-        theArgs[1] = "-c";
-        theArgs[2] = "pm install " + sApp + ";exit";
-
         try
             {
-            pProc = Runtime.getRuntime().exec(theArgs);
+            pProc = Runtime.getRuntime().exec(this.getSuArgs("pm install -r " + sApp + " Cleanup;exit"));
 
             RedirOutputThread outThrd = new RedirOutputThread(pProc, out);
             outThrd.start();
@@ -756,11 +795,11 @@ public class WatcherService extends Service
         theArgs[1] = "-c";
         theArgs[2] = "3";
         theArgs[3] = sIPAddr;
+        Log.i("Watcher", "Pinging " + sIPAddr);
 
         try
             {
             pProc = Runtime.getRuntime().exec(theArgs);
-
             InputStream sutOut = pProc.getInputStream();
             InputStream sutErr = pProc.getErrorStream();
 
@@ -833,6 +872,7 @@ public class WatcherService extends Service
             e.printStackTrace();
             }
 
+        Log.i("Watcher", String.format("Ping result was: '%s'", sRet.trim()));
         return (sRet);
         }
 
@@ -874,7 +914,6 @@ public class WatcherService extends Service
             runner.start();
         }
 
-        @Override
         public void run() {
                bInstalling = true;
             UpdtApp(msPkgName, msPkgFileName, msOutFile, mbReboot);
@@ -885,6 +924,8 @@ public class WatcherService extends Service
     private class MyTime extends TimerTask
         {
         int    nStrikes = 0;
+        final int PERIODS_TO_WAIT_FOR_SDCARD = 3;
+        int    nPeriodsWaited = 0;
 
         public MyTime()
             {
@@ -896,34 +937,55 @@ public class WatcherService extends Service
             if (bInstalling)
                 return;
 
-            // See if the network is up, if not after three failures reboot
-            String sRet = SendPing(sPingTarget);
-            if (!sRet.contains("3 received"))
+            // See if the network is up, if not reboot after a configurable
+            // number of tries
+            if (nMaxStrikes > 0)
                 {
-                if (nMaxStrikes > 0)
-                    {
-                    if (++nStrikes >= nMaxStrikes)
-                        RunReboot(null);
-                    }
+                    String sRet = SendPing(sPingTarget);
+                    if (!sRet.contains("3 received"))
+                        {
+                            Log.i("Watcher", String.format("Failed ping attempt (remaining: %s)!",
+                                                           nMaxStrikes - nStrikes));
+                            if (++nStrikes >= nMaxStrikes)
+                                {
+                                    Log.e("Watcher", String.format("Number of failed ping attempts to %s (%s) exceeded maximum (%s), running reboot!", sPingTarget, nStrikes, nMaxStrikes));
+                                    RunReboot(null);
+                                }
+                        }
+                    else
+                        {
+                            nStrikes = 0;
+                        }
                 }
-            else
-                {
-                nStrikes = 0;
-                }
-            sRet = null;
 
             String sProgramName = "com.mozilla.SUTAgentAndroid";
-            PackageManager pm = myContext.getPackageManager();
 
 //            Debug.waitForDebugger();
 
-            if (!GetProcessInfo(sProgramName))
+            // Ensure the sdcard is mounted before we even attempt to start the agent
+            // We will wait for the sdcard to mount for PERIODS_TO_WAIT_FOR_SDCARD
+            // after which time we go ahead and attempt to start the agent.
+            if (nPeriodsWaited++ < PERIODS_TO_WAIT_FOR_SDCARD) {
+                String state = Environment.getExternalStorageState();
+                if (Environment.MEDIA_MOUNTED.compareTo(state) != 0) {
+                    Log.i("SUTAgentWatcher", "SDcard not mounted, waiting another turn");
+                    return;
+                } else if (Environment.MEDIA_MOUNTED_READ_ONLY.equals(state)) {
+                    Log.e("SUTAgentWatcher", "SDcard mounted read only not starting agent now, try again in 60s");
+                    return;
+                }
+            }
+
+            boolean isProc = GetProcessInfo(sProgramName);
+            if (bStartSUTAgent && !isProc)
                 {
+                Log.i("SUTAgentWatcher", "Starting SUTAgent from watcher code");
                 Intent agentIntent = new Intent();
                 agentIntent.setPackage(sProgramName);
                 agentIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 agentIntent.setAction(Intent.ACTION_MAIN);
                 try {
+                    PackageManager pm = myContext.getPackageManager();
                     PackageInfo pi = pm.getPackageInfo(sProgramName, PackageManager.GET_ACTIVITIES | PackageManager.GET_INTENT_FILTERS);
                     ActivityInfo [] ai = pi.activities;
                     for (int i = 0; i < ai.length; i++)
@@ -953,26 +1015,7 @@ public class WatcherService extends Service
         }
 
     private void SendNotification(String tickerText, String expandedText) {
-        NotificationManager notificationManager = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
-        int icon = R.drawable.ateamlogo;
-        long when = System.currentTimeMillis();
-
-        Notification notification = new Notification(icon, tickerText, when);
-
-        notification.flags |= Notification.FLAG_AUTO_CANCEL;
-        notification.defaults |= Notification.DEFAULT_SOUND;
-//        notification.defaults |= Notification.DEFAULT_VIBRATE;
-        notification.defaults |= Notification.DEFAULT_LIGHTS;
-
-        Context context = getApplicationContext();
-
-        // Intent to launch an activity when the extended text is clicked
-        Intent intent = new Intent(this, WatcherService.class);
-        PendingIntent launchIntent = PendingIntent.getActivity(context, 0, intent, 0);
-
-        notification.setLatestEventInfo(context, tickerText, expandedText, launchIntent);
-
-        notificationManager.notify(NOTIFICATION_ID, notification);
+        Log.i("Watcher", expandedText);
     }
 
     private void CancelNotification() {

@@ -1,14 +1,19 @@
+/* Any copyright is dedicated to the Public Domain.
+   http://creativecommons.org/publicdomain/zero/1.0/ */
+
 Cu.import("resource://services-sync/engines.js");
+Cu.import("resource://services-sync/service.js");
 Cu.import("resource://services-sync/util.js");
+Cu.import("resource://testing-common/services/sync/utils.js");
 
 function makeSteamEngine() {
-  return new SyncEngine('Steam');
+  return new SyncEngine('Steam', Service);
 }
 
 function test_url_attributes() {
   _("SyncEngine url attributes");
   let syncTesting = new SyncTestingInfrastructure();
-  Svc.Prefs.set("clusterURL", "https://cluster/");
+  Service.clusterURL = "https://cluster/";
   let engine = makeSteamEngine();
   try {
     do_check_eq(engine.storageURL, "https://cluster/1.1/foo/storage/");
@@ -95,7 +100,7 @@ function test_toFetch() {
     do_check_eq(engine.toFetch[0], toFetch[0]);
     do_check_eq(engine.toFetch[1], toFetch[1]);
   } finally {
-    syncTesting = new SyncTestingInfrastructure(makeSteamEngine);
+    Svc.Prefs.resetBranch("");
   }
 }
 
@@ -125,7 +130,7 @@ function test_previousFailed() {
     do_check_eq(engine.previousFailed[0], previousFailed[0]);
     do_check_eq(engine.previousFailed[1], previousFailed[1]);
   } finally {
-    syncTesting = new SyncTestingInfrastructure(makeSteamEngine);
+    Svc.Prefs.resetBranch("");
   }
 }
 
@@ -150,7 +155,6 @@ function test_resetClient() {
     do_check_eq(engine.toFetch.length, 0);
     do_check_eq(engine.previousFailed.length, 0);
   } finally {
-    syncTesting = new SyncTestingInfrastructure(makeSteamEngine);
     Svc.Prefs.resetBranch("");
   }
 }
@@ -158,7 +162,8 @@ function test_resetClient() {
 function test_wipeServer() {
   _("SyncEngine.wipeServer deletes server data and resets the client.");
   let syncTesting = new SyncTestingInfrastructure();
-  Svc.Prefs.set("clusterURL", "http://localhost:8080/");
+  Service.serverURL = TEST_SERVER_URL;
+  Service.clusterURL = TEST_CLUSTER_URL;
   let engine = makeSteamEngine();
 
   const PAYLOAD = 42;
@@ -181,7 +186,6 @@ function test_wipeServer() {
 
   } finally {
     server.stop(do_test_finished);
-    syncTesting = new SyncTestingInfrastructure(makeSteamEngine);
     Svc.Prefs.resetBranch("");
   }
 }

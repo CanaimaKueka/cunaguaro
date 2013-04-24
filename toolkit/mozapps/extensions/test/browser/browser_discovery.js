@@ -4,7 +4,6 @@
 
 // Tests that the discovery view loads properly
 
-const PREF_GETADDONS_CACHE_ENABLED = "extensions.getAddons.cache.enabled";
 const MAIN_URL = "https://example.com/" + RELATIVE_DIR + "discovery.html";
 
 var gManagerWindow;
@@ -39,10 +38,6 @@ function test() {
   Services.prefs.setCharPref(PREF_DISCOVERURL, MAIN_URL);
   // Temporarily enable caching
   Services.prefs.setBoolPref(PREF_GETADDONS_CACHE_ENABLED, true);
-
-  registerCleanupFunction(function() {
-    Services.prefs.setBoolPref(PREF_GETADDONS_CACHE_ENABLED, false);
-  });
 
   waitForExplicitFinish();
 
@@ -135,24 +130,23 @@ function testHash(aBrowser, aTestAddonVisible, aCallback) {
   // Test against all the add-ons the manager knows about since plugins and
   // app extensions may exist
   AddonManager.getAllAddons(function(aAddons) {
-    aAddons.forEach(function(aAddon) {
-      if (!(aAddon.id in data)) {
+    for (let addon of aAddons) {
+      if (!(addon.id in data)) {
         // Test add-ons will have shown an error if necessary above
-        if (aAddon.id.substring(6) != "@tests.mozilla.org")
-          ok(false, "Add-on " + aAddon.id + " was not included in the data");
-        return;
+        if (addon.id.substring(6) != "@tests.mozilla.org")
+          ok(false, "Add-on " + addon.id + " was not included in the data");
+        continue;
       }
 
-      info("Testing data for add-on " + aAddon.id);
-      var addonData = data[aAddon.id];
-      is(addonData.name, aAddon.name, "Name should be correct");
-      is(addonData.version, aAddon.version, "Version should be correct");
-      is(addonData.type, aAddon.type, "Type should be correct");
-      is(addonData.userDisabled, aAddon.userDisabled, "userDisabled should be correct");
-      is(addonData.isBlocklisted, aAddon.blocklistState == Ci.nsIBlocklistService.STATE_BLOCKED, "blocklisted should be correct");
-      is(addonData.isCompatible, aAddon.isCompatible, "isCompatible should be correct");
-    });
-
+      info("Testing data for add-on " + addon.id);
+      var addonData = data[addon.id];
+      is(addonData.name, addon.name, "Name should be correct");
+      is(addonData.version, addon.version, "Version should be correct");
+      is(addonData.type, addon.type, "Type should be correct");
+      is(addonData.userDisabled, addon.userDisabled, "userDisabled should be correct");
+      is(addonData.isBlocklisted, addon.blocklistState == Ci.nsIBlocklistService.STATE_BLOCKED, "blocklisted should be correct");
+      is(addonData.isCompatible, addon.isCompatible, "isCompatible should be correct");
+    }
     aCallback();
   });
 }
@@ -516,5 +510,68 @@ add_test(function() {
     ok(isLoading(), "Should be loading");
     // This will actually stop the about:blank load
     browser.stop();
+  });
+});
+
+// Test for Bug 703929 - Loading the discover view from a chrome XUL file fails when
+// the add-on manager is reopened.
+add_test(function() {
+  const url = "chrome://mochitests/content/" +  RELATIVE_DIR + "addon_about.xul";
+  Services.prefs.setCharPref(PREF_DISCOVERURL, url);
+
+  open_manager("addons://discover/", function(aWindow) {
+    gManagerWindow = aWindow;
+    gCategoryUtilities = new CategoryUtilities(gManagerWindow);
+
+    var browser = gManagerWindow.document.getElementById("discover-browser");
+    is(getURL(browser), url, "Loading a chrome XUL file should work");
+
+    restart_manager(gManagerWindow, "addons://discover/", function(aWindow) {
+      gManagerWindow = aWindow;
+      gCategoryUtilities = new CategoryUtilities(gManagerWindow);
+
+      var browser = gManagerWindow.document.getElementById("discover-browser");
+      is(getURL(browser), url, "Should be able to load the chrome XUL file a second time");
+
+      close_manager(gManagerWindow, run_next_test);
+    });
+  });
+});
+
+// Bug 711693 - Send the compatibility mode when loading the Discovery pane
+add_test(function() {
+  info("Test '%COMPATIBILITY_MODE%' in the URL is correctly replaced by 'normal'");
+  Services.prefs.setCharPref(PREF_DISCOVERURL,  MAIN_URL + "?mode=%COMPATIBILITY_MODE%");
+  Services.prefs.setBoolPref(PREF_STRICT_COMPAT, false);
+
+  open_manager("addons://discover/", function(aWindow) {
+    gManagerWindow = aWindow;
+    var browser = gManagerWindow.document.getElementById("discover-browser");
+    is(getURL(browser), MAIN_URL + "?mode=normal", "Should have loaded the right url");
+    close_manager(gManagerWindow, run_next_test);
+  });
+});
+
+add_test(function() {
+  info("Test '%COMPATIBILITY_MODE%' in the URL is correctly replaced by 'strict'");
+  Services.prefs.setBoolPref(PREF_STRICT_COMPAT, true);
+
+  open_manager("addons://discover/", function(aWindow) {
+    gManagerWindow = aWindow;
+    var browser = gManagerWindow.document.getElementById("discover-browser");
+    is(getURL(browser), MAIN_URL + "?mode=strict", "Should have loaded the right url");
+    close_manager(gManagerWindow, run_next_test);
+  });
+});
+
+add_test(function() {
+  info("Test '%COMPATIBILITY_MODE%' in the URL is correctly replaced by 'ignore'");
+  Services.prefs.setBoolPref(PREF_CHECK_COMPATIBILITY, false);
+
+  open_manager("addons://discover/", function(aWindow) {
+    gManagerWindow = aWindow;
+    var browser = gManagerWindow.document.getElementById("discover-browser");
+    is(getURL(browser), MAIN_URL + "?mode=ignore", "Should have loaded the right url");
+    close_manager(gManagerWindow, run_next_test);
   });
 });

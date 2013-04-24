@@ -1,0 +1,15 @@
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+
+<!ENTITY notificationsDialog2.title       "Известяване за нова поща по избор">
+<!ENTITY window.width                     "30em">
+
+<!ENTITY alertCustomization.intro         "Изберете кои полета да се показват при известяване:">
+<!ENTITY previewText.label                "Преглед на текста">
+<!ENTITY previewText.accesskey            "П">
+<!ENTITY subject.label                    "Тема">
+<!ENTITY subject.accesskey                "Т">
+<!ENTITY sender.label                     "Подател">
+<!ENTITY sender.accesskey                 "д">
+

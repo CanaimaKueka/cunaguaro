@@ -5,18 +5,19 @@ Subject: Gross workaround to avoid installing test idl and include files in
 
 https://bugzilla.mozilla.org/show_bug.cgi?id=542749
 ---
- config/rules.mk        |   12 +++++++++++-
- js/src/config/rules.mk |   12 +++++++++++-
- 2 files changed, 22 insertions(+), 2 deletions(-)
+ config/rules.mk        |   13 ++++++++++++-
+ js/src/config/rules.mk |   13 ++++++++++++-
+ 2 files changed, 24 insertions(+), 2 deletions(-)
 
 diff --git a/config/rules.mk b/config/rules.mk
-index 6b431c9..7d8708e 100644
+index 1b8fbf4..a38308a 100644
 --- a/config/rules.mk
 +++ b/config/rules.mk
-@@ -62,6 +62,16 @@ ifdef SDK_HEADERS
- EXPORTS += $(SDK_HEADERS)
+@@ -71,6 +71,17 @@ _EXTRA_EXPORTS := $(filter-out $(EXPORTS),$(SDK_HEADERS))
+ EXPORTS += $(_EXTRA_EXPORTS)
  endif
  
++
 +ifneq (,$(findstring sample,$(MODULE))$(findstring test,$(MODULE))$(findstring Test,$(MODULE)))
 +INCLUDE_DIR := $(DIST)/include/testing
 +IDL_DIR := $(DIST)/tests/idl
@@ -27,26 +28,27 @@ index 6b431c9..7d8708e 100644
 +INCLUDE_DIR := $(DIST)/include
 +endif
 +
- REPORT_BUILD = @echo $(notdir $<)
+ REPORT_BUILD = $(info $(notdir $<))
  
  ifeq ($(OS_ARCH),OS2)
-@@ -1600,7 +1610,7 @@ ifndef NO_DIST_INSTALL
- export:: $(XPIDLSRCS) $(IDL_DIR)
- 	$(INSTALL) $(IFLAGS1) $^
+@@ -1406,7 +1417,7 @@ GARBAGE_DIRS		+= $(XPIDL_GEN_DIR)
  
--export:: $(patsubst %.idl,$(XPIDL_GEN_DIR)/%.h, $(XPIDLSRCS)) $(DIST)/include
-+export:: $(patsubst %.idl,$(XPIDL_GEN_DIR)/%.h, $(XPIDLSRCS)) $(INCLUDE_DIR)
- 	$(INSTALL) $(IFLAGS1) $^ 
- endif # NO_DIST_INSTALL
+ ifndef NO_DIST_INSTALL
+ XPIDL_HEADERS_FILES := $(patsubst %.idl,$(XPIDL_GEN_DIR)/%.h, $(XPIDLSRCS))
+-XPIDL_HEADERS_DEST := $(DIST)/include
++XPIDL_HEADERS_DEST := $(INCLUDE_DIR)
+ XPIDL_HEADERS_TARGET := export
+ INSTALL_TARGETS += XPIDL_HEADERS
  
 diff --git a/js/src/config/rules.mk b/js/src/config/rules.mk
-index 6b431c9..7d8708e 100644
+index 1b8fbf4..a38308a 100644
 --- a/js/src/config/rules.mk
 +++ b/js/src/config/rules.mk
-@@ -62,6 +62,16 @@ ifdef SDK_HEADERS
- EXPORTS += $(SDK_HEADERS)
+@@ -71,6 +71,17 @@ _EXTRA_EXPORTS := $(filter-out $(EXPORTS),$(SDK_HEADERS))
+ EXPORTS += $(_EXTRA_EXPORTS)
  endif
  
++
 +ifneq (,$(findstring sample,$(MODULE))$(findstring test,$(MODULE))$(findstring Test,$(MODULE)))
 +INCLUDE_DIR := $(DIST)/include/testing
 +IDL_DIR := $(DIST)/tests/idl
@@ -57,15 +59,15 @@ index 6b431c9..7d8708e 100644
 +INCLUDE_DIR := $(DIST)/include
 +endif
 +
- REPORT_BUILD = @echo $(notdir $<)
+ REPORT_BUILD = $(info $(notdir $<))
  
  ifeq ($(OS_ARCH),OS2)
-@@ -1600,7 +1610,7 @@ ifndef NO_DIST_INSTALL
- export:: $(XPIDLSRCS) $(IDL_DIR)
- 	$(INSTALL) $(IFLAGS1) $^
+@@ -1406,7 +1417,7 @@ GARBAGE_DIRS		+= $(XPIDL_GEN_DIR)
  
--export:: $(patsubst %.idl,$(XPIDL_GEN_DIR)/%.h, $(XPIDLSRCS)) $(DIST)/include
-+export:: $(patsubst %.idl,$(XPIDL_GEN_DIR)/%.h, $(XPIDLSRCS)) $(INCLUDE_DIR)
- 	$(INSTALL) $(IFLAGS1) $^ 
- endif # NO_DIST_INSTALL
+ ifndef NO_DIST_INSTALL
+ XPIDL_HEADERS_FILES := $(patsubst %.idl,$(XPIDL_GEN_DIR)/%.h, $(XPIDLSRCS))
+-XPIDL_HEADERS_DEST := $(DIST)/include
++XPIDL_HEADERS_DEST := $(INCLUDE_DIR)
+ XPIDL_HEADERS_TARGET := export
+ INSTALL_TARGETS += XPIDL_HEADERS
  

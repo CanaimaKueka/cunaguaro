@@ -1,51 +1,21 @@
 /* -*- Mode: c++; c-basic-offset: 2; indent-tabs-mode: nil; tab-width: 40 -*- */
-/* ***** BEGIN LICENSE BLOCK *****
- * Version: MPL 1.1/GPL 2.0/LGPL 2.1
- *
- * The contents of this file are subject to the Mozilla Public License Version
- * 1.1 (the "License"); you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- * http://www.mozilla.org/MPL/
- *
- * Software distributed under the License is distributed on an "AS IS" basis,
- * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
- * for the specific language governing rights and limitations under the
- * License.
- *
- * The Original Code is Web Workers.
- *
- * The Initial Developer of the Original Code is
- *   The Mozilla Foundation.
- * Portions created by the Initial Developer are Copyright (C) 2011
- * the Initial Developer. All Rights Reserved.
- *
- * Contributor(s):
- *   Ben Turner <bent.mozilla@gmail.com> (Original Author)
- *
- * Alternatively, the contents of this file may be used under the terms of
- * either the GNU General Public License Version 2 or later (the "GPL"), or
- * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
- * in which case the provisions of the GPL or the LGPL are applicable instead
- * of those above. If you wish to allow use of your version of this file only
- * under the terms of either the GPL or the LGPL, and not to allow others to
- * use your version of this file under the terms of the MPL, indicate your
- * decision by deleting the provisions above and replace them with the notice
- * and other provisions required by the GPL or the LGPL. If you do not delete
- * the provisions above, a recipient may use your version of this file under
- * the terms of any one of the MPL, the GPL or the LGPL.
- *
- * ***** END LICENSE BLOCK ***** */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #ifndef mozilla_dom_workers_workerprivate_h__
 #define mozilla_dom_workers_workerprivate_h__
 
 #include "Workers.h"
 
+#include "nsIContentSecurityPolicy.h"
 #include "nsIRunnable.h"
 #include "nsIThread.h"
 #include "nsIThreadInternal.h"
+#include "nsPIDOMWindow.h"
 
 #include "jsapi.h"
+#include "mozilla/Assertions.h"
 #include "mozilla/CondVar.h"
 #include "mozilla/Mutex.h"
 #include "mozilla/TimeStamp.h"
@@ -55,29 +25,22 @@
 #include "nsStringGlue.h"
 #include "nsTArray.h"
 #include "nsTPriorityQueue.h"
+#include "StructuredCloneTags.h"
 
 #include "EventTarget.h"
 #include "Queue.h"
 #include "WorkerFeature.h"
 
 class JSAutoStructuredCloneBuffer;
+class nsIChannel;
 class nsIDocument;
-class nsIPrincipal;
 class nsIMemoryMultiReporter;
+class nsIPrincipal;
 class nsIScriptContext;
 class nsIURI;
 class nsPIDOMWindow;
 class nsITimer;
-
-namespace mozilla {
-namespace xpconnect {
-namespace memory {
-
-struct IterateData;
-
-} // namespace memory
-} // namespace xpconnect
-} // namespace mozilla
+class nsIXPCScriptNotify;
 
 BEGIN_WORKERS_NAMESPACE
 
@@ -88,11 +51,13 @@ class WorkerRunnable : public nsIRunnable
 public:
   enum Target { ParentThread, WorkerThread };
   enum BusyBehavior { ModifyBusyCount, UnchangedBusyCount };
+  enum ClearingBehavior { SkipWhenClearing, RunWhenClearing };
 
 protected:
   WorkerPrivate* mWorkerPrivate;
   Target mTarget;
-  bool mBusyBehavior;
+  BusyBehavior mBusyBehavior;
+  ClearingBehavior mClearingBehavior;
 
 public:
   NS_DECL_ISUPPORTS
@@ -103,14 +68,21 @@ public:
   static bool
   DispatchToMainThread(nsIRunnable*);
 
+  bool
+  WantsToRunDuringClear()
+  {
+    return mClearingBehavior == RunWhenClearing;
+  }
+
 protected:
   WorkerRunnable(WorkerPrivate* aWorkerPrivate, Target aTarget,
-                 BusyBehavior aBusyBehavior)
+                 BusyBehavior aBusyBehavior,
+                 ClearingBehavior aClearingBehavior)
 #ifdef DEBUG
   ;
 #else
   : mWorkerPrivate(aWorkerPrivate), mTarget(aTarget),
-    mBusyBehavior(aBusyBehavior)
+    mBusyBehavior(aBusyBehavior), mClearingBehavior(aClearingBehavior)
   { }
 #endif
 
@@ -133,6 +105,8 @@ protected:
   virtual void
   PostRun(JSContext* aCx, WorkerPrivate* aWorkerPrivate, bool aRunResult);
 
+  void NotifyScriptExecutedIfNeeded() const;
+
 private:
   NS_DECL_NSIRUNNABLE
 };
@@ -140,15 +114,17 @@ private:
 class WorkerSyncRunnable : public WorkerRunnable
 {
 protected:
-  PRUint32 mSyncQueueKey;
+  uint32_t mSyncQueueKey;
   bool mBypassSyncQueue;
 
 protected:
   friend class WorkerPrivate;
 
-  WorkerSyncRunnable(WorkerPrivate* aWorkerPrivate, PRUint32 aSyncQueueKey,
-                     bool aBypassSyncQueue = false)
-  : WorkerRunnable(aWorkerPrivate, WorkerThread, UnchangedBusyCount),
+  WorkerSyncRunnable(WorkerPrivate* aWorkerPrivate, uint32_t aSyncQueueKey,
+                     bool aBypassSyncQueue = false,
+                     ClearingBehavior aClearingBehavior = SkipWhenClearing)
+  : WorkerRunnable(aWorkerPrivate, WorkerThread, UnchangedBusyCount,
+                   aClearingBehavior),
     mSyncQueueKey(aSyncQueueKey), mBypassSyncQueue(aBypassSyncQueue)
   { }
 
@@ -159,12 +135,40 @@ protected:
   DispatchInternal();
 };
 
+class MainThreadSyncRunnable : public WorkerSyncRunnable
+{
+public:
+  MainThreadSyncRunnable(WorkerPrivate* aWorkerPrivate,
+                         ClearingBehavior aClearingBehavior,
+                         uint32_t aSyncQueueKey,
+                         bool aBypassSyncEventQueue)
+  : WorkerSyncRunnable(aWorkerPrivate, aSyncQueueKey, aBypassSyncEventQueue,
+                       aClearingBehavior)
+  {
+    AssertIsOnMainThread();
+  }
+
+  bool
+  PreDispatch(JSContext* aCx, WorkerPrivate* aWorkerPrivate) MOZ_OVERRIDE
+  {
+    AssertIsOnMainThread();
+    return true;
+  }
+
+  void
+  PostDispatch(JSContext* aCx, WorkerPrivate* aWorkerPrivate,
+               bool aDispatchResult) MOZ_OVERRIDE
+  {
+    AssertIsOnMainThread();
+  }
+};
+
 class WorkerControlRunnable : public WorkerRunnable
 {
 protected:
   WorkerControlRunnable(WorkerPrivate* aWorkerPrivate, Target aTarget,
                         BusyBehavior aBusyBehavior)
-  : WorkerRunnable(aWorkerPrivate, aTarget, aBusyBehavior)
+  : WorkerRunnable(aWorkerPrivate, aTarget, aBusyBehavior, SkipWhenClearing)
   { }
 
   virtual ~WorkerControlRunnable()
@@ -174,8 +178,60 @@ protected:
   DispatchInternal();
 };
 
+// SharedMutex is a small wrapper around an (internal) reference-counted Mutex
+// object. It exists to avoid changing a lot of code to use Mutex* instead of
+// Mutex&.
+class SharedMutex
+{
+  typedef mozilla::Mutex Mutex;
+
+  class RefCountedMutex : public Mutex
+  {
+  public:
+    RefCountedMutex(const char* aName)
+    : Mutex(aName)
+    { }
+
+    NS_INLINE_DECL_THREADSAFE_REFCOUNTING(RefCountedMutex)
+
+  private:
+    ~RefCountedMutex()
+    { }
+  };
+
+  nsRefPtr<RefCountedMutex> mMutex;
+
+public:
+  SharedMutex(const char* aName)
+  : mMutex(new RefCountedMutex(aName))
+  { }
+
+  SharedMutex(SharedMutex& aOther)
+  : mMutex(aOther.mMutex)
+  { }
+
+  operator Mutex&()
+  {
+    MOZ_ASSERT(mMutex);
+    return *mMutex;
+  }
+
+  operator const Mutex&() const
+  {
+    MOZ_ASSERT(mMutex);
+    return *mMutex;
+  }
+
+  void
+  AssertCurrentThreadOwns() const
+  {
+    MOZ_ASSERT(mMutex);
+    mMutex->AssertCurrentThreadOwns();
+  }
+};
+
 template <class Derived>
-class WorkerPrivateParent : public events::EventTarget
+class WorkerPrivateParent : public EventTarget
 {
 public:
   struct LocationInfo
@@ -191,8 +247,9 @@ public:
   };
 
 protected:
-  mozilla::Mutex mMutex;
+  SharedMutex mMutex;
   mozilla::CondVar mCondVar;
+  mozilla::CondVar mMemoryReportCondVar;
 
 private:
   JSObject* mJSObject;
@@ -205,22 +262,29 @@ private:
   // Main-thread things.
   nsCOMPtr<nsPIDOMWindow> mWindow;
   nsCOMPtr<nsIScriptContext> mScriptContext;
+  nsCOMPtr<nsIXPCScriptNotify> mScriptNotify;
   nsCOMPtr<nsIURI> mBaseURI;
   nsCOMPtr<nsIURI> mScriptURI;
   nsCOMPtr<nsIPrincipal> mPrincipal;
-  nsCOMPtr<nsIDocument> mDocument;
+  nsCOMPtr<nsIChannel> mChannel;
+  nsCOMPtr<nsIContentSecurityPolicy> mCSP;
 
   // Only used for top level workers.
   nsTArray<nsRefPtr<WorkerRunnable> > mQueuedRunnables;
 
-  PRUint64 mBusyCount;
+  uint64_t mBusyCount;
   Status mParentStatus;
-  PRUint32 mJSContextOptions;
-  PRUint8 mGCZeal;
+  uint32_t mJSContextOptions;
+  uint32_t mJSRuntimeHeapSize;
+  uint32_t mJSWorkerAllocationThreshold;
+  uint8_t mGCZeal;
   bool mJSObjectRooted;
   bool mParentSuspended;
   bool mIsChromeWorker;
   bool mPrincipalIsSystem;
+  bool mMainThreadObjectsForgotten;
+  bool mEvalAllowed;
+  bool mReportCSPViolations;
 
 protected:
   WorkerPrivateParent(JSContext* aCx, JSObject* aObject, WorkerPrivate* aParent,
@@ -230,7 +294,10 @@ protected:
                       nsCOMPtr<nsIScriptContext>& aScriptContext,
                       nsCOMPtr<nsIURI>& aBaseURI,
                       nsCOMPtr<nsIPrincipal>& aPrincipal,
-                      nsCOMPtr<nsIDocument>& aDocument);
+                      nsCOMPtr<nsIChannel>& aChannel,
+                      nsCOMPtr<nsIContentSecurityPolicy>& aCSP,
+                      bool aEvalAllowed,
+                      bool aReportCSPViolations);
 
   ~WorkerPrivateParent();
 
@@ -241,6 +308,17 @@ private:
     return static_cast<Derived*>(const_cast<WorkerPrivateParent*>(this));
   }
 
+  // aCx is null when called from the finalizer
+  bool
+  NotifyPrivate(JSContext* aCx, Status aStatus);
+
+  // aCx is null when called from the finalizer
+  bool
+  TerminatePrivate(JSContext* aCx)
+  {
+    return NotifyPrivate(aCx, Terminating);
+  }
+
 public:
   // May be called on any thread...
   bool
@@ -248,7 +326,10 @@ public:
 
   // Called on the parent thread.
   bool
-  Notify(JSContext* aCx, Status aStatus);
+  Notify(JSContext* aCx, Status aStatus)
+  {
+    return NotifyPrivate(aCx, aStatus);
+  }
 
   bool
   Cancel(JSContext* aCx)
@@ -268,20 +349,24 @@ public:
   bool
   Resume(JSContext* aCx);
 
-  void
-  TraceInstance(JSTracer* aTrc)
-  {
-    AssertIsOnParentThread();
-    events::EventTarget::TraceInstance(aTrc);
-  }
+  virtual void
+  _trace(JSTracer* aTrc) MOZ_OVERRIDE;
+
+  virtual void
+  _finalize(JSFreeOp* aFop) MOZ_OVERRIDE;
 
   void
-  FinalizeInstance(JSContext* aCx, bool aFromJSFinalizer);
+  Finish(JSContext* aCx)
+  {
+    RootJSObject(aCx, false);
+  }
 
   bool
   Terminate(JSContext* aCx)
   {
-    return Notify(aCx, Terminating);
+    AssertIsOnParentThread();
+    RootJSObject(aCx, false);
+    return TerminatePrivate(aCx);
   }
 
   bool
@@ -297,21 +382,24 @@ public:
   ForgetMainThreadObjects(nsTArray<nsCOMPtr<nsISupports> >& aDoomed);
 
   bool
-  PostMessage(JSContext* aCx, jsval aMessage);
+  PostMessage(JSContext* aCx, JS::Value aMessage, JS::Value aTransferable);
 
-  PRUint64
-  GetOuterWindowId();
+  uint64_t
+  GetInnerWindowId();
 
   void
-  UpdateJSContextOptions(JSContext* aCx, PRUint32 aOptions);
+  UpdateJSContextOptions(JSContext* aCx, uint32_t aOptions);
+
+  void
+  UpdateJSWorkerMemoryParameter(JSContext* aCx, JSGCParamKey key, uint32_t value);
 
 #ifdef JS_GC_ZEAL
   void
-  UpdateGCZeal(JSContext* aCx, PRUint8 aGCZeal);
+  UpdateGCZeal(JSContext* aCx, uint8_t aGCZeal);
 #endif
 
-  using events::EventTarget::GetEventListenerOnEventTarget;
-  using events::EventTarget::SetEventListenerOnEventTarget;
+  void
+  GarbageCollect(JSContext* aCx, bool aShrinking);
 
   void
   QueueRunnable(WorkerRunnable* aRunnable)
@@ -333,6 +421,18 @@ public:
     return mParentSuspended;
   }
 
+  bool
+  IsAcceptingEvents()
+  {
+    AssertIsOnParentThread();
+    bool acceptingEvents;
+    {
+      mozilla::MutexAutoLock lock(mMutex);
+      acceptingEvents = mParentStatus < Terminating;
+    }
+    return acceptingEvents;
+  }
+
   Status
   ParentStatus() const
   {
@@ -348,6 +448,13 @@ public:
   {
     AssertIsOnMainThread();
     return mScriptContext;
+  }
+
+  nsIXPCScriptNotify*
+  GetScriptNotify() const
+  {
+    AssertIsOnMainThread();
+    return mScriptNotify;
   }
 
   JSObject*
@@ -375,7 +482,7 @@ public:
     return mBaseURI;
   }
 
-  nsresult
+  void
   SetBaseURI(nsIURI* aBaseURI);
 
   nsIURI*
@@ -408,18 +515,18 @@ public:
     return mPrincipalIsSystem;
   }
 
+  nsIChannel*
+  GetChannel() const
+  {
+    AssertIsOnMainThread();
+    return mChannel;
+  }
+
   nsIDocument*
   GetDocument() const
   {
     AssertIsOnMainThread();
-    return mDocument;
-  }
-
-  void
-  SetDocument(nsIDocument* aDocument)
-  {
-    AssertIsOnMainThread();
-    mDocument = aDocument;
+    return mWindow ? mWindow->GetExtantDoc() : nullptr;
   }
 
   nsPIDOMWindow*
@@ -429,20 +536,64 @@ public:
     return mWindow;
   }
 
+  nsIContentSecurityPolicy*
+  GetCSP() const
+  {
+    AssertIsOnMainThread();
+    return mCSP;
+  }
+
+  void
+  SetCSP(nsIContentSecurityPolicy* aCSP)
+  {
+    AssertIsOnMainThread();
+    mCSP = aCSP;
+  }
+
+  bool
+  IsEvalAllowed() const
+  {
+    return mEvalAllowed;
+  }
+
+  void
+  SetEvalAllowed(bool aEvalAllowed)
+  {
+    mEvalAllowed = aEvalAllowed;
+  }
+
+  bool
+  GetReportCSPViolations() const
+  {
+    return mReportCSPViolations;
+  }
+
   LocationInfo&
   GetLocationInfo()
   {
     return mLocationInfo;
   }
 
-  PRUint32
+  uint32_t
   GetJSContextOptions() const
   {
     return mJSContextOptions;
   }
 
+  uint32_t
+  GetJSRuntimeHeapSize() const
+  {
+    return mJSRuntimeHeapSize;
+  }
+
+  uint32_t
+  GetJSWorkerAllocationThreshold() const
+  {
+    return mJSWorkerAllocationThreshold;
+  }
+
 #ifdef JS_GC_ZEAL
-  PRUint8
+  uint8_t
   GetGCZeal() const
   {
     return mGCZeal;
@@ -479,13 +630,13 @@ class WorkerPrivate : public WorkerPrivateParent<WorkerPrivate>
 
   struct TimeoutInfo;
 
-  typedef Queue<nsIRunnable*, 50> EventQueue;
+  typedef Queue<WorkerRunnable*, 50> EventQueue;
   EventQueue mQueue;
   EventQueue mControlQueue;
 
   struct SyncQueue
   {
-    Queue<nsIRunnable*, 10> mQueue;
+    Queue<WorkerRunnable*, 10> mQueue;
     bool mComplete;
     bool mResult;
 
@@ -495,17 +646,21 @@ class WorkerPrivate : public WorkerPrivateParent<WorkerPrivate>
 
     ~SyncQueue()
     {
-      nsIRunnable* event;
+      WorkerRunnable* event;
       while (mQueue.Pop(event)) {
         event->Release();
       }
     }
   };
 
+  class MemoryReporter;
+  friend class MemoryReporter;
+
   nsTArray<nsAutoPtr<SyncQueue> > mSyncQueues;
 
   // Touched on multiple threads, protected with mMutex.
   JSContext* mJSContext;
+  nsRefPtr<WorkerCrossThreadDispatcher> mCrossThreadDispatcher;
 
   // Things touched on worker thread only.
   nsTArray<ParentType*> mChildWorkers;
@@ -513,11 +668,11 @@ class WorkerPrivate : public WorkerPrivateParent<WorkerPrivate>
   nsTArray<nsAutoPtr<TimeoutInfo> > mTimeouts;
 
   nsCOMPtr<nsITimer> mTimer;
-  nsCOMPtr<nsIMemoryMultiReporter> mMemoryReporter;
+  nsRefPtr<MemoryReporter> mMemoryReporter;
 
   mozilla::TimeStamp mKillTime;
-  PRUint32 mErrorHandlerRecursionCount;
-  PRUint32 mNextTimeoutId;
+  uint32_t mErrorHandlerRecursionCount;
+  uint32_t mNextTimeoutId;
   Status mStatus;
   bool mSuspended;
   bool mTimerRunning;
@@ -525,7 +680,8 @@ class WorkerPrivate : public WorkerPrivateParent<WorkerPrivate>
   bool mCloseHandlerStarted;
   bool mCloseHandlerFinished;
   bool mMemoryReporterRunning;
-  bool mMemoryReporterDisabled;
+  bool mBlockedForMemoryReporter;
+  bool mXHRParamsAllowed;
 
 #ifdef DEBUG
   nsCOMPtr<nsIThread> mThread;
@@ -534,7 +690,7 @@ class WorkerPrivate : public WorkerPrivateParent<WorkerPrivate>
 public:
   ~WorkerPrivate();
 
-  static WorkerPrivate*
+  static already_AddRefed<WorkerPrivate>
   Create(JSContext* aCx, JSObject* aObj, WorkerPrivate* aParent,
          JSString* aScriptURL, bool aIsChromeWorker);
 
@@ -607,17 +763,21 @@ public:
              mFeatures.IsEmpty());
   }
 
-  PRUint32
+  uint32_t
   CreateNewSyncLoop();
 
   bool
-  RunSyncLoop(JSContext* aCx, PRUint32 aSyncLoopKey);
+  RunSyncLoop(JSContext* aCx, uint32_t aSyncLoopKey);
 
   void
-  StopSyncLoop(PRUint32 aSyncLoopKey, bool aSyncResult);
+  StopSyncLoop(uint32_t aSyncLoopKey, bool aSyncResult);
+
+  void
+  DestroySyncLoop(uint32_t aSyncLoopKey);
 
   bool
-  PostMessageToParent(JSContext* aCx, jsval aMessage);
+  PostMessageToParent(JSContext* aCx, jsval aMessage,
+                      jsval transferable);
 
   bool
   NotifyInternal(JSContext* aCx, Status aStatus);
@@ -626,10 +786,10 @@ public:
   ReportError(JSContext* aCx, const char* aMessage, JSErrorReport* aReport);
 
   bool
-  SetTimeout(JSContext* aCx, uintN aArgc, jsval* aVp, bool aIsInterval);
+  SetTimeout(JSContext* aCx, unsigned aArgc, jsval* aVp, bool aIsInterval);
 
   bool
-  ClearTimeout(JSContext* aCx, uint32 aId);
+  ClearTimeout(JSContext* aCx, uint32_t aId);
 
   bool
   RunExpiredTimeouts(JSContext* aCx);
@@ -652,22 +812,37 @@ public:
   }
 
   void
-  UpdateJSContextOptionsInternal(JSContext* aCx, PRUint32 aOptions);
+  UpdateJSContextOptionsInternal(JSContext* aCx, uint32_t aOptions);
+
+  void
+  UpdateJSWorkerMemoryParameterInternal(JSContext* aCx, JSGCParamKey key, uint32_t aValue);
 
   void
   ScheduleDeletion(bool aWasPending);
 
   bool
-  BlockAndCollectRuntimeStats(mozilla::xpconnect::memory::IterateData* aData,
-                              bool* aDisabled);
+  BlockAndCollectRuntimeStats(bool aIsQuick, void* aData);
 
   bool
-  DisableMemoryReporter();
+  XHRParamsAllowed() const
+  {
+    return mXHRParamsAllowed;
+  }
+
+  void
+  SetXHRParamsAllowed(bool aAllowed)
+  {
+    mXHRParamsAllowed = aAllowed;
+  }
 
 #ifdef JS_GC_ZEAL
   void
-  UpdateGCZealInternal(JSContext* aCx, PRUint8 aGCZeal);
+  UpdateGCZealInternal(JSContext* aCx, uint8_t aGCZeal);
 #endif
+
+  void
+  GarbageCollectInternal(JSContext* aCx, bool aShrinking,
+                         bool aCollectChildren);
 
   JSContext*
   GetJSContext() const
@@ -691,6 +866,33 @@ public:
   { }
 #endif
 
+  WorkerCrossThreadDispatcher*
+  GetCrossThreadDispatcher();
+
+  // This may block!
+  void
+  BeginCTypesCall();
+
+  // This may block!
+  void
+  EndCTypesCall();
+
+  void
+  BeginCTypesCallback()
+  {
+    // If a callback is beginning then we need to do the exact same thing as
+    // when a ctypes call ends.
+    EndCTypesCall();
+  }
+
+  void
+  EndCTypesCallback()
+  {
+    // If a callback is ending then we need to do the exact same thing as
+    // when a ctypes call begins.
+    BeginCTypesCall();
+  }
+
 private:
   WorkerPrivate(JSContext* aCx, JSObject* aObject, WorkerPrivate* aParent,
                 JSContext* aParentJSContext, const nsAString& aScriptURL,
@@ -698,7 +900,13 @@ private:
                 nsCOMPtr<nsPIDOMWindow>& aWindow,
                 nsCOMPtr<nsIScriptContext>& aScriptContext,
                 nsCOMPtr<nsIURI>& aBaseURI, nsCOMPtr<nsIPrincipal>& aPrincipal,
-                nsCOMPtr<nsIDocument>& aDocument);
+                nsCOMPtr<nsIChannel>& aChannel,
+                nsCOMPtr<nsIContentSecurityPolicy>& aCSP, bool aEvalAllowed,
+                bool aReportCSPViolations, bool aXHRParamsAllowed);
+
+  static bool
+  GetContentSecurityPolicy(JSContext *aCx,
+                           nsIContentSecurityPolicy** aCsp);
 
   bool
   Dispatch(WorkerRunnable* aEvent, EventQueue* aQueue);
@@ -729,7 +937,7 @@ private:
     return true;
   }
 
-  PRUint32
+  uint32_t
   RemainingRunTimeMS() const;
 
   void
@@ -746,14 +954,26 @@ private:
     mozilla::MutexAutoLock lock(mMutex);
 
     mStatus = Dead;
-    mJSContext = nsnull;
+    mJSContext = nullptr;
 
-    ClearQueue(&mQueue);
     ClearQueue(&mControlQueue);
+    ClearQueue(&mQueue);
   }
 
   bool
   ProcessAllControlRunnables();
+
+  void
+  EnableMemoryReporter();
+
+  void
+  DisableMemoryReporter();
+
+  void
+  WaitForWorkerEvents(PRIntervalTime interval = PR_INTERVAL_NO_TIMEOUT);
+
+  static bool
+  CheckXHRParamsAllowed(nsPIDOMWindow* aWindow);
 };
 
 WorkerPrivate*
@@ -761,7 +981,7 @@ GetWorkerPrivateFromContext(JSContext* aCx);
 
 enum WorkerStructuredDataType
 {
-  DOMWORKER_SCTAG_FILE = JS_SCTAG_USER_MIN + 0x1000,
+  DOMWORKER_SCTAG_FILE = SCTAG_DOM_MAX,
   DOMWORKER_SCTAG_BLOB,
 
   DOMWORKER_SCTAG_END
@@ -772,6 +992,42 @@ WorkerStructuredCloneCallbacks(bool aMainRuntime);
 
 JSStructuredCloneCallbacks*
 ChromeWorkerStructuredCloneCallbacks(bool aMainRuntime);
+
+class AutoSyncLoopHolder
+{
+public:
+  AutoSyncLoopHolder(WorkerPrivate* aWorkerPrivate)
+  : mWorkerPrivate(aWorkerPrivate), mSyncLoopKey(UINT32_MAX)
+  {
+    mSyncLoopKey = mWorkerPrivate->CreateNewSyncLoop();
+  }
+
+  ~AutoSyncLoopHolder()
+  {
+    if (mWorkerPrivate) {
+      mWorkerPrivate->StopSyncLoop(mSyncLoopKey, false);
+      mWorkerPrivate->DestroySyncLoop(mSyncLoopKey);
+    }
+  }
+
+  bool
+  RunAndForget(JSContext* aCx)
+  {
+    WorkerPrivate* workerPrivate = mWorkerPrivate;
+    mWorkerPrivate = nullptr;
+    return workerPrivate->RunSyncLoop(aCx, mSyncLoopKey);
+  }
+
+  uint32_t
+  SyncQueueKey() const
+  {
+    return mSyncLoopKey;
+  }
+
+private:
+  WorkerPrivate* mWorkerPrivate;
+  uint32_t mSyncLoopKey;
+};
 
 END_WORKERS_NAMESPACE
 

@@ -1,0 +1,8 @@
+resource:///modules/source-editor- build-browser/dist/bin/browser/modules/source-editor.jsm
+resource://app/defaults/settings.json build-xulrunner/dist/bin/modules/SettingsDB.jsm
+resource:///modules/highlighter.jsm build-browser/dist/bin/browser/modules/devtools/gcli.jsm
+resource://gre/modules/foo.jsm build-xulrunner/dist/bin/modules/Metrics.jsm
+resource://gre/modules/foo.jsm build-xulrunner/dist/bin/modules/services/metrics/providermanager.jsm
+resource://gre/modules/eyeball.jsm build-xulrunner/dist/bin/modules/Metrics.jsm
+resource://gre/modules/eyeball.jsm build-xulrunner/dist/bin/modules/services/metrics/providermanager.jsm
+resource:///foo/bar.js build-browser/dist/bin/browser/chrome/browser/content/browser/debugger-panes.js

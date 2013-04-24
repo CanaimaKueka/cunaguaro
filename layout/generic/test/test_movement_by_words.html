@@ -18,8 +18,13 @@
 
 SimpleTest.waitForExplicitFinish();
 
-// This seems to be necessary because the selection is not set up properly otherwise
-setTimeout(test, 0);
+setTimeout(focusing, 0);
+
+function focusing() {
+  document.getElementById("editor").focus();
+  // This seems to be necessary because the selection is not set up properly otherwise
+  setTimeout(test, 0);
+}
 
 var eatSpace;
 
@@ -118,10 +123,8 @@ function test() {
   testRight(editor.firstChild, 10);
   testRight(editor.firstChild.nextSibling.nextSibling, 5);
   testLeft(editor.firstChild.nextSibling.firstChild, 1);
-  testLeft(editor.firstChild, 10);
   testLeft(editor.firstChild, 8);
   testLeft(editor.firstChild, 5);
-  testLeft(editor.firstChild, 3);
   testLeft(editor.firstChild, 0);
 
   var ChineseChars = "&#x6F22;&#x5B57;";
@@ -191,21 +194,21 @@ function test() {
   editor.innerHTML = "Hello Kitty";
   sel.collapse(editor.firstChild, 0);
   testRight(editor.firstChild, 6);
-  testRight(afterEditorNode, 0);
+  testRight(editor.firstChild, 11);
   testLeft(editor.firstChild, 6);
   testLeft(editor.firstChild, 0);
 
   editor.innerHTML = "<b>Hello</b> Kitty";
   sel.collapse(editor.firstChild.firstChild, 0);
   testRight(editor.firstChild.nextSibling, 1);
-  testRight(afterEditorNode, 0);
+  testRight(editor.firstChild.nextSibling, 6);
   testLeft(editor.firstChild.nextSibling, 1);
   testLeft(editor.firstChild.firstChild, 0);
 
   editor.innerHTML = "<b>Hello </b>Kitty";
   sel.collapse(editor.firstChild.firstChild, 0);
   testRight(editor.firstChild.nextSibling, 0);
-  testRight(afterEditorNode, 0);
+  testRight(editor.firstChild.nextSibling, 5);
   testLeft(editor.firstChild.firstChild, 6);
   testLeft(editor.firstChild.firstChild, 0);
 
@@ -213,7 +216,7 @@ function test() {
   sel.collapse(editor.firstChild.firstChild, 0);
   testRight(editor.firstChild.firstChild, 4);
   testRight(editor.firstChild.nextSibling, 2);
-  testRight(afterEditorNode, 0);
+  testRight(editor.firstChild.nextSibling, 5);
   testLeft(editor.firstChild.nextSibling, 1);
   testLeft(editor.firstChild.firstChild, 4);
   testLeft(editor.firstChild.firstChild, 0);
@@ -232,19 +235,17 @@ function test() {
   testRight(editor.firstChild, 4);
   testRight(editor.firstChild, 8);
   testRight(editor.firstChild.nextSibling.firstChild, 0);
-  testRight(afterEditorNode, 0);
+  testRight(editor.firstChild.nextSibling.nextSibling, 5);
   testLeft(editor.firstChild.nextSibling.firstChild, 1);
-  testLeft(editor.firstChild, 10);
   testLeft(editor.firstChild, 8);
   testLeft(editor.firstChild, 5);
-  testLeft(editor.firstChild, 3);
   testLeft(editor.firstChild, 0);
 
   editor.innerHTML = ChineseChars + HiraganaChars + ChineseChars;
   sel.collapse(editor.firstChild, 0);
   testRight(editor.firstChild, 2);
   testRight(editor.firstChild, 6);
-  testRight(afterEditorNode, 0);
+  testRight(editor.firstChild, 8);
   testLeft(editor.firstChild, 6);
   testLeft(editor.firstChild, 2);
   testLeft(editor.firstChild, 0);
@@ -253,7 +254,7 @@ function test() {
   sel.collapse(editor.firstChild, 0);
   testRight(editor.firstChild, 2);
   testRight(editor.firstChild, 6);
-  testRight(afterEditorNode, 0);
+  testRight(editor.firstChild, 8);
   testLeft(editor.firstChild, 6);
   testLeft(editor.firstChild, 2);
   testLeft(editor.firstChild, 0);
@@ -262,7 +263,7 @@ function test() {
   sel.collapse(editor.firstChild, 0);
   testRight(editor.firstChild, 4);
   testRight(editor.firstChild, 8);
-  testRight(afterEditorNode, 0);
+  testRight(editor.firstChild, 12);
   testLeft(editor.firstChild, 8);
   testLeft(editor.firstChild, 4);
   testLeft(editor.firstChild, 0);
@@ -271,7 +272,7 @@ function test() {
   sel.collapse(editor.firstChild, 0);
   testRight(editor.firstChild, 5);
   testRight(editor.firstChild, 10);
-  testRight(afterEditorNode, 0);
+  testRight(editor.firstChild, 14);
   testLeft(editor.firstChild, 10);
   testLeft(editor.firstChild, 5);
   testLeft(editor.firstChild, 0);
@@ -280,7 +281,7 @@ function test() {
   sel.collapse(editor.firstChild, 0);
   testRight(editor.firstChild, 5);
   testRight(editor.firstChild, 10);
-  testRight(afterEditorNode, 0);
+  testRight(editor.firstChild, 14);
   testLeft(editor.firstChild, 10);
   testLeft(editor.firstChild, 5);
   testLeft(editor.firstChild, 0);
@@ -289,7 +290,7 @@ function test() {
   sel.collapse(editor.firstChild, 0);
   testRight(editor.firstChild, 3);
   testRight(editor.firstChild, 6);
-  testRight(afterEditorNode, 0);
+  testRight(editor.firstChild, 8);
   testLeft(editor.firstChild, 6);
   testLeft(editor.firstChild, 3);
   testLeft(editor.firstChild, 0);

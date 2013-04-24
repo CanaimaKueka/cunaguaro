@@ -1,21 +1,18 @@
-From: Mike Hommey <glandium@debian.org>
-Date: Wed, 12 Mar 2008 23:25:15 +0100
+From: Mike Hommey <mh@glandium.org>
+Date: Fri, 5 Apr 2013 09:51:33 +0200
 Subject: Don't install system profile
 
 ---
- xulrunner/app/Makefile.in |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+ xulrunner/app/moz.build |    2 --
+ 1 file changed, 2 deletions(-)
 
-diff --git a/xulrunner/app/Makefile.in b/xulrunner/app/Makefile.in
-index 187809b..51a37f5 100644
---- a/xulrunner/app/Makefile.in
-+++ b/xulrunner/app/Makefile.in
-@@ -48,8 +48,6 @@ VPATH = @srcdir@
- 
- include $(DEPTH)/config/autoconf.mk
- 
--DIRS = profile
+diff --git a/xulrunner/app/moz.build b/xulrunner/app/moz.build
+index 5f33505..89251dc 100644
+--- a/xulrunner/app/moz.build
++++ b/xulrunner/app/moz.build
+@@ -2,5 +2,3 @@
+ # This Source Code Form is subject to the terms of the Mozilla Public
+ # License, v. 2.0. If a copy of the MPL was not distributed with this
+ # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 -
- PREF_JS_EXPORTS = $(srcdir)/xulrunner.js
- GARBAGE += $(addprefix $(DIST)/bin/defaults/pref/,xulrunner.js)
- 
+-DIRS += ['profile']

@@ -36,6 +36,8 @@ namespace WTF {
 
 #if WTF_CPU_SPARC
 #define MINIMUM_BUMP_POOL_SIZE 0x2000
+#elif WTF_CPU_IA64
+#define MINIMUM_BUMP_POOL_SIZE 0x4000
 #else
 #define MINIMUM_BUMP_POOL_SIZE 0x1000
 #endif
@@ -92,6 +94,18 @@ public:
             return this;
         }
         return deallocCrossPool(this, position);
+    }
+
+    size_t sizeOfNonHeapData() const
+    {
+        ASSERT(!m_previous);
+        size_t n = 0;
+        const BumpPointerPool *curr = this;
+        while (curr) {
+            n += m_allocation.size();
+            curr = curr->m_next;
+        }
+        return n;
     }
 
 private:
@@ -245,6 +259,11 @@ public:
     {
         if (m_head)
             m_head->shrink();
+    }
+
+    size_t sizeOfNonHeapData() const
+    {
+        return m_head ? m_head->sizeOfNonHeapData() : 0;
     }
 
 private:

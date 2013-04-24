@@ -1,21 +1,23 @@
+/* Any copyright is dedicated to the Public Domain.
+   http://creativecommons.org/publicdomain/zero/1.0/ */
+
+Cu.import("resource://gre/modules/PlacesUtils.jsm");
+Cu.import("resource://services-common/async.js");
+Cu.import("resource://services-common/log4moz.js");
 Cu.import("resource://services-sync/engines.js");
 Cu.import("resource://services-sync/engines/bookmarks.js");
-Cu.import("resource://services-sync/record.js");
-Cu.import("resource://services-sync/log4moz.js");
-Cu.import("resource://services-sync/async.js");
-Cu.import("resource://services-sync/util.js");
-
 Cu.import("resource://services-sync/service.js");
-Cu.import("resource://gre/modules/PlacesUtils.jsm");
+Cu.import("resource://services-sync/util.js");
+Cu.import("resource://testing-common/services/sync/utils.js");
 
-Engines.register(BookmarksEngine);
+Service.engineManager.register(BookmarksEngine);
 var syncTesting = new SyncTestingInfrastructure();
 
 add_test(function bad_record_allIDs() {
   let syncTesting = new SyncTestingInfrastructure();
 
   _("Ensure that bad Places queries don't cause an error in getAllIDs.");
-  let engine = new BookmarksEngine();
+  let engine = new BookmarksEngine(Service);
   let store = engine._store;
   let badRecordID = PlacesUtils.bookmarks.insertBookmark(
       PlacesUtils.bookmarks.toolbarFolder,
@@ -46,7 +48,7 @@ add_test(function test_ID_caching() {
   let syncTesting = new SyncTestingInfrastructure();
 
   _("Ensure that Places IDs are not cached.");
-  let engine = new BookmarksEngine();
+  let engine = new BookmarksEngine(Service);
   let store = engine._store;
   _("All IDs: " + JSON.stringify(store.getAllIDs()));
 
@@ -82,22 +84,23 @@ add_test(function test_ID_caching() {
   run_next_test();
 });
 
+function serverForFoo(engine) {
+  return serverForUsers({"foo": "password"}, {
+    meta: {global: {engines: {bookmarks: {version: engine.version,
+                                          syncID: engine.syncID}}}},
+    bookmarks: {}
+  });
+}
+
 add_test(function test_processIncoming_error_orderChildren() {
   _("Ensure that _orderChildren() is called even when _processIncoming() throws an error.");
-  let syncTesting = new SyncTestingInfrastructure();
-  Svc.Prefs.set("clusterURL", "http://localhost:8080/");
-  Svc.Prefs.set("username", "foo");
+  new SyncTestingInfrastructure();
 
-  let collection = new ServerCollection();
-  let engine = new BookmarksEngine();
-  let store = engine._store;
-  let global = new ServerWBO('global',
-                             {engines: {bookmarks: {version: engine.version,
-                                                    syncID: engine.syncID}}});
-  let server = httpd_setup({
-    "/1.1/foo/storage/meta/global": global.handler(),
-    "/1.1/foo/storage/bookmarks": collection.handler()
-  });
+  let engine = new BookmarksEngine(Service);
+  let store  = engine._store;
+  let server = serverForFoo(engine);
+
+  let collection = server.user("foo").collection("bookmarks");
 
   try {
 
@@ -119,14 +122,12 @@ add_test(function test_processIncoming_error_orderChildren() {
     // the children.
     let folder1_payload = store.createRecord(folder1_guid).cleartext;
     folder1_payload.children.reverse();
-    collection.wbos[folder1_guid] = new ServerWBO(
-      folder1_guid, encryptPayload(folder1_payload));
+    collection.insert(folder1_guid, encryptPayload(folder1_payload));
 
     // Create a bogus record that when synced down will provoke a
     // network error which in turn provokes an exception in _processIncoming.
     const BOGUS_GUID = "zzzzzzzzzzzz";
-    let bogus_record = collection.wbos[BOGUS_GUID]
-      = new ServerWBO(BOGUS_GUID, "I'm a bogus record!");
+    let bogus_record = collection.insert(BOGUS_GUID, "I'm a bogus record!");
     bogus_record.get = function get() {
       throw "Sync this!";
     };
@@ -156,29 +157,20 @@ add_test(function test_processIncoming_error_orderChildren() {
   } finally {
     store.wipe();
     Svc.Prefs.resetBranch("");
-    Records.clearCache();
+    Service.recordManager.clearCache();
     server.stop(run_next_test);
   }
 });
 
 add_test(function test_restorePromptsReupload() {
   _("Ensure that restoring from a backup will reupload all records.");
-  let syncTesting = new SyncTestingInfrastructure();
-  Svc.Prefs.set("username", "foo");
-  Service.serverURL = "http://localhost:8080/";
-  Service.clusterURL = "http://localhost:8080/";
+  new SyncTestingInfrastructure();
 
-  let collection = new ServerCollection({}, true);
+  let engine = new BookmarksEngine(Service);
+  let store  = engine._store;
+  let server = serverForFoo(engine);
 
-  let engine = new BookmarksEngine();
-  let store = engine._store;
-  let global = new ServerWBO('global',
-                             {engines: {bookmarks: {version: engine.version,
-                                                    syncID: engine.syncID}}});
-  let server = httpd_setup({
-    "/1.1/foo/storage/meta/global": global.handler(),
-    "/1.1/foo/storage/bookmarks": collection.handler()
-  });
+  let collection = server.user("foo").collection("bookmarks");
 
   Svc.Obs.notify("weave:engine:start-tracking");   // We skip usual startup...
 
@@ -230,8 +222,9 @@ add_test(function test_restorePromptsReupload() {
 
     _("Verify that there's only one bookmark on the server, and it's Thunderbird.");
     // Of course, there's also the Bookmarks Toolbar and Bookmarks Menu...
-    let wbos = [id for ([id, wbo] in Iterator(collection.wbos))
-                   if (["menu", "toolbar", "mobile", folder1_guid].indexOf(id) == -1)];
+    let wbos = collection.keys(function (id) {
+      return ["menu", "toolbar", "mobile", folder1_guid].indexOf(id) == -1;
+    });
     do_check_eq(wbos.length, 1);
     do_check_eq(wbos[0], bmk2_guid);
 
@@ -273,44 +266,44 @@ add_test(function test_restorePromptsReupload() {
 
     _("Verify that there's only one bookmark on the server, and it's Firefox.");
     // Of course, there's also the Bookmarks Toolbar and Bookmarks Menu...
-    wbos = [JSON.parse(JSON.parse(wbo.payload).ciphertext)
-            for ([id, wbo] in Iterator(collection.wbos))
-            if (wbo.payload)];
+    let payloads     = server.user("foo").collection("bookmarks").payloads();
+    let bookmarkWBOs = payloads.filter(function (wbo) {
+                         return wbo.type == "bookmark";
+                       });
+    let folderWBOs   = payloads.filter(function (wbo) {
+                         return ((wbo.type == "folder") &&
+                                 (wbo.id   != "menu") &&
+                                 (wbo.id   != "toolbar"));
+                       });
 
-    _("WBOs: " + JSON.stringify(wbos));
-    let bookmarks = [wbo for each (wbo in wbos) if (wbo.type == "bookmark")];
-    do_check_eq(bookmarks.length, 1);
-    do_check_eq(bookmarks[0].id, newFX);
-    do_check_eq(bookmarks[0].bmkUri, fxuri.spec);
-    do_check_eq(bookmarks[0].title, "Get Firefox!");
+    do_check_eq(bookmarkWBOs.length, 1);
+    do_check_eq(bookmarkWBOs[0].id, newFX);
+    do_check_eq(bookmarkWBOs[0].bmkUri, fxuri.spec);
+    do_check_eq(bookmarkWBOs[0].title, "Get Firefox!");
 
     _("Our old friend Folder 1 is still in play.");
-    let folders = [wbo for each (wbo in wbos)
-                       if ((wbo.type == "folder") &&
-                           (wbo.id   != "menu") &&
-                           (wbo.id   != "toolbar"))];
-    do_check_eq(folders.length, 1);
-    do_check_eq(folders[0].title, "Folder 1");
+    do_check_eq(folderWBOs.length, 1);
+    do_check_eq(folderWBOs[0].title, "Folder 1");
 
   } finally {
     store.wipe();
     Svc.Prefs.resetBranch("");
-    Records.clearCache();
+    Service.recordManager.clearCache();
     server.stop(run_next_test);
   }
 });
+
+function FakeRecord(constructor, r) {
+  constructor.call(this, "bookmarks", r.id);
+  for (let x in r) {
+    this[x] = r[x];
+  }
+}
 
 // Bug 632287.
 add_test(function test_mismatched_types() {
   _("Ensure that handling a record that changes type causes deletion " +
     "then re-adding.");
-
-  function FakeRecord(constructor, r) {
-    constructor.call(this, "bookmarks", r.id);
-    for (let x in r) {
-      this[x] = r[x];
-    }
-  }
 
   let oldRecord = {
     "id": "l1nZZXfB8nC7",
@@ -336,23 +329,13 @@ add_test(function test_mismatched_types() {
     "parentid": "toolbar"
   };
 
-  let syncTesting = new SyncTestingInfrastructure();
-  Svc.Prefs.set("username", "foo");
-  Service.serverURL = "http://localhost:8080/";
-  Service.clusterURL = "http://localhost:8080/";
+  new SyncTestingInfrastructure();
 
-  let collection = new ServerCollection({}, true);
+  let engine = new BookmarksEngine(Service);
+  let store  = engine._store;
+  let server = serverForFoo(engine);
 
-  let engine = new BookmarksEngine();
-  let store = engine._store;
-  let global = new ServerWBO('global',
-                             {engines: {bookmarks: {version: engine.version,
-                                                    syncID: engine.syncID}}});
   _("GUID: " + store.GUIDForId(6, true));
-  let server = httpd_setup({
-    "/1.1/foo/storage/meta/global": global.handler(),
-    "/1.1/foo/storage/bookmarks": collection.handler()
-  });
 
   try {
     let bms = PlacesUtils.bookmarks;
@@ -366,7 +349,8 @@ add_test(function test_mismatched_types() {
     let oldID = store.idForGUID(oldR.id);
     _("Old ID: " + oldID);
     do_check_eq(bms.getItemType(oldID), bms.TYPE_FOLDER);
-    do_check_false(PlacesUtils.livemarks.isLivemark(oldID));
+    do_check_false(PlacesUtils.annotations
+                              .itemHasAnnotation(oldID, PlacesUtils.LMANNO_FEEDURI));
 
     store.applyIncoming(newR);
     let newID = store.idForGUID(newR.id);
@@ -374,12 +358,13 @@ add_test(function test_mismatched_types() {
 
     _("Applied new. It's a livemark.");
     do_check_eq(bms.getItemType(newID), bms.TYPE_FOLDER);
-    do_check_true(PlacesUtils.livemarks.isLivemark(newID));
+    do_check_true(PlacesUtils.annotations
+                             .itemHasAnnotation(newID, PlacesUtils.LMANNO_FEEDURI));
 
   } finally {
     store.wipe();
     Svc.Prefs.resetBranch("");
-    Records.clearCache();
+    Service.recordManager.clearCache();
     server.stop(run_next_test);
   }
 });
@@ -387,27 +372,21 @@ add_test(function test_mismatched_types() {
 add_test(function test_bookmark_guidMap_fail() {
   _("Ensure that failures building the GUID map cause early death.");
 
-  let syncTesting = new SyncTestingInfrastructure();
-  Svc.Prefs.set("clusterURL", "http://localhost:8080/");
-  Svc.Prefs.set("username", "foo");
-  let collection = new ServerCollection();
-  let engine = new BookmarksEngine();
+  new SyncTestingInfrastructure();
+
+  let engine = new BookmarksEngine(Service);
   let store = engine._store;
-  let global = new ServerWBO('global',
-                             {engines: {bookmarks: {version: engine.version,
-                                                    syncID: engine.syncID}}});
-  let server = httpd_setup({
-    "/1.1/foo/storage/meta/global": global.handler(),
-    "/1.1/foo/storage/bookmarks": collection.handler()
-  });
+
+  let store  = engine._store;
+  let server = serverForFoo(engine);
+  let coll   = server.user("foo").collection("bookmarks");
 
   // Add one item to the server.
   let itemID = PlacesUtils.bookmarks.createFolder(
     PlacesUtils.bookmarks.toolbarFolder, "Folder 1", 0);
-  let itemGUID = store.GUIDForId(itemID);
+  let itemGUID    = store.GUIDForId(itemID);
   let itemPayload = store.createRecord(itemGUID).cleartext;
-  let encPayload = encryptPayload(itemPayload);
-  collection.wbos[itemGUID] = new ServerWBO(itemGUID, encPayload);
+  coll.insert(itemGUID, encryptPayload(itemPayload));
 
   engine.lastSync = 1;   // So we don't back up.
 
@@ -441,12 +420,121 @@ add_test(function test_bookmark_guidMap_fail() {
   server.stop(run_next_test);
 });
 
+add_test(function test_bookmark_is_taggable() {
+  let engine = new BookmarksEngine(Service);
+  let store = engine._store;
+
+  do_check_true(store.isTaggable("bookmark"));
+  do_check_true(store.isTaggable("microsummary"));
+  do_check_true(store.isTaggable("query"));
+  do_check_false(store.isTaggable("folder"));
+  do_check_false(store.isTaggable("livemark"));
+  do_check_false(store.isTaggable(null));
+  do_check_false(store.isTaggable(undefined));
+  do_check_false(store.isTaggable(""));
+
+  run_next_test();
+});
+
+add_test(function test_bookmark_tag_but_no_uri() {
+  _("Ensure that a bookmark record with tags, but no URI, doesn't throw an exception.");
+
+  let engine = new BookmarksEngine(Service);
+  let store = engine._store;
+
+  // We're simply checking that no exception is thrown, so
+  // no actual checks in this test.
+
+  store._tagURI(null, ["foo"]);
+  store._tagURI(null, null);
+  store._tagURI(Utils.makeURI("about:fake"), null);
+
+  let record = {
+    _parent:     PlacesUtils.bookmarks.toolbarFolder,
+    id:          Utils.makeGUID(),
+    description: "",
+    tags:        ["foo"],
+    title:       "Taggy tag",
+    type:        "folder"
+  };
+
+  // Because update() walks the cleartext.
+  record.cleartext = record;
+
+  store.create(record);
+  record.tags = ["bar"];
+  store.update(record);
+
+  run_next_test();
+});
+
+add_test(function test_misreconciled_root() {
+  _("Ensure that we don't reconcile an arbitrary record with a root.");
+
+  new SyncTestingInfrastructure();
+
+  let engine = new BookmarksEngine(Service);
+  let store = engine._store;
+
+  // Log real hard for this test.
+  store._log.trace = store._log.debug;
+  engine._log.trace = engine._log.debug;
+
+  engine._syncStartup();
+
+  // Let's find out where the toolbar is right now.
+  let toolbarBefore = store.createRecord("toolbar", "bookmarks");
+  let toolbarIDBefore = store.idForGUID("toolbar");
+  do_check_neq(-1, toolbarIDBefore);
+
+  let parentGUIDBefore = toolbarBefore.parentid;
+  let parentIDBefore = store.idForGUID(parentGUIDBefore);
+  do_check_neq(-1, parentIDBefore);
+  do_check_eq("string", typeof(parentGUIDBefore));
+
+  _("Current parent: " + parentGUIDBefore + " (" + parentIDBefore + ").");
+
+  let to_apply = {
+    id: "zzzzzzzzzzzz",
+    type: "folder",
+    title: "Bookmarks Toolbar",
+    description: "Now you're for it.",
+    parentName: "",
+    parentid: "mobile",   // Why not?
+    children: [],
+  };
+
+  let rec = new FakeRecord(BookmarkFolder, to_apply);
+  let encrypted = encryptPayload(rec.cleartext);
+  encrypted.decrypt = function () {
+    for (let x in rec) {
+      encrypted[x] = rec[x];
+    }
+  };
+
+  _("Applying record.");
+  engine._processIncoming({
+    get: function () {
+      this.recordHandler(encrypted);
+      return {success: true}
+    },
+  });
+
+  // Ensure that afterwards, toolbar is still there.
+  // As of 2012-12-05, this only passes because Places doesn't use "toolbar" as
+  // the real GUID, instead using a generated one. Sync does the translation.
+  let toolbarAfter = store.createRecord("toolbar", "bookmarks");
+  let parentGUIDAfter = toolbarAfter.parentid;
+  let parentIDAfter = store.idForGUID(parentGUIDAfter);
+  do_check_eq(store.GUIDForId(toolbarIDBefore), "toolbar");
+  do_check_eq(parentGUIDBefore, parentGUIDAfter);
+  do_check_eq(parentIDBefore, parentIDAfter);
+
+  run_next_test();
+});
 
 function run_test() {
   initTestLogging("Trace");
-  Log4Moz.repository.getLogger("Sync.Engine.Bookmarks").level = Log4Moz.Level.Trace;
-
-  generateNewKeys();
-
+  generateNewKeys(Service.collectionKeys);
   run_next_test();
 }

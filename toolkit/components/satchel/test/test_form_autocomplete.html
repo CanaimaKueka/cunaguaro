@@ -80,6 +80,36 @@ Form History test: form field autocomplete
     <button type="submit">Submit</button>
   </form>
 
+  <!-- form with input type='number' -->
+  <form id="form12" onsubmit="return false;">
+    <input  type="number" name="field10">
+    <button type="submit">Submit</button>
+  </form>
+
+  <!-- normal, basic form (with fieldname='searchbar-history') -->
+  <form id="form13" onsubmit="return false;">
+    <input  type="text" name="searchbar-history">
+    <button type="submit">Submit</button>
+  </form>
+
+  <!-- form with input type='date' -->
+  <form id="form14" onsubmit="return false;">
+    <input  type="date" name="field11">
+    <button type="submit">Submit</button>
+  </form>
+
+  <!-- form with input type='time' -->
+  <form id="form15" onsubmit="return false;">
+    <input  type="time" name="field12">
+    <button type="submit">Submit</button>
+  </form>
+
+  <!-- form with input type='range' -->
+  <form id="form16" onsubmit="return false;">
+    <input  type="range" name="field13" max="64">
+    <button type="submit">Submit</button>
+  </form>
+
 </div>
 
 <pre id="test">
@@ -87,14 +117,12 @@ Form History test: form field autocomplete
 
 /** Test for Form History autocomplete **/
 
-netscape.security.PrivilegeManager.enablePrivilege('UniversalXPConnect');
-
 var input = $_(1, "field1");
-const shiftModifier = Components.interfaces.nsIDOMNSEvent.SHIFT_MASK;
+const shiftModifier = Event.SHIFT_MASK;
 
 // Get the form history service
-var fh = Components.classes["@mozilla.org/satchel/form-history;1"].
-         getService(Components.interfaces.nsIFormHistory2);
+var fh = SpecialPowers.Cc["@mozilla.org/satchel/form-history;1"].
+         getService(SpecialPowers.Ci.nsIFormHistory2);
 ok(fh != null, "got form history service");
 
 fh.removeAllEntries();
@@ -121,12 +149,16 @@ fh.addEntry("field6", "value");
 fh.addEntry("field7", "value");
 fh.addEntry("field8", "value");
 fh.addEntry("field9", "value");
+fh.addEntry("field10", "42");
+fh.addEntry("field11", "2010-10-10");
+fh.addEntry("field12", "21:21");
+fh.addEntry("field13", "32"); // not used, since type=range doesn't have a drop down menu
+fh.addEntry("searchbar-history", "blacklist test");
 
 // All these non-implemeted types might need autocomplete tests in the future.
-var todoTypes = [ "datetime", "date", "month", "week", "time", "datetime-local",
-                  "number", "range", "color" ];
+var todoTypes = [ "datetime", "month", "week", "datetime-local", "color" ];
 var todoInput = document.createElement("input");
-for each (var type in todoTypes) {
+for (var type of todoTypes) {
   todoInput.type = type;
   todo_is(todoInput.type, type, type + " type shouldn't be implemented");
 }
@@ -160,8 +192,6 @@ function checkForm(expectedValue) {
  * timeout.
  */
 function runTest(testNum) {
-  // Seems we need to enable this again, or sendKeyEvent() complaints.
-  netscape.security.PrivilegeManager.enablePrivilege('UniversalXPConnect');
   ok(true, "Starting test #" + testNum);
 
   switch(testNum) {
@@ -341,9 +371,7 @@ function runTest(testNum) {
 
         // On OS X, shift-backspace and shift-delete work, just delete does not.
         // On Win/Linux, shift-backspace does not work, delete and shift-delete do.
-        var osString = Components.classes["@mozilla.org/xre/app-info;1"].
-                       getService(Components.interfaces.nsIXULRuntime).OS;
-        if (osString == "Darwin")
+        if (SpecialPowers.OS == "Darwin")
           doKey("back_space", shiftModifier);
         else
           doKey("delete", shiftModifier);
@@ -477,19 +505,22 @@ function runTest(testNum) {
         input = $_(5, "field3");
         restoreForm();
         testNum = 199;
-        sendChar("a", input);
+        input.focus();
+        sendChar("a");
         break;
 
     /* Test filtering as characters are typed. */
 
     case 200:
         checkMenuEntries(["a", "aa", "aaz", "aa\xe6", "az"]);
-        sendChar("a", input);
+        input.focus();
+        sendChar("a");
         break;
 
     case 201:
         checkMenuEntries(["aa", "aaz", "aa\xe6"]);
-        sendChar("\xc6", input);
+        input.focus();
+        sendChar("\xc6");
         break;
 
     case 202:
@@ -504,27 +535,31 @@ function runTest(testNum) {
 
     case 204:
         checkMenuEntries(["a", "aa", "aaz", "aa\xe6", "az"]);
-        sendChar("z", input);
+        input.focus();
+        sendChar("z");
         break;
 
     case 205:
         ok(getMenuEntries().length > 0, "checking typing in middle of text");
+        input.focus();
         doKey("left");
-        sendChar("a", input);
+        sendChar("a");
         break;
 
     case 206:
         checkMenuEntries(["aaz"]);
         fh.addEntry("field3", "aazq");
+        input.focus();
         doKey("right");
-        sendChar("q", input);
+        sendChar("q");
         break;
 
     case 207:
         // check that results were cached
         checkMenuEntries([]);
         fh.addEntry("field3", "aazqq");
-        sendChar("q", input);
+        input.focus();
+        sendChar("q");
         break;
 
     case 208:
@@ -536,7 +571,8 @@ function runTest(testNum) {
         input = $_(6, "field4");
         restoreForm();
         testNum = 249;
-        sendChar("a", input);
+        input.focus();
+        sendChar("a");
         break;
 
     /* Test substring matches and word boundary bonuses */
@@ -544,7 +580,8 @@ function runTest(testNum) {
     case 250:
         // alphabetical results for first character
         checkMenuEntries(["aa a\xe6", "aba\xe6", "a\xe6"]);
-        sendChar("\xc6", input);
+        input.focus();
+        sendChar("\xc6");
         break;
 
     case 251:
@@ -553,31 +590,36 @@ function runTest(testNum) {
         checkMenuEntries(["a\xe6", "aa a\xe6", "aba\xe6"]);
 
         restoreForm();
-        sendChar("b", input);
+        input.focus();
+        sendChar("b");
         break;
 
     case 252:
         checkMenuEntries(["bc d\xe6"]);
-        sendChar(" ", input);
+        input.focus();
+        sendChar(" ");
         break;
 
     case 253:
         // check that trailing space has no effect after single char.
         checkMenuEntries(["bc d\xe6"]);
-        sendChar("\xc6", input);
+        input.focus();
+        sendChar("\xc6");
         break;
 
     case 254:
         // check multi-word substring matches
         checkMenuEntries(["bc d\xe6", "aba\xe6"]);
+        input.focus();
         doKey("left");
-        sendChar("d", input);
+        sendChar("d");
         break;
 
     case 255:
         // check inserting in multi-word searches
         checkMenuEntries(["bc d\xe6"]);
-        sendChar("z", input);
+        input.focus();
+        sendChar("z");
         break;
 
     case 256:
@@ -630,7 +672,8 @@ function runTest(testNum) {
         input.maxLength = 4;
 
         // now again with a character typed
-        sendChar("1", input);
+        input.focus();
+        sendChar("1");
         doKey("escape");
         doKey("down");
         break;
@@ -688,11 +731,56 @@ function runTest(testNum) {
         } else if (testNum == 402) {
           input = $_(11, "field9");
         } else if (testNum == 403) {
-          // Go to test 500.
-          fh.addEntry("field1", "value1");
-          input = $_(1, "field1");
-          testNum = 499;
+          input = $_(12, "field10");
         }
+
+        restoreForm();
+        doKey("down");
+        break;
+
+    case 404:
+        checkMenuEntries(["42"]);
+        doKey("down");
+        doKey("return");
+        checkForm("42");
+
+        input = $_(14, "field11");
+        restoreForm();
+        doKey("down");
+        break;
+
+    case 405:
+        checkMenuEntries(["2010-10-10"]);
+        doKey("down");
+        doKey("return");
+        checkForm("2010-10-10");
+
+        input = $_(15, "field12");
+        restoreForm();
+        doKey("down");
+        break;
+
+    case 406:
+        checkMenuEntries(["21:21"]);
+        doKey("down");
+        doKey("return");
+        checkForm("21:21");
+
+        input = $_(16, "field13");
+        restoreForm();
+        doKey("down");
+        break;
+
+      case 407:
+        checkMenuEntries([]); // type=range does not have a drop down menu
+        doKey("down");
+        doKey("return");
+        checkForm("30"); // default (midway between minimum (0) and maximum (64)) - step
+
+        // Go to test 500.
+        fh.addEntry("field1", "value1");
+        input = $_(1, "field1");
+        testNum = 499;
 
         restoreForm();
         doKey("down");
@@ -705,14 +793,29 @@ function runTest(testNum) {
         ok(true, "oninput should have been received");
         ok(event.bubbles, "input event should bubble");
         ok(event.cancelable, "input event should be cancelable");
-        SimpleTest.finish();
       }, false);
 
       doKey("down");
       checkForm("");
       doKey("return");
       checkForm("value1");
-      return;
+      testNum = 599;
+      break;
+
+    case 600:
+        // check we don't show autocomplete for searchbar-history
+        input = $_(13, "searchbar-history");
+
+        // Trigger autocomplete popup
+        checkForm("");
+        restoreForm();
+        doKey("down");
+        break;
+
+    case 601:
+        checkMenuEntries([]);
+        SimpleTest.finish();
+        return;
 
     default:
         ok(false, "Unexpected invocation of test #" + testNum);

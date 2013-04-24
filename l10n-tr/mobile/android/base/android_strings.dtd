@@ -1,0 +1,271 @@
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+
+
+<!ENTITY  splash_settingup "&brandShortName; kuruluyor">
+<!ENTITY  splash_bookmarks_history "Yer imlerinizi ve geçmişinizi güncelliyoruz. Bu işlem bir dakika kadar sürebilir.">
+
+<!ENTITY  no_space_to_start_error "&brandShortName; uygulamasının başlaması için yeterli boş alan yok.">
+<!ENTITY  error_loading_file "&brandShortName; uygulamasını başlatmak için gereken dosyalar yüklenmeye çalışılırken bir sorun meydana geldi.">
+
+<!ENTITY  awesomebar_all_pages_title "Önemli siteler">
+<!ENTITY  awesomebar_bookmarks_title "Yer imleri">
+<!ENTITY  awesomebar_history_title "Geçmiş">
+
+<!ENTITY  crash_reporter_title "&brandShortName; Çöküş Bildirici">
+<!ENTITY  crash_message "&brandShortName; çöktü. Yeniden başlattığınızda sekmeleriniz &brandShortName; başlangıç sayfasında listelenmeli.">
+<!ENTITY  crash_help_message "Bu sorunu çözmemize yardımcı olun!">
+<!ENTITY  crash_send_report_message "Mozilla\u0027ya çöküş bildirimi gönder">
+<!ENTITY  crash_include_url "Sayfa adresini içer">
+<!ENTITY  crash_close_label "Kapat">
+<!ENTITY  crash_restart_label "&brandShortName; baştan başlasın">
+<!ENTITY  sending_crash_report "Çökme raporu gönderiliyor\u2026">
+<!ENTITY  exit_label "Çık">
+<!ENTITY  continue_label "Devam">
+
+<!ENTITY  launcher_shortcuts_title "&brandShortName; Web Uygulamaları">
+<!ENTITY  launcher_shortcuts_empty "Web uygulaması bulunamadı">
+
+<!ENTITY choose_file "Dosya Seç">
+
+<!ENTITY awesomebar_default_text "Aranacak terim veya adres girin">
+
+<!ENTITY remote_tabs "Eşitlenmiş Sekmeler">
+<!ENTITY remote_tabs_show_all "Tüm sekmeleri göster">
+
+<!ENTITY bookmark "Yer imi">
+<!ENTITY bookmark_added "Yer imi eklendi">
+<!ENTITY bookmark_removed "Yer imi silindi">
+<!ENTITY bookmark_updated "Yer imi güncellendi">
+
+<!ENTITY history_today_section "Bugün">
+<!ENTITY history_yesterday_section "Dün">
+<!ENTITY history_week_section "7 gün önce">
+<!ENTITY history_older_section "7 günden eski">
+
+<!ENTITY go "Git">
+<!ENTITY search "Ara">
+<!ENTITY reload "Tazele">
+<!ENTITY forward "İleri">
+<!ENTITY menu "Menü">
+<!ENTITY back "Geri dön">
+<!ENTITY stop "Durdur">
+<!ENTITY site_security "Site Güvenliği">
+
+<!ENTITY close_tab "Sekmeyi kapat">
+<!ENTITY one_tab "1 sekme">
+<!-- Localization note (num_tabs2) : Number of tabs is always more than one.
+     We can't use android plural forms, sadly. See bug #753859. -->
+<!ENTITY num_tabs2 "&formatD; sekme">
+<!ENTITY new_tab_opened "Yeni sekme açıldı">
+
+<!ENTITY settings "Ayarlar">
+<!ENTITY settings_title "Ayarlar">
+<!ENTITY pref_category_general "Genel">
+<!ENTITY pref_category_privacy "Gizlilik ve güvenlik">
+<!ENTITY pref_category_content "İçerik">
+<!ENTITY pref_category_importexport "Al &amp; Ver">
+<!ENTITY pref_about_firefox "&brandShortName; hakkında">
+<!ENTITY pref_do_not_track "Siteler beni takip etmesin">
+<!ENTITY pref_telemetry "Performans verilerini gönder">
+<!ENTITY pref_remember_signons "Parolaları hatırla">
+
+<!ENTITY pref_cookies_menu "Çerezler">
+<!ENTITY pref_cookies_accept_all "Etkin">
+<!ENTITY pref_cookies_not_accept_foreign "Etkin, 3. parti hariç">
+<!ENTITY pref_cookies_disabled "Devre dışı">
+
+<!ENTITY pref_char_encoding "Karakter kodlamasını göster">
+<!ENTITY pref_char_encoding_on "Menüyü göster">
+<!ENTITY pref_char_encoding_off "Menüyü gösterme">
+<!ENTITY pref_clear_private_data "Özel verileri sil">
+<!ENTITY pref_plugins "Yan uygulamalar">
+<!ENTITY pref_plugins_enabled "Etkin">
+<!ENTITY pref_plugins_tap_to_play "Oynatmak için dokunun">
+<!ENTITY pref_plugins_disabled "Devre dışı">
+<!ENTITY pref_text_size "Metin boyutu">
+<!ENTITY pref_reflow_on_zoom2 "Metni yenilemek için sıkıştırın">
+<!ENTITY pref_font_size_tiny "Çok küçük">
+<!ENTITY pref_font_size_small "Küçük">
+<!ENTITY pref_font_size_medium "Orta">
+<!ENTITY pref_font_size_large "Büyük">
+<!ENTITY pref_font_size_xlarge "Çok büyük">
+<!ENTITY pref_font_size_set "Ayarla">
+<!-- Localization note (pref_font_size_adjust_char): A button with a small version of this character
+(or combination of characters) is used to decrease the preview font size; a larger version of the
+same character/combination is used to increase the preview font size. It should be a concise
+representation of the language it is used in that will help show the text in the preview will change
+size. -->
+<!ENTITY pref_font_size_adjust_char "A">
+
+<!-- Localization note (pref_font_size_preview_text): This paragraph is used as an example to
+    demonstrate the font size setting.  It is meant to be whimsical and fun. -->
+<!ENTITY pref_font_size_preview_text "Hızlı turuncu tilki daha fazla hız, esneklik ve güvenlikle beklentilerinizin üstünden atlar. Kâr amacı gütmeyen bir organizasyon olarak, üzerimizde baskı kuracak hiçbir güç olmadan, sizin adınıza yenilikler yapmakta özgürüz. Bu, sizin için daha iyi bir deneyim, Web için daha parlak bir gelecek demek.">
+
+<!ENTITY pref_use_master_password "Ana parolayı kullan">
+<!ENTITY pref_show_product_announcements "Ürün duyurularını göster">
+<!ENTITY pref_sync "Sync">
+<!ENTITY pref_search_suggestions "Arama önerilerini göster">
+<!ENTITY pref_import_android "Android\'den al">
+<!ENTITY pref_private_data_history "Tarama ve indirme geçmişi">
+<!ENTITY pref_private_data_formdata "Form ve arama geçmişi">
+<!ENTITY pref_private_data_cookies2 "Çerezler ve aktif oturumlar">
+<!ENTITY pref_private_data_passwords "Kayıtlı parolalar">
+<!ENTITY pref_private_data_cache "Önbellek">
+<!ENTITY pref_private_data_offlineApps "Çevrimdışı web sitesi verileri">
+<!ENTITY pref_private_data_siteSettings "Site tercihleri">
+<!ENTITY pref_private_data_downloadFiles "İndirilmiş dosyalar">
+
+<!ENTITY pref_update_autodownload "Otomatik güncellemeler">
+<!ENTITY pref_update_autodownload_wifi "Yalnızca Wi-Fi üzerinden">
+<!ENTITY pref_update_autodownload_disabled "Devre dışı">
+<!ENTITY pref_update_autodownload_enabled "Etkin">
+
+<!ENTITY quit "Çık">
+
+<!ENTITY addons "Eklentiler">
+<!ENTITY downloads "İndirilenler">
+<!ENTITY apps "Uygulamalar">
+<!ENTITY char_encoding "Karakter kodlaması">
+
+<!ENTITY share "Paylaş">
+<!ENTITY share_title "Paylaş">
+<!ENTITY share_image_failed "Bu resim paylaşılamadı">
+<!ENTITY save_as_pdf "PDF olarak kaydet">
+<!ENTITY find_in_page "Sayfada bul">
+<!ENTITY desktop_mode "Masaüstü sitesini iste">
+<!ENTITY tools "Araçlar">
+<!ENTITY new_tab "Yeni sekme">
+<!ENTITY new_private_tab "Yeni gizli sekme">
+<!ENTITY close_all_tabs "Tüm sekmeleri kapat">
+<!ENTITY tabs_normal "Sekmeler">
+<!ENTITY tabs_private "Özel">
+<!ENTITY tabs_synced "Eşitlenen">
+<!ENTITY wallpaper_success "Wallpaper updated">
+<!ENTITY wallpaper_progress "Setting wallpaper">
+<!ENTITY wallpaper_fail "Unable to set wallpaper">
+
+<!-- Localization note (find_text, find_prev, find_next, find_close) : These strings are used
+     as alternate text for accessibility. They are not visible in the UI. -->
+<!ENTITY find_text "Sayfada bul">
+<!ENTITY find_prev "Önceki">
+<!ENTITY find_next "Sonraki">
+<!ENTITY find_close "Kapat">
+
+<!ENTITY contextmenu_open_new_tab "Yeni sekmede aç">
+<!ENTITY contextmenu_open_private_tab "Gizli sekmede aç">
+<!ENTITY contextmenu_open_in_reader "Okuyucuda aç">
+<!ENTITY contextmenu_remove_history "Kaldır">
+<!ENTITY contextmenu_remove_bookmark "Kaldır">
+<!ENTITY contextmenu_add_to_launcher "Ana ekrana ekle">
+<!ENTITY contextmenu_share "Paylaş">
+<!ENTITY contextmenu_pasteandgo "Yapıştır &amp; git">
+<!ENTITY contextmenu_paste "Yapıştır">
+<!ENTITY contextmenu_copyurl "Adresi kopyala">
+<!ENTITY contextmenu_edit_bookmark "Düzenle">
+
+<!ENTITY history_removed "Sayfa silindi">
+
+<!ENTITY bookmark_edit_title "Yer imini düzenle">
+<!ENTITY bookmark_edit_name "İsim">
+<!ENTITY bookmark_edit_location "Konum">
+<!ENTITY bookmark_edit_keyword "Anahtar kelime">
+
+<!ENTITY site_settings_title2       "Site Ayarları…">
+<!ENTITY site_settings_cancel       "İptal">
+<!ENTITY site_settings_clear        "Temizle">
+<!ENTITY site_settings_no_settings  "Temizlenecek ayar yok.">
+
+<!ENTITY reading_list "Okuma Listesi">
+<!ENTITY reading_list_added "Sayfa, okuma listenize eklendi">
+<!ENTITY reading_list_removed "Sayfa, okuma listenizden silindi">
+<!ENTITY reading_list_failed "Sayfa, Okuma Listenize eklenemedi">
+<!ENTITY reader "Okuyucu">
+
+<!ENTITY masterpassword_create_title "Ana parola oluştur">
+<!ENTITY masterpassword_remove_title "Ana parolayı kaldır">
+<!ENTITY masterpassword_password "Parola">
+<!ENTITY masterpassword_confirm "Parolayı doğrulayın">
+
+<!ENTITY button_ok "Tamam">
+<!ENTITY button_cancel "İptal">
+<!ENTITY button_yes "Evet">
+<!ENTITY button_no "Hayır">
+<!ENTITY button_clear_data "Verileri temizle">
+<!ENTITY button_set "Ayarla">
+<!ENTITY button_clear "Temizle">
+
+<!ENTITY abouthome_addons_title "&brandShortName; için eklentiler">
+<!ENTITY abouthome_addons_browse "Tüm &brandShortName; eklentilerine göz at">
+<!ENTITY abouthome_last_tabs_title "Son oturumunuzdaki sekmeler">
+<!ENTITY abouthome_last_tabs_open "Son oturumdaki tüm sekmeleri aç">
+<!ENTITY abouthome_top_sites_title "Popüler siteler">
+<!ENTITY abouthome_topsites_edit "Düzenle">
+<!ENTITY abouthome_topsites_pin "Siteyi sabitle">
+<!ENTITY abouthome_topsites_unpin "Sabitlenmesini kaldır">
+<!ENTITY abouthome_topsites_remove "Kaldır">
+
+<!-- Localization note (abouthome_about_sync3, abouthome_about_apps2): The
+     chevron (ex: "»"; unicode= U+00BB) is used as an arrow to show that
+     clicking this text in the promotions box will perform some action. Note
+     that a non-breaking space (unicode= U+00A0) should be used between this
+     character and the remainder of the string to prevent word wrap. -->
+<!ENTITY abouthome_about_sync3 "Diğer aygıtlarınızdan yer imlerinize, geçmişinize ve sekmelerinize erişmek için Firefox Sync\'i kurun&#x00A0;»">
+<!ENTITY abouthome_about_apps3 "Firefox Marketplace\&apos;ten yeni uygulamalar edinin, Web\&apos;in sunduklarını keşfedin&#x00A0;»">
+<!-- Localization note (abouthome_sync_bold_name, abouthome_apps_bold_name):
+     These strings are accentuated as bold text in the "abouthome_about_..."
+     strings above. These strings should be a subset of the strings above and
+     generally be the name of the product the string describes. -->
+<!ENTITY abouthome_sync_bold_name "Firefox Sync">
+<!ENTITY abouthome_apps_bold_name2 "Firefox Marketplace">
+
+<!ENTITY filepicker_title "Dosya seç">
+<!ENTITY filepicker_audio_title "Bir ses seçin veya kaydedin">
+<!ENTITY filepicker_image_title "Bir resim seçin veya çekin">
+<!ENTITY filepicker_video_title "Bir video seçin veya kaydedin">
+
+<!-- Site identity popup -->
+<!ENTITY identity_connected_to "Bağlandığınız site:">
+<!-- Localization note (identity_run_by) : This string appears between a
+domain name (above) and an organization name (below). E.g.
+
+example.com
+which is run by
+Example Enterprises, Inc.
+
+The layout of the identity dialog prevents combining this into a single string with
+substitution variables.  If it is difficult to translate the sense of the string
+with that structure, consider a translation which ignores the preceding domain and
+just addresses the organization to follow, e.g. "This site is run by " -->
+<!ENTITY identity_run_by "İşleten:">
+
+<!ENTITY private_data_success "Özel veriler temizlendi">
+<!ENTITY private_data_fail "Bazı özel veriler temizlenemedi">
+
+<!ENTITY bookmarkhistory_button_import "İçe aktar">
+<!ENTITY bookmarkhistory_import_both "Android\'den yer imleri ve geçmiş alınıyor">
+<!ENTITY bookmarkhistory_import_bookmarks "Android\'den yer imleri alınıyor">
+<!ENTITY bookmarkhistory_import_history "Android\'den geçmiş alınıyor">
+<!ENTITY bookmarkhistory_import_wait "Lütfen bekleyin...">
+
+<!-- Localization note (suggestions_prompt2): The placeholder &formatS; will be
+     replaced with the name of the search engine. -->
+<!ENTITY suggestions_prompt2 "&formatS; arama önerilerini açmak ister misiniz?">
+
+<!ENTITY webapp_generic_name "Uygulama">
+
+<!ENTITY searchable_description "Yer imleri ve geçmiş">
+
+ <!-- Updater notifications -->
+<!ENTITY updater_start_title2 "&brandShortName; için güncelleme mevcut">
+<!ENTITY updater_start_select2 "İndirmek için dokunun">
+
+<!ENTITY updater_downloading_title2 "&brandShortName; indiriliyor">
+<!ENTITY updater_downloading_title_failed2 "İndirme başarısız oldu">
+<!ENTITY updater_downloading_select2 "İndirildiğinde güncellemeyi uygulamak için dokunun">
+<!ENTITY updater_downloading_retry2 "Yeniden denemek için dokunun">
+
+<!ENTITY updater_apply_title2 "&brandShortName; için güncelleme mevcut">
+<!ENTITY updater_apply_select2 "Güncellemek için dokunun">
+

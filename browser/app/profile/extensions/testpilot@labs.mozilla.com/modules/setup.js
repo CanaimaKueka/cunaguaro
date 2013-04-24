@@ -1,41 +1,6 @@
-/* ***** BEGIN LICENSE BLOCK *****
- * Version: MPL 1.1/GPL 2.0/LGPL 2.1
- *
- * The contents of this file are subject to the Mozilla Public License Version
- * 1.1 (the "License"); you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- * http://www.mozilla.org/MPL/
- *
- * Software distributed under the License is distributed on an "AS IS" basis,
- * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
- * for the specific language governing rights and limitations under the
- * License.
- *
- * The Original Code is Test Pilot.
- *
- * The Initial Developer of the Original Code is Mozilla.
- * Portions created by the Initial Developer are Copyright (C) 2007
- * the Initial Developer. All Rights Reserved.
- *
- * Contributor(s):
- *   Atul Varma <atul@mozilla.com>
- *   Jono X <jono@mozilla.com>
- *   Raymond Lee <raymond@appcoast.com>
- *   Jorge Villalobos <jorge@mozilla.com>
- *
- * Alternatively, the contents of this file may be used under the terms of
- * either the GNU General Public License Version 2 or later (the "GPL"), or
- * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
- * in which case the provisions of the GPL or the LGPL are applicable instead
- * of those above. If you wish to allow use of your version of this file only
- * under the terms of either the GPL or the LGPL, and not to allow others to
- * use your version of this file under the terms of the MPL, indicate your
- * decision by deleting the provisions above and replace them with the notice
- * and other provisions required by the GPL or the LGPL. If you do not delete
- * the provisions above, a recipient may use your version of this file under
- * the terms of any one of the MPL, the GPL or the LGPL.
- *
- * ***** END LICENSE BLOCK ***** */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 EXPORTED_SYMBOLS = ["TestPilotSetup", "POPUP_SHOW_ON_NEW",
                     "POPUP_SHOW_ON_FINISH", "POPUP_SHOW_ON_RESULTS",
@@ -58,6 +23,8 @@ const ALWAYS_SUBMIT_DATA = "extensions.testpilot.alwaysSubmitData";
 const UPDATE_CHANNEL_PREF = "app.update.channel";
 const LOG_FILE_NAME = "TestPilotErrorLog.log";
 const RANDOM_DEPLOY_PREFIX = "extensions.testpilot.deploymentRandomizer";
+
+Cu.import("resource://testpilot/modules/interface.js");
 
 let TestPilotSetup = {
   didReminderAfterStartup: false,
@@ -186,30 +153,6 @@ let TestPilotSetup = {
     return this.__obs;
   },
 
-  _isBetaChannel: function TPS__isBetaChannel() {
-    // Beta and aurora channels use feedback interface; nightly and release channels don't.
-    let channel = this._prefs.getValue(UPDATE_CHANNEL_PREF, "");
-    return (channel == "beta") || (channel == "betatest") || (channel == "aurora");
-  },
-
-  _setPrefDefaultsForVersion: function TPS__setPrefDefaultsForVersion() {
-    /* A couple of preferences need different default values depending on
-     * whether we're in the Firefox 4 beta version or the standalone TP version
-     */
-    let ps = Cc["@mozilla.org/preferences-service;1"]
-                    .getService(Ci.nsIPrefService);
-    let prefBranch = ps.getDefaultBranch("");
-    /* note we're setting default values, not current values -- these
-     * get overridden by any user set values. */
-    if (this._isBetaChannel()) {
-      prefBranch.setBoolPref(POPUP_SHOW_ON_NEW, true);
-      prefBranch.setIntPref(POPUP_CHECK_INTERVAL, 600000);
-    } else {
-      prefBranch.setBoolPref(POPUP_SHOW_ON_NEW, false);
-      prefBranch.setIntPref(POPUP_CHECK_INTERVAL, 180000);
-    }
-  },
-
   globalStartup: function TPS__doGlobalSetup() {
     // Only ever run this stuff ONCE, on the first window restore.
     // Should get called by the Test Pilot component.
@@ -217,7 +160,6 @@ let TestPilotSetup = {
     logger.trace("TestPilotSetup.globalStartup was called.");
 
     try {
-    this._setPrefDefaultsForVersion();
     if (!this._prefs.getValue(RUN_AT_ALL_PREF, true)) {
       logger.trace("Test Pilot globally disabled: Not starting up.");
       return;
@@ -230,8 +172,6 @@ let TestPilotSetup = {
       "testpilot:task:dataAutoSubmitted", this._onTaskDataAutoSubmitted, self);
     // Set up observation for application shutdown.
     this._obs.add("quit-application", this.globalShutdown, self);
-    // Set up observation for enter/exit private browsing:
-    this._obs.add("private-browsing", this.onPrivateBrowsingMode, self);
 
     // Set up timers to remind user x minutes after startup
     // and once per day thereafter.  Use nsITimer so it doesn't belong to
@@ -257,7 +197,7 @@ let TestPilotSetup = {
         /* Show first run page (in front window) only the first time after install;
          * Don't show first run page in Feedback UI version. */
         if ((self._prefs.getValue(VERSION_PREF, "") == "") &&
-           (!self._interfaceBuilder.channelUsesFeedback())) {
+           (!TestPilotUIBuilder.channelUsesFeedback())) {
             self._prefs.setValue(VERSION_PREF, self.version);
             let browser = self._getFrontBrowserWindow().getBrowser();
             let url = self._prefs.getValue(FIRST_RUN_PREF, "");
@@ -301,7 +241,6 @@ let TestPilotSetup = {
     this._obs.remove(
       "testpilot:task:dataAutoSubmitted", this._onTaskDataAutoSubmitted, self);
     this._obs.remove("quit-application", this.globalShutdown, self);
-    this._obs.remove("private-browsing", this.onPrivateBrowsingMode, self);
     this._loader.unload();
     this._shortTimer.cancel();
     this._longTimer.cancel();
@@ -313,16 +252,6 @@ let TestPilotSetup = {
                getService(Ci.nsIWindowMediator);
     // TODO Is "most recent" the same as "front"?
     return wm.getMostRecentWindow("navigator:browser");
-  },
-
-  onPrivateBrowsingMode: function TPS_onPrivateBrowsingMode(topic, data) {
-    for (let i = 0; i < this.taskList.length; i++) {
-      if (data == "enter") {
-        this.taskList[i].onEnterPrivateBrowsing();
-      } else if (data == "exit") {
-        this.taskList[i].onExitPrivateBrowsing();
-      }
-    }
   },
 
   onWindowUnload: function TPS__onWindowRegistered(window) {
@@ -344,7 +273,7 @@ let TestPilotSetup = {
       appcontent.addEventListener("DOMContentLoaded", function(event) {
         let newUrl =  event.originalTarget.URL;
         self._feedbackManager.fillInFeedbackPage(newUrl, window);
-        for (i = 0; i < self.taskList.length; i++) {
+        for (let i = 0; i < self.taskList.length; i++) {
           self.taskList[i].onUrlLoad(newUrl, event);
         }
       }, true);
@@ -378,16 +307,21 @@ let TestPilotSetup = {
     let doc = window.document;
     let popup = doc.getElementById("pilot-notification-popup");
 
-    let anchor;
-    if (this._isBetaChannel()) {
-      /* If we're in the Ffx4Beta version, popups come down from feedback
-       * button, but if we're in the standalone extension version, they
-       * come up from status bar icon. */
+    let anchor, xOffset;
+    if (TestPilotUIBuilder.channelUsesFeedback()) {
+      /* If we're in the Ffx4Beta version, popups hang down from the feedback
+       * button. In the standalone extension version, they hang down from
+       * a temporary Test Pilot icon that appears in the toolbar. */
       anchor = doc.getElementById("feedback-menu-button");
-      popup.setAttribute("class", "tail-up");
+      xOffset = 0;
     } else {
-      anchor = doc.getElementById("pilot-notifications-button");
-      popup.setAttribute("class", "tail-down");
+      anchor = doc.getElementById("tp-notification-popup-icon");
+      anchor.hidden = false;
+      /* By default, right edge of notification will line up with right edge of anchor.
+       * That looks fine for feedback button, but the test pilot icon is narrower and
+       * this alignment causes the pointy part of the arrow to miss the icon.  Fix this
+       * by shifting the notification to the right 24 pixels. */
+      xOffset = 24;
     }
     let textLabel = doc.getElementById("pilot-notification-text");
     let titleLabel = doc.getElementById("pilot-notification-title");
@@ -456,7 +390,6 @@ let TestPilotSetup = {
     // Create the link if specified:
     if (linkText && (linkUrl || task)) {
       link.setAttribute("value", linkText);
-      link.setAttribute("class", "notification-link");
       link.onclick = function(event) {
         if (event.button == 0) {
 	  if (task) {
@@ -479,7 +412,7 @@ let TestPilotSetup = {
     // Show the popup:
     popup.hidden = false;
     popup.setAttribute("open", "true");
-    popup.openPopup( anchor, "after_end");
+    popup.openPopup( anchor, "after_end", xOffset, 0);
   },
 
   _openChromeless: function TPS__openChromeless(url) {
@@ -497,6 +430,12 @@ let TestPilotSetup = {
     popup.setAttribute("open", "false");
     popup.removeAttribute("tpisextensionupdate");
     popup.hidePopup();
+
+    if (!TestPilotUIBuilder.channelUsesFeedback()) {
+      // If we're using the temporary test pilot icon as an anchor, hide it now
+      let icon = window.document.getElementById("tp-notification-popup-icon");
+      icon.hidden = true;
+    }
     if (onCloseCallback) {
       onCloseCallback();
     }
@@ -522,7 +461,7 @@ let TestPilotSetup = {
 
     // Highest priority is if there is a finished test (needs a decision)
     if (this._prefs.getValue(POPUP_SHOW_ON_FINISH, false)) {
-      for (i = 0; i < this.taskList.length; i++) {
+      for (let i = 0; i < this.taskList.length; i++) {
         task = this.taskList[i];
         if (task.status == TaskConstants.STATUS_FINISHED) {
           if (!this._prefs.getValue(ALWAYS_SUBMIT_DATA, false)) {
@@ -547,7 +486,7 @@ let TestPilotSetup = {
     // If there's no finished test, next highest priority is new tests that
     // are starting...
     if (this._prefs.getValue(POPUP_SHOW_ON_NEW, false)) {
-      for (i = 0; i < this.taskList.length; i++) {
+      for (let i = 0; i < this.taskList.length; i++) {
         task = this.taskList[i];
         if (task.status == TaskConstants.STATUS_PENDING ||
             task.status == TaskConstants.STATUS_NEW) {
@@ -573,11 +512,12 @@ let TestPilotSetup = {
 	      task, false,
 	      this._stringBundle.formatStringFromName(
 		"testpilot.notification.newTestPilotSurvey.message",
-		[task.title], 1),
+    // in task.js summary falls back to title if undefined or empty, but we double make sure :)
+		[task.summary || task.title],1),
               this._stringBundle.GetStringFromName(
 		"testpilot.notification.newTestPilotSurvey"),
 	      "new-study", false, false,
-	      this._stringBundle.GetStringFromName("testpilot.moreInfo"),
+	      this._stringBundle.GetStringFromName("testpilot.takeSurvey"),
 	      task.defaultUrl);
             task.changeStatus(TaskConstants.STATUS_IN_PROGRESS, true);
             return;
@@ -588,7 +528,7 @@ let TestPilotSetup = {
 
     // And finally, new experiment results:
     if (this._prefs.getValue(POPUP_SHOW_ON_RESULTS, false)) {
-      for (i = 0; i < this.taskList.length; i++) {
+      for (let i = 0; i < this.taskList.length; i++) {
         task = this.taskList[i];
         if (task.taskType == TaskConstants.TYPE_RESULTS &&
             task.status == TaskConstants.STATUS_NEW) {
@@ -680,15 +620,17 @@ let TestPilotSetup = {
     }
   },
 
-  _experimentRequirementsAreMet: function TPS__requirementsMet(experiment) {
-    /* Returns true if we we meet the requirements to run this experiment
-     * (e.g. meet the minimum Test Pilot version and Firefox version)
-     * false if not.
-     * Default is always to run the study - return true UNLESS the study
-     * specifies a requirement that we don't meet. */
+  _checkExperimentRequirements: function TPS__requirementsMet(experiment, callback) {
+    /* Async.
+     * Calls callback with a true if we we meet the requirements to run this
+     * experiment (e.g. meet the minimum Test Pilot version and Firefox version)
+     * calls callback with a false if not.
+     * All of the requirements that a study can specify - firefox version, test pilot
+     * version, filter function etc - default to true if not provided. callback(true)
+     * UNLESS the study specifies a requirement that we don't meet. */
     let logger = this._logger;
     try {
-      let minTpVer, minFxVer, expName, runOrNotFunc, randomDeployment;
+      let minTpVer, minFxVer, expName, filterFunc, randomDeployment;
       /* Could be an experiment, which specifies experimentInfo, or survey,
        * which specifies surveyInfo. */
       let info = experiment.experimentInfo ?
@@ -697,12 +639,13 @@ let TestPilotSetup = {
       if (!info) {
         // If neither one is supplied, study lacks metadata required to run
         logger.warn("Study lacks minimum metadata to run.");
-        return false;
+        callback(false);
+        return;
       }
       minTpVer = info.minTPVersion;
       minFxVer = info.minFXVersion;
       expName =  info.testName;
-      runOrNotFunc = info.runOrNotFunc;
+      filterFunc = info.filter;
       randomDeployment = info.randomDeployment;
 
       // Minimum test pilot version:
@@ -720,44 +663,54 @@ let TestPilotSetup = {
 	      "testpilot.notification.extensionUpdate"),
 	    "update-extension", true, false, "", "", true);
 	}
-        return false;
+        callback(false);
+        return;
       }
 
       // Minimum firefox version:
       if (minFxVer && this._isNewerThanFirefox(minFxVer)) {
         logger.warn("Not loading " + expName);
         logger.warn("Because it requires Firefox version " + minFxVer);
-        return false;
+        callback(false);
+        return;
       }
 
       // Random deployment (used to give study to random subsample of users)
       if (randomDeployment) {
-        /* Roll a hundred-sided die. Remember what we roll for later reference.  A study
+        /* Roll a 100*uniform_random. Remember what we roll for later reference or reuse.  A study
          * using random subsample deployment will provide a range (say, 0 ~ 30) which means
-         * only users who roll within that range will run the study. */
+         * only users who roll not outside that range (inclusive) will run the study.
+         * ie., [0,1.5] -> 1.5% prob
+         */
         let prefName = RANDOM_DEPLOY_PREFIX + "." + randomDeployment.rolloutCode;
         let myRoll = this._prefs.getValue(prefName, null);
         if (myRoll == null) {
-          myRoll = Math.floor(Math.random()*100);
-          this._prefs.setValue(prefName, myRoll);
+          myRoll = Math.random()*100;
+          this._prefs.setValue(prefName, JSON.stringify(myRoll));
+        } else {
+          myRoll = Number(myRoll);  // cast it
         }
         if (myRoll < randomDeployment.minRoll) {
-          return false;
+          callback(false);
+          return;
         }
         if (myRoll > randomDeployment.maxRoll) {
-          return false;
+          callback(false);
+          return;
         }
       }
 
       /* The all-purpose, arbitrary code "Should this study run?" function - if
-       * provided, use its return value. */
-      if (runOrNotFunc) {
-        return runOrNotFunc();
+       * provided, use it.  (filterFunc must be asynchronous too!)*/
+      if (filterFunc) {
+        filterFunc(callback);
+        return;
       }
     } catch (e) {
       logger.warn("Error in requirements check " +  e);
+      callback(false); // if something went wrong, err on the side of not running the study
     }
-    return true;
+    callback(true);
   },
 
   checkForTasks: function TPS_checkForTasks(callback) {
@@ -778,65 +731,71 @@ let TestPilotSetup = {
         // downloading new contents or not...
         let experiments = self._remoteExperimentLoader.getExperiments();
 
+        let numExperimentsProcessed = 0;
+        let numExperiments = Object.keys(experiments).length;
         for (let filename in experiments) {
-          if (!self._experimentRequirementsAreMet(experiments[filename])) {
-            continue;
-          }
-          try {
-            // The try-catch ensures that if something goes wrong in loading one
-            // experiment, the other experiments after that one still get loaded.
-            logger.trace("Attempting to load experiment " + filename);
-
-            let task;
-            // Could be a survey: check if surveyInfo is exported:
-            if (experiments[filename].surveyInfo != undefined) {
-              let sInfo = experiments[filename].surveyInfo;
-              // If it supplies questions, it's a built-in survey.
-              // If not, it's a web-based survey.
-              if (!sInfo.surveyQuestions) {
-                task = new self._taskModule.TestPilotWebSurvey(sInfo);
-              } else {
-                task = new self._taskModule.TestPilotBuiltinSurvey(sInfo);
+          self._checkExperimentRequirements(experiments[filename], function(requirementsMet) {
+            if (requirementsMet) {
+              try {
+                /* The try-catch ensures that if something goes wrong in loading one
+                 * experiment, the other experiments after that one still get loaded. */
+                logger.trace("Attempting to load experiment " + filename);
+                let task;
+                // Could be a survey: check if surveyInfo is exported:
+                if (experiments[filename].surveyInfo != undefined) {
+                  let sInfo = experiments[filename].surveyInfo;
+                  // If it supplies questions, it's a built-in survey.
+                  // If not, it's a web-based survey.
+                  if (!sInfo.surveyQuestions) {
+                    task = new self._taskModule.TestPilotWebSurvey(sInfo);
+                  } else {
+                    task = new self._taskModule.TestPilotBuiltinSurvey(sInfo);
+                  }
+                } else {
+                  // This one must be an experiment.
+                  let expInfo = experiments[filename].experimentInfo;
+                  let dsInfo = experiments[filename].dataStoreInfo;
+                  let dataStore = new self._dataStoreModule.ExperimentDataStore(
+                    dsInfo.fileName, dsInfo.tableName, dsInfo.columns );
+                  let webContent = experiments[filename].webContent;
+                  task = new self._taskModule.TestPilotExperiment(expInfo,
+                                                                  dataStore,
+                                                                  experiments[filename].handlers,
+                                                                  webContent);
+                }
+                self.addTask(task);
+                logger.info("Loaded task " + filename);
+              } catch (e) {
+                logger.warn("Failed to load task " + filename + ": " + e);
               }
-            } else {
-              // This one must be an experiment.
-              let expInfo = experiments[filename].experimentInfo;
-              let dsInfo = experiments[filename].dataStoreInfo;
-              let dataStore = new self._dataStoreModule.ExperimentDataStore(
-                dsInfo.fileName, dsInfo.tableName, dsInfo.columns );
-              let webContent = experiments[filename].webContent;
-              task = new self._taskModule.TestPilotExperiment(expInfo,
-                                                              dataStore,
-                                                              experiments[filename].handlers,
-                                                              webContent);
-            }
-            self.addTask(task);
-            logger.info("Loaded task " + filename);
-          } catch (e) {
-            logger.warn("Failed to load task " + filename + ": " + e);
-          }
+            } // end if requirements met
+            // whether loading succeeded or failed, we're done processing that one; increment the count:
+            numExperimentsProcessed ++;
+            if (numExperimentsProcessed == numExperiments) {
+              // all done with experiments -- do results and legacy studies:
+              let results = self._remoteExperimentLoader.getStudyResults();
+              for (let r in results) {
+                let studyResult = new self._taskModule.TestPilotStudyResults(results[r]);
+                self.addTask(studyResult);
+              }
+
+              /* Legacy studies = stuff we no longer have the code for, but
+               * if the user participated in it we want to keep that metadata. */
+              let legacyStudies = self._remoteExperimentLoader.getLegacyStudies();
+              for (let l in legacyStudies) {
+                let legacyStudy = new self._taskModule.TestPilotLegacyStudy(legacyStudies[l]);
+                self.addTask(legacyStudy);
+              }
+
+              // Finally, call the callback if there is one
+              if (callback) {
+                callback();
+              }
+            } // end of if all experiments are processed
+          }); // end of call to check experiment requirements
         } // end for filename in experiments
-
-        // Handling new results is much simpler:
-        let results = self._remoteExperimentLoader.getStudyResults();
-        for (let r in results) {
-          let studyResult = new self._taskModule.TestPilotStudyResults(results[r]);
-          self.addTask(studyResult);
-        }
-
-        /* Legacy studies = stuff we no longer have the code for, but
-         * if the user participated in it we want to keep that metadata. */
-        let legacyStudies = self._remoteExperimentLoader.getLegacyStudies();
-        for (let l in legacyStudies) {
-          let legacyStudy = new self._taskModule.TestPilotLegacyStudy(legacyStudies[l]);
-          self.addTask(legacyStudy);
-        }
-
-        if (callback) {
-          callback();
-        }
       }
-    );
+    ); // end of call to checkForUpdates
   },
 
   reloadRemoteExperiments: function TPS_reloadRemoteExperiments(callback) {

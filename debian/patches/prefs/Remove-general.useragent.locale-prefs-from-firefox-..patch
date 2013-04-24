@@ -6,25 +6,25 @@ It is better defined in the GRE provided by xulrunner-1.9
 ---
  browser/app/profile/firefox.js        |    1 -
  browser/locales/en-US/firefox-l10n.js |    1 -
- 2 files changed, 0 insertions(+), 2 deletions(-)
+ 2 files changed, 2 deletions(-)
 
 diff --git a/browser/app/profile/firefox.js b/browser/app/profile/firefox.js
-index 01c9ee6..9b3065d 100644
+index c36e19b..b656fb8 100644
 --- a/browser/app/profile/firefox.js
 +++ b/browser/app/profile/firefox.js
-@@ -218,7 +218,6 @@ pref("keyword.enabled", true);
+@@ -214,7 +214,6 @@ pref("keyword.enabled", true);
  // "use the search service's default engine"
  pref("keyword.URL", "");
  
 -pref("general.useragent.locale", "@AB_CD@");
  pref("general.skins.selectedSkin", "classic/1.0");
  
- pref("general.smoothScroll", false);
+ pref("general.smoothScroll", true);
 diff --git a/browser/locales/en-US/firefox-l10n.js b/browser/locales/en-US/firefox-l10n.js
-index e9027aa..a683b7f 100644
+index 642ad65..b410ad9 100644
 --- a/browser/locales/en-US/firefox-l10n.js
 +++ b/browser/locales/en-US/firefox-l10n.js
-@@ -36,4 +36,3 @@
+@@ -4,4 +4,3 @@
  
  #filter substitution
  

@@ -15,13 +15,11 @@
 const int Pickle::kPayloadUnit = 64;
 
 // We mark a read only pickle with a special capacity_.
-#ifdef CHROMIUM_MOZILLA_BUILD
-static const uint32 kCapacityReadOnly = (uint32) -1;
-#else
-static const size_t kCapacityReadOnly = (size_t) -1;
-#endif
+static const uint32_t kCapacityReadOnly = (uint32_t) -1;
 
-// Payload is uint32 aligned.
+static const char kBytePaddingMarker = char(0xbf);
+
+// Payload is uint32_t aligned.
 
 Pickle::Pickle()
     : header_(NULL),
@@ -34,14 +32,10 @@ Pickle::Pickle()
 
 Pickle::Pickle(int header_size)
     : header_(NULL),
-      header_size_(AlignInt(header_size, sizeof(uint32))),
+      header_size_(AlignInt(header_size, sizeof(uint32_t))),
       capacity_(0),
       variable_buffer_offset_(0) {
-#ifdef CHROMIUM_MOZILLA_BUILD
-  DCHECK(static_cast<uint32>(header_size) >= sizeof(Header));
-#else
-  DCHECK(static_cast<size_t>(header_size) >= sizeof(Header));
-#endif
+  DCHECK(static_cast<uint32_t>(header_size) >= sizeof(Header));
   DCHECK(header_size <= kPayloadUnit);
   Resize(kPayloadUnit);
   header_->payload_size = 0;
@@ -53,7 +47,7 @@ Pickle::Pickle(const char* data, int data_len)
       capacity_(kCapacityReadOnly),
       variable_buffer_offset_(0) {
   DCHECK(header_size_ >= sizeof(Header));
-  DCHECK(header_size_ == AlignInt(header_size_, sizeof(uint32)));
+  DCHECK(header_size_ == AlignInt(header_size_, sizeof(uint32_t)));
 }
 
 Pickle::Pickle(const Pickle& other)
@@ -61,11 +55,7 @@ Pickle::Pickle(const Pickle& other)
       header_size_(other.header_size_),
       capacity_(0),
       variable_buffer_offset_(other.variable_buffer_offset_) {
-#ifdef CHROMIUM_MOZILLA_BUILD
-  uint32 payload_size = header_size_ + other.header_->payload_size;
-#else
-  size_t payload_size = header_size_ + other.header_->payload_size;
-#endif
+  uint32_t payload_size = header_size_ + other.header_->payload_size;
   bool resized = Resize(payload_size);
   CHECK(resized);  // Realloc failed.
   memcpy(header_, other.header_, payload_size);
@@ -100,7 +90,7 @@ bool Pickle::ReadBool(void** iter, bool* result) const {
   return true;
 }
 
-bool Pickle::ReadInt16(void** iter, int16* result) const {
+bool Pickle::ReadInt16(void** iter, int16_t* result) const {
   DCHECK(iter);
   if (!*iter)
     *iter = const_cast<char*>(payload());
@@ -114,7 +104,7 @@ bool Pickle::ReadInt16(void** iter, int16* result) const {
   return true;
 }
 
-bool Pickle::ReadUInt16(void** iter, uint16* result) const {
+bool Pickle::ReadUInt16(void** iter, uint16_t* result) const {
   DCHECK(iter);
   if (!*iter)
     *iter = const_cast<char*>(payload());
@@ -152,7 +142,7 @@ bool Pickle::ReadLong(void** iter, long* result) const {
   if (!*iter)
     *iter = const_cast<char*>(payload());
 
-  int64 bigResult = 0;
+  int64_t bigResult = 0;
   if (!IteratorHasRoomFor(*iter, sizeof(bigResult)))
     return false;
 
@@ -173,7 +163,7 @@ bool Pickle::ReadULong(void** iter, unsigned long* result) const {
   if (!*iter)
     *iter = const_cast<char*>(payload());
 
-  uint64 bigResult = 0;
+  uint64_t bigResult = 0;
   if (!IteratorHasRoomFor(*iter, sizeof(bigResult)))
     return false;
 
@@ -200,7 +190,7 @@ bool Pickle::ReadSize(void** iter, size_t* result) const {
   if (!*iter)
     *iter = const_cast<char*>(payload());
 
-  uint64 bigResult = 0;
+  uint64_t bigResult = 0;
   if (!IteratorHasRoomFor(*iter, sizeof(bigResult)))
     return false;
 
@@ -214,7 +204,7 @@ bool Pickle::ReadSize(void** iter, size_t* result) const {
   return true;
 }
 
-bool Pickle::ReadInt32(void** iter, int32* result) const {
+bool Pickle::ReadInt32(void** iter, int32_t* result) const {
   DCHECK(iter);
   if (!*iter)
     *iter = const_cast<char*>(payload());
@@ -228,7 +218,7 @@ bool Pickle::ReadInt32(void** iter, int32* result) const {
   return true;
 }
 
-bool Pickle::ReadUInt32(void** iter, uint32* result) const {
+bool Pickle::ReadUInt32(void** iter, uint32_t* result) const {
   DCHECK(iter);
   if (!*iter)
     *iter = const_cast<char*>(payload());
@@ -242,7 +232,7 @@ bool Pickle::ReadUInt32(void** iter, uint32* result) const {
   return true;
 }
 
-bool Pickle::ReadInt64(void** iter, int64* result) const {
+bool Pickle::ReadInt64(void** iter, int64_t* result) const {
   DCHECK(iter);
   if (!*iter)
     *iter = const_cast<char*>(payload());
@@ -256,7 +246,7 @@ bool Pickle::ReadInt64(void** iter, int64* result) const {
   return true;
 }
 
-bool Pickle::ReadUInt64(void** iter, uint64* result) const {
+bool Pickle::ReadUInt64(void** iter, uint64_t* result) const {
   DCHECK(iter);
   if (!*iter)
     *iter = const_cast<char*>(payload());
@@ -291,7 +281,7 @@ bool Pickle::ReadIntPtr(void** iter, intptr_t* result) const {
   if (!*iter)
     *iter = const_cast<char*>(payload());
 
-  int64 bigResult = 0;
+  int64_t bigResult = 0;
   if (!IteratorHasRoomFor(*iter, sizeof(bigResult)))
     return false;
 
@@ -371,16 +361,34 @@ bool Pickle::ReadString16(void** iter, string16* result) const {
   return true;
 }
 
-bool Pickle::ReadBytes(void** iter, const char** data, int length) const {
+bool Pickle::ReadBytes(void** iter, const char** data, int length,
+                       uint32_t alignment) const {
   DCHECK(iter);
   DCHECK(data);
+  DCHECK(alignment == 4 || alignment == 8);
+  DCHECK(intptr_t(header_) % alignment == 0);
+
   if (!*iter)
     *iter = const_cast<char*>(payload());
+
+  uint32_t paddingLen = intptr_t(*iter) % alignment;
+  if (paddingLen) {
+#ifdef DEBUG
+    {
+      const char* padding = static_cast<const char*>(*iter);
+      for (uint32_t i = 0; i < paddingLen; i++) {
+        DCHECK(*(padding + i) == kBytePaddingMarker);
+      }
+    }
+#endif
+    length += paddingLen;
+  }
 
   if (!IteratorHasRoomFor(*iter, length))
     return false;
 
-  *data = reinterpret_cast<const char*>(*iter);
+  *data = static_cast<const char*>(*iter) + paddingLen;
+  DCHECK(intptr_t(*data) % alignment == 0);
 
   UpdateIter(iter, length);
   return true;
@@ -399,43 +407,50 @@ bool Pickle::ReadData(void** iter, const char** data, int* length) const {
   return ReadBytes(iter, data, *length);
 }
 
-#ifdef CHROMIUM_MOZILLA_BUILD
-char* Pickle::BeginWrite(uint32 length) {
-#else
-char* Pickle::BeginWrite(size_t length) {
-#endif
-  // write at a uint32-aligned offset from the beginning of the header
-  uint32 offset = AlignInt(header_->payload_size, sizeof(uint32));
+char* Pickle::BeginWrite(uint32_t length, uint32_t alignment) {
+  DCHECK(alignment % 4 == 0) << "Must be at least 32-bit aligned!";
 
-#ifdef CHROMIUM_MOZILLA_BUILD
-  uint32 new_size = offset + AlignInt(length, sizeof(uint32));
-  uint32 needed_size = header_size_ + new_size;
-#else
-  size_t new_size = offset + length;
-  size_t needed_size = header_size_ + new_size;
-#endif
+  // write at an alignment-aligned offset from the beginning of the header
+  uint32_t offset = AlignInt(header_->payload_size, sizeof(uint32_t));
+  uint32_t padding = (header_size_ + offset) %  alignment;
+  uint32_t new_size = offset + padding + AlignInt(length, sizeof(uint32_t));
+  uint32_t needed_size = header_size_ + new_size;
+
   if (needed_size > capacity_ && !Resize(std::max(capacity_ * 2, needed_size)))
     return NULL;
 
+  DCHECK(intptr_t(header_) % alignment == 0);
+
 #ifdef ARCH_CPU_64_BITS
-  DCHECK_LE(length, std::numeric_limits<uint32>::max());
+  DCHECK_LE(length, std::numeric_limits<uint32_t>::max());
 #endif
 
-  header_->payload_size = static_cast<uint32>(new_size);
-  return payload() + offset;
+  char* buffer = payload() + offset;
+
+  if (padding) {
+    memset(buffer, kBytePaddingMarker, padding);
+    buffer += padding;
+  }
+
+  DCHECK(intptr_t(buffer) % alignment == 0);
+
+  header_->payload_size = new_size;
+  return buffer;
 }
 
 void Pickle::EndWrite(char* dest, int length) {
   // Zero-pad to keep tools like purify from complaining about uninitialized
   // memory.
-  if (length % sizeof(uint32))
-    memset(dest + length, 0, sizeof(uint32) - (length % sizeof(uint32)));
+  if (length % sizeof(uint32_t))
+    memset(dest + length, 0, sizeof(uint32_t) - (length % sizeof(uint32_t)));
 }
 
-bool Pickle::WriteBytes(const void* data, int data_len) {
+bool Pickle::WriteBytes(const void* data, int data_len, uint32_t alignment) {
   DCHECK(capacity_ != kCapacityReadOnly) << "oops: pickle is readonly";
+  DCHECK(alignment == 4 || alignment == 8);
+  DCHECK(intptr_t(header_) % alignment == 0);
 
-  char* dest = BeginWrite(data_len);
+  char* dest = BeginWrite(data_len, alignment);
   if (!dest)
     return false;
 
@@ -477,9 +492,9 @@ char* Pickle::BeginWriteData(int length) {
     "There can only be one variable buffer in a Pickle";
 
   if (!WriteInt(length))
-    return false;
+    return NULL;
 
-  char *data_ptr = BeginWrite(length);
+  char *data_ptr = BeginWrite(length, sizeof(uint32_t));
   if (!data_ptr)
     return NULL;
 
@@ -509,11 +524,7 @@ void Pickle::TrimWriteData(int new_length) {
   *cur_length = new_length;
 }
 
-#ifdef CHROMIUM_MOZILLA_BUILD
-bool Pickle::Resize(uint32 new_capacity) {
-#else
-bool Pickle::Resize(size_t new_capacity) {
-#endif
+bool Pickle::Resize(uint32_t new_capacity) {
   new_capacity = AlignInt(new_capacity, kPayloadUnit);
 
   void* p = realloc(header_, new_capacity);
@@ -526,19 +537,11 @@ bool Pickle::Resize(size_t new_capacity) {
 }
 
 // static
-#ifdef CHROMIUM_MOZILLA_BUILD
-const char* Pickle::FindNext(uint32 header_size,
-#else
-const char* Pickle::FindNext(size_t header_size,
-#endif
+const char* Pickle::FindNext(uint32_t header_size,
                              const char* start,
                              const char* end) {
-  DCHECK(header_size == AlignInt(header_size, sizeof(uint32)));
-#ifdef CHROMIUM_MOZILLA_BUILD
-  DCHECK(header_size <= static_cast<uint32>(kPayloadUnit));
-#else
-  DCHECK(header_size <= static_cast<size_t>(kPayloadUnit));
-#endif
+  DCHECK(header_size == AlignInt(header_size, sizeof(uint32_t)));
+  DCHECK(header_size <= static_cast<uint32_t>(kPayloadUnit));
 
   const Header* hdr = reinterpret_cast<const Header*>(start);
   const char* payload_base = start + header_size;

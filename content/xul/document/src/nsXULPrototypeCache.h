@@ -1,44 +1,7 @@
 /* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
-/* ***** BEGIN LICENSE BLOCK *****
- * Version: MPL 1.1/GPL 2.0/LGPL 2.1
- *
- * The contents of this file are subject to the Mozilla Public License Version
- * 1.1 (the "License"); you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- * http://www.mozilla.org/MPL/
- *
- * Software distributed under the License is distributed on an "AS IS" basis,
- * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
- * for the specific language governing rights and limitations under the
- * License.
- *
- * The Original Code is Mozilla Communicator client code.
- *
- * The Initial Developer of the Original Code is
- * Netscape Communications Corporation.
- * Portions created by the Initial Developer are Copyright (C) 1998
- * the Initial Developer. All Rights Reserved.
- *
- * Contributor(s):
- *   Chris Waterson <waterson@netscape.com>
- *   Brendan Eich <brendan@mozilla.org>
- *   Ben Goodger <ben@netscape.com>
- *   Benjamin Smedberg <bsmedberg@covad.net>
- *   Mark Hammond <mhammond@skippinet.com.au>
- *
- * Alternatively, the contents of this file may be used under the terms of
- * either of the GNU General Public License Version 2 or later (the "GPL"),
- * or the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
- * in which case the provisions of the GPL or the LGPL are applicable instead
- * of those above. If you wish to allow use of your version of this file only
- * under the terms of either the GPL or the LGPL, and not to allow others to
- * use your version of this file under the terms of the MPL, indicate your
- * decision by deleting the provisions above and replace them with the notice
- * and other provisions required by the GPL or the LGPL. If you do not delete
- * the provisions above, a recipient may use your version of this file under
- * the terms of any one of the MPL, the GPL or the LGPL.
- *
- * ***** END LICENSE BLOCK ***** */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #ifndef nsXULPrototypeCache_h__
 #define nsXULPrototypeCache_h__
@@ -46,7 +9,6 @@
 #include "nsCOMPtr.h"
 #include "nsIObserver.h"
 #include "nsXBLDocumentInfo.h"
-#include "nsIXULPrototypeCache.h"
 #include "nsDataHashtable.h"
 #include "nsInterfaceHashtable.h"
 #include "nsRefPtrHashtable.h"
@@ -54,16 +16,17 @@
 #include "nsXULPrototypeDocument.h"
 #include "nsIInputStream.h"
 #include "nsIStorageStream.h"
+
+#include "jspubtd.h"
+
 #include "mozilla/scache/StartupCache.h"
 
-using namespace mozilla::scache;
 
 class nsCSSStyleSheet;
 
 struct CacheScriptEntry
 {
-    PRUint32    mScriptTypeID; // the script language ID.
-    void*       mScriptObject; // the script object.
+    JSScript*   mScriptObject; // the script object.
 };
 
 /**
@@ -74,25 +37,23 @@ struct CacheScriptEntry
  *  1. In-memory hashtables
  *  2. The on-disk cache file.
  */
-class nsXULPrototypeCache : public nsIXULPrototypeCache,
-                                   nsIObserver
+class nsXULPrototypeCache : public nsIObserver
 {
 public:
     // nsISupports
     NS_DECL_ISUPPORTS
     NS_DECL_NSIOBSERVER
 
-    // nsIXULPrototypeCache
-    virtual PRBool IsCached(nsIURI* aURI) {
-        return GetPrototype(aURI) != nsnull;
+    bool IsCached(nsIURI* aURI) {
+        return GetPrototype(aURI) != nullptr;
     }
-    virtual void AbortCaching();
+    void AbortCaching();
 
 
     /**
      * Whether the prototype cache is enabled.
      */
-    PRBool IsEnabled();
+    bool IsEnabled();
 
     /**
      * Flush the cache; remove all XUL prototype documents, style
@@ -107,8 +68,8 @@ public:
     nsXULPrototypeDocument* GetPrototype(nsIURI* aURI);
     nsresult PutPrototype(nsXULPrototypeDocument* aDocument);
 
-    void* GetScript(nsIURI* aURI, PRUint32* langID);
-    nsresult PutScript(nsIURI* aURI, PRUint32 langID, void* aScriptObject);
+    JSScript* GetScript(nsIURI* aURI);
+    nsresult PutScript(nsIURI* aURI, JSScript* aScriptObject);
 
     nsXBLDocumentInfo* GetXBLDocumentInfo(nsIURI* aURL) {
         return mXBLDocTable.GetWeak(aURL);
@@ -117,7 +78,7 @@ public:
 
     /**
      * Get a style sheet by URI. If the style sheet is not in the cache,
-     * returns nsnull.
+     * returns nullptr.
      */
     nsCSSStyleSheet* GetStyleSheet(nsIURI* aURI) {
         return mStyleSheetTable.GetWeak(aURI);
@@ -128,11 +89,6 @@ public:
      * from the style sheet itself.
      */
     nsresult PutStyleSheet(nsCSSStyleSheet* aStyleSheet);
-
-    /**
-     * Remove a XUL document from the set of loading documents.
-     */
-    void RemoveFromCacheSet(nsIURI* aDocumentURI);
 
     /**
      * Write the XUL prototype document to a cache file. The proto must be
@@ -148,17 +104,19 @@ public:
     nsresult FinishInputStream(nsIURI* aURI);
     nsresult GetOutputStream(nsIURI* aURI, nsIObjectOutputStream** objectOutput);
     nsresult FinishOutputStream(nsIURI* aURI);
-    nsresult HasData(nsIURI* aURI, PRBool* exists);
-
-    static StartupCache* GetStartupCache();
+    nsresult HasData(nsIURI* aURI, bool* exists);
 
     static nsXULPrototypeCache* GetInstance();
+    static nsXULPrototypeCache* MaybeGetInstance() { return sInstance; }
 
     static void ReleaseGlobals()
     {
         NS_IF_RELEASE(sInstance);
     }
 
+    void MarkInCCGeneration(uint32_t aGeneration);
+    void MarkInGC(JSTracer* aTrc);
+    void FlushScripts();
 protected:
     friend nsresult
     NS_NewXULPrototypeCache(nsISupports* aOuter, REFNSIID aIID, void** aResult);
@@ -168,7 +126,6 @@ protected:
 
     static nsXULPrototypeCache* sInstance;
 
-    void FlushScripts();
     void FlushSkinFiles();
 
     nsRefPtrHashtable<nsURIHashKey,nsXULPrototypeDocument>  mPrototypeTable; // owns the prototypes
@@ -176,15 +133,11 @@ protected:
     nsDataHashtable<nsURIHashKey,CacheScriptEntry>         mScriptTable;
     nsRefPtrHashtable<nsURIHashKey,nsXBLDocumentInfo>  mXBLDocTable;
 
-    ///////////////////////////////////////////////////////////////////////////
-    // StartupCache
-    // this is really a hash set, with a dummy data parameter
-    nsDataHashtable<nsURIHashKey,PRUint32> mCacheURITable;
+    nsTHashtable<nsURIHashKey> mCacheURITable;
 
-    static StartupCache* gStartupCache;
     nsInterfaceHashtable<nsURIHashKey, nsIStorageStream> mOutputStreamTable;
     nsInterfaceHashtable<nsURIHashKey, nsIObjectInputStream> mInputStreamTable;
- 
+
     // Bootstrap caching service
     nsresult BeginCaching(nsIURI* aDocumentURI);
 };

@@ -1,24 +1,30 @@
+/* Any copyright is dedicated to the Public Domain.
+   http://creativecommons.org/publicdomain/zero/1.0/ */
+
 Cu.import("resource://services-sync/engines.js");
+Cu.import("resource://services-sync/record.js");
+Cu.import("resource://services-sync/service.js");
 Cu.import("resource://services-sync/util.js");
+Cu.import("resource://testing-common/services/sync/rotaryengine.js");
+Cu.import("resource://testing-common/services/sync/utils.js");
 
 add_test(function test_processIncoming_abort() {
   _("An abort exception, raised in applyIncoming, will abort _processIncoming.");
-  let syncTesting = new SyncTestingInfrastructure();
-  Svc.Prefs.set("clusterURL", "http://localhost:8080/");
-  Svc.Prefs.set("username", "foo");
-  generateNewKeys();
+  new SyncTestingInfrastructure();
+  generateNewKeys(Service.collectionKeys);
 
-  let engine = new RotaryEngine();
+  let engine = new RotaryEngine(Service);
 
   _("Create some server data.");
-  let meta_global = Records.set(engine.metaURL, new WBORecord(engine.metaURL));
+  let meta_global = Service.recordManager.set(engine.metaURL,
+                                              new WBORecord(engine.metaURL));
   meta_global.payload.engines = {rotary: {version: engine.version,
                                           syncID: engine.syncID}};
 
   let collection = new ServerCollection();
   let id = Utils.makeGUID();
   let payload = encryptPayload({id: id, denomination: "Record No. " + id});
-  collection.wbos[id] = new ServerWBO(id, payload);
+  collection.insert(id, payload);
 
   let server = sync_httpd_setup({
       "/1.1/foo/storage/rotary": collection.handler()
@@ -31,7 +37,7 @@ add_test(function test_processIncoming_abort() {
     _("Throwing: " + JSON.stringify(ex));
     throw ex;
   };
-  
+
   _("Trying _processIncoming. It will throw after aborting.");
   let err;
   try {
@@ -56,7 +62,7 @@ add_test(function test_processIncoming_abort() {
 
   server.stop(run_next_test);
   Svc.Prefs.resetBranch("");
-  Records.clearCache();
+  Service.recordManager.clearCache();
 });
 
 function run_test() {

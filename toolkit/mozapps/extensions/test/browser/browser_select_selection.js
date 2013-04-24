@@ -11,15 +11,16 @@ const PROFILE = AddonManager.SCOPE_PROFILE;
 const USER = AddonManager.SCOPE_USER;
 const APP = AddonManager.SCOPE_APPLICATION;
 const SYSTEM = AddonManager.SCOPE_SYSTEM;
+const DIST = -1;
 
 // The matrix of testcases for the selection part of the UI
 // Note that the isActive flag has the value it had when the previous version
 // of the application ran with this add-on.
 var ADDONS = [
   //userDisabled   wasAppDisabled isAppDisabled  isActive  hasUpdate  autoUpdate  scope    defaultKeep  position  keepString           disableString
-  [false,          true,          false,         false,    false,     true,       PROFILE, true,        38,      "enabled",           ""],               // 0
-  [false,          true,          false,         false,    true,      true,       PROFILE, true,        39,       "enabled",           ""],               // 1
-  [false,          true,          false,         false,    true,      false,      PROFILE, true,        48,       "unneededupdate",    ""],               // 2
+  [false,          true,          false,         false,    false,     true,       PROFILE, true,        42,       "enabled",           ""],               // 0
+  [false,          true,          false,         false,    true,      true,       PROFILE, true,        43,       "enabled",           ""],               // 1
+  [false,          true,          false,         false,    true,      false,      PROFILE, true,        52,       "unneededupdate",    ""],               // 2
   [false,          false,         false,         true,     false,     true,       PROFILE, true,        53,       "",                  "disabled"],       // 3
   [false,          false,         false,         true,     true,      true,       PROFILE, true,        54,       "",                  "disabled"],       // 4
   [false,          false,         false,         true,     true,      false,      PROFILE, true,        55,       "unneededupdate",    "disabled"],       // 5
@@ -27,17 +28,17 @@ var ADDONS = [
   [false,          true,          true,          false,    true,      true,       PROFILE, true,        57,       "autoupdate",        ""],               // 7
   [false,          true,          true,          false,    true,      false,      PROFILE, true,        58,       "neededupdate",      ""],               // 8
   [false,          false,         true,          true,     false,     true,       PROFILE, true,        59,       "incompatible",      "disabled"],       // 9
-  [false,          true,          true,          true,     true,      true,       PROFILE, true,        40,       "autoupdate",        "disabled"],       // 10
-  [false,          true,          true,          true,     true,      false,      PROFILE, true,        41,       "neededupdate",      "disabled"],       // 11
-  [true,           false,         false,         false,    false,     true,       PROFILE, false,       42,       "enabled",           ""],               // 12
-  [true,           false,         false,         false,    true,      true,       PROFILE, false,       43,       "enabled",           ""],               // 13
-  [true,           false,         false,         false,    true,      false,      PROFILE, false,       44,       "unneededupdate",    ""],               // 14
+  [false,          true,          true,          true,     true,      true,       PROFILE, true,        44,       "autoupdate",        "disabled"],       // 10
+  [false,          true,          true,          true,     true,      false,      PROFILE, true,        45,       "neededupdate",      "disabled"],       // 11
+  [true,           false,         false,         false,    false,     true,       PROFILE, false,       46,       "enabled",           ""],               // 12
+  [true,           false,         false,         false,    true,      true,       PROFILE, false,       47,       "enabled",           ""],               // 13
+  [true,           false,         false,         false,    true,      false,      PROFILE, false,       48,       "unneededupdate",    ""],               // 14
 
   // userDisabled and isActive cannot be true on startup
 
-  [true,           true,          true,          false,    false,     true,       PROFILE, false,       45,       "incompatible",      ""],               // 15
-  [true,           true,          true,          false,    true,      true,       PROFILE, false,       46,       "autoupdate",        ""],               // 16
-  [true,           true,          true,          false,    true,      false,      PROFILE, false,       47,       "neededupdate",      ""],               // 17
+  [true,           true,          true,          false,    false,     true,       PROFILE, false,       49,       "incompatible",      ""],               // 15
+  [true,           true,          true,          false,    true,      true,       PROFILE, false,       50,       "autoupdate",        ""],               // 16
+  [true,           true,          true,          false,    true,      false,      PROFILE, false,       51,       "neededupdate",      ""],               // 17
 
   // userDisabled and isActive cannot be true on startup
 
@@ -50,14 +51,19 @@ var ADDONS = [
   [true,           true,          false,         false,    true,      false,      SYSTEM,  false,       5,        "enabled",           ""],               // 23
   [false,          true,          true,          true,     true,      false,      SYSTEM,  false,       6,        "incompatible",      "disabled"],       // 24
   [true,           true,          true,          false,    true,      false,      SYSTEM,  false,       7,        "incompatible",      ""],               // 25
-  [false,          false,         false,         true,     true,      false,      APP,     true,        49,       "",                  "disabled"],       // 26
-  [true,           true,          false,         false,    true,      false,      APP,     false,       50,       "enabled",           ""],               // 27
-  [false,          true,          true,          true,     true,      false,      APP,     true,        51,       "incompatible",      "disabled"],       // 28
-  [true,           true,          true,          false,    true,      false,      APP,     false,       52,       "incompatible",      ""],               // 29
+  [false,          false,         false,         true,     true,      false,      APP,     false,       8,        "",                  "disabled"],       // 26
+  [true,           true,          false,         false,    true,      false,      APP,     false,       9,        "enabled",           ""],               // 27
+  [false,          true,          true,          true,     true,      false,      APP,     false,       10,       "incompatible",      "disabled"],       // 28
+  [true,           true,          true,          false,    true,      false,      APP,     false,       11,       "incompatible",      ""],               // 29
 ];
 
 function waitForView(aView, aCallback) {
   var view = gWin.document.getElementById(aView);
+  if (view.parentNode.selectedPanel == view) {
+    aCallback();
+    return;
+  }
+
   view.addEventListener("ViewChanged", function() {
     view.removeEventListener("ViewChanged", arguments.callee, false);
     aCallback();
@@ -78,10 +84,10 @@ function getSourceString(aSource) {
 
   var strings = Services.strings.createBundle("chrome://mozapps/locale/extensions/selectAddons.properties");
   switch (aSource) {
-    case APP:
-      // Fall through, this branch did not change the string here
     case PROFILE:
       return strings.GetStringFromName("source.profile");
+    case DIST:
+      return strings.GetStringFromName("source.bundled");
     default:
       return strings.GetStringFromName("source.other");
   }
@@ -97,26 +103,27 @@ function test() {
   Services.prefs.setBoolPref("extensions.installedDistroAddon.test12@tests.mozilla.org", true);
   Services.prefs.setBoolPref("extensions.installedDistroAddon.test15@tests.mozilla.org", true);
 
-  ADDONS.forEach(function(aAddon, aPos) {
-    var addon = new MockAddon("test" + aPos + "@tests.mozilla.org",
-                              "Test Add-on " + aPos, "extension");
+  for (let pos in ADDONS) {
+    let addonItem = ADDONS[pos];
+    let addon = new MockAddon("test" + pos + "@tests.mozilla.org",
+                              "Test Add-on " + pos, "extension");
     addon.version = "1.0";
-    addon.userDisabled = aAddon[0];
-    addon.appDisabled = aAddon[1];
-    addon.isActive = aAddon[3];
-    addon.applyBackgroundUpdates = aAddon[5] ? AddonManager.AUTOUPDATE_ENABLE
+    addon.userDisabled = addonItem[0];
+    addon.appDisabled = addonItem[1];
+    addon.isActive = addonItem[3];
+    addon.applyBackgroundUpdates = addonItem[5] ? AddonManager.AUTOUPDATE_ENABLE
                                              : AddonManager.AUTOUPDATE_DISABLE;
-    addon.scope = aAddon[6];
+    addon.scope = addonItem[6];
 
     // Remove the upgrade permission from non-profile add-ons
     if (addon.scope != AddonManager.SCOPE_PROFILE)
       addon._permissions -= AddonManager.PERM_CAN_UPGRADE;
 
     addon.findUpdates = function(aListener, aReason, aAppVersion, aPlatformVersion) {
-      addon.appDisabled = aAddon[2];
+      addon.appDisabled = addonItem[2];
       addon.isActive = addon.shouldBeActive;
 
-      if (aAddon[4]) {
+      if (addonItem[4]) {
         var newAddon = new MockAddon(this.id, this.name, "extension");
         newAddon.version = "2.0";
         var install = new MockInstall(this.name, this.type, newAddon);
@@ -128,7 +135,7 @@ function test() {
     };
 
     gProvider.addAddon(addon);
-  });
+  }
 
   gWin = Services.ww.openWindow(null,
                                 "chrome://mozapps/content/extensions/selectAddons.xul",
@@ -232,7 +239,7 @@ add_test(function selection_test() {
 
     if (id == 3 || id == 12 || id == 15) {
       // Distro Installed To Profile
-      is(source.textContent, getSourceString(APP), "Source message should have the right text for Distributed Addons");
+      is(source.textContent, getSourceString(DIST), "Source message should have the right text for Distributed Addons");
     } else {
       is(source.textContent, getSourceString(addon[6]), "Source message should have the right text");
     }

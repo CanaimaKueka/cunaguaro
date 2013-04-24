@@ -1,44 +1,15 @@
-/* ***** BEGIN LICENSE BLOCK *****
- * Version: MPL 1.1/GPL 2.0/LGPL 2.1
- *
- * The contents of this file are subject to the Mozilla Public License Version
- * 1.1 (the "License"); you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- * http://www.mozilla.org/MPL/
- *
- * Software distributed under the License is distributed on an "AS IS" basis,
- * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
- * for the specific language governing rights and limitations under the
- * License.
- *
- * The Original Code is Test Pilot.
- *
- * The Initial Developer of the Original Code is Mozilla.
- * Portions created by the Initial Developer are Copyright (C) 2007
- * the Initial Developer. All Rights Reserved.
- *
- * Contributor(s):
- *   Jono X <jono@mozilla.com>
- *
- * Alternatively, the contents of this file may be used under the terms of
- * either the GNU General Public License Version 2 or later (the "GPL"), or
- * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
- * in which case the provisions of the GPL or the LGPL are applicable instead
- * of those above. If you wish to allow use of your version of this file only
- * under the terms of either the GPL or the LGPL, and not to allow others to
- * use your version of this file under the terms of the MPL, indicate your
- * decision by deleting the provisions above and replace them with the notice
- * and other provisions required by the GPL or the LGPL. If you do not delete
- * the provisions above, a recipient may use your version of this file under
- * the terms of any one of the MPL, the GPL or the LGPL.
- *
- * ***** END LICENSE BLOCK ***** */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 const BASE_URL_PREF = "extensions.testpilot.indexBaseURL";
+const SSL_DOWNLOAD_REQUIRED_PREF = "extensions.testpilot.ssldownloadrequired";
+
 var Cuddlefish = require("cuddlefish");
 var resolveUrl = require("url").resolve;
 var SecurableModule = require("securable-module");
 let JarStore = require("jar-code-store").JarStore;
+let prefs = require("preferences-service");
 
 /* Security info should look like this:
  * Security Info:
@@ -135,8 +106,13 @@ function downloadFile(url, cb, lastModified) {
   req.onreadystatechange = function(aEvt) {
     if (req.readyState == 4) {
       if (req.status == 200) {
-        // check security channel:
-        if (verifyChannelSecurity(req.channel)) {
+        // check security channel, unless the user is ignoring that.
+        let ssldownloadrequired= prefs.get(SSL_DOWNLOAD_REQUIRED_PREF,true);
+        if (!ssldownloadrequired) {
+            dump("not requiring ssl download for experiements.  use at your own risk!\n");
+            dump("change this with: " + SSL_DOWNLOAD_REQUIRED_PREF + "\n");
+        }
+        if (!ssldownloadrequired | verifyChannelSecurity(req.channel)) {
           cb(req.responseText);
         } else {
           cb(null);
@@ -409,7 +385,7 @@ exports.RemoteExperimentLoader.prototype = {
       let foStream = Cc["@mozilla.org/network/file-output-stream;1"].
                                createInstance(Ci.nsIFileOutputStream);
 
-      foStream.init(file, 0x02 | 0x08 | 0x20, 0666, 0);
+      foStream.init(file, 0x02 | 0x08 | 0x20, parseInt("0666", 8), 0);
       // write, create, truncate
       let converter = Cc["@mozilla.org/intl/converter-output-stream;1"].
                                 createInstance(Ci.nsIConverterOutputStream);

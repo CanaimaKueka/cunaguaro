@@ -1,46 +1,11 @@
 #filter substitution
-/* ***** BEGIN LICENSE BLOCK *****
- * Version: MPL 1.1/GPL 2.0/LGPL 2.1
- *
- * The contents of this file are subject to the Mozilla Public License Version
- * 1.1 (the "License"); you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- * http://www.mozilla.org/MPL/
- *
- * Software distributed under the License is distributed on an "AS IS" basis,
- * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
- * for the specific language governing rights and limitations under the
- * License.
- *
- * The Original Code is Bookmarks Sync.
- *
- * The Initial Developer of the Original Code is Mozilla.
- * Portions created by the Initial Developer are Copyright (C) 2007
- * the Initial Developer. All Rights Reserved.
- *
- * Contributor(s):
- *  Dan Mills <thunder@mozilla.com>
- *  Philipp von Weitershausen <philipp@weitershausen.de>
- *  Richard Newman <rnewman@mozilla.com>
- *
- * Alternatively, the contents of this file may be used under the terms of
- * either the GNU General Public License Version 2 or later (the "GPL"), or
- * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
- * in which case the provisions of the GPL or the LGPL are applicable instead
- * of those above. If you wish to allow use of your version of this file only
- * under the terms of either the GPL or the LGPL, and not to allow others to
- * use your version of this file under the terms of the MPL, indicate your
- * decision by deleting the provisions above and replace them with the notice
- * and other provisions required by the GPL or the LGPL. If you do not delete
- * the provisions above, a recipient may use your version of this file under
- * the terms of any one of the MPL, the GPL or the LGPL.
- *
- * ***** END LICENSE BLOCK ***** */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 // Process each item in the "constants hash" to add to "global" and give a name
-let EXPORTED_SYMBOLS = [((this[key] = val), key) for ([key, val] in Iterator({
+this.EXPORTED_SYMBOLS = [((this[key] = val), key) for ([key, val] in Iterator({
 
-WEAVE_CHANNEL:                         "@weave_channel@",
 WEAVE_VERSION:                         "@weave_version@",
 
 // Sync Server API version that the client supports.
@@ -52,10 +17,6 @@ MISC_API_VERSION:                      "1.0",
 // how records are packaged; this is separate from the Server API version and
 // the per-engine cleartext formats.
 STORAGE_VERSION:                       5,
-
-UPDATED_DEV_URL:                       "https://services.mozilla.com/sync/updated/?version=@weave_version@&channel=@weave_channel@",
-UPDATED_REL_URL:                       "http://www.mozilla.com/firefox/sync/updated.html",
-
 PREFS_BRANCH:                          "services.sync.",
 
 // Host "key" to access Weave Identity in the password manager
@@ -105,9 +66,11 @@ DEFAULT_MOBILE_GUID_FETCH_BATCH_SIZE:  50,
 
 // Default batch size for applying incoming records.
 DEFAULT_STORE_BATCH_SIZE:              1,
-HISTORY_STORE_BATCH_SIZE:              50, // same as MOBILE_BATCH_SIZE
-FORMS_STORE_BATCH_SIZE:                50, // same as MOBILE_BATCH_SIZE
-PASSWORDS_STORE_BATCH_SIZE:            50, // same as MOBILE_BATCH_SIZE
+HISTORY_STORE_BATCH_SIZE:              50,      // same as MOBILE_BATCH_SIZE
+FORMS_STORE_BATCH_SIZE:                50,      // same as MOBILE_BATCH_SIZE
+PASSWORDS_STORE_BATCH_SIZE:            50,      // same as MOBILE_BATCH_SIZE
+ADDONS_STORE_BATCH_SIZE:               1000000, // process all addons at once
+APPS_STORE_BATCH_SIZE:                 50,      // same as MOBILE_BATCH_SIZE
 
 // score thresholds for early syncs
 SINGLE_USER_THRESHOLD:                 1000,
@@ -151,10 +114,10 @@ ENGINE_SUCCEEDED:                      "success.engine",
 // login failure status codes:
 LOGIN_FAILED_NO_USERNAME:              "error.login.reason.no_username",
 LOGIN_FAILED_NO_PASSWORD:              "error.login.reason.no_password2",
-LOGIN_FAILED_NO_PASSPHRASE:            "error.login.reason.no_synckey",
+LOGIN_FAILED_NO_PASSPHRASE:            "error.login.reason.no_recoverykey",
 LOGIN_FAILED_NETWORK_ERROR:            "error.login.reason.network",
 LOGIN_FAILED_SERVER_ERROR:             "error.login.reason.server",
-LOGIN_FAILED_INVALID_PASSPHRASE:       "error.login.reason.synckey",
+LOGIN_FAILED_INVALID_PASSPHRASE:       "error.login.reason.recoverykey",
 LOGIN_FAILED_LOGIN_REJECTED:           "error.login.reason.account",
 
 // sync failure status codes
@@ -166,6 +129,8 @@ CREDENTIALS_CHANGED:                   "error.sync.reason.credentials_changed",
 ABORT_SYNC_COMMAND:                    "aborting sync, process commands said so",
 NO_SYNC_NODE_FOUND:                    "error.sync.reason.no_node_found",
 OVER_QUOTA:                            "error.sync.reason.over_quota",
+PROLONGED_SYNC_FAILURE:                "error.sync.prolonged_failure",
+SERVER_MAINTENANCE:                    "error.sync.reason.serverMaintenance",
 
 RESPONSE_OVER_QUOTA:                   "14",
 
@@ -187,6 +152,7 @@ JPAKE_ERROR_NODATA:                    "jpake.error.nodata",
 JPAKE_ERROR_KEYMISMATCH:               "jpake.error.keymismatch",
 JPAKE_ERROR_WRONGMESSAGE:              "jpake.error.wrongmessage",
 JPAKE_ERROR_USERABORT:                 "jpake.error.userabort",
+JPAKE_ERROR_DELAYUNSUPPORTED:          "jpake.error.delayunsupported",
 
 // info types for Service.getStorageInfo
 INFO_COLLECTIONS:                      "collections",
@@ -208,6 +174,8 @@ SEAMONKEY_ID:                          "{92650c4d-4b8e-4d2a-b7eb-24ecf4f6b63a}",
 TEST_HARNESS_ID:                       "xuth@mozilla.org",
 
 MIN_PP_LENGTH:                         12,
-MIN_PASS_LENGTH:                       8
+MIN_PASS_LENGTH:                       8,
+
+LOG_DATE_FORMAT:                       "%Y-%m-%d %H:%M:%S",
 
 }))];

@@ -1,0 +1,29 @@
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+
+<!ENTITY  SSLProtocolVersions.caption       "Versões do protocolo SSL">
+<!ENTITY  SSLWarnings.caption               "Avisos SSL">
+<!ENTITY  SSLClientAuthMethod.caption       "Selecção do certificado de cliente">
+
+<!ENTITY pref.ssl.title                     "Secure Sockets Layer (SSL)">
+<!ENTITY enable.ssl30.label                 "Activar SSL 3.0">
+<!ENTITY enable.ssl30.accesskey             "3">
+<!ENTITY enable.tls10.label                 "Activar TLS 1.0">
+<!ENTITY enable.tls10.accesskey             "T">
+
+<!ENTITY warn.description                   "O &brandShortName; pode alertá-lo do estado de segurança da página web que está a visualizar. Configure o &brandShortName; para mostrar um aviso e pedir permissão antes de:">
+<!ENTITY warn.enteringsecure                "Carregar uma página que suporte cifra">
+<!ENTITY warn.enteringsecure.accesskey      "C">
+<!ENTITY warn.insecurepost                  "Enviar dados de um formulário de uma página não cifrada para outra página não cifrada">
+<!ENTITY warn.insecurepost.accesskey        "s">
+<!ENTITY warn.leavingsecure                 "Sair de uma página que suporte cifra">
+<!ENTITY warn.leavingsecure.accesskey       "a">
+<!ENTITY warn.viewmixed                     "Ver uma página com e sem cifra">
+<!ENTITY warn.viewmixed.accesskey           "V">
+
+<!ENTITY certselect.description             "Decide como é que o &brandShortName; selecciona um certificado de segurança para apresentar em sítios web que necessitam:">
+<!ENTITY certselect.auto                    "Seleccionar automaticamente">
+<!ENTITY certselect.auto.accesskey          "e">
+<!ENTITY certselect.ask                     "Pedir sempre">
+<!ENTITY certselect.ask.accesskey           "d">

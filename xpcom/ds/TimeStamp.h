@@ -1,49 +1,32 @@
 /* -*- Mode: C++; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
 /* vim:set ts=2 sw=2 sts=2 et cindent: */
-/* ***** BEGIN LICENSE BLOCK *****
- * Version: MPL 1.1/GPL 2.0/LGPL 2.1
- *
- * The contents of this file are subject to the Mozilla Public License Version
- * 1.1 (the "License"); you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- * http://www.mozilla.org/MPL/
- *
- * Software distributed under the License is distributed on an "AS IS" basis,
- * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
- * for the specific language governing rights and limitations under the
- * License.
- *
- * The Original Code is Mozilla code.
- *
- * The Initial Developer of the Original Code is the Mozilla Corporation.
- * Portions created by the Initial Developer are Copyright (C) 2009
- * the Initial Developer. All Rights Reserved.
- *
- * Contributor(s):
- *  Robert O'Callahan <robert@ocallahan.org>
- *
- * Alternatively, the contents of this file may be used under the terms of
- * either the GNU General Public License Version 2 or later (the "GPL"), or
- * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
- * in which case the provisions of the GPL or the LGPL are applicable instead
- * of those above. If you wish to allow use of your version of this file only
- * under the terms of either the GPL or the LGPL, and not to allow others to
- * use your version of this file under the terms of the MPL, indicate your
- * decision by deleting the provisions above and replace them with the notice
- * and other provisions required by the GPL or the LGPL. If you do not delete
- * the provisions above, a recipient may use your version of this file under
- * the terms of any one of the MPL, the GPL or the LGPL.
- *
- * ***** END LICENSE BLOCK ***** */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #ifndef mozilla_TimeStamp_h
 #define mozilla_TimeStamp_h
 
+#include "mozilla/Assertions.h"
+
 #include "prinrval.h"
 #include "nsDebug.h"
-#include "prlong.h"
+
+namespace IPC {
+template <typename T> struct ParamTraits;
+}
+
+#ifdef XP_WIN
+// defines TimeStampValue as a complex value keeping both
+// GetTickCount and QueryPerformanceCounter values
+#include "TimeStamp_windows.h"
+#endif
 
 namespace mozilla {
+
+#ifndef XP_WIN
+typedef uint64_t TimeStampValue;
+#endif
 
 class TimeStamp;
 
@@ -51,13 +34,13 @@ class TimeStamp;
  * Instances of this class represent the length of an interval of time.
  * Negative durations are allowed, meaning the end is before the start.
  * 
- * Internally the duration is stored as a PRInt64 in units of
+ * Internally the duration is stored as a int64_t in units of
  * PR_TicksPerSecond() when building with NSPR interval timers, or a
  * system-dependent unit when building with system clocks.  The
  * system-dependent unit must be constant, otherwise the semantics of
  * this class would be broken.
  */
-class NS_COM TimeDuration
+class TimeDuration
 {
 public:
   // The default duration is 0.
@@ -66,7 +49,7 @@ public:
   // but no other numbers (so we don't have any implicit unit conversions).
   struct _SomethingVeryRandomHere;
   TimeDuration(_SomethingVeryRandomHere* aZero) : mValue(0) {
-    NS_ASSERTION(!aZero, "Who's playing funny games here?");
+    MOZ_ASSERT(!aZero, "Who's playing funny games here?");
   }
   // Default copy-constructor and assignment are OK
 
@@ -91,6 +74,9 @@ public:
     return FromMilliseconds(aSeconds * 1000.0);
   }
   static TimeDuration FromMilliseconds(double aMilliseconds);
+  static inline TimeDuration FromMicroseconds(double aMicroseconds) {
+    return FromMilliseconds(aMicroseconds / 1000.0);
+  }
 
   TimeDuration operator+(const TimeDuration& aOther) const {
     return TimeDuration::FromTicks(mValue + aOther.mValue);
@@ -106,21 +92,43 @@ public:
     mValue -= aOther.mValue;
     return *this;
   }
+
+private:
+  // Block double multiplier (slower, imprecise if long duration) - Bug 853398.
+  // If required, use MultDouble explicitly and with care.
+  TimeDuration operator*(const double aMultiplier) const MOZ_DELETE;
+
+public:
+  TimeDuration MultDouble(double aMultiplier) const {
+    return TimeDuration::FromTicks(static_cast<int64_t>(mValue * aMultiplier));
+  }
+  TimeDuration operator*(const int32_t aMultiplier) const {
+    return TimeDuration::FromTicks(mValue * int64_t(aMultiplier));
+  }
+  TimeDuration operator*(const uint32_t aMultiplier) const {
+    return TimeDuration::FromTicks(mValue * int64_t(aMultiplier));
+  }
+  TimeDuration operator*(const int64_t aMultiplier) const {
+    return TimeDuration::FromTicks(mValue * int64_t(aMultiplier));
+  }
   double operator/(const TimeDuration& aOther) {
     return static_cast<double>(mValue) / aOther.mValue;
   }
 
-  PRBool operator<(const TimeDuration& aOther) const {
+  bool operator<(const TimeDuration& aOther) const {
     return mValue < aOther.mValue;
   }
-  PRBool operator<=(const TimeDuration& aOther) const {
+  bool operator<=(const TimeDuration& aOther) const {
     return mValue <= aOther.mValue;
   }
-  PRBool operator>=(const TimeDuration& aOther) const {
+  bool operator>=(const TimeDuration& aOther) const {
     return mValue >= aOther.mValue;
   }
-  PRBool operator>(const TimeDuration& aOther) const {
+  bool operator>(const TimeDuration& aOther) const {
     return mValue > aOther.mValue;
+  }
+  bool operator==(const TimeDuration& aOther) const {
+    return mValue == aOther.mValue;
   }
 
   // Return a best guess at the system's current timing resolution,
@@ -138,28 +146,29 @@ public:
 
 private:
   friend class TimeStamp;
+  friend struct IPC::ParamTraits<mozilla::TimeDuration>;
 
-  static TimeDuration FromTicks(PRInt64 aTicks) {
+  static TimeDuration FromTicks(int64_t aTicks) {
     TimeDuration t;
     t.mValue = aTicks;
     return t;
   }
 
   static TimeDuration FromTicks(double aTicks) {
-    // NOTE: this MUST be a >= test, because PRInt64(double(LL_MAXINT))
-    // overflows and gives LL_MININT.
-    if (aTicks >= double(LL_MAXINT))
-      return TimeDuration::FromTicks(LL_MAXINT);
+    // NOTE: this MUST be a >= test, because int64_t(double(INT64_MAX))
+    // overflows and gives INT64_MIN.
+    if (aTicks >= double(INT64_MAX))
+      return TimeDuration::FromTicks(INT64_MAX);
 
     // This MUST be a <= test.
-    if (aTicks <= double(LL_MININT))
-      return TimeDuration::FromTicks(LL_MININT);
+    if (aTicks <= double(INT64_MIN))
+      return TimeDuration::FromTicks(INT64_MIN);
 
-    return TimeDuration::FromTicks(PRInt64(aTicks));
+    return TimeDuration::FromTicks(int64_t(aTicks));
   }
 
-  // Duration in PRIntervalTime units
-  PRInt64 mValue;
+  // Duration, result is implementation-specific difference of two TimeStamps
+  int64_t mValue;
 };
 
 /**
@@ -185,8 +194,14 @@ private:
  *     platform
  *   - PRIntervalTime otherwise.  We detect wraparounds of
  *     PRIntervalTime and work around them.
+ *
+ * This class is similar to C++11's time_point, however it is
+ * explicitly nullable and provides an IsNull() method. time_point
+ * is initialized to the clock's epoch and provides a
+ * time_since_epoch() method that functions similiarly. i.e.
+ * t.IsNull() is equivalent to t.time_since_epoch() == decltype(t)::duration::zero();
  */
-class NS_COM TimeStamp
+class TimeStamp
 {
 public:
   /**
@@ -198,83 +213,92 @@ public:
   /**
    * Return true if this is the "null" moment
    */
-  PRBool IsNull() const { return mValue == 0; }
+  bool IsNull() const { return mValue == 0; }
   /**
    * Return a timestamp reflecting the current elapsed system time. This
    * is monotonically increasing (i.e., does not decrease) over the
    * lifetime of this process' XPCOM session.
+   *
+   * Now() is trying to ensure the best possible precision on each platform,
+   * at least one millisecond.
+   *
+   * NowLoRes() has been introduced to workaround performance problems of
+   * QueryPerformanceCounter on the Windows platform.  NowLoRes() is giving
+   * lower precision, usually 15.6 ms, but with very good performance benefit.
+   * Use it for measurements of longer times, like >200ms timeouts.
    */
-  static TimeStamp Now();
+  static TimeStamp Now() { return Now(true); }
+  static TimeStamp NowLoRes() { return Now(false); }
   /**
    * Compute the difference between two timestamps. Both must be non-null.
    */
   TimeDuration operator-(const TimeStamp& aOther) const {
-    NS_ASSERTION(!IsNull(), "Cannot compute with a null value");
-    NS_ASSERTION(!aOther.IsNull(), "Cannot compute with aOther null value");
-    PR_STATIC_ASSERT(-LL_MAXINT > LL_MININT);
-    PRInt64 ticks = PRInt64(mValue - aOther.mValue);
+    MOZ_ASSERT(!IsNull(), "Cannot compute with a null value");
+    MOZ_ASSERT(!aOther.IsNull(), "Cannot compute with aOther null value");
+    PR_STATIC_ASSERT(-INT64_MAX > INT64_MIN);
+    int64_t ticks = int64_t(mValue - aOther.mValue);
     // Check for overflow.
     if (mValue > aOther.mValue) {
       if (ticks < 0) {
-        ticks = LL_MAXINT;
+        ticks = INT64_MAX;
       }
     } else {
       if (ticks > 0) {
-        ticks = LL_MININT;
+        ticks = INT64_MIN;
       }
     }
     return TimeDuration::FromTicks(ticks);
   }
 
   TimeStamp operator+(const TimeDuration& aOther) const {
-    NS_ASSERTION(!IsNull(), "Cannot compute with a null value");
+    MOZ_ASSERT(!IsNull(), "Cannot compute with a null value");
     return TimeStamp(mValue + aOther.mValue);
   }
   TimeStamp operator-(const TimeDuration& aOther) const {
-    NS_ASSERTION(!IsNull(), "Cannot compute with a null value");
+    MOZ_ASSERT(!IsNull(), "Cannot compute with a null value");
     return TimeStamp(mValue - aOther.mValue);
   }
   TimeStamp& operator+=(const TimeDuration& aOther) {
-    NS_ASSERTION(!IsNull(), "Cannot compute with a null value");
+    MOZ_ASSERT(!IsNull(), "Cannot compute with a null value");
     mValue += aOther.mValue;
     return *this;
   }
   TimeStamp& operator-=(const TimeDuration& aOther) {
-    NS_ASSERTION(!IsNull(), "Cannot compute with a null value");
+    MOZ_ASSERT(!IsNull(), "Cannot compute with a null value");
     mValue -= aOther.mValue;
     return *this;
   }
 
-  PRBool operator<(const TimeStamp& aOther) const {
-    NS_ASSERTION(!IsNull(), "Cannot compute with a null value");
-    NS_ASSERTION(!aOther.IsNull(), "Cannot compute with aOther null value");
+  bool operator<(const TimeStamp& aOther) const {
+    MOZ_ASSERT(!IsNull(), "Cannot compute with a null value");
+    MOZ_ASSERT(!aOther.IsNull(), "Cannot compute with aOther null value");
     return mValue < aOther.mValue;
   }
-  PRBool operator<=(const TimeStamp& aOther) const {
-    NS_ASSERTION(!IsNull(), "Cannot compute with a null value");
-    NS_ASSERTION(!aOther.IsNull(), "Cannot compute with aOther null value");
+  bool operator<=(const TimeStamp& aOther) const {
+    MOZ_ASSERT(!IsNull(), "Cannot compute with a null value");
+    MOZ_ASSERT(!aOther.IsNull(), "Cannot compute with aOther null value");
     return mValue <= aOther.mValue;
   }
-  PRBool operator>=(const TimeStamp& aOther) const {
-    NS_ASSERTION(!IsNull(), "Cannot compute with a null value");
-    NS_ASSERTION(!aOther.IsNull(), "Cannot compute with aOther null value");
+  bool operator>=(const TimeStamp& aOther) const {
+    MOZ_ASSERT(!IsNull(), "Cannot compute with a null value");
+    MOZ_ASSERT(!aOther.IsNull(), "Cannot compute with aOther null value");
     return mValue >= aOther.mValue;
   }
-  PRBool operator>(const TimeStamp& aOther) const {
-    NS_ASSERTION(!IsNull(), "Cannot compute with a null value");
-    NS_ASSERTION(!aOther.IsNull(), "Cannot compute with aOther null value");
+  bool operator>(const TimeStamp& aOther) const {
+    MOZ_ASSERT(!IsNull(), "Cannot compute with a null value");
+    MOZ_ASSERT(!aOther.IsNull(), "Cannot compute with aOther null value");
     return mValue > aOther.mValue;
   }
-  PRBool operator==(const TimeStamp& aOther) const {
+  bool operator==(const TimeStamp& aOther) const {
     // Maybe it's ok to check == with null timestamps?
-    NS_ASSERTION(!IsNull(), "Cannot compute with a null value");
-    NS_ASSERTION(!aOther.IsNull(), "Cannot compute with aOther null value");
+    MOZ_ASSERT(!IsNull() && "Cannot compute with a null value");
+    MOZ_ASSERT(!aOther.IsNull(), "Cannot compute with aOther null value");
     return mValue == aOther.mValue;
   }
-  PRBool operator!=(const TimeStamp& aOther) const {
+  bool operator!=(const TimeStamp& aOther) const {
     // Maybe it's ok to check != with null timestamps?
-    NS_ASSERTION(!IsNull(), "Cannot compute with a null value");
-    NS_ASSERTION(!aOther.IsNull(), "Cannot compute with aOther null value");
+    MOZ_ASSERT(!IsNull(), "Cannot compute with a null value");
+    MOZ_ASSERT(!aOther.IsNull(), "Cannot compute with aOther null value");
     return mValue != aOther.mValue;
   }
 
@@ -286,7 +310,11 @@ public:
   static NS_HIDDEN_(void) Shutdown();
 
 private:
-  TimeStamp(PRUint64 aValue) : mValue(aValue) {}
+  friend struct IPC::ParamTraits<mozilla::TimeStamp>;
+
+  TimeStamp(TimeStampValue aValue) : mValue(aValue) {}
+
+  static TimeStamp Now(bool aHighResolution);
 
   /**
    * When built with PRIntervalTime, a value of 0 means this instance
@@ -301,7 +329,7 @@ private:
    *
    * When using a system clock, a value is system dependent.
    */
-  PRUint64 mValue;
+  TimeStampValue mValue;
 };
 
 }

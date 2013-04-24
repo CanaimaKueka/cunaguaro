@@ -1,4 +1,4 @@
-Source: cunaguaro
+Source: @browser@
 Section: web
 Priority: optional
 Maintainer: Maintainers of Mozilla-related packages <pkg-mozilla-maintainers@lists.alioth.debian.org>
@@ -7,7 +7,6 @@ Build-Depends: autotools-dev,
                debhelper (>= 7.2.3),
                libx11-dev,
                libxt-dev,
-               libidl-dev,
                libgtk2.0-dev (>= 2.10),
                libglib2.0-dev (>= 2.16.0),
                libstartup-notification0-dev,
@@ -19,20 +18,23 @@ Build-Depends: autotools-dev,
                zlib1g-dev,
                libbz2-dev,
                libreadline-dev | libreadline5-dev,
-               python,
-               dpkg-dev (>= 1.13.19),
-               libnspr4-dev (>= 4.8.8),
-               libnss3-dev (>= 3.12.10),
+               python2.7,
+               python-minimal (>= 2.6.6-13~),
+               python-ply,
+               dpkg-dev (>= 1.16.1.1~),
+               libnspr4-dev (>= 2:4.9.6~),
+               libnss3-dev (>= 2:3.14.3~),
                libhunspell-dev (>= 1.2),
                libdbus-glib-1-dev,
-               libsqlite3-dev (>= 3.7.5),
+               libsqlite3-dev (>= 3.7.16.1),
                libasound2-dev [linux-any],
                libiw-dev [linux-any],
                libnotify-dev,
                libffi-dev,
                libevent-dev (>= 1.4.1),
-               libvpx-dev,
+               libvpx-dev (>= 1.0.0),
                mesa-common-dev,
+               yasm (>= 1.1),
                zip,
                unzip,
                locales,
@@ -45,54 +47,60 @@ Build-Depends: autotools-dev,
                imagemagick,
                librsvg2-bin,
                xsltproc,
-               lsb-release
 Build-Conflicts: graphicsmagick-imagemagick-compat,
+                 liboss4-salsa-dev,
                  libhildonmime-dev,
                  libosso-dev
 Standards-Version: 3.9.2.0
-Vcs-Git: git://git.debian.org/git/pkg-mozilla/cunaguaro.git
-Vcs-Browser: http://git.debian.org/?p=pkg-mozilla/cunaguaro.git
+Vcs-Git: git://git.debian.org/git/pkg-mozilla/iceweasel.git
+Vcs-Browser: http://git.debian.org/?p=pkg-mozilla/iceweasel.git
 
-Package: cunaguaro
+Package: @browser@
 Architecture: any
 Depends: ${shlibs:Depends},
          ${misc:Depends},
          fontconfig,
          procps,
          debianutils (>= 1.16),
-         xulrunner-##GRE_VERSION## (>= ${binary:Version})
-Suggests: ttf-lyx | latex-xft-fonts,
-          xfonts-mathml,
-          ttf-mathematica4.1,
+         xulrunner-@GRE_VERSION@ (>= ${binary:Version}),
+         libsqlite3-0 (>= 3.7.12-1~)
+Suggests: fonts-stix | otf-stix,
           mozplugger,
           libgssapi-krb5-2 | libkrb53
 Provides: www-browser,
           gnome-www-browser
-Description: Web browser based on Firefox
- Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
- with support for modern web application technologies.
+%if browser == firefox
+%define DESCRIPTION Mozilla Firefox web browser
+%define LONGDESC1 @Browser@ is a powerful, extensible web browser with support for modern
+%define LONGDESC2 web application technologies.
+%else
+%define DESCRIPTION Web browser based on Firefox
+%define LONGDESC1 @Browser@ is Firefox, rebranded. It is a powerful, extensible web browser
+%define LONGDESC2 with support for modern web application technologies.
+%endif
+Description: @DESCRIPTION@
+ @LONGDESC1@
+ @LONGDESC2@
 
-Package: cunaguaro-dbg
+Package: @browser@-dbg
 Architecture: any
 Priority: extra
 Section: debug
 Depends: ${misc:Depends},
-         cunaguaro (= ${binary:Version}),
-         xulrunner-##GRE_VERSION##-dbg
-Description: debugging symbols for cunaguaro
- Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
- with support for modern web application technologies.
+         @browser@ (= ${binary:Version}),
+         xulrunner-@GRE_VERSION@-dbg
+Description: Debugging symbols for @Browser@
+ @LONGDESC1@
+ @LONGDESC2@
  .
- This package contains the debugging symbols for cunaguaro.
+ This package contains the debugging symbols for @browser@.
 
-Package: xulrunner-##GRE_VERSION##
+Package: xulrunner-@GRE_VERSION@
 Section: libs
 Architecture: any
 Depends: ${shlibs:Depends},
          ${misc:Depends},
-         libnspr4-0d (>> 4.7.1-1),
-         libnss3-1d (>> 3.12.0~rc3-1),
-         libmozjs##SO_VERSION## (= ${binary:Version}),
+         libmozjs@JS_SO_VERSION@ (= ${binary:Version}),
          libcairo2 (>= 1.8.8)
 Suggests: ${gnome:Depends}, libgnomeui-0, libcanberra0
 Conflicts: j2re1.4,
@@ -116,14 +124,14 @@ Description: XUL + XPCOM application runner
  This package also contains the Gecko engine library (libxul)
 Homepage: http://developer.mozilla.org/en/docs/XULRunner
 
-Package: libmozjs##SO_VERSION##
+Package: libmozjs@JS_SO_VERSION@
 Section: libs
 Architecture: any
 Depends: ${shlibs:Depends},
          ${misc:Depends}
 Description: Mozilla SpiderMonkey JavaScript library
  This library provides the embeddable JavaScript/ECMAScript engine from
- the Mozilla project (used among others by the Cunaguaro (Firefox) browser
+ the Mozilla project (used among others by the @Browser@ (Firefox) browser
  as well as by the iPlanet WebServer).
 Homepage: http://www.mozilla.org/js/
 
@@ -131,26 +139,26 @@ Package: libmozjs-dev
 Section: libdevel
 Architecture: any
 Depends: ${misc:Depends},
-         libmozjs##SO_VERSION## (= ${binary:Version}),
+         libmozjs@JS_SO_VERSION@ (= ${binary:Version}),
          libnspr4-dev
 Description: Development files for the Mozilla SpiderMonkey JavaScript library
  This library provides the embeddable JavaScript/ECMAScript engine from
- the Mozilla project (used among others by the Cunaguaro (Firefox) browser
+ the Mozilla project (used among others by the @Browser@ (Firefox) browser
  as well as by the iPlanet WebServer).
  .
  Install this package if you wish to develop your own programs using the
  Mozilla SpiderMonkey JavaScript library.
 Homepage: http://www.mozilla.org/js/
 
-Package: libmozjs##SO_VERSION##-dbg
+Package: libmozjs@JS_SO_VERSION@-dbg
 Section: debug
 Priority: extra
 Architecture: any
-Depends: libmozjs##SO_VERSION## (= ${binary:Version}),
+Depends: libmozjs@JS_SO_VERSION@ (= ${binary:Version}),
          ${misc:Depends}
 Description: Development files for the Mozilla SpiderMonkey JavaScript library
  This library provides the embeddable JavaScript/ECMAScript engine from
- the Mozilla project (used among others by the Cunaguaro (Firefox) browser
+ the Mozilla project (used among others by the @Browser@ (Firefox) browser
  as well as by the iPlanet WebServer).
  .
  This package provides the debugging symbols for the library and for
@@ -184,7 +192,8 @@ Section: libdevel
 Architecture: any
 Depends: ${shlibs:Depends},
          ${misc:Depends},
-         xulrunner-##GRE_VERSION## (>= ${binary:Version}),
+         python-ply,
+         xulrunner-@GRE_VERSION@ (>= ${binary:Version}),
          libnss3-dev,
          libnspr4-dev,
          libmozjs-dev (>= ${binary:Version})
@@ -204,12 +213,14 @@ Description: Development files for the Gecko engine library
  same form as the one you may find on mozilla.org in /usr/lib/xulrunner/sdk.
 Homepage: http://wiki.mozilla.org/XUL:Lib_XUL
 
-Package: xulrunner-##GRE_VERSION##-dbg
+Package: xulrunner-@GRE_VERSION@-dbg
 Section: debug
 Priority: extra
 Architecture: any
-Depends: xulrunner-##GRE_VERSION## (= ${binary:Version}),
-         libmozjs##SO_VERSION##-dbg (= ${binary:Version}),
+Depends: xulrunner-@GRE_VERSION@ (= ${binary:Version}),
+         libmozjs@JS_SO_VERSION@-dbg (= ${binary:Version}),
+         libnss3-dbg | libnss3-1d-dbg,
+         libnspr4-dbg | libnspr4-0d-dbg,
          ${misc:Depends}
 Description: Debugging symbols for the Gecko engine library
  This library provides an  API for XUL applications and Gecko embedders.
@@ -220,6 +231,17 @@ Description: Debugging symbols for the Gecko engine library
  support, XBL, XUL, SVG, XSLT, XML Extras (XMLHttpRequest and DOMParser),
  Web Services (SOAP), accessibility support, IPC services, gtkmozembed, etc.
  .
- This package provides the debugging symbols for the xulrunner-##GRE_VERSION##
+ This package provides the debugging symbols for the xulrunner-@GRE_VERSION@
  package.
 Homepage: http://wiki.mozilla.org/XUL:Lib_XUL
+
+Package: @browser@-l10n-all
+Architecture: all
+Section: localization
+Depends: ${misc:Depends}, @L10N_PACKAGES_DEPS@
+Description: All language packages for @Browser@ (meta)
+ @LONGDESC1@
+ @LONGDESC2@
+ .
+ This is a metapackage depending on all available localizations of @Browser@.
+%include l10n/browser-l10n.control

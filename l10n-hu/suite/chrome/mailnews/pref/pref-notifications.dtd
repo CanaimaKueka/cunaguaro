@@ -1,0 +1,24 @@
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+
+<!ENTITY pref.notifications.title         "Értesítések">
+<!ENTITY notifications.caption            "Értesítések">
+<!ENTITY newMessagesArrive.label          "Új üzenet érkezésekor:">
+<!ENTITY playSound.label                  "Hangjelzés">
+<!ENTITY playSound.accesskey              "H">
+<!ENTITY showAnimatedAlert.label          "Figyelmeztető ablak">
+<!ENTITY showAnimatedAlert.accesskey      "F">
+<!ENTITY showTrayIcon.label               "Tálcaikon megjelenítése">
+<!ENTITY showTrayIcon.accesskey           "T">
+<!ENTITY bounceSystemDockIcon.label       "Dokkolóikon animálása">
+<!ENTITY bounceSystemDockIcon.accesskey   "a">
+<!ENTITY playButton.label                 "Lejátszás">
+<!ENTITY playButton.accesskey             "L">
+<!ENTITY systemsound.label                "Új üzenethez tartozó rendszerhang">
+<!ENTITY systemsound.accesskey            "z">
+<!ENTITY customsound.label                "Saját WAV-fájl">
+<!ENTITY customsound.accesskey            "S">
+<!ENTITY browse.label                     "Tallózás…">
+<!ENTITY browse.accesskey                 "T">
+<!ENTITY browse.title                     "Fájlválasztás">

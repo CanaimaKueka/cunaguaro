@@ -1,57 +1,23 @@
 /* -*- Mode: C++; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
-/* ***** BEGIN LICENSE BLOCK *****
- * Version: MPL 1.1/GPL 2.0/LGPL 2.1
- *
- * The contents of this file are subject to the Mozilla Public License Version
- * 1.1 (the "License"); you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- * http://www.mozilla.org/MPL/
- *
- * Software distributed under the License is distributed on an "AS IS" basis,
- * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
- * for the specific language governing rights and limitations under the
- * License.
- *
- * The Original Code is Mozilla Communicator client code.
- *
- * The Initial Developer of the Original Code is
- * Netscape Communications Corporation.
- * Portions created by the Initial Developer are Copyright (C) 1998
- * the Initial Developer. All Rights Reserved.
- *
- * Contributor(s):
- *   Allan Beaufour <allan@beaufour.dk>
- *
- * Alternatively, the contents of this file may be used under the terms of
- * either of the GNU General Public License Version 2 or later (the "GPL"),
- * or the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
- * in which case the provisions of the GPL or the LGPL are applicable instead
- * of those above. If you wish to allow use of your version of this file only
- * under the terms of either the GPL or the LGPL, and not to allow others to
- * use your version of this file under the terms of the MPL, indicate your
- * decision by deleting the provisions above and replace them with the notice
- * and other provisions required by the GPL or the LGPL. If you do not delete
- * the provisions above, a recipient may use your version of this file under
- * the terms of any one of the MPL, the GPL or the LGPL.
- *
- * ***** END LICENSE BLOCK ***** */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 /*
- * Implementation of the |attributes| property of DOM Core's nsIDOMNode object.
+ * Implementation of the |attributes| property of DOM Core's Element object.
  */
 
-#ifndef nsDOMAttributeMap_h___
-#define nsDOMAttributeMap_h___
+#ifndef nsDOMAttributeMap_h
+#define nsDOMAttributeMap_h
 
-#include "nsIDOMNamedNodeMap.h"
-#include "nsString.h"
+#include "nsIDOMMozNamedAttrMap.h"
+#include "nsStringGlue.h"
 #include "nsRefPtrHashtable.h"
 #include "nsCycleCollectionParticipant.h"
-#include "prbit.h"
-#include "nsIDOMNode.h"
+#include "nsIDOMAttr.h"
+#include "mozilla/ErrorResult.h"
 
 class nsIAtom;
-class nsIContent;
 class nsDOMAttribute;
 class nsINodeInfo;
 class nsIDocument;
@@ -71,7 +37,7 @@ public:
   /**
    * The namespace of the attribute
    */
-  PRInt32  mNamespaceID;
+  int32_t  mNamespaceID;
 
   /**
    * The atom for attribute, weak ref. is fine as we only use it for the
@@ -79,7 +45,7 @@ public:
    */
   nsIAtom* mLocalName;
 
-  nsAttrKey(PRInt32 aNs, nsIAtom* aName)
+  nsAttrKey(int32_t aNs, nsIAtom* aName)
     : mNamespaceID(aNs), mLocalName(aName) {}
 
   nsAttrKey(const nsAttrKey& aAttr)
@@ -100,7 +66,7 @@ public:
   ~nsAttrHashKey() {}
 
   KeyType GetKey() const { return mKey; }
-  PRBool KeyEquals(KeyTypePointer aKey) const
+  bool KeyEquals(KeyTypePointer aKey) const
     {
       return mKey.mLocalName == aKey->mLocalName &&
              mKey.mNamespaceID == aKey->mNamespaceID;
@@ -112,17 +78,16 @@ public:
       if (!aKey)
         return 0;
 
-      return PR_ROTATE_LEFT32(static_cast<PRUint32>(aKey->mNamespaceID), 4) ^
-             NS_PTR_TO_INT32(aKey->mLocalName);
+      return mozilla::HashGeneric(aKey->mNamespaceID, aKey->mLocalName);
     }
-  enum { ALLOW_MEMMOVE = PR_TRUE };
+  enum { ALLOW_MEMMOVE = true };
 
 private:
   nsAttrKey mKey;
 };
 
-// Helper class that implements the nsIDOMNamedNodeMap interface.
-class nsDOMAttributeMap : public nsIDOMNamedNodeMap
+// Helper class that implements the nsIDOMMozNamedAttrMap interface.
+class nsDOMAttributeMap : public nsIDOMMozNamedAttrMap
 {
 public:
   typedef mozilla::dom::Element Element;
@@ -130,15 +95,10 @@ public:
   nsDOMAttributeMap(Element *aContent);
   virtual ~nsDOMAttributeMap();
 
-  /**
-   * Initialize the map. Must be called before the map is used.
-   */
-  PRBool Init();
-
   NS_DECL_CYCLE_COLLECTING_ISUPPORTS
 
-  // nsIDOMNamedNodeMap interface
-  NS_DECL_NSIDOMNAMEDNODEMAP
+  // nsIDOMMozNamedAttrMap interface
+  NS_DECL_NSIDOMMOZNAMEDATTRMAP
 
   void DropReference();
 
@@ -157,7 +117,7 @@ public:
    * Drop an attribute from the map's cache (does not remove the attribute
    * from the node!)
    */
-  void DropAttribute(PRInt32 aNamespaceID, nsIAtom* aLocalName);
+  void DropAttribute(int32_t aNamespaceID, nsIAtom* aLocalName);
 
   /**
    * Returns the number of attribute nodes currently in the map.
@@ -166,7 +126,7 @@ public:
    *
    * @return The number of attribute nodes in the map.
    */
-  PRUint32 Count() const;
+  uint32_t Count() const;
 
   typedef nsRefPtrHashtable<nsAttrHashKey, nsDOMAttribute> AttrCache;
 
@@ -176,21 +136,21 @@ public:
    *
    * @return The number of attribute nodes that aFunc was called for.
    */
-  PRUint32 Enumerate(AttrCache::EnumReadFunction aFunc, void *aUserArg) const;
+  uint32_t Enumerate(AttrCache::EnumReadFunction aFunc, void *aUserArg) const;
 
-  nsDOMAttribute* GetItemAt(PRUint32 aIndex, nsresult *rv);
-  nsDOMAttribute* GetNamedItem(const nsAString& aAttrName, nsresult *rv);
+  nsDOMAttribute* GetItemAt(uint32_t aIndex, nsresult *rv);
+  nsDOMAttribute* GetNamedItem(const nsAString& aAttrName);
 
   static nsDOMAttributeMap* FromSupports(nsISupports* aSupports)
   {
 #ifdef DEBUG
     {
-      nsCOMPtr<nsIDOMNamedNodeMap> map_qi = do_QueryInterface(aSupports);
+      nsCOMPtr<nsIDOMMozNamedAttrMap> map_qi = do_QueryInterface(aSupports);
 
       // If this assertion fires the QI implementation for the object in
-      // question doesn't use the nsIDOMNamedNodeMap pointer as the nsISupports
+      // question doesn't use the nsIDOMMozNamedAttrMap pointer as the nsISupports
       // pointer. That must be fixed, or we'll crash...
-      NS_ASSERTION(map_qi == static_cast<nsIDOMNamedNodeMap*>(aSupports),
+      NS_ASSERTION(map_qi == static_cast<nsIDOMMozNamedAttrMap*>(aSupports),
                    "Uh, fix QI!");
     }
 #endif
@@ -199,6 +159,18 @@ public:
   }
 
   NS_DECL_CYCLE_COLLECTION_CLASS(nsDOMAttributeMap)
+
+  nsDOMAttribute* GetNamedItemNS(const nsAString& aNamespaceURI,
+                                 const nsAString& aLocalName,
+                                 mozilla::ErrorResult& aError);
+
+  already_AddRefed<nsDOMAttribute> SetNamedItemNS(nsIDOMAttr *aNode,
+                                                  mozilla::ErrorResult& aError)
+  {
+    return SetNamedItemInternal(aNode, true, aError);
+  }
+
+  size_t SizeOfIncludingThis(nsMallocSizeOfFun aMallocSizeOf) const;
 
 private:
   Element *mContent; // Weak reference
@@ -209,30 +181,26 @@ private:
   AttrCache mAttributeCache;
 
   /**
-   * SetNamedItem() (aWithNS = PR_FALSE) and SetNamedItemNS() (aWithNS =
-   * PR_TRUE) implementation.
+   * SetNamedItem() (aWithNS = false) and SetNamedItemNS() (aWithNS =
+   * true) implementation.
    */
-  nsresult SetNamedItemInternal(nsIDOMNode *aNode,
-                                nsIDOMNode **aReturn,
-                                PRBool aWithNS);
+  already_AddRefed<nsDOMAttribute>
+    SetNamedItemInternal(nsIDOMAttr *aNode,
+                         bool aWithNS,
+                         mozilla::ErrorResult& aError);
 
-  /**
-   * GetNamedItemNS() implementation taking |aRemove| for GetAttribute(),
-   * which is used by RemoveNamedItemNS().
-   */
-  nsresult GetNamedItemNSInternal(const nsAString& aNamespaceURI,
-                                  const nsAString& aLocalName,
-                                  nsIDOMNode** aReturn,
-                                  PRBool aRemove = PR_FALSE);
+  already_AddRefed<nsINodeInfo>
+  GetAttrNodeInfo(const nsAString& aNamespaceURI,
+                  const nsAString& aLocalName,
+                  mozilla::ErrorResult& aError);
 
-  nsDOMAttribute* GetAttribute(nsINodeInfo* aNodeInfo, PRBool aNsAware);
+  nsDOMAttribute* GetAttribute(nsINodeInfo* aNodeInfo, bool aNsAware);
 
   /**
    * Remove an attribute, returns the removed node.
    */
-  nsresult RemoveAttribute(nsINodeInfo*     aNodeInfo,
-                           nsIDOMNode**     aReturn);
+  already_AddRefed<nsDOMAttribute> RemoveAttribute(nsINodeInfo* aNodeInfo);
 };
 
 
-#endif /* nsDOMAttributeMap_h___ */
+#endif /* nsDOMAttributeMap_h */
