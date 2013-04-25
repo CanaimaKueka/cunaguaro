@@ -766,7 +766,6 @@ pref("javascript.options.strict",           false);
 #ifdef DEBUG
 pref("javascript.options.strict.debug",     true);
 #endif
-pref("javascript.options.showInConsole",    true);
 pref("javascript.options.methodjit.content", true);
 pref("javascript.options.methodjit.chrome",  true);
 pref("javascript.options.ion.content",      true);
@@ -1697,7 +1696,7 @@ pref("layout.css.visited_links_enabled", true);
 // A value of 0 means use the system DPI. A positive value is used as the DPI.
 // This sets the physical size of a device pixel and thus controls the
 // interpretation of physical units such as "pt".
-pref("layout.css.dpi", 0);
+pref("layout.css.dpi", -1);
 
 // Set the number of device pixels per CSS pixel. A value <= 0 means choose
 // automatically based on user settings for the platform (e.g., "UI scale factor"

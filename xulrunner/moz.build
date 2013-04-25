@@ -9,6 +9,7 @@ PARALLEL_DIRS += [
     'app',
     'setup',
     'stub',
+    'examples',
 ]
 
 if CONFIG['MAKENSISU']:

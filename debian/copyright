@@ -1,5 +1,5 @@
 Format-Specification: http://svn.debian.org/wsvn/dep/web/deps/dep5.mdwn?op=file&rev=135
-Name: Iceweasel
+Name: Cunaguaro
 Source: http://ftp.mozilla.org/pub/mozilla.org/firefox/
 Disclaimer: The original upstream tarball is modified from upstream by
  removing a set of sourceless binary, non-free, and VCS-related files. You

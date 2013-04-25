@@ -71,17 +71,6 @@ _EXTRA_EXPORTS := $(filter-out $(EXPORTS),$(SDK_HEADERS))
 EXPORTS += $(_EXTRA_EXPORTS)
 endif
 
-
-ifneq (,$(findstring sample,$(MODULE))$(findstring test,$(MODULE))$(findstring Test,$(MODULE)))
-INCLUDE_DIR := $(DIST)/include/testing
-IDL_DIR := $(DIST)/tests/idl
-LOCAL_INCLUDES += -I$(XPIDL_GEN_DIR) -I$(INCLUDE_DIR)
-override MOZ_JAVAXPCOM :=
-XPIDL_FLAGS += -I$(DIST)/idl
-else
-INCLUDE_DIR := $(DIST)/include
-endif
-
 REPORT_BUILD = $(info $(notdir $<))
 
 ifeq ($(OS_ARCH),OS2)
@@ -252,18 +241,6 @@ else
 SHARED_LIBRARY		:= $(DLL_PREFIX)$(SHARED_LIBRARY_NAME)$(DLL_SUFFIX)
 endif
 
-ifdef SO_VERSION
-UNVERSIONED_LIBRARY	:= $(notdir $(SHARED_LIBRARY))
-
-ifeq ($(strip $(SHARED_LIBRARY)),$(strip $(SDK_LIBRARY)))
-SDK_LIBRARY		:= $(SHARED_LIBRARY)
-endif
-
-SHARED_LIBRARY		:= $(SHARED_LIBRARY).$(SO_VERSION)
-
-MKSHLINKS		= rm -f $(1)/$(UNVERSIONED_LIBRARY); ln -s $(SHARED_LIBRARY) $(1)/$(UNVERSIONED_LIBRARY)
-endif
-
 ifeq ($(OS_ARCH),OS2)
 DEF_FILE		:= $(SHARED_LIBRARY:.dll=.def)
 endif
@@ -361,7 +338,7 @@ SIMPLE_PROGRAMS :=
 endif
 
 ifndef TARGETS
-TARGETS			= $(LIBRARY) $(UNVERSIONED_LIBRARY) $(SHARED_LIBRARY) $(PROGRAM) $(SIMPLE_PROGRAMS) $(HOST_LIBRARY) $(HOST_PROGRAM) $(HOST_SIMPLE_PROGRAMS) $(JAVA_LIBRARY)
+TARGETS			= $(LIBRARY) $(SHARED_LIBRARY) $(PROGRAM) $(SIMPLE_PROGRAMS) $(HOST_LIBRARY) $(HOST_PROGRAM) $(HOST_SIMPLE_PROGRAMS) $(JAVA_LIBRARY)
 endif
 
 COBJS = $(CSRCS:.c=.$(OBJ_SUFFIX))
@@ -965,8 +942,6 @@ endif
 # so instead of deleting .o files after repacking them into a dylib, we make
 # symlinks back to the originals. The symlinks are a no-op for stabs debugging,
 # so no need to conditionalize on OS version or debugging format.
-$(UNVERSIONED_LIBRARY): $(SHARED_LIBRARY)
-	$(call MKSHLINKS,.)
 
 $(SHARED_LIBRARY): $(OBJS) $(LOBJS) $(DEF_FILE) $(RESFILE) $(LIBRARY) $(EXTRA_DEPS) $(GLOBAL_DEPS)
 ifndef INCREMENTAL_LINKER
@@ -1417,7 +1392,7 @@ GARBAGE_DIRS		+= $(XPIDL_GEN_DIR)
 
 ifndef NO_DIST_INSTALL
 XPIDL_HEADERS_FILES := $(patsubst %.idl,$(XPIDL_GEN_DIR)/%.h, $(XPIDLSRCS))
-XPIDL_HEADERS_DEST := $(INCLUDE_DIR)
+XPIDL_HEADERS_DEST := $(DIST)/include
 XPIDL_HEADERS_TARGET := export
 INSTALL_TARGETS += XPIDL_HEADERS
 

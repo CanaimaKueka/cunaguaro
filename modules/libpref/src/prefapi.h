@@ -178,8 +178,7 @@ void PREF_ReaderCallback( void *closure,
                           const char *pref,
                           PrefValue   value,
                           PrefType    type,
-                          bool        isDefault,
-                          bool        isLocked);
+                          bool        isDefault);
 
 #ifdef __cplusplus
 }
