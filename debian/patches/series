@@ -41,4 +41,3 @@ configure.patch
 02_cunaguaro-bookmarks.patch
 03_cunaguaro-preferences.patch
 04_cunaguaro-search.patch
-./browser/branding/unofficial/locales/browserconfig.properties
