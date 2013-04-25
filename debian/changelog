@@ -1,5 +1,6 @@
-cunaguaro (22.0~a2+20130419004013-1) UNRELEASED; urgency=low
+cunaguaro (22.0-1) unstable; urgency=low
 
+  [ Mike Hommey ]
   * New upstream aurora snapshot.
   * debian/control*: Bump sqlite build dependency.
   * debian/rules, debian/*/Makefile.in: Change how our extra Makefiles are
@@ -17,7 +18,10 @@ cunaguaro (22.0~a2+20130419004013-1) UNRELEASED; urgency=low
   * debian/branding/**/moz.build, debian/branding/Makefile.in: Add moz.builds
     in debian/branding.
 
- -- Mike Hommey <glandium@debian.org>  Fri, 19 Apr 2013 14:54:59 +0200
+  [ Luis Alejandro Martínez Faneyth ]
+  * [5d260ab] Agregando parches de modificación de preferencias, marcadores y URLs.
+
+ -- Luis Alejandro Martínez Faneyth <luis@huntingbears.com.ve>  Thu, 25 Apr 2013 16:44:01 -0430
 
 cunaguaro (21.0~b1-1) UNRELEASED; urgency=low
 
