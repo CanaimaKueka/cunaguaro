@@ -22,6 +22,7 @@ cunaguaro (22.0~a2+20130419004013-1) unstable; urgency=low
   * [5d260ab] Agregando parches de modificación de preferencias, marcadores y URLs.
   * [80ad900] Retirando parche erróneo.
   * [bba1e10] Removiendo residuos.
+  * [2d30dc6] Restaurando archivos ocultos perdidos.
 
  -- Luis Alejandro Martínez Faneyth <luis@huntingbears.com.ve>  Thu, 25 Apr 2013 16:44:01 -0430
 
