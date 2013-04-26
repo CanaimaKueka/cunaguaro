@@ -1,5 +1,0 @@
-repo: 8ba995b74e18334ab3707f27e9eb8f4e37ba3d29
-node: 29961e1f97e6e20b7e340011cacc898c7cc2273e
-branch: default
-latesttag: FIREFOX_AURORA_21_BASE
-latesttagdistance: 4266
