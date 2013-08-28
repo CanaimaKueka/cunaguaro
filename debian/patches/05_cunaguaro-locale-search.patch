@@ -1,7 +1,7 @@
-diff --git a/l10n-ach/browser/searchplugins/list.txt b/l10n-ach/browser/searchplugins/list.txt
-index 2a1141a..eedc75c 100755
---- a/l10n-ach/browser/searchplugins/list.txt
-+++ b/l10n-ach/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-ach/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-ach/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-ach/browser/searchplugins/list.txt	2013-08-28 16:07:22.207368098 -0430
 @@ -1,7 +1,6 @@
 -amazondotcom
 -bing
@@ -13,10 +13,10 @@ index 2a1141a..eedc75c 100755
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-af/browser/searchplugins/list.txt b/l10n-af/browser/searchplugins/list.txt
-index 7cd9194..eedc75c 100644
---- a/l10n-af/browser/searchplugins/list.txt
-+++ b/l10n-af/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-af/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-af/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-af/browser/searchplugins/list.txt	2013-08-28 16:07:22.207368098 -0430
 @@ -1,6 +1,6 @@
 -amazondotcom
 -bing
@@ -29,10 +29,10 @@ index 7cd9194..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-ak/browser/searchplugins/list.txt b/l10n-ak/browser/searchplugins/list.txt
-index 7c7d9ee..eedc75c 100644
---- a/l10n-ak/browser/searchplugins/list.txt
-+++ b/l10n-ak/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-ak/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-ak/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-ak/browser/searchplugins/list.txt	2013-08-28 16:07:22.207368098 -0430
 @@ -1,6 +1,6 @@
 -amazondotcom
 -bing
@@ -44,10 +44,10 @@ index 7c7d9ee..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-ar/browser/searchplugins/list.txt b/l10n-ar/browser/searchplugins/list.txt
-index 4c55833..eedc75c 100644
---- a/l10n-ar/browser/searchplugins/list.txt
-+++ b/l10n-ar/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-ar/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-ar/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-ar/browser/searchplugins/list.txt	2013-08-28 16:07:22.207368098 -0430
 @@ -1,6 +1,6 @@
  google
 -bing
@@ -60,10 +60,10 @@ index 4c55833..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-ar/mail/searchplugins/list.txt b/l10n-ar/mail/searchplugins/list.txt
-index af25610..eedc75c 100644
---- a/l10n-ar/mail/searchplugins/list.txt
-+++ b/l10n-ar/mail/searchplugins/list.txt
+Index: cunaguaro/l10n-ar/mail/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-ar/mail/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-ar/mail/searchplugins/list.txt	2013-08-28 16:07:22.207368098 -0430
 @@ -1,6 +1,6 @@
 -bing
 -yahoo
@@ -76,10 +76,10 @@ index af25610..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-ar/mobile/searchplugins/list.txt b/l10n-ar/mobile/searchplugins/list.txt
-index 3c6483d..eedc75c 100644
---- a/l10n-ar/mobile/searchplugins/list.txt
-+++ b/l10n-ar/mobile/searchplugins/list.txt
+Index: cunaguaro/l10n-ar/mobile/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-ar/mobile/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-ar/mobile/searchplugins/list.txt	2013-08-28 16:07:22.207368098 -0430
 @@ -1,3 +1,6 @@
  google
 -wikipedia-ar
@@ -88,10 +88,10 @@ index 3c6483d..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-as/browser/searchplugins/list.txt b/l10n-as/browser/searchplugins/list.txt
-index f369fa8..eedc75c 100644
---- a/l10n-as/browser/searchplugins/list.txt
-+++ b/l10n-as/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-as/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-as/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-as/browser/searchplugins/list.txt	2013-08-28 16:07:22.207368098 -0430
 @@ -1,6 +1,6 @@
 -amazondotcom
 -creativecommons
@@ -104,10 +104,10 @@ index f369fa8..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-ast/browser/searchplugins/list.txt b/l10n-ast/browser/searchplugins/list.txt
-index b9875d1..eedc75c 100644
---- a/l10n-ast/browser/searchplugins/list.txt
-+++ b/l10n-ast/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-ast/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-ast/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-ast/browser/searchplugins/list.txt	2013-08-28 16:07:22.207368098 -0430
 @@ -1,6 +1,6 @@
  google
 -bing
@@ -120,10 +120,10 @@ index b9875d1..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-ast/mail/searchplugins/list.txt b/l10n-ast/mail/searchplugins/list.txt
-index af199ff..eedc75c 100644
---- a/l10n-ast/mail/searchplugins/list.txt
-+++ b/l10n-ast/mail/searchplugins/list.txt
+Index: cunaguaro/l10n-ast/mail/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-ast/mail/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-ast/mail/searchplugins/list.txt	2013-08-28 16:07:22.207368098 -0430
 @@ -1,9 +1,6 @@
 -amazondotcom
 -aol-web-search
@@ -139,10 +139,10 @@ index af199ff..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-be/browser/searchplugins/list.txt b/l10n-be/browser/searchplugins/list.txt
-index 47d5a21..eedc75c 100644
---- a/l10n-be/browser/searchplugins/list.txt
-+++ b/l10n-be/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-be/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-be/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-be/browser/searchplugins/list.txt	2013-08-28 16:07:22.207368098 -0430
 @@ -1,7 +1,6 @@
  google
 -yahoo
@@ -156,10 +156,10 @@ index 47d5a21..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-be/mail/searchplugins/list.txt b/l10n-be/mail/searchplugins/list.txt
-index 2e9d628..eedc75c 100644
---- a/l10n-be/mail/searchplugins/list.txt
-+++ b/l10n-be/mail/searchplugins/list.txt
+Index: cunaguaro/l10n-be/mail/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-be/mail/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-be/mail/searchplugins/list.txt	2013-08-28 16:07:22.207368098 -0430
 @@ -1,7 +1,6 @@
  google
 -yahoo
@@ -174,10 +174,10 @@ index 2e9d628..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-be/mobile/searchplugins/list.txt b/l10n-be/mobile/searchplugins/list.txt
-index 8ca753b..eedc75c 100644
---- a/l10n-be/mobile/searchplugins/list.txt
-+++ b/l10n-be/mobile/searchplugins/list.txt
+Index: cunaguaro/l10n-be/mobile/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-be/mobile/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-be/mobile/searchplugins/list.txt	2013-08-28 16:07:22.207368098 -0430
 @@ -1,3 +1,6 @@
  google
  twitter
@@ -186,10 +186,10 @@ index 8ca753b..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-be/suite/searchplugins/list.txt b/l10n-be/suite/searchplugins/list.txt
-index 16ad622..eedc75c 100644
---- a/l10n-be/suite/searchplugins/list.txt
-+++ b/l10n-be/suite/searchplugins/list.txt
+Index: cunaguaro/l10n-be/suite/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-be/suite/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-be/suite/searchplugins/list.txt	2013-08-28 16:07:22.211368098 -0430
 @@ -1,4 +1,6 @@
 -creativecommons
  google
@@ -199,10 +199,10 @@ index 16ad622..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-bg/browser/searchplugins/list.txt b/l10n-bg/browser/searchplugins/list.txt
-index 16b5d64..eedc75c 100644
---- a/l10n-bg/browser/searchplugins/list.txt
-+++ b/l10n-bg/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-bg/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-bg/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-bg/browser/searchplugins/list.txt	2013-08-28 16:07:22.211368098 -0430
 @@ -1,7 +1,6 @@
 -911bg
 -amazondotcom
@@ -216,10 +216,10 @@ index 16b5d64..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-bg/mail/searchplugins/list.txt b/l10n-bg/mail/searchplugins/list.txt
-index 96866db..eedc75c 100644
---- a/l10n-bg/mail/searchplugins/list.txt
-+++ b/l10n-bg/mail/searchplugins/list.txt
+Index: cunaguaro/l10n-bg/mail/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-bg/mail/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-bg/mail/searchplugins/list.txt	2013-08-28 16:07:22.211368098 -0430
 @@ -1,7 +1,6 @@
 -amazondotcom
 -aol-web-search
@@ -232,10 +232,10 @@ index 96866db..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-bn-BD/browser/searchplugins/list.txt b/l10n-bn-BD/browser/searchplugins/list.txt
-index ab472d9..eedc75c 100644
---- a/l10n-bn-BD/browser/searchplugins/list.txt
-+++ b/l10n-bn-BD/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-bn-BD/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-bn-BD/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-bn-BD/browser/searchplugins/list.txt	2013-08-28 16:07:22.211368098 -0430
 @@ -1,4 +1,6 @@
 -bing
  google
@@ -246,10 +246,10 @@ index ab472d9..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-bn-IN/browser/searchplugins/list.txt b/l10n-bn-IN/browser/searchplugins/list.txt
-index 5dab3a8..eedc75c 100644
---- a/l10n-bn-IN/browser/searchplugins/list.txt
-+++ b/l10n-bn-IN/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-bn-IN/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-bn-IN/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-bn-IN/browser/searchplugins/list.txt	2013-08-28 16:07:22.211368098 -0430
 @@ -1,8 +1,6 @@
 -amazondotcom
 -eBay-in
@@ -264,10 +264,10 @@ index 5dab3a8..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-bn-IN/mail/searchplugins/list.txt b/l10n-bn-IN/mail/searchplugins/list.txt
-index 96866db..eedc75c 100644
---- a/l10n-bn-IN/mail/searchplugins/list.txt
-+++ b/l10n-bn-IN/mail/searchplugins/list.txt
+Index: cunaguaro/l10n-bn-IN/mail/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-bn-IN/mail/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-bn-IN/mail/searchplugins/list.txt	2013-08-28 16:07:22.211368098 -0430
 @@ -1,7 +1,6 @@
 -amazondotcom
 -aol-web-search
@@ -280,10 +280,10 @@ index 96866db..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-bn-IN/suite/searchplugins/list.txt b/l10n-bn-IN/suite/searchplugins/list.txt
-index 16ad622..eedc75c 100644
---- a/l10n-bn-IN/suite/searchplugins/list.txt
-+++ b/l10n-bn-IN/suite/searchplugins/list.txt
+Index: cunaguaro/l10n-bn-IN/suite/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-bn-IN/suite/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-bn-IN/suite/searchplugins/list.txt	2013-08-28 16:07:22.211368098 -0430
 @@ -1,4 +1,6 @@
 -creativecommons
  google
@@ -293,10 +293,10 @@ index 16ad622..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-br/browser/searchplugins/list.txt b/l10n-br/browser/searchplugins/list.txt
-index fc9c46b..eedc75c 100644
---- a/l10n-br/browser/searchplugins/list.txt
-+++ b/l10n-br/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-br/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-br/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-br/browser/searchplugins/list.txt	2013-08-28 16:07:22.211368098 -0430
 @@ -1,6 +1,6 @@
 -amazon-france
 -freelang
@@ -309,10 +309,10 @@ index fc9c46b..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-br/mail/searchplugins/list.txt b/l10n-br/mail/searchplugins/list.txt
-index 78fc4eb..eedc75c 100644
---- a/l10n-br/mail/searchplugins/list.txt
-+++ b/l10n-br/mail/searchplugins/list.txt
+Index: cunaguaro/l10n-br/mail/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-br/mail/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-br/mail/searchplugins/list.txt	2013-08-28 16:07:22.211368098 -0430
 @@ -1,8 +1,6 @@
 -amazondotcom
 -aol-web-search
@@ -325,10 +325,10 @@ index 78fc4eb..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-bs/browser/searchplugins/list.txt b/l10n-bs/browser/searchplugins/list.txt
-index 5b6a67b..eedc75c 100644
---- a/l10n-bs/browser/searchplugins/list.txt
-+++ b/l10n-bs/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-bs/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-bs/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-bs/browser/searchplugins/list.txt	2013-08-28 16:07:22.211368098 -0430
 @@ -1,7 +1,6 @@
  google
 -wikipedia-bs
@@ -341,10 +341,10 @@ index 5b6a67b..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-ca/browser/searchplugins/list.txt b/l10n-ca/browser/searchplugins/list.txt
-index f2ab40d..eedc75c 100644
---- a/l10n-ca/browser/searchplugins/list.txt
-+++ b/l10n-ca/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-ca/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-ca/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-ca/browser/searchplugins/list.txt	2013-08-28 16:07:22.211368098 -0430
 @@ -1,6 +1,6 @@
  google
 -bing
@@ -357,10 +357,10 @@ index f2ab40d..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-ca/mail/searchplugins/list.txt b/l10n-ca/mail/searchplugins/list.txt
-index 643c5d8..eedc75c 100644
---- a/l10n-ca/mail/searchplugins/list.txt
-+++ b/l10n-ca/mail/searchplugins/list.txt
+Index: cunaguaro/l10n-ca/mail/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-ca/mail/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-ca/mail/searchplugins/list.txt	2013-08-28 16:07:22.211368098 -0430
 @@ -1,5 +1,6 @@
 -bing
 -huubs
@@ -373,10 +373,10 @@ index 643c5d8..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-ca/mobile/searchplugins/list.txt b/l10n-ca/mobile/searchplugins/list.txt
-index bce2c36..eedc75c 100644
---- a/l10n-ca/mobile/searchplugins/list.txt
-+++ b/l10n-ca/mobile/searchplugins/list.txt
+Index: cunaguaro/l10n-ca/mobile/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-ca/mobile/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-ca/mobile/searchplugins/list.txt	2013-08-28 16:07:22.211368098 -0430
 @@ -1,4 +1,6 @@
  google
  twitter
@@ -386,10 +386,10 @@ index bce2c36..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-ca/suite/searchplugins/list.txt b/l10n-ca/suite/searchplugins/list.txt
-index df57efa..eedc75c 100644
---- a/l10n-ca/suite/searchplugins/list.txt
-+++ b/l10n-ca/suite/searchplugins/list.txt
+Index: cunaguaro/l10n-ca/suite/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-ca/suite/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-ca/suite/searchplugins/list.txt	2013-08-28 16:07:22.215368098 -0430
 @@ -1,5 +1,6 @@
  google
 -huubs
@@ -401,10 +401,10 @@ index df57efa..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-cs/browser/searchplugins/list.txt b/l10n-cs/browser/searchplugins/list.txt
-index 5875fbd..eedc75c 100644
---- a/l10n-cs/browser/searchplugins/list.txt
-+++ b/l10n-cs/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-cs/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-cs/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-cs/browser/searchplugins/list.txt	2013-08-28 16:07:22.215368098 -0430
 @@ -1,6 +1,6 @@
  google
 -heureka-cz
@@ -417,10 +417,10 @@ index 5875fbd..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-cs/mail/searchplugins/list.txt b/l10n-cs/mail/searchplugins/list.txt
-index 78fc4eb..eedc75c 100644
---- a/l10n-cs/mail/searchplugins/list.txt
-+++ b/l10n-cs/mail/searchplugins/list.txt
+Index: cunaguaro/l10n-cs/mail/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-cs/mail/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-cs/mail/searchplugins/list.txt	2013-08-28 16:07:22.215368098 -0430
 @@ -1,8 +1,6 @@
 -amazondotcom
 -aol-web-search
@@ -433,10 +433,10 @@ index 78fc4eb..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-cs/mobile/searchplugins/list.txt b/l10n-cs/mobile/searchplugins/list.txt
-index aba4e57..eedc75c 100644
---- a/l10n-cs/mobile/searchplugins/list.txt
-+++ b/l10n-cs/mobile/searchplugins/list.txt
+Index: cunaguaro/l10n-cs/mobile/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-cs/mobile/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-cs/mobile/searchplugins/list.txt	2013-08-28 16:07:22.215368098 -0430
 @@ -1,5 +1,6 @@
  google
 -seznam-cz
@@ -447,10 +447,10 @@ index aba4e57..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-cs/suite/searchplugins/list.txt b/l10n-cs/suite/searchplugins/list.txt
-index 4c16aee..eedc75c 100644
---- a/l10n-cs/suite/searchplugins/list.txt
-+++ b/l10n-cs/suite/searchplugins/list.txt
+Index: cunaguaro/l10n-cs/suite/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-cs/suite/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-cs/suite/searchplugins/list.txt	2013-08-28 16:07:22.215368098 -0430
 @@ -1,4 +1,6 @@
  google
 -seznam-cz
@@ -461,10 +461,10 @@ index 4c16aee..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-csb/browser/searchplugins/list.txt b/l10n-csb/browser/searchplugins/list.txt
-index 65bff99..eedc75c 100644
---- a/l10n-csb/browser/searchplugins/list.txt
-+++ b/l10n-csb/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-csb/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-csb/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-csb/browser/searchplugins/list.txt	2013-08-28 16:07:22.215368098 -0430
 @@ -1,7 +1,6 @@
  google
 -wp-pl
@@ -478,10 +478,10 @@ index 65bff99..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-cy/browser/searchplugins/list.txt b/l10n-cy/browser/searchplugins/list.txt
-index 0df772d..eedc75c 100644
---- a/l10n-cy/browser/searchplugins/list.txt
-+++ b/l10n-cy/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-cy/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-cy/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-cy/browser/searchplugins/list.txt	2013-08-28 16:07:22.215368098 -0430
 @@ -1,8 +1,6 @@
 -amazon-en-GB
 -creativecommons
@@ -496,10 +496,10 @@ index 0df772d..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-cy/mail/searchplugins/list.txt b/l10n-cy/mail/searchplugins/list.txt
-index 96866db..eedc75c 100644
---- a/l10n-cy/mail/searchplugins/list.txt
-+++ b/l10n-cy/mail/searchplugins/list.txt
+Index: cunaguaro/l10n-cy/mail/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-cy/mail/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-cy/mail/searchplugins/list.txt	2013-08-28 16:07:22.215368098 -0430
 @@ -1,7 +1,6 @@
 -amazondotcom
 -aol-web-search
@@ -512,10 +512,10 @@ index 96866db..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-da/browser/searchplugins/list.txt b/l10n-da/browser/searchplugins/list.txt
-index 2f89e0e..eedc75c 100644
---- a/l10n-da/browser/searchplugins/list.txt
-+++ b/l10n-da/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-da/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-da/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-da/browser/searchplugins/list.txt	2013-08-28 16:07:22.215368098 -0430
 @@ -1,5 +1,6 @@
 -amazon-co-uk
 -bing
@@ -527,10 +527,10 @@ index 2f89e0e..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-da/mail/searchplugins/list.txt b/l10n-da/mail/searchplugins/list.txt
-index 2f89e0e..eedc75c 100644
---- a/l10n-da/mail/searchplugins/list.txt
-+++ b/l10n-da/mail/searchplugins/list.txt
+Index: cunaguaro/l10n-da/mail/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-da/mail/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-da/mail/searchplugins/list.txt	2013-08-28 16:07:22.215368098 -0430
 @@ -1,5 +1,6 @@
 -amazon-co-uk
 -bing
@@ -542,10 +542,10 @@ index 2f89e0e..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-da/mobile/searchplugins/list.txt b/l10n-da/mobile/searchplugins/list.txt
-index 3108316..eedc75c 100644
---- a/l10n-da/mobile/searchplugins/list.txt
-+++ b/l10n-da/mobile/searchplugins/list.txt
+Index: cunaguaro/l10n-da/mobile/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-da/mobile/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-da/mobile/searchplugins/list.txt	2013-08-28 16:07:22.215368098 -0430
 @@ -1,4 +1,6 @@
 -amazon-co-uk
  google
@@ -555,10 +555,10 @@ index 3108316..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-de/browser/searchplugins/list.txt b/l10n-de/browser/searchplugins/list.txt
-index 9432b6e..eedc75c 100644
---- a/l10n-de/browser/searchplugins/list.txt
-+++ b/l10n-de/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-de/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-de/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-de/browser/searchplugins/list.txt	2013-08-28 16:07:22.215368098 -0430
 @@ -1,8 +1,6 @@
  google
 -yahoo-de
@@ -573,10 +573,10 @@ index 9432b6e..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-de/mail/searchplugins/list.txt b/l10n-de/mail/searchplugins/list.txt
-index 0c5a460..eedc75c 100644
---- a/l10n-de/mail/searchplugins/list.txt
-+++ b/l10n-de/mail/searchplugins/list.txt
+Index: cunaguaro/l10n-de/mail/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-de/mail/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-de/mail/searchplugins/list.txt	2013-08-28 16:07:22.215368098 -0430
 @@ -1,6 +1,6 @@
 -amazondotcom-de
 -bing
@@ -590,10 +590,10 @@ index 0c5a460..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-de/mobile/searchplugins/list.txt b/l10n-de/mobile/searchplugins/list.txt
-index bac8e84..eedc75c 100644
---- a/l10n-de/mobile/searchplugins/list.txt
-+++ b/l10n-de/mobile/searchplugins/list.txt
+Index: cunaguaro/l10n-de/mobile/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-de/mobile/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-de/mobile/searchplugins/list.txt	2013-08-28 16:07:22.219368098 -0430
 @@ -1,4 +1,6 @@
  google
  twitter
@@ -604,10 +604,10 @@ index bac8e84..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-de/suite/searchplugins/list.txt b/l10n-de/suite/searchplugins/list.txt
-index f6fb9c4..eedc75c 100644
---- a/l10n-de/suite/searchplugins/list.txt
-+++ b/l10n-de/suite/searchplugins/list.txt
+Index: cunaguaro/l10n-de/suite/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-de/suite/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-de/suite/searchplugins/list.txt	2013-08-28 16:07:22.219368098 -0430
 @@ -1,4 +1,6 @@
 -creativecommons
  google
@@ -618,10 +618,10 @@ index f6fb9c4..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-el/browser/searchplugins/list.txt b/l10n-el/browser/searchplugins/list.txt
-index 35524d5..eedc75c 100644
---- a/l10n-el/browser/searchplugins/list.txt
-+++ b/l10n-el/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-el/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-el/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-el/browser/searchplugins/list.txt	2013-08-28 16:07:22.219368098 -0430
 @@ -1,6 +1,6 @@
  google
 -amazon-en-GB
@@ -634,10 +634,10 @@ index 35524d5..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-el/mail/searchplugins/list.txt b/l10n-el/mail/searchplugins/list.txt
-index 96866db..eedc75c 100644
---- a/l10n-el/mail/searchplugins/list.txt
-+++ b/l10n-el/mail/searchplugins/list.txt
+Index: cunaguaro/l10n-el/mail/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-el/mail/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-el/mail/searchplugins/list.txt	2013-08-28 16:07:22.219368098 -0430
 @@ -1,7 +1,6 @@
 -amazondotcom
 -aol-web-search
@@ -650,10 +650,10 @@ index 96866db..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-el/mobile/searchplugins/list.txt b/l10n-el/mobile/searchplugins/list.txt
-index 3da7e54..eedc75c 100644
---- a/l10n-el/mobile/searchplugins/list.txt
-+++ b/l10n-el/mobile/searchplugins/list.txt
+Index: cunaguaro/l10n-el/mobile/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-el/mobile/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-el/mobile/searchplugins/list.txt	2013-08-28 16:07:22.219368098 -0430
 @@ -1,4 +1,6 @@
  google
  twitter
@@ -663,10 +663,10 @@ index 3da7e54..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-en-GB/browser/searchplugins/list.txt b/l10n-en-GB/browser/searchplugins/list.txt
-index f3dbaee..eedc75c 100644
---- a/l10n-en-GB/browser/searchplugins/list.txt
-+++ b/l10n-en-GB/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-en-GB/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-en-GB/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-en-GB/browser/searchplugins/list.txt	2013-08-28 16:07:22.219368098 -0430
 @@ -1,8 +1,6 @@
 -amazon-en-GB
 -bing
@@ -679,10 +679,10 @@ index f3dbaee..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-en-GB/mail/searchplugins/list.txt b/l10n-en-GB/mail/searchplugins/list.txt
-index 69d5249..eedc75c 100644
---- a/l10n-en-GB/mail/searchplugins/list.txt
-+++ b/l10n-en-GB/mail/searchplugins/list.txt
+Index: cunaguaro/l10n-en-GB/mail/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-en-GB/mail/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-en-GB/mail/searchplugins/list.txt	2013-08-28 16:07:22.219368098 -0430
 @@ -1,8 +1,6 @@
 -amazon-en-GB
 -aol-en-GB
@@ -695,10 +695,10 @@ index 69d5249..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-en-GB/mobile/searchplugins/list.txt b/l10n-en-GB/mobile/searchplugins/list.txt
-index a4165f5..eedc75c 100644
---- a/l10n-en-GB/mobile/searchplugins/list.txt
-+++ b/l10n-en-GB/mobile/searchplugins/list.txt
+Index: cunaguaro/l10n-en-GB/mobile/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-en-GB/mobile/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-en-GB/mobile/searchplugins/list.txt	2013-08-28 16:07:22.219368098 -0430
 @@ -1,4 +1,6 @@
 -amazon-en-GB
  google
@@ -707,10 +707,10 @@ index a4165f5..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-en-GB/suite/searchplugins/list.txt b/l10n-en-GB/suite/searchplugins/list.txt
-index 7fe8554..eedc75c 100644
---- a/l10n-en-GB/suite/searchplugins/list.txt
-+++ b/l10n-en-GB/suite/searchplugins/list.txt
+Index: cunaguaro/l10n-en-GB/suite/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-en-GB/suite/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-en-GB/suite/searchplugins/list.txt	2013-08-28 16:07:22.219368098 -0430
 @@ -1,4 +1,6 @@
 -creativecommons
  google
@@ -720,10 +720,10 @@ index 7fe8554..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-en-ZA/browser/searchplugins/list.txt b/l10n-en-ZA/browser/searchplugins/list.txt
-index edb079e..eedc75c 100644
---- a/l10n-en-ZA/browser/searchplugins/list.txt
-+++ b/l10n-en-ZA/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-en-ZA/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-en-ZA/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-en-ZA/browser/searchplugins/list.txt	2013-08-28 16:07:22.219368098 -0430
 @@ -1,5 +1,6 @@
  google
 -bing
@@ -734,10 +734,10 @@ index edb079e..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-eo/browser/searchplugins/list.txt b/l10n-eo/browser/searchplugins/list.txt
-index 6daef99..eedc75c 100644
---- a/l10n-eo/browser/searchplugins/list.txt
-+++ b/l10n-eo/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-eo/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-eo/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-eo/browser/searchplugins/list.txt	2013-08-28 16:07:22.219368098 -0430
 @@ -1,8 +1,6 @@
  google
 -wikipedia-eo
@@ -753,10 +753,10 @@ index 6daef99..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-es-AR/browser/searchplugins/list.txt b/l10n-es-AR/browser/searchplugins/list.txt
-index 6c6c3fa..eedc75c 100644
---- a/l10n-es-AR/browser/searchplugins/list.txt
-+++ b/l10n-es-AR/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-es-AR/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-es-AR/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-es-AR/browser/searchplugins/list.txt	2013-08-28 16:07:22.219368098 -0430
 @@ -1,7 +1,6 @@
  google
 -yahoo-ar
@@ -770,10 +770,10 @@ index 6c6c3fa..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-es-AR/mail/searchplugins/list.txt b/l10n-es-AR/mail/searchplugins/list.txt
-index ee61586..eedc75c 100644
---- a/l10n-es-AR/mail/searchplugins/list.txt
-+++ b/l10n-es-AR/mail/searchplugins/list.txt
+Index: cunaguaro/l10n-es-AR/mail/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-es-AR/mail/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-es-AR/mail/searchplugins/list.txt	2013-08-28 16:07:22.219368098 -0430
 @@ -1,6 +1,6 @@
  google
 -yahoo-ar
@@ -786,10 +786,10 @@ index ee61586..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-es-AR/mobile/searchplugins/list.txt b/l10n-es-AR/mobile/searchplugins/list.txt
-index 91eb653..eedc75c 100644
---- a/l10n-es-AR/mobile/searchplugins/list.txt
-+++ b/l10n-es-AR/mobile/searchplugins/list.txt
+Index: cunaguaro/l10n-es-AR/mobile/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-es-AR/mobile/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-es-AR/mobile/searchplugins/list.txt	2013-08-28 16:07:22.219368098 -0430
 @@ -1,4 +1,6 @@
  google
 -mercadolibre-ar
@@ -799,10 +799,10 @@ index 91eb653..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-es-AR/suite/searchplugins/list.txt b/l10n-es-AR/suite/searchplugins/list.txt
-index 16ad622..eedc75c 100644
---- a/l10n-es-AR/suite/searchplugins/list.txt
-+++ b/l10n-es-AR/suite/searchplugins/list.txt
+Index: cunaguaro/l10n-es-AR/suite/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-es-AR/suite/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-es-AR/suite/searchplugins/list.txt	2013-08-28 16:07:22.223368098 -0430
 @@ -1,4 +1,6 @@
 -creativecommons
  google
@@ -812,10 +812,10 @@ index 16ad622..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-es-CL/browser/searchplugins/list.txt b/l10n-es-CL/browser/searchplugins/list.txt
-index d3bb29b..eedc75c 100644
---- a/l10n-es-CL/browser/searchplugins/list.txt
-+++ b/l10n-es-CL/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-es-CL/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-es-CL/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-es-CL/browser/searchplugins/list.txt	2013-08-28 16:07:22.223368098 -0430
 @@ -1,6 +1,6 @@
  google
 -bing
@@ -828,10 +828,10 @@ index d3bb29b..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-es-CL/mobile/searchplugins/list.txt b/l10n-es-CL/mobile/searchplugins/list.txt
-index f241bfe..eedc75c 100644
---- a/l10n-es-CL/mobile/searchplugins/list.txt
-+++ b/l10n-es-CL/mobile/searchplugins/list.txt
+Index: cunaguaro/l10n-es-CL/mobile/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-es-CL/mobile/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-es-CL/mobile/searchplugins/list.txt	2013-08-28 16:07:22.223368098 -0430
 @@ -1,4 +1,6 @@
 -amazondotcom
  google
@@ -840,10 +840,10 @@ index f241bfe..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-es-ES/browser/searchplugins/list.txt b/l10n-es-ES/browser/searchplugins/list.txt
-index aa82052..eedc75c 100755
---- a/l10n-es-ES/browser/searchplugins/list.txt
-+++ b/l10n-es-ES/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-es-ES/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-es-ES/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-es-ES/browser/searchplugins/list.txt	2013-08-28 16:07:22.223368098 -0430
 @@ -1,7 +1,6 @@
  google
 -yahoo-es
@@ -857,10 +857,10 @@ index aa82052..eedc75c 100755
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-es-ES/mail/searchplugins/list.txt b/l10n-es-ES/mail/searchplugins/list.txt
-index 0f0b600..eedc75c 100644
---- a/l10n-es-ES/mail/searchplugins/list.txt
-+++ b/l10n-es-ES/mail/searchplugins/list.txt
+Index: cunaguaro/l10n-es-ES/mail/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-es-ES/mail/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-es-ES/mail/searchplugins/list.txt	2013-08-28 16:07:22.223368098 -0430
 @@ -1,7 +1,6 @@
  google
 -yahoo-es
@@ -873,10 +873,10 @@ index 0f0b600..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-es-ES/mobile/searchplugins/list.txt b/l10n-es-ES/mobile/searchplugins/list.txt
-index 11e9a1d..eedc75c 100755
---- a/l10n-es-ES/mobile/searchplugins/list.txt
-+++ b/l10n-es-ES/mobile/searchplugins/list.txt
+Index: cunaguaro/l10n-es-ES/mobile/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-es-ES/mobile/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-es-ES/mobile/searchplugins/list.txt	2013-08-28 16:07:22.223368098 -0430
 @@ -1,4 +1,6 @@
  google
  twitter
@@ -887,10 +887,10 @@ index 11e9a1d..eedc75c 100755
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-es-ES/suite/searchplugins/list.txt b/l10n-es-ES/suite/searchplugins/list.txt
-index a56d2a8..eedc75c 100644
---- a/l10n-es-ES/suite/searchplugins/list.txt
-+++ b/l10n-es-ES/suite/searchplugins/list.txt
+Index: cunaguaro/l10n-es-ES/suite/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-es-ES/suite/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-es-ES/suite/searchplugins/list.txt	2013-08-28 16:07:22.223368098 -0430
 @@ -1,4 +1,6 @@
 -creativecommons
  google
@@ -901,10 +901,10 @@ index a56d2a8..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-es-MX/browser/searchplugins/list.txt b/l10n-es-MX/browser/searchplugins/list.txt
-index 5195cdc..eedc75c 100644
---- a/l10n-es-MX/browser/searchplugins/list.txt
-+++ b/l10n-es-MX/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-es-MX/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-es-MX/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-es-MX/browser/searchplugins/list.txt	2013-08-28 16:07:22.223368098 -0430
 @@ -1,5 +1,6 @@
  google
 -yahoo-mx
@@ -916,10 +916,10 @@ index 5195cdc..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-et/browser/searchplugins/list.txt b/l10n-et/browser/searchplugins/list.txt
-index 4e6e322..eedc75c 100644
---- a/l10n-et/browser/searchplugins/list.txt
-+++ b/l10n-et/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-et/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-et/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-et/browser/searchplugins/list.txt	2013-08-28 16:07:22.223368098 -0430
 @@ -1,6 +1,6 @@
 -eBay
  google
@@ -932,10 +932,10 @@ index 4e6e322..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-et/mail/searchplugins/list.txt b/l10n-et/mail/searchplugins/list.txt
-index 4e6e322..eedc75c 100644
---- a/l10n-et/mail/searchplugins/list.txt
-+++ b/l10n-et/mail/searchplugins/list.txt
+Index: cunaguaro/l10n-et/mail/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-et/mail/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-et/mail/searchplugins/list.txt	2013-08-28 16:07:22.223368098 -0430
 @@ -1,6 +1,6 @@
 -eBay
  google
@@ -948,10 +948,10 @@ index 4e6e322..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-et/mobile/searchplugins/list.txt b/l10n-et/mobile/searchplugins/list.txt
-index f241bfe..eedc75c 100644
---- a/l10n-et/mobile/searchplugins/list.txt
-+++ b/l10n-et/mobile/searchplugins/list.txt
+Index: cunaguaro/l10n-et/mobile/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-et/mobile/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-et/mobile/searchplugins/list.txt	2013-08-28 16:07:22.223368098 -0430
 @@ -1,4 +1,6 @@
 -amazondotcom
  google
@@ -960,10 +960,10 @@ index f241bfe..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-eu/browser/searchplugins/list.txt b/l10n-eu/browser/searchplugins/list.txt
-index 2434bfd..eedc75c 100644
---- a/l10n-eu/browser/searchplugins/list.txt
-+++ b/l10n-eu/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-eu/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-eu/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-eu/browser/searchplugins/list.txt	2013-08-28 16:07:22.223368098 -0430
 @@ -1,8 +1,6 @@
 -amazon-en-GB
 -bing
@@ -978,10 +978,10 @@ index 2434bfd..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-eu/mail/searchplugins/list.txt b/l10n-eu/mail/searchplugins/list.txt
-index 96866db..eedc75c 100644
---- a/l10n-eu/mail/searchplugins/list.txt
-+++ b/l10n-eu/mail/searchplugins/list.txt
+Index: cunaguaro/l10n-eu/mail/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-eu/mail/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-eu/mail/searchplugins/list.txt	2013-08-28 16:07:22.223368098 -0430
 @@ -1,7 +1,6 @@
 -amazondotcom
 -aol-web-search
@@ -994,10 +994,10 @@ index 96866db..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-eu/mobile/searchplugins/list.txt b/l10n-eu/mobile/searchplugins/list.txt
-index 3fa1fcf..eedc75c 100644
---- a/l10n-eu/mobile/searchplugins/list.txt
-+++ b/l10n-eu/mobile/searchplugins/list.txt
+Index: cunaguaro/l10n-eu/mobile/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-eu/mobile/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-eu/mobile/searchplugins/list.txt	2013-08-28 16:07:22.227368099 -0430
 @@ -1,3 +1,6 @@
  google
  twitter
@@ -1006,10 +1006,10 @@ index 3fa1fcf..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-fa/browser/searchplugins/list.txt b/l10n-fa/browser/searchplugins/list.txt
-index 7c785bc..eedc75c 100644
---- a/l10n-fa/browser/searchplugins/list.txt
-+++ b/l10n-fa/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-fa/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-fa/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-fa/browser/searchplugins/list.txt	2013-08-28 16:07:22.227368099 -0430
 @@ -1,6 +1,6 @@
 -amazondotcom
 -answers
@@ -1022,10 +1022,10 @@ index 7c785bc..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-fa/mobile/searchplugins/list.txt b/l10n-fa/mobile/searchplugins/list.txt
-index 21721d9..eedc75c 100755
---- a/l10n-fa/mobile/searchplugins/list.txt
-+++ b/l10n-fa/mobile/searchplugins/list.txt
+Index: cunaguaro/l10n-fa/mobile/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-fa/mobile/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-fa/mobile/searchplugins/list.txt	2013-08-28 16:07:22.227368099 -0430
 @@ -1,3 +1,6 @@
  google
 -wikipedia-fa
@@ -1035,10 +1035,10 @@ index 21721d9..eedc75c 100755
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-ff/browser/searchplugins/list.txt b/l10n-ff/browser/searchplugins/list.txt
-index 4b53554..eedc75c 100755
---- a/l10n-ff/browser/searchplugins/list.txt
-+++ b/l10n-ff/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-ff/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-ff/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-ff/browser/searchplugins/list.txt	2013-08-28 16:07:22.227368099 -0430
 @@ -1,7 +1,6 @@
  google
 -amazon-france
@@ -1052,10 +1052,10 @@ index 4b53554..eedc75c 100755
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-fi/browser/searchplugins/list.txt b/l10n-fi/browser/searchplugins/list.txt
-index ddf48ad..eedc75c 100644
---- a/l10n-fi/browser/searchplugins/list.txt
-+++ b/l10n-fi/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-fi/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-fi/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-fi/browser/searchplugins/list.txt	2013-08-28 16:07:22.227368099 -0430
 @@ -1,6 +1,6 @@
 -bing
 -bookplus-fi
@@ -1068,10 +1068,10 @@ index ddf48ad..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-fi/mail/searchplugins/list.txt b/l10n-fi/mail/searchplugins/list.txt
-index 5c96b5a..eedc75c 100644
---- a/l10n-fi/mail/searchplugins/list.txt
-+++ b/l10n-fi/mail/searchplugins/list.txt
+Index: cunaguaro/l10n-fi/mail/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-fi/mail/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-fi/mail/searchplugins/list.txt	2013-08-28 16:07:22.227368099 -0430
 @@ -1,6 +1,6 @@
 -amazondotcom
 -bing
@@ -1084,10 +1084,10 @@ index 5c96b5a..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-fi/mobile/searchplugins/list.txt b/l10n-fi/mobile/searchplugins/list.txt
-index 586e5b8..eedc75c 100644
---- a/l10n-fi/mobile/searchplugins/list.txt
-+++ b/l10n-fi/mobile/searchplugins/list.txt
+Index: cunaguaro/l10n-fi/mobile/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-fi/mobile/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-fi/mobile/searchplugins/list.txt	2013-08-28 16:07:22.227368099 -0430
 @@ -1,5 +1,6 @@
  google
  twitter
@@ -1098,10 +1098,10 @@ index 586e5b8..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-fi/suite/searchplugins/list.txt b/l10n-fi/suite/searchplugins/list.txt
-index 7d21938..eedc75c 100644
---- a/l10n-fi/suite/searchplugins/list.txt
-+++ b/l10n-fi/suite/searchplugins/list.txt
+Index: cunaguaro/l10n-fi/suite/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-fi/suite/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-fi/suite/searchplugins/list.txt	2013-08-28 16:07:22.227368099 -0430
 @@ -1,6 +1,6 @@
 -bookplus-fi
 -creativecommons-fi
@@ -1114,10 +1114,10 @@ index 7d21938..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-fr/browser/searchplugins/list.txt b/l10n-fr/browser/searchplugins/list.txt
-index 4b53554..eedc75c 100644
---- a/l10n-fr/browser/searchplugins/list.txt
-+++ b/l10n-fr/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-fr/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-fr/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-fr/browser/searchplugins/list.txt	2013-08-28 16:07:22.227368099 -0430
 @@ -1,7 +1,6 @@
  google
 -amazon-france
@@ -1131,10 +1131,10 @@ index 4b53554..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-fr/mail/searchplugins/list.txt b/l10n-fr/mail/searchplugins/list.txt
-index 0f56336..eedc75c 100644
---- a/l10n-fr/mail/searchplugins/list.txt
-+++ b/l10n-fr/mail/searchplugins/list.txt
+Index: cunaguaro/l10n-fr/mail/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-fr/mail/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-fr/mail/searchplugins/list.txt	2013-08-28 16:07:22.227368099 -0430
 @@ -1,6 +1,6 @@
 -amazon-france
 -bing
@@ -1148,10 +1148,10 @@ index 0f56336..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-fr/mobile/searchplugins/list.txt b/l10n-fr/mobile/searchplugins/list.txt
-index 5b94555..eedc75c 100644
---- a/l10n-fr/mobile/searchplugins/list.txt
-+++ b/l10n-fr/mobile/searchplugins/list.txt
+Index: cunaguaro/l10n-fr/mobile/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-fr/mobile/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-fr/mobile/searchplugins/list.txt	2013-08-28 16:07:22.227368099 -0430
 @@ -1,5 +1,6 @@
 -yahoo-france
  google
@@ -1162,10 +1162,10 @@ index 5b94555..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-fr/suite/searchplugins/list.txt b/l10n-fr/suite/searchplugins/list.txt
-index cbf6dad..eedc75c 100644
---- a/l10n-fr/suite/searchplugins/list.txt
-+++ b/l10n-fr/suite/searchplugins/list.txt
+Index: cunaguaro/l10n-fr/suite/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-fr/suite/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-fr/suite/searchplugins/list.txt	2013-08-28 16:07:22.227368099 -0430
 @@ -1,5 +1,6 @@
 -creativecommons
  google
@@ -1177,10 +1177,10 @@ index cbf6dad..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-fy-NL/browser/searchplugins/list.txt b/l10n-fy-NL/browser/searchplugins/list.txt
-index 6b67d0d..eedc75c 100644
---- a/l10n-fy-NL/browser/searchplugins/list.txt
-+++ b/l10n-fy-NL/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-fy-NL/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-fy-NL/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-fy-NL/browser/searchplugins/list.txt	2013-08-28 16:07:22.227368099 -0430
 @@ -1,6 +1,6 @@
 -google
 -bing
@@ -1194,10 +1194,10 @@ index 6b67d0d..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-fy-NL/mail/searchplugins/list.txt b/l10n-fy-NL/mail/searchplugins/list.txt
-index 96866db..eedc75c 100644
---- a/l10n-fy-NL/mail/searchplugins/list.txt
-+++ b/l10n-fy-NL/mail/searchplugins/list.txt
+Index: cunaguaro/l10n-fy-NL/mail/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-fy-NL/mail/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-fy-NL/mail/searchplugins/list.txt	2013-08-28 16:07:22.227368099 -0430
 @@ -1,7 +1,6 @@
 -amazondotcom
 -aol-web-search
@@ -1210,10 +1210,10 @@ index 96866db..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-fy-NL/mobile/searchplugins/list.txt b/l10n-fy-NL/mobile/searchplugins/list.txt
-index b7fdb1e..eedc75c 100644
---- a/l10n-fy-NL/mobile/searchplugins/list.txt
-+++ b/l10n-fy-NL/mobile/searchplugins/list.txt
+Index: cunaguaro/l10n-fy-NL/mobile/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-fy-NL/mobile/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-fy-NL/mobile/searchplugins/list.txt	2013-08-28 16:07:22.227368099 -0430
 @@ -1,3 +1,6 @@
  google
 -wikipedia-fy-NL
@@ -1223,10 +1223,10 @@ index b7fdb1e..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-fy-NL/suite/searchplugins/list.txt b/l10n-fy-NL/suite/searchplugins/list.txt
-index 2a9f6d6..eedc75c 100644
---- a/l10n-fy-NL/suite/searchplugins/list.txt
-+++ b/l10n-fy-NL/suite/searchplugins/list.txt
+Index: cunaguaro/l10n-fy-NL/suite/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-fy-NL/suite/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-fy-NL/suite/searchplugins/list.txt	2013-08-28 16:07:22.227368099 -0430
 @@ -1,3 +1,6 @@
  google
 -dmoz
@@ -1236,10 +1236,10 @@ index 2a9f6d6..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-ga-IE/browser/searchplugins/list.txt b/l10n-ga-IE/browser/searchplugins/list.txt
-index 673dc4f..eedc75c 100644
---- a/l10n-ga-IE/browser/searchplugins/list.txt
-+++ b/l10n-ga-IE/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-ga-IE/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-ga-IE/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-ga-IE/browser/searchplugins/list.txt	2013-08-28 16:07:22.227368099 -0430
 @@ -1,9 +1,6 @@
  google
  twitter
@@ -1254,10 +1254,10 @@ index 673dc4f..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-ga-IE/mail/searchplugins/list.txt b/l10n-ga-IE/mail/searchplugins/list.txt
-index a9a2be2..eedc75c 100644
---- a/l10n-ga-IE/mail/searchplugins/list.txt
-+++ b/l10n-ga-IE/mail/searchplugins/list.txt
+Index: cunaguaro/l10n-ga-IE/mail/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-ga-IE/mail/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-ga-IE/mail/searchplugins/list.txt	2013-08-28 16:07:22.227368099 -0430
 @@ -1,7 +1,6 @@
  google
  twitter
@@ -1270,10 +1270,10 @@ index a9a2be2..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-ga-IE/mobile/searchplugins/list.txt b/l10n-ga-IE/mobile/searchplugins/list.txt
-index 65a2eca..eedc75c 100644
---- a/l10n-ga-IE/mobile/searchplugins/list.txt
-+++ b/l10n-ga-IE/mobile/searchplugins/list.txt
+Index: cunaguaro/l10n-ga-IE/mobile/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-ga-IE/mobile/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-ga-IE/mobile/searchplugins/list.txt	2013-08-28 16:07:22.227368099 -0430
 @@ -1,5 +1,6 @@
  google
  twitter
@@ -1284,10 +1284,10 @@ index 65a2eca..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-gd/browser/searchplugins/list.txt b/l10n-gd/browser/searchplugins/list.txt
-index 250bc7a..eedc75c 100755
---- a/l10n-gd/browser/searchplugins/list.txt
-+++ b/l10n-gd/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-gd/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-gd/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-gd/browser/searchplugins/list.txt	2013-08-28 16:07:22.227368099 -0430
 @@ -1,6 +1,6 @@
 -google
 -yahoo-en-GB
@@ -1301,10 +1301,10 @@ index 250bc7a..eedc75c 100755
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-gd/mail/searchplugins/list.txt b/l10n-gd/mail/searchplugins/list.txt
-index 250bc7a..eedc75c 100755
---- a/l10n-gd/mail/searchplugins/list.txt
-+++ b/l10n-gd/mail/searchplugins/list.txt
+Index: cunaguaro/l10n-gd/mail/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-gd/mail/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-gd/mail/searchplugins/list.txt	2013-08-28 16:07:22.231368099 -0430
 @@ -1,6 +1,6 @@
 -google
 -yahoo-en-GB
@@ -1318,10 +1318,10 @@ index 250bc7a..eedc75c 100755
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-gd/mobile/searchplugins/list.txt b/l10n-gd/mobile/searchplugins/list.txt
-index f241bfe..eedc75c 100755
---- a/l10n-gd/mobile/searchplugins/list.txt
-+++ b/l10n-gd/mobile/searchplugins/list.txt
+Index: cunaguaro/l10n-gd/mobile/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-gd/mobile/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-gd/mobile/searchplugins/list.txt	2013-08-28 16:07:22.231368099 -0430
 @@ -1,4 +1,6 @@
 -amazondotcom
  google
@@ -1330,10 +1330,10 @@ index f241bfe..eedc75c 100755
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-gl/browser/searchplugins/list.txt b/l10n-gl/browser/searchplugins/list.txt
-index d1633eb..eedc75c 100644
---- a/l10n-gl/browser/searchplugins/list.txt
-+++ b/l10n-gl/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-gl/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-gl/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-gl/browser/searchplugins/list.txt	2013-08-28 16:07:22.231368099 -0430
 @@ -1,6 +1,6 @@
 -amazon-en-GB
 -creativecommons
@@ -1346,10 +1346,10 @@ index d1633eb..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-gl/mobile/searchplugins/list.txt b/l10n-gl/mobile/searchplugins/list.txt
-index 2f12738..eedc75c 100644
---- a/l10n-gl/mobile/searchplugins/list.txt
-+++ b/l10n-gl/mobile/searchplugins/list.txt
+Index: cunaguaro/l10n-gl/mobile/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-gl/mobile/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-gl/mobile/searchplugins/list.txt	2013-08-28 16:07:22.231368099 -0430
 @@ -1,4 +1,6 @@
 -amazondotcom
  google
@@ -1359,10 +1359,10 @@ index 2f12738..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-gl/suite/searchplugins/list.txt b/l10n-gl/suite/searchplugins/list.txt
-index 16ad622..eedc75c 100644
---- a/l10n-gl/suite/searchplugins/list.txt
-+++ b/l10n-gl/suite/searchplugins/list.txt
+Index: cunaguaro/l10n-gl/suite/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-gl/suite/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-gl/suite/searchplugins/list.txt	2013-08-28 16:07:22.231368099 -0430
 @@ -1,4 +1,6 @@
 -creativecommons
  google
@@ -1372,10 +1372,10 @@ index 16ad622..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-gu-IN/browser/searchplugins/list.txt b/l10n-gu-IN/browser/searchplugins/list.txt
-index c2511a4..eedc75c 100644
---- a/l10n-gu-IN/browser/searchplugins/list.txt
-+++ b/l10n-gu-IN/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-gu-IN/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-gu-IN/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-gu-IN/browser/searchplugins/list.txt	2013-08-28 16:07:22.231368099 -0430
 @@ -1,6 +1,6 @@
 -eBay-in
  google
@@ -1388,10 +1388,10 @@ index c2511a4..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-gu-IN/mobile/searchplugins/list.txt b/l10n-gu-IN/mobile/searchplugins/list.txt
-index f241bfe..eedc75c 100644
---- a/l10n-gu-IN/mobile/searchplugins/list.txt
-+++ b/l10n-gu-IN/mobile/searchplugins/list.txt
+Index: cunaguaro/l10n-gu-IN/mobile/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-gu-IN/mobile/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-gu-IN/mobile/searchplugins/list.txt	2013-08-28 16:07:22.231368099 -0430
 @@ -1,4 +1,6 @@
 -amazondotcom
  google
@@ -1400,10 +1400,10 @@ index f241bfe..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-he/browser/searchplugins/list.txt b/l10n-he/browser/searchplugins/list.txt
-index af001ae..eedc75c 100644
---- a/l10n-he/browser/searchplugins/list.txt
-+++ b/l10n-he/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-he/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-he/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-he/browser/searchplugins/list.txt	2013-08-28 16:07:22.231368099 -0430
 @@ -1,4 +1,6 @@
  google
 -yahoo
@@ -1414,10 +1414,10 @@ index af001ae..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-he/mail/searchplugins/list.txt b/l10n-he/mail/searchplugins/list.txt
-index 78fc4eb..eedc75c 100644
---- a/l10n-he/mail/searchplugins/list.txt
-+++ b/l10n-he/mail/searchplugins/list.txt
+Index: cunaguaro/l10n-he/mail/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-he/mail/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-he/mail/searchplugins/list.txt	2013-08-28 16:07:22.231368099 -0430
 @@ -1,8 +1,6 @@
 -amazondotcom
 -aol-web-search
@@ -1430,10 +1430,10 @@ index 78fc4eb..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-he/mobile/searchplugins/list.txt b/l10n-he/mobile/searchplugins/list.txt
-index 7d3db56..eedc75c 100644
---- a/l10n-he/mobile/searchplugins/list.txt
-+++ b/l10n-he/mobile/searchplugins/list.txt
+Index: cunaguaro/l10n-he/mobile/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-he/mobile/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-he/mobile/searchplugins/list.txt	2013-08-28 16:07:22.231368099 -0430
 @@ -1,3 +1,6 @@
  google
  twitter
@@ -1442,10 +1442,10 @@ index 7d3db56..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-hi-IN/browser/searchplugins/list.txt b/l10n-hi-IN/browser/searchplugins/list.txt
-index bbb9115..eedc75c 100644
---- a/l10n-hi-IN/browser/searchplugins/list.txt
-+++ b/l10n-hi-IN/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-hi-IN/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-hi-IN/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-hi-IN/browser/searchplugins/list.txt	2013-08-28 16:07:22.231368099 -0430
 @@ -1,5 +1,6 @@
  google
 -yahoo-in
@@ -1457,10 +1457,10 @@ index bbb9115..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-hi-IN/mobile/searchplugins/list.txt b/l10n-hi-IN/mobile/searchplugins/list.txt
-index f241bfe..eedc75c 100644
---- a/l10n-hi-IN/mobile/searchplugins/list.txt
-+++ b/l10n-hi-IN/mobile/searchplugins/list.txt
+Index: cunaguaro/l10n-hi-IN/mobile/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-hi-IN/mobile/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-hi-IN/mobile/searchplugins/list.txt	2013-08-28 16:07:22.231368099 -0430
 @@ -1,4 +1,6 @@
 -amazondotcom
  google
@@ -1469,10 +1469,10 @@ index f241bfe..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-hr/browser/searchplugins/list.txt b/l10n-hr/browser/searchplugins/list.txt
-index 4bf8ea7..eedc75c 100644
---- a/l10n-hr/browser/searchplugins/list.txt
-+++ b/l10n-hr/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-hr/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-hr/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-hr/browser/searchplugins/list.txt	2013-08-28 16:07:22.231368099 -0430
 @@ -1,8 +1,6 @@
 -amazon-en-GB
 -bing
@@ -1486,10 +1486,10 @@ index 4bf8ea7..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-hr/mail/searchplugins/list.txt b/l10n-hr/mail/searchplugins/list.txt
-index 78fc4eb..eedc75c 100644
---- a/l10n-hr/mail/searchplugins/list.txt
-+++ b/l10n-hr/mail/searchplugins/list.txt
+Index: cunaguaro/l10n-hr/mail/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-hr/mail/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-hr/mail/searchplugins/list.txt	2013-08-28 16:07:22.231368099 -0430
 @@ -1,8 +1,6 @@
 -amazondotcom
 -aol-web-search
@@ -1502,26 +1502,10 @@ index 78fc4eb..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-hu/browser/searchplugins/list.txt b/l10n-hu/browser/searchplugins/list.txt
-index 4767ada..eedc75c 100644
---- a/l10n-hu/browser/searchplugins/list.txt
-+++ b/l10n-hu/browser/searchplugins/list.txt
-@@ -1,6 +1,6 @@
--creativecommons
--eBay-hu
- google
--sztaki-en-hu
--vatera
--wikipedia-hu
-+twitter
-+wikipedia
-+canaima
-+canaima-list
-+canaima-wiki
-diff --git a/l10n-hu/mail/searchplugins/list.txt b/l10n-hu/mail/searchplugins/list.txt
-index 9727439..eedc75c 100644
---- a/l10n-hu/mail/searchplugins/list.txt
-+++ b/l10n-hu/mail/searchplugins/list.txt
+Index: cunaguaro/l10n-hu/mail/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-hu/mail/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-hu/mail/searchplugins/list.txt	2013-08-28 16:07:22.231368099 -0430
 @@ -1,5 +1,6 @@
 -eBay-hu
  google
@@ -1533,40 +1517,10 @@ index 9727439..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-hu/mobile/searchplugins/list.txt b/l10n-hu/mobile/searchplugins/list.txt
-index 7977915..eedc75c 100644
---- a/l10n-hu/mobile/searchplugins/list.txt
-+++ b/l10n-hu/mobile/searchplugins/list.txt
-@@ -1,3 +1,6 @@
- google
- twitter
--wikipedia-hu
-\ No newline at end of file
-+wikipedia
-+canaima
-+canaima-list
-+canaima-wiki
-diff --git a/l10n-hu/suite/searchplugins/list.txt b/l10n-hu/suite/searchplugins/list.txt
-index 852ac13..eedc75c 100644
---- a/l10n-hu/suite/searchplugins/list.txt
-+++ b/l10n-hu/suite/searchplugins/list.txt
-@@ -1,7 +1,6 @@
--creativecommons
--eBay-hu
--google
--sztaki-en-hu
--vatera
--wikipedia-hu
- google
-+twitter
-+wikipedia
-+canaima
-+canaima-list
-+canaima-wiki
-diff --git a/l10n-hy-AM/browser/searchplugins/list.txt b/l10n-hy-AM/browser/searchplugins/list.txt
-index 47f08d2..eedc75c 100644
---- a/l10n-hy-AM/browser/searchplugins/list.txt
-+++ b/l10n-hy-AM/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-hy-AM/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-hy-AM/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-hy-AM/browser/searchplugins/list.txt	2013-08-28 16:07:22.231368099 -0430
 @@ -1,6 +1,6 @@
 -amazondotcom
 -eBay
@@ -1579,10 +1533,10 @@ index 47f08d2..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-hy-AM/mobile/searchplugins/list.txt b/l10n-hy-AM/mobile/searchplugins/list.txt
-index f6219b9..eedc75c 100644
---- a/l10n-hy-AM/mobile/searchplugins/list.txt
-+++ b/l10n-hy-AM/mobile/searchplugins/list.txt
+Index: cunaguaro/l10n-hy-AM/mobile/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-hy-AM/mobile/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-hy-AM/mobile/searchplugins/list.txt	2013-08-28 16:07:22.231368099 -0430
 @@ -1,4 +1,6 @@
 -amazondotcom
  google
@@ -1592,10 +1546,10 @@ index f6219b9..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-id/browser/searchplugins/list.txt b/l10n-id/browser/searchplugins/list.txt
-index 02194ce..eedc75c 100644
---- a/l10n-id/browser/searchplugins/list.txt
-+++ b/l10n-id/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-id/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-id/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-id/browser/searchplugins/list.txt	2013-08-28 16:07:22.231368099 -0430
 @@ -1,3 +1,6 @@
  google
 -yahoo-id
@@ -1605,10 +1559,10 @@ index 02194ce..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-id/mail/searchplugins/list.txt b/l10n-id/mail/searchplugins/list.txt
-index 02194ce..eedc75c 100644
---- a/l10n-id/mail/searchplugins/list.txt
-+++ b/l10n-id/mail/searchplugins/list.txt
+Index: cunaguaro/l10n-id/mail/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-id/mail/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-id/mail/searchplugins/list.txt	2013-08-28 16:07:22.231368099 -0430
 @@ -1,3 +1,6 @@
  google
 -yahoo-id
@@ -1618,10 +1572,10 @@ index 02194ce..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-id/mobile/searchplugins/list.txt b/l10n-id/mobile/searchplugins/list.txt
-index 4666931..eedc75c 100644
---- a/l10n-id/mobile/searchplugins/list.txt
-+++ b/l10n-id/mobile/searchplugins/list.txt
+Index: cunaguaro/l10n-id/mobile/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-id/mobile/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-id/mobile/searchplugins/list.txt	2013-08-28 16:07:22.231368099 -0430
 @@ -1,4 +1,6 @@
 -answers
  google
@@ -1631,10 +1585,10 @@ index 4666931..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-is/browser/searchplugins/list.txt b/l10n-is/browser/searchplugins/list.txt
-index daa031a..eedc75c 100644
---- a/l10n-is/browser/searchplugins/list.txt
-+++ b/l10n-is/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-is/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-is/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-is/browser/searchplugins/list.txt	2013-08-28 16:07:22.235368099 -0430
 @@ -1,7 +1,6 @@
 -amazondotcom
 -bing
@@ -1648,10 +1602,10 @@ index daa031a..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-is/mail/searchplugins/list.txt b/l10n-is/mail/searchplugins/list.txt
-index daa031a..eedc75c 100644
---- a/l10n-is/mail/searchplugins/list.txt
-+++ b/l10n-is/mail/searchplugins/list.txt
+Index: cunaguaro/l10n-is/mail/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-is/mail/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-is/mail/searchplugins/list.txt	2013-08-28 16:07:22.235368099 -0430
 @@ -1,7 +1,6 @@
 -amazondotcom
 -bing
@@ -1665,10 +1619,10 @@ index daa031a..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-it/browser/searchplugins/list.txt b/l10n-it/browser/searchplugins/list.txt
-index 200fa21..eedc75c 100644
---- a/l10n-it/browser/searchplugins/list.txt
-+++ b/l10n-it/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-it/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-it/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-it/browser/searchplugins/list.txt	2013-08-28 16:07:22.235368099 -0430
 @@ -1,7 +1,6 @@
 -amazon-it
 -bing
@@ -1682,10 +1636,10 @@ index 200fa21..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-it/mail/searchplugins/list.txt b/l10n-it/mail/searchplugins/list.txt
-index b0fedff..eedc75c 100644
---- a/l10n-it/mail/searchplugins/list.txt
-+++ b/l10n-it/mail/searchplugins/list.txt
+Index: cunaguaro/l10n-it/mail/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-it/mail/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-it/mail/searchplugins/list.txt	2013-08-28 16:07:22.235368099 -0430
 @@ -1,7 +1,6 @@
 -amazon-it
 -bing
@@ -1698,10 +1652,10 @@ index b0fedff..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-it/mobile/searchplugins/list.txt b/l10n-it/mobile/searchplugins/list.txt
-index 2ecd366..eedc75c 100644
---- a/l10n-it/mobile/searchplugins/list.txt
-+++ b/l10n-it/mobile/searchplugins/list.txt
+Index: cunaguaro/l10n-it/mobile/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-it/mobile/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-it/mobile/searchplugins/list.txt	2013-08-28 16:07:22.235368099 -0430
 @@ -1,4 +1,6 @@
  google
 -wikipedia-it
@@ -1711,10 +1665,10 @@ index 2ecd366..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-it/suite/searchplugins/list.txt b/l10n-it/suite/searchplugins/list.txt
-index 16ad622..eedc75c 100644
---- a/l10n-it/suite/searchplugins/list.txt
-+++ b/l10n-it/suite/searchplugins/list.txt
+Index: cunaguaro/l10n-it/suite/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-it/suite/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-it/suite/searchplugins/list.txt	2013-08-28 16:07:22.235368099 -0430
 @@ -1,4 +1,6 @@
 -creativecommons
  google
@@ -1724,10 +1678,10 @@ index 16ad622..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-ja/browser/searchplugins/list.txt b/l10n-ja/browser/searchplugins/list.txt
-index 4f21190..eedc75c 100644
---- a/l10n-ja/browser/searchplugins/list.txt
-+++ b/l10n-ja/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-ja/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-ja/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-ja/browser/searchplugins/list.txt	2013-08-28 16:07:22.235368099 -0430
 @@ -1,8 +1,6 @@
 -google-jp
 -yahoo-jp
@@ -1743,10 +1697,10 @@ index 4f21190..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-ja/mail/searchplugins/list.txt b/l10n-ja/mail/searchplugins/list.txt
-index 4f21190..eedc75c 100644
---- a/l10n-ja/mail/searchplugins/list.txt
-+++ b/l10n-ja/mail/searchplugins/list.txt
+Index: cunaguaro/l10n-ja/mail/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-ja/mail/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-ja/mail/searchplugins/list.txt	2013-08-28 16:07:22.235368099 -0430
 @@ -1,8 +1,6 @@
 -google-jp
 -yahoo-jp
@@ -1762,10 +1716,10 @@ index 4f21190..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-ja/mobile/searchplugins/list.txt b/l10n-ja/mobile/searchplugins/list.txt
-index 056afee..eedc75c 100644
---- a/l10n-ja/mobile/searchplugins/list.txt
-+++ b/l10n-ja/mobile/searchplugins/list.txt
+Index: cunaguaro/l10n-ja/mobile/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-ja/mobile/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-ja/mobile/searchplugins/list.txt	2013-08-28 16:07:22.235368099 -0430
 @@ -1,5 +1,6 @@
  google
 -amazon-jp
@@ -1777,10 +1731,10 @@ index 056afee..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-ja/suite/searchplugins/list.txt b/l10n-ja/suite/searchplugins/list.txt
-index 62833c4..eedc75c 100644
---- a/l10n-ja/suite/searchplugins/list.txt
-+++ b/l10n-ja/suite/searchplugins/list.txt
+Index: cunaguaro/l10n-ja/suite/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-ja/suite/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-ja/suite/searchplugins/list.txt	2013-08-28 16:07:22.235368099 -0430
 @@ -1,5 +1,6 @@
 -google-jp
 -yahoo-jp
@@ -1793,10 +1747,10 @@ index 62833c4..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-kk/browser/searchplugins/list.txt b/l10n-kk/browser/searchplugins/list.txt
-index e7bcf50..eedc75c 100644
---- a/l10n-kk/browser/searchplugins/list.txt
-+++ b/l10n-kk/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-kk/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-kk/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-kk/browser/searchplugins/list.txt	2013-08-28 16:07:22.235368099 -0430
 @@ -1,5 +1,6 @@
  google
 -kaz-kk
@@ -1807,10 +1761,10 @@ index e7bcf50..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-km/browser/searchplugins/list.txt b/l10n-km/browser/searchplugins/list.txt
-index 86cc10f..eedc75c 100644
---- a/l10n-km/browser/searchplugins/list.txt
-+++ b/l10n-km/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-km/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-km/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-km/browser/searchplugins/list.txt	2013-08-28 16:07:22.235368099 -0430
 @@ -1,7 +1,6 @@
 -amazondotcom
 -bing
@@ -1823,10 +1777,10 @@ index 86cc10f..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-kn/browser/searchplugins/list.txt b/l10n-kn/browser/searchplugins/list.txt
-index c4fd559..eedc75c 100644
---- a/l10n-kn/browser/searchplugins/list.txt
-+++ b/l10n-kn/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-kn/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-kn/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-kn/browser/searchplugins/list.txt	2013-08-28 16:07:22.235368099 -0430
 @@ -1,6 +1,6 @@
 -amazondotcom
  google
@@ -1839,10 +1793,10 @@ index c4fd559..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-ko/browser/searchplugins/list.txt b/l10n-ko/browser/searchplugins/list.txt
-index c620caf..eedc75c 100644
---- a/l10n-ko/browser/searchplugins/list.txt
-+++ b/l10n-ko/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-ko/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-ko/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-ko/browser/searchplugins/list.txt	2013-08-28 16:07:22.235368099 -0430
 @@ -1,5 +1,6 @@
  google
 -daum-kr
@@ -1854,10 +1808,10 @@ index c620caf..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-ko/mail/searchplugins/list.txt b/l10n-ko/mail/searchplugins/list.txt
-index c620caf..eedc75c 100644
---- a/l10n-ko/mail/searchplugins/list.txt
-+++ b/l10n-ko/mail/searchplugins/list.txt
+Index: cunaguaro/l10n-ko/mail/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-ko/mail/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-ko/mail/searchplugins/list.txt	2013-08-28 16:07:22.235368099 -0430
 @@ -1,5 +1,6 @@
  google
 -daum-kr
@@ -1869,10 +1823,10 @@ index c620caf..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-ko/mobile/searchplugins/list.txt b/l10n-ko/mobile/searchplugins/list.txt
-index a77260f..eedc75c 100644
---- a/l10n-ko/mobile/searchplugins/list.txt
-+++ b/l10n-ko/mobile/searchplugins/list.txt
+Index: cunaguaro/l10n-ko/mobile/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-ko/mobile/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-ko/mobile/searchplugins/list.txt	2013-08-28 16:07:22.235368099 -0430
 @@ -1,5 +1,6 @@
  google
 -danawa-kr
@@ -1883,10 +1837,10 @@ index a77260f..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-ku/browser/searchplugins/list.txt b/l10n-ku/browser/searchplugins/list.txt
-index 4e50446..eedc75c 100644
---- a/l10n-ku/browser/searchplugins/list.txt
-+++ b/l10n-ku/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-ku/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-ku/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-ku/browser/searchplugins/list.txt	2013-08-28 16:07:22.235368099 -0430
 @@ -1,7 +1,6 @@
 -amazondotcom
 -answers
@@ -1901,10 +1855,10 @@ index 4e50446..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-ku/mobile/searchplugins/list.txt b/l10n-ku/mobile/searchplugins/list.txt
-index f241bfe..eedc75c 100644
---- a/l10n-ku/mobile/searchplugins/list.txt
-+++ b/l10n-ku/mobile/searchplugins/list.txt
+Index: cunaguaro/l10n-ku/mobile/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-ku/mobile/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-ku/mobile/searchplugins/list.txt	2013-08-28 16:07:22.235368099 -0430
 @@ -1,4 +1,6 @@
 -amazondotcom
  google
@@ -1913,10 +1867,10 @@ index f241bfe..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-lg/browser/searchplugins/list.txt b/l10n-lg/browser/searchplugins/list.txt
-index 2a1141a..eedc75c 100644
---- a/l10n-lg/browser/searchplugins/list.txt
-+++ b/l10n-lg/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-lg/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-lg/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-lg/browser/searchplugins/list.txt	2013-08-28 16:07:22.235368099 -0430
 @@ -1,7 +1,6 @@
 -amazondotcom
 -bing
@@ -1928,10 +1882,10 @@ index 2a1141a..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-lij/browser/searchplugins/list.txt b/l10n-lij/browser/searchplugins/list.txt
-index 578d988..eedc75c 100644
---- a/l10n-lij/browser/searchplugins/list.txt
-+++ b/l10n-lij/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-lij/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-lij/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-lij/browser/searchplugins/list.txt	2013-08-28 16:07:22.235368099 -0430
 @@ -1,7 +1,6 @@
 -amazon-it
 -bing
@@ -1946,10 +1900,10 @@ index 578d988..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-lij/mobile/searchplugins/list.txt b/l10n-lij/mobile/searchplugins/list.txt
-index f241bfe..eedc75c 100644
---- a/l10n-lij/mobile/searchplugins/list.txt
-+++ b/l10n-lij/mobile/searchplugins/list.txt
+Index: cunaguaro/l10n-lij/mobile/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-lij/mobile/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-lij/mobile/searchplugins/list.txt	2013-08-28 16:07:22.239368099 -0430
 @@ -1,4 +1,6 @@
 -amazondotcom
  google
@@ -1958,10 +1912,10 @@ index f241bfe..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-lt/browser/searchplugins/list.txt b/l10n-lt/browser/searchplugins/list.txt
-index 4fe3d89..eedc75c 100644
---- a/l10n-lt/browser/searchplugins/list.txt
-+++ b/l10n-lt/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-lt/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-lt/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-lt/browser/searchplugins/list.txt	2013-08-28 16:07:22.239368099 -0430
 @@ -1,6 +1,6 @@
 -amazondotcom
 -bing
@@ -1973,10 +1927,10 @@ index 4fe3d89..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-lt/mail/searchplugins/list.txt b/l10n-lt/mail/searchplugins/list.txt
-index 4fe3d89..eedc75c 100644
---- a/l10n-lt/mail/searchplugins/list.txt
-+++ b/l10n-lt/mail/searchplugins/list.txt
+Index: cunaguaro/l10n-lt/mail/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-lt/mail/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-lt/mail/searchplugins/list.txt	2013-08-28 16:07:22.239368099 -0430
 @@ -1,6 +1,6 @@
 -amazondotcom
 -bing
@@ -1988,10 +1942,10 @@ index 4fe3d89..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-lt/mobile/searchplugins/list.txt b/l10n-lt/mobile/searchplugins/list.txt
-index 2ff63a5..eedc75c 100644
---- a/l10n-lt/mobile/searchplugins/list.txt
-+++ b/l10n-lt/mobile/searchplugins/list.txt
+Index: cunaguaro/l10n-lt/mobile/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-lt/mobile/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-lt/mobile/searchplugins/list.txt	2013-08-28 16:07:22.239368099 -0430
 @@ -1,3 +1,6 @@
  google
  twitter
@@ -2000,10 +1954,10 @@ index 2ff63a5..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-lt/suite/searchplugins/list.txt b/l10n-lt/suite/searchplugins/list.txt
-index dd456f2..eedc75c 100644
---- a/l10n-lt/suite/searchplugins/list.txt
-+++ b/l10n-lt/suite/searchplugins/list.txt
+Index: cunaguaro/l10n-lt/suite/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-lt/suite/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-lt/suite/searchplugins/list.txt	2013-08-28 16:07:22.239368099 -0430
 @@ -1,4 +1,6 @@
  google
 -wikipedia-lt
@@ -2014,10 +1968,10 @@ index dd456f2..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-lv/browser/searchplugins/list.txt b/l10n-lv/browser/searchplugins/list.txt
-index 8acb0db..eedc75c 100644
---- a/l10n-lv/browser/searchplugins/list.txt
-+++ b/l10n-lv/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-lv/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-lv/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-lv/browser/searchplugins/list.txt	2013-08-28 16:07:22.239368099 -0430
 @@ -1,6 +1,6 @@
  google
 -yahoo
@@ -2030,10 +1984,10 @@ index 8acb0db..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-mai/browser/searchplugins/list.txt b/l10n-mai/browser/searchplugins/list.txt
-index 89e75d5..eedc75c 100755
---- a/l10n-mai/browser/searchplugins/list.txt
-+++ b/l10n-mai/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-mai/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-mai/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-mai/browser/searchplugins/list.txt	2013-08-28 16:07:22.239368099 -0430
 @@ -1,6 +1,6 @@
  google
 -yahoo-in
@@ -2045,10 +1999,10 @@ index 89e75d5..eedc75c 100755
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-mk/browser/searchplugins/list.txt b/l10n-mk/browser/searchplugins/list.txt
-index 2185be9..eedc75c 100644
---- a/l10n-mk/browser/searchplugins/list.txt
-+++ b/l10n-mk/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-mk/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-mk/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-mk/browser/searchplugins/list.txt	2013-08-28 16:07:22.239368099 -0430
 @@ -1,8 +1,6 @@
 -amazondotcom
 -bing
@@ -2063,10 +2017,10 @@ index 2185be9..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-ml/browser/searchplugins/list.txt b/l10n-ml/browser/searchplugins/list.txt
-index f2e30a8..eedc75c 100755
---- a/l10n-ml/browser/searchplugins/list.txt
-+++ b/l10n-ml/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-ml/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-ml/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-ml/browser/searchplugins/list.txt	2013-08-28 16:07:22.239368099 -0430
 @@ -1,7 +1,6 @@
  google
 -bing
@@ -2079,23 +2033,10 @@ index f2e30a8..eedc75c 100755
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-mn/browser/searchplugins/list.txt b/l10n-mn/browser/searchplugins/list.txt
-index 953f4e5..eedc75c 100644
---- a/l10n-mn/browser/searchplugins/list.txt
-+++ b/l10n-mn/browser/searchplugins/list.txt
-@@ -1,3 +1,6 @@
--creativecommons
- google
--wikipedia-mn
-+twitter
-+wikipedia
-+canaima
-+canaima-list
-+canaima-wiki
-diff --git a/l10n-mr/browser/searchplugins/list.txt b/l10n-mr/browser/searchplugins/list.txt
-index 2986a3b..eedc75c 100644
---- a/l10n-mr/browser/searchplugins/list.txt
-+++ b/l10n-mr/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-mr/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-mr/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-mr/browser/searchplugins/list.txt	2013-08-28 16:07:22.239368099 -0430
 @@ -1,7 +1,6 @@
  google
 -amazondotcom
@@ -2109,10 +2050,10 @@ index 2986a3b..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-nb-NO/browser/searchplugins/list.txt b/l10n-nb-NO/browser/searchplugins/list.txt
-index 19838fe..eedc75c 100644
---- a/l10n-nb-NO/browser/searchplugins/list.txt
-+++ b/l10n-nb-NO/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-nb-NO/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-nb-NO/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-nb-NO/browser/searchplugins/list.txt	2013-08-28 16:07:22.239368099 -0430
 @@ -1,8 +1,6 @@
 -amazon-en-GB
 -bing
@@ -2127,10 +2068,10 @@ index 19838fe..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-nb-NO/mail/searchplugins/list.txt b/l10n-nb-NO/mail/searchplugins/list.txt
-index 78fc4eb..eedc75c 100644
---- a/l10n-nb-NO/mail/searchplugins/list.txt
-+++ b/l10n-nb-NO/mail/searchplugins/list.txt
+Index: cunaguaro/l10n-nb-NO/mail/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-nb-NO/mail/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-nb-NO/mail/searchplugins/list.txt	2013-08-28 16:07:22.239368099 -0430
 @@ -1,8 +1,6 @@
 -amazondotcom
 -aol-web-search
@@ -2143,10 +2084,10 @@ index 78fc4eb..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-nb-NO/mobile/searchplugins/list.txt b/l10n-nb-NO/mobile/searchplugins/list.txt
-index e3c70a7..eedc75c 100644
---- a/l10n-nb-NO/mobile/searchplugins/list.txt
-+++ b/l10n-nb-NO/mobile/searchplugins/list.txt
+Index: cunaguaro/l10n-nb-NO/mobile/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-nb-NO/mobile/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-nb-NO/mobile/searchplugins/list.txt	2013-08-28 16:07:22.239368099 -0430
 @@ -1,3 +1,6 @@
  google
  twitter
@@ -2155,10 +2096,10 @@ index e3c70a7..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-nb-NO/suite/searchplugins/list.txt b/l10n-nb-NO/suite/searchplugins/list.txt
-index c1484a9..eedc75c 100644
---- a/l10n-nb-NO/suite/searchplugins/list.txt
-+++ b/l10n-nb-NO/suite/searchplugins/list.txt
+Index: cunaguaro/l10n-nb-NO/suite/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-nb-NO/suite/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-nb-NO/suite/searchplugins/list.txt	2013-08-28 16:07:22.239368099 -0430
 @@ -1,4 +1,6 @@
 -creativecommons
  google
@@ -2169,10 +2110,10 @@ index c1484a9..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-nl/browser/searchplugins/list.txt b/l10n-nl/browser/searchplugins/list.txt
-index d377149..eedc75c 100644
---- a/l10n-nl/browser/searchplugins/list.txt
-+++ b/l10n-nl/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-nl/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-nl/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-nl/browser/searchplugins/list.txt	2013-08-28 16:07:22.239368099 -0430
 @@ -1,5 +1,6 @@
  google
 -bing
@@ -2184,10 +2125,10 @@ index d377149..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-nl/mail/searchplugins/list.txt b/l10n-nl/mail/searchplugins/list.txt
-index 96866db..eedc75c 100644
---- a/l10n-nl/mail/searchplugins/list.txt
-+++ b/l10n-nl/mail/searchplugins/list.txt
+Index: cunaguaro/l10n-nl/mail/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-nl/mail/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-nl/mail/searchplugins/list.txt	2013-08-28 16:07:22.239368099 -0430
 @@ -1,7 +1,6 @@
 -amazondotcom
 -aol-web-search
@@ -2200,10 +2141,10 @@ index 96866db..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-nl/mobile/searchplugins/list.txt b/l10n-nl/mobile/searchplugins/list.txt
-index 1c4b142..eedc75c 100644
---- a/l10n-nl/mobile/searchplugins/list.txt
-+++ b/l10n-nl/mobile/searchplugins/list.txt
+Index: cunaguaro/l10n-nl/mobile/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-nl/mobile/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-nl/mobile/searchplugins/list.txt	2013-08-28 16:07:22.239368099 -0430
 @@ -1,3 +1,6 @@
  google
 -wikipedia-nl
@@ -2214,10 +2155,10 @@ index 1c4b142..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-nl/suite/searchplugins/list.txt b/l10n-nl/suite/searchplugins/list.txt
-index 5002eac..eedc75c 100644
---- a/l10n-nl/suite/searchplugins/list.txt
-+++ b/l10n-nl/suite/searchplugins/list.txt
+Index: cunaguaro/l10n-nl/suite/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-nl/suite/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-nl/suite/searchplugins/list.txt	2013-08-28 16:07:22.239368099 -0430
 @@ -1,4 +1,6 @@
 -creativecommons
  google
@@ -2228,10 +2169,10 @@ index 5002eac..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-nn-NO/browser/searchplugins/list.txt b/l10n-nn-NO/browser/searchplugins/list.txt
-index 0d9b300..eedc75c 100644
---- a/l10n-nn-NO/browser/searchplugins/list.txt
-+++ b/l10n-nn-NO/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-nn-NO/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-nn-NO/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-nn-NO/browser/searchplugins/list.txt	2013-08-28 16:07:22.239368099 -0430
 @@ -1,7 +1,6 @@
 -amazon-en-GB
 -bing
@@ -2245,10 +2186,10 @@ index 0d9b300..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-nn-NO/mail/searchplugins/list.txt b/l10n-nn-NO/mail/searchplugins/list.txt
-index 96866db..eedc75c 100644
---- a/l10n-nn-NO/mail/searchplugins/list.txt
-+++ b/l10n-nn-NO/mail/searchplugins/list.txt
+Index: cunaguaro/l10n-nn-NO/mail/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-nn-NO/mail/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-nn-NO/mail/searchplugins/list.txt	2013-08-28 16:07:22.239368099 -0430
 @@ -1,7 +1,6 @@
 -amazondotcom
 -aol-web-search
@@ -2261,10 +2202,10 @@ index 96866db..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-nn-NO/mobile/searchplugins/list.txt b/l10n-nn-NO/mobile/searchplugins/list.txt
-index 08f2ef0..eedc75c 100644
---- a/l10n-nn-NO/mobile/searchplugins/list.txt
-+++ b/l10n-nn-NO/mobile/searchplugins/list.txt
+Index: cunaguaro/l10n-nn-NO/mobile/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-nn-NO/mobile/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-nn-NO/mobile/searchplugins/list.txt	2013-08-28 16:07:22.243368099 -0430
 @@ -1,3 +1,6 @@
  google
  twitter
@@ -2273,10 +2214,10 @@ index 08f2ef0..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-nso/browser/searchplugins/list.txt b/l10n-nso/browser/searchplugins/list.txt
-index edb079e..eedc75c 100644
---- a/l10n-nso/browser/searchplugins/list.txt
-+++ b/l10n-nso/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-nso/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-nso/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-nso/browser/searchplugins/list.txt	2013-08-28 16:07:22.243368099 -0430
 @@ -1,5 +1,6 @@
  google
 -bing
@@ -2287,10 +2228,10 @@ index edb079e..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-or/browser/searchplugins/list.txt b/l10n-or/browser/searchplugins/list.txt
-index 31aa8af..eedc75c 100644
---- a/l10n-or/browser/searchplugins/list.txt
-+++ b/l10n-or/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-or/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-or/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-or/browser/searchplugins/list.txt	2013-08-28 16:07:22.243368099 -0430
 @@ -1,6 +1,6 @@
  google
 -amazondotcom
@@ -2303,10 +2244,10 @@ index 31aa8af..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-pa-IN/browser/searchplugins/list.txt b/l10n-pa-IN/browser/searchplugins/list.txt
-index 2fc7e02..eedc75c 100644
---- a/l10n-pa-IN/browser/searchplugins/list.txt
-+++ b/l10n-pa-IN/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-pa-IN/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-pa-IN/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-pa-IN/browser/searchplugins/list.txt	2013-08-28 16:07:22.243368099 -0430
 @@ -1,5 +1,6 @@
  google
 -yahoo-in
@@ -2318,10 +2259,10 @@ index 2fc7e02..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-pa-IN/mail/searchplugins/list.txt b/l10n-pa-IN/mail/searchplugins/list.txt
-index 96866db..eedc75c 100644
---- a/l10n-pa-IN/mail/searchplugins/list.txt
-+++ b/l10n-pa-IN/mail/searchplugins/list.txt
+Index: cunaguaro/l10n-pa-IN/mail/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-pa-IN/mail/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-pa-IN/mail/searchplugins/list.txt	2013-08-28 16:07:22.243368099 -0430
 @@ -1,7 +1,6 @@
 -amazondotcom
 -aol-web-search
@@ -2334,10 +2275,10 @@ index 96866db..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-pa-IN/mobile/searchplugins/list.txt b/l10n-pa-IN/mobile/searchplugins/list.txt
-index ad67237..eedc75c 100644
---- a/l10n-pa-IN/mobile/searchplugins/list.txt
-+++ b/l10n-pa-IN/mobile/searchplugins/list.txt
+Index: cunaguaro/l10n-pa-IN/mobile/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-pa-IN/mobile/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-pa-IN/mobile/searchplugins/list.txt	2013-08-28 16:07:22.243368099 -0430
 @@ -1,3 +1,6 @@
  google
  twitter
@@ -2346,10 +2287,10 @@ index ad67237..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-pl/browser/searchplugins/list.txt b/l10n-pl/browser/searchplugins/list.txt
-index 3df46d1..eedc75c 100644
---- a/l10n-pl/browser/searchplugins/list.txt
-+++ b/l10n-pl/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-pl/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-pl/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-pl/browser/searchplugins/list.txt	2013-08-28 16:07:22.243368099 -0430
 @@ -1,7 +1,6 @@
  google
 -wp-pl
@@ -2363,10 +2304,10 @@ index 3df46d1..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-pl/mail/searchplugins/list.txt b/l10n-pl/mail/searchplugins/list.txt
-index 3df46d1..eedc75c 100644
---- a/l10n-pl/mail/searchplugins/list.txt
-+++ b/l10n-pl/mail/searchplugins/list.txt
+Index: cunaguaro/l10n-pl/mail/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-pl/mail/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-pl/mail/searchplugins/list.txt	2013-08-28 16:07:22.243368099 -0430
 @@ -1,7 +1,6 @@
  google
 -wp-pl
@@ -2380,10 +2321,10 @@ index 3df46d1..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-pl/mobile/searchplugins/list.txt b/l10n-pl/mobile/searchplugins/list.txt
-index 1a99995..eedc75c 100644
---- a/l10n-pl/mobile/searchplugins/list.txt
-+++ b/l10n-pl/mobile/searchplugins/list.txt
+Index: cunaguaro/l10n-pl/mobile/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-pl/mobile/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-pl/mobile/searchplugins/list.txt	2013-08-28 16:07:22.243368099 -0430
 @@ -1,3 +1,6 @@
  google
  twitter
@@ -2392,10 +2333,10 @@ index 1a99995..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-pl/suite/searchplugins/list.txt b/l10n-pl/suite/searchplugins/list.txt
-index 3df46d1..eedc75c 100644
---- a/l10n-pl/suite/searchplugins/list.txt
-+++ b/l10n-pl/suite/searchplugins/list.txt
+Index: cunaguaro/l10n-pl/suite/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-pl/suite/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-pl/suite/searchplugins/list.txt	2013-08-28 16:07:22.243368099 -0430
 @@ -1,7 +1,6 @@
  google
 -wp-pl
@@ -2409,10 +2350,10 @@ index 3df46d1..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-pt-BR/browser/searchplugins/list.txt b/l10n-pt-BR/browser/searchplugins/list.txt
-index bc7f09f..eedc75c 100644
---- a/l10n-pt-BR/browser/searchplugins/list.txt
-+++ b/l10n-pt-BR/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-pt-BR/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-pt-BR/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-pt-BR/browser/searchplugins/list.txt	2013-08-28 16:07:22.243368099 -0430
 @@ -1,6 +1,6 @@
  google
  twitter
@@ -2424,10 +2365,10 @@ index bc7f09f..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-pt-BR/mail/searchplugins/list.txt b/l10n-pt-BR/mail/searchplugins/list.txt
-index 96866db..eedc75c 100644
---- a/l10n-pt-BR/mail/searchplugins/list.txt
-+++ b/l10n-pt-BR/mail/searchplugins/list.txt
+Index: cunaguaro/l10n-pt-BR/mail/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-pt-BR/mail/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-pt-BR/mail/searchplugins/list.txt	2013-08-28 16:07:22.243368099 -0430
 @@ -1,7 +1,6 @@
 -amazondotcom
 -aol-web-search
@@ -2440,10 +2381,10 @@ index 96866db..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-pt-BR/mobile/searchplugins/list.txt b/l10n-pt-BR/mobile/searchplugins/list.txt
-index c2f3783..eedc75c 100644
---- a/l10n-pt-BR/mobile/searchplugins/list.txt
-+++ b/l10n-pt-BR/mobile/searchplugins/list.txt
+Index: cunaguaro/l10n-pt-BR/mobile/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-pt-BR/mobile/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-pt-BR/mobile/searchplugins/list.txt	2013-08-28 16:07:22.243368099 -0430
 @@ -1,4 +1,6 @@
  google
  twitter
@@ -2453,10 +2394,10 @@ index c2f3783..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-pt-BR/suite/searchplugins/list.txt b/l10n-pt-BR/suite/searchplugins/list.txt
-index 2a9f6d6..eedc75c 100644
---- a/l10n-pt-BR/suite/searchplugins/list.txt
-+++ b/l10n-pt-BR/suite/searchplugins/list.txt
+Index: cunaguaro/l10n-pt-BR/suite/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-pt-BR/suite/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-pt-BR/suite/searchplugins/list.txt	2013-08-28 16:07:22.243368099 -0430
 @@ -1,3 +1,6 @@
  google
 -dmoz
@@ -2466,10 +2407,10 @@ index 2a9f6d6..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-pt-PT/browser/searchplugins/list.txt b/l10n-pt-PT/browser/searchplugins/list.txt
-index d91d2ba..eedc75c 100644
---- a/l10n-pt-PT/browser/searchplugins/list.txt
-+++ b/l10n-pt-PT/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-pt-PT/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-pt-PT/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-pt-PT/browser/searchplugins/list.txt	2013-08-28 16:07:22.243368099 -0430
 @@ -1,6 +1,6 @@
 -google
 -sapo
@@ -2483,10 +2424,10 @@ index d91d2ba..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-pt-PT/mail/searchplugins/list.txt b/l10n-pt-PT/mail/searchplugins/list.txt
-index d91d2ba..eedc75c 100644
---- a/l10n-pt-PT/mail/searchplugins/list.txt
-+++ b/l10n-pt-PT/mail/searchplugins/list.txt
+Index: cunaguaro/l10n-pt-PT/mail/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-pt-PT/mail/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-pt-PT/mail/searchplugins/list.txt	2013-08-28 16:07:22.247368100 -0430
 @@ -1,6 +1,6 @@
 -google
 -sapo
@@ -2500,10 +2441,10 @@ index d91d2ba..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-pt-PT/mobile/searchplugins/list.txt b/l10n-pt-PT/mobile/searchplugins/list.txt
-index 32dcd4b..eedc75c 100644
---- a/l10n-pt-PT/mobile/searchplugins/list.txt
-+++ b/l10n-pt-PT/mobile/searchplugins/list.txt
+Index: cunaguaro/l10n-pt-PT/mobile/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-pt-PT/mobile/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-pt-PT/mobile/searchplugins/list.txt	2013-08-28 16:07:22.247368100 -0430
 @@ -1,2 +1,6 @@
  google
 -wikipedia-ptpt
@@ -2512,10 +2453,10 @@ index 32dcd4b..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-pt-PT/suite/searchplugins/list.txt b/l10n-pt-PT/suite/searchplugins/list.txt
-index 4a764a9..eedc75c 100644
---- a/l10n-pt-PT/suite/searchplugins/list.txt
-+++ b/l10n-pt-PT/suite/searchplugins/list.txt
+Index: cunaguaro/l10n-pt-PT/suite/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-pt-PT/suite/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-pt-PT/suite/searchplugins/list.txt	2013-08-28 16:07:22.247368100 -0430
 @@ -1,6 +1,6 @@
 -google
 -sapo
@@ -2529,10 +2470,10 @@ index 4a764a9..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-rm/browser/searchplugins/list.txt b/l10n-rm/browser/searchplugins/list.txt
-index d6b1ba0..eedc75c 100644
---- a/l10n-rm/browser/searchplugins/list.txt
-+++ b/l10n-rm/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-rm/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-rm/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-rm/browser/searchplugins/list.txt	2013-08-28 16:07:22.247368100 -0430
 @@ -1,6 +1,6 @@
 -bing
  google
@@ -2545,10 +2486,10 @@ index d6b1ba0..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-rm/mail/searchplugins/list.txt b/l10n-rm/mail/searchplugins/list.txt
-index d6b1ba0..eedc75c 100644
---- a/l10n-rm/mail/searchplugins/list.txt
-+++ b/l10n-rm/mail/searchplugins/list.txt
+Index: cunaguaro/l10n-rm/mail/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-rm/mail/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-rm/mail/searchplugins/list.txt	2013-08-28 16:07:22.247368100 -0430
 @@ -1,6 +1,6 @@
 -bing
  google
@@ -2561,10 +2502,10 @@ index d6b1ba0..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-ro/browser/searchplugins/list.txt b/l10n-ro/browser/searchplugins/list.txt
-index 989b5b4..eedc75c 100644
---- a/l10n-ro/browser/searchplugins/list.txt
-+++ b/l10n-ro/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-ro/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-ro/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-ro/browser/searchplugins/list.txt	2013-08-28 16:07:22.247368100 -0430
 @@ -1,6 +1,6 @@
  google
 -yahoo
@@ -2577,10 +2518,10 @@ index 989b5b4..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-ro/mail/searchplugins/list.txt b/l10n-ro/mail/searchplugins/list.txt
-index d6e4825..eedc75c 100644
---- a/l10n-ro/mail/searchplugins/list.txt
-+++ b/l10n-ro/mail/searchplugins/list.txt
+Index: cunaguaro/l10n-ro/mail/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-ro/mail/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-ro/mail/searchplugins/list.txt	2013-08-28 16:07:22.247368100 -0430
 @@ -1,5 +1,6 @@
 -yahoo
 -bing
@@ -2593,10 +2534,10 @@ index d6e4825..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-ro/mobile/searchplugins/list.txt b/l10n-ro/mobile/searchplugins/list.txt
-index f241bfe..eedc75c 100644
---- a/l10n-ro/mobile/searchplugins/list.txt
-+++ b/l10n-ro/mobile/searchplugins/list.txt
+Index: cunaguaro/l10n-ro/mobile/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-ro/mobile/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-ro/mobile/searchplugins/list.txt	2013-08-28 16:07:22.247368100 -0430
 @@ -1,4 +1,6 @@
 -amazondotcom
  google
@@ -2605,10 +2546,10 @@ index f241bfe..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-ro/suite/searchplugins/list.txt b/l10n-ro/suite/searchplugins/list.txt
-index 16ad622..eedc75c 100644
---- a/l10n-ro/suite/searchplugins/list.txt
-+++ b/l10n-ro/suite/searchplugins/list.txt
+Index: cunaguaro/l10n-ro/suite/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-ro/suite/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-ro/suite/searchplugins/list.txt	2013-08-28 16:07:22.247368100 -0430
 @@ -1,4 +1,6 @@
 -creativecommons
  google
@@ -2618,10 +2559,10 @@ index 16ad622..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-ru/browser/searchplugins/list.txt b/l10n-ru/browser/searchplugins/list.txt
-index c71b880..eedc75c 100644
---- a/l10n-ru/browser/searchplugins/list.txt
-+++ b/l10n-ru/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-ru/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-ru/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-ru/browser/searchplugins/list.txt	2013-08-28 16:07:22.247368100 -0430
 @@ -1,7 +1,6 @@
  google
 -mailru
@@ -2635,10 +2576,10 @@ index c71b880..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-ru/mail/searchplugins/list.txt b/l10n-ru/mail/searchplugins/list.txt
-index 96866db..eedc75c 100644
---- a/l10n-ru/mail/searchplugins/list.txt
-+++ b/l10n-ru/mail/searchplugins/list.txt
+Index: cunaguaro/l10n-ru/mail/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-ru/mail/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-ru/mail/searchplugins/list.txt	2013-08-28 16:07:22.247368100 -0430
 @@ -1,7 +1,6 @@
 -amazondotcom
 -aol-web-search
@@ -2651,10 +2592,10 @@ index 96866db..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-ru/mobile/searchplugins/list.txt b/l10n-ru/mobile/searchplugins/list.txt
-index fc2d821..eedc75c 100644
---- a/l10n-ru/mobile/searchplugins/list.txt
-+++ b/l10n-ru/mobile/searchplugins/list.txt
+Index: cunaguaro/l10n-ru/mobile/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-ru/mobile/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-ru/mobile/searchplugins/list.txt	2013-08-28 16:07:22.247368100 -0430
 @@ -1,4 +1,6 @@
  google
  twitter
@@ -2664,10 +2605,10 @@ index fc2d821..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-ru/suite/searchplugins/list.txt b/l10n-ru/suite/searchplugins/list.txt
-index 58c4690..eedc75c 100644
---- a/l10n-ru/suite/searchplugins/list.txt
-+++ b/l10n-ru/suite/searchplugins/list.txt
+Index: cunaguaro/l10n-ru/suite/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-ru/suite/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-ru/suite/searchplugins/list.txt	2013-08-28 16:07:22.247368100 -0430
 @@ -1,2 +1,6 @@
  google
 -wikipedia-ru
@@ -2676,10 +2617,10 @@ index 58c4690..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-si/browser/searchplugins/list.txt b/l10n-si/browser/searchplugins/list.txt
-index cf57915..eedc75c 100644
---- a/l10n-si/browser/searchplugins/list.txt
-+++ b/l10n-si/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-si/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-si/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-si/browser/searchplugins/list.txt	2013-08-28 16:07:22.247368100 -0430
 @@ -1,7 +1,6 @@
 -amazondotcom
 -answers
@@ -2693,10 +2634,10 @@ index cf57915..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-si/mail/searchplugins/list.txt b/l10n-si/mail/searchplugins/list.txt
-index 96866db..eedc75c 100644
---- a/l10n-si/mail/searchplugins/list.txt
-+++ b/l10n-si/mail/searchplugins/list.txt
+Index: cunaguaro/l10n-si/mail/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-si/mail/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-si/mail/searchplugins/list.txt	2013-08-28 16:07:22.247368100 -0430
 @@ -1,7 +1,6 @@
 -amazondotcom
 -aol-web-search
@@ -2709,10 +2650,10 @@ index 96866db..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-si/suite/searchplugins/list.txt b/l10n-si/suite/searchplugins/list.txt
-index 2a9f6d6..eedc75c 100644
---- a/l10n-si/suite/searchplugins/list.txt
-+++ b/l10n-si/suite/searchplugins/list.txt
+Index: cunaguaro/l10n-si/suite/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-si/suite/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-si/suite/searchplugins/list.txt	2013-08-28 16:07:22.247368100 -0430
 @@ -1,3 +1,6 @@
  google
 -dmoz
@@ -2722,10 +2663,10 @@ index 2a9f6d6..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-sk/browser/searchplugins/list.txt b/l10n-sk/browser/searchplugins/list.txt
-index 7ca4e61..eedc75c 100644
---- a/l10n-sk/browser/searchplugins/list.txt
-+++ b/l10n-sk/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-sk/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-sk/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-sk/browser/searchplugins/list.txt	2013-08-28 16:07:22.247368100 -0430
 @@ -1,9 +1,6 @@
  google
 -azet-sk
@@ -2741,10 +2682,10 @@ index 7ca4e61..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-sk/mail/searchplugins/list.txt b/l10n-sk/mail/searchplugins/list.txt
-index 78fc4eb..eedc75c 100644
---- a/l10n-sk/mail/searchplugins/list.txt
-+++ b/l10n-sk/mail/searchplugins/list.txt
+Index: cunaguaro/l10n-sk/mail/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-sk/mail/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-sk/mail/searchplugins/list.txt	2013-08-28 16:07:22.247368100 -0430
 @@ -1,8 +1,6 @@
 -amazondotcom
 -aol-web-search
@@ -2757,10 +2698,10 @@ index 78fc4eb..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-sk/mobile/searchplugins/list.txt b/l10n-sk/mobile/searchplugins/list.txt
-index d88e2f4..eedc75c 100644
---- a/l10n-sk/mobile/searchplugins/list.txt
-+++ b/l10n-sk/mobile/searchplugins/list.txt
+Index: cunaguaro/l10n-sk/mobile/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-sk/mobile/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-sk/mobile/searchplugins/list.txt	2013-08-28 16:07:22.247368100 -0430
 @@ -1,5 +1,6 @@
  google
 -azet-sk
@@ -2771,10 +2712,10 @@ index d88e2f4..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-sk/suite/searchplugins/list.txt b/l10n-sk/suite/searchplugins/list.txt
-index 8ef4696..eedc75c 100644
---- a/l10n-sk/suite/searchplugins/list.txt
-+++ b/l10n-sk/suite/searchplugins/list.txt
+Index: cunaguaro/l10n-sk/suite/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-sk/suite/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-sk/suite/searchplugins/list.txt	2013-08-28 16:07:22.247368100 -0430
 @@ -1,7 +1,6 @@
  google
 -azet-sk
@@ -2788,10 +2729,10 @@ index 8ef4696..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-sl/browser/searchplugins/list.txt b/l10n-sl/browser/searchplugins/list.txt
-index ee58441..eedc75c 100644
---- a/l10n-sl/browser/searchplugins/list.txt
-+++ b/l10n-sl/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-sl/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-sl/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-sl/browser/searchplugins/list.txt	2013-08-28 16:07:22.251368100 -0430
 @@ -1,6 +1,6 @@
 -najdi-si
 -ceneji
@@ -2803,10 +2744,10 @@ index ee58441..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-sl/mail/searchplugins/list.txt b/l10n-sl/mail/searchplugins/list.txt
-index ee58441..eedc75c 100644
---- a/l10n-sl/mail/searchplugins/list.txt
-+++ b/l10n-sl/mail/searchplugins/list.txt
+Index: cunaguaro/l10n-sl/mail/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-sl/mail/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-sl/mail/searchplugins/list.txt	2013-08-28 16:07:22.251368100 -0430
 @@ -1,6 +1,6 @@
 -najdi-si
 -ceneji
@@ -2818,10 +2759,10 @@ index ee58441..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-sl/mobile/searchplugins/list.txt b/l10n-sl/mobile/searchplugins/list.txt
-index f29ffff..eedc75c 100644
---- a/l10n-sl/mobile/searchplugins/list.txt
-+++ b/l10n-sl/mobile/searchplugins/list.txt
+Index: cunaguaro/l10n-sl/mobile/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-sl/mobile/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-sl/mobile/searchplugins/list.txt	2013-08-28 16:07:22.251368100 -0430
 @@ -1,5 +1,6 @@
 -ceneje
  google
@@ -2832,10 +2773,10 @@ index f29ffff..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-son/browser/searchplugins/list.txt b/l10n-son/browser/searchplugins/list.txt
-index 4b53554..eedc75c 100644
---- a/l10n-son/browser/searchplugins/list.txt
-+++ b/l10n-son/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-son/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-son/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-son/browser/searchplugins/list.txt	2013-08-28 16:07:22.251368100 -0430
 @@ -1,7 +1,6 @@
  google
 -amazon-france
@@ -2849,10 +2790,10 @@ index 4b53554..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-sq/browser/searchplugins/list.txt b/l10n-sq/browser/searchplugins/list.txt
-index 9419040..eedc75c 100644
---- a/l10n-sq/browser/searchplugins/list.txt
-+++ b/l10n-sq/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-sq/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-sq/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-sq/browser/searchplugins/list.txt	2013-08-28 16:07:22.251368100 -0430
 @@ -1,6 +1,6 @@
 -amazon-en-GB
 -bing
@@ -2865,10 +2806,10 @@ index 9419040..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-sq/mail/searchplugins/list.txt b/l10n-sq/mail/searchplugins/list.txt
-index 3cf1fdd..eedc75c 100644
---- a/l10n-sq/mail/searchplugins/list.txt
-+++ b/l10n-sq/mail/searchplugins/list.txt
+Index: cunaguaro/l10n-sq/mail/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-sq/mail/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-sq/mail/searchplugins/list.txt	2013-08-28 16:07:22.251368100 -0430
 @@ -1,6 +1,6 @@
 -amazondotcom
 -bing
@@ -2881,10 +2822,10 @@ index 3cf1fdd..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-sq/mobile/searchplugins/list.txt b/l10n-sq/mobile/searchplugins/list.txt
-index 2ed1041..eedc75c 100644
---- a/l10n-sq/mobile/searchplugins/list.txt
-+++ b/l10n-sq/mobile/searchplugins/list.txt
+Index: cunaguaro/l10n-sq/mobile/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-sq/mobile/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-sq/mobile/searchplugins/list.txt	2013-08-28 16:07:22.251368100 -0430
 @@ -1,4 +1,6 @@
 -amazondotcom
  google
@@ -2894,10 +2835,10 @@ index 2ed1041..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-sr/browser/searchplugins/list.txt b/l10n-sr/browser/searchplugins/list.txt
-index 0044818..eedc75c 100644
---- a/l10n-sr/browser/searchplugins/list.txt
-+++ b/l10n-sr/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-sr/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-sr/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-sr/browser/searchplugins/list.txt	2013-08-28 16:07:22.251368100 -0430
 @@ -1,7 +1,6 @@
  google
 -bing
@@ -2911,26 +2852,10 @@ index 0044818..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-sr/mail/searchplugins/list.txt b/l10n-sr/mail/searchplugins/list.txt
-index 96866db..eedc75c 100644
---- a/l10n-sr/mail/searchplugins/list.txt
-+++ b/l10n-sr/mail/searchplugins/list.txt
-@@ -1,7 +1,6 @@
--amazondotcom
--aol-web-search
--bing
--eBay
-+google
- twitter
- wikipedia
--yahoo
-+canaima
-+canaima-list
-+canaima-wiki
-diff --git a/l10n-sr/mobile/searchplugins/list.txt b/l10n-sr/mobile/searchplugins/list.txt
-index ae372b8..eedc75c 100644
---- a/l10n-sr/mobile/searchplugins/list.txt
-+++ b/l10n-sr/mobile/searchplugins/list.txt
+Index: cunaguaro/l10n-sr/mobile/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-sr/mobile/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-sr/mobile/searchplugins/list.txt	2013-08-28 16:07:22.251368100 -0430
 @@ -1,2 +1,6 @@
  google
 -wikipedia-sr
@@ -2939,10 +2864,10 @@ index ae372b8..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-sv-SE/browser/searchplugins/list.txt b/l10n-sv-SE/browser/searchplugins/list.txt
-index 1b98fe1..eedc75c 100644
---- a/l10n-sv-SE/browser/searchplugins/list.txt
-+++ b/l10n-sv-SE/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-sv-SE/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-sv-SE/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-sv-SE/browser/searchplugins/list.txt	2013-08-28 16:07:22.251368100 -0430
 @@ -1,7 +1,6 @@
 -allaannonser-sv-SE
 -bing
@@ -2956,10 +2881,10 @@ index 1b98fe1..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-sv-SE/mail/searchplugins/list.txt b/l10n-sv-SE/mail/searchplugins/list.txt
-index 96866db..eedc75c 100644
---- a/l10n-sv-SE/mail/searchplugins/list.txt
-+++ b/l10n-sv-SE/mail/searchplugins/list.txt
+Index: cunaguaro/l10n-sv-SE/mail/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-sv-SE/mail/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-sv-SE/mail/searchplugins/list.txt	2013-08-28 16:07:22.251368100 -0430
 @@ -1,7 +1,6 @@
 -amazondotcom
 -aol-web-search
@@ -2972,10 +2897,10 @@ index 96866db..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-sv-SE/mobile/searchplugins/list.txt b/l10n-sv-SE/mobile/searchplugins/list.txt
-index b89dad4..eedc75c 100644
---- a/l10n-sv-SE/mobile/searchplugins/list.txt
-+++ b/l10n-sv-SE/mobile/searchplugins/list.txt
+Index: cunaguaro/l10n-sv-SE/mobile/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-sv-SE/mobile/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-sv-SE/mobile/searchplugins/list.txt	2013-08-28 16:07:22.251368100 -0430
 @@ -1,4 +1,6 @@
 -amazondotcom
  google
@@ -2985,10 +2910,10 @@ index b89dad4..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-sv-SE/suite/searchplugins/list.txt b/l10n-sv-SE/suite/searchplugins/list.txt
-index 16ad622..eedc75c 100644
---- a/l10n-sv-SE/suite/searchplugins/list.txt
-+++ b/l10n-sv-SE/suite/searchplugins/list.txt
+Index: cunaguaro/l10n-sv-SE/suite/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-sv-SE/suite/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-sv-SE/suite/searchplugins/list.txt	2013-08-28 16:07:22.251368100 -0430
 @@ -1,4 +1,6 @@
 -creativecommons
  google
@@ -2998,25 +2923,10 @@ index 16ad622..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-sw/browser/searchplugins/list.txt b/l10n-sw/browser/searchplugins/list.txt
-index 7c7d9ee..eedc75c 100644
---- a/l10n-sw/browser/searchplugins/list.txt
-+++ b/l10n-sw/browser/searchplugins/list.txt
-@@ -1,6 +1,6 @@
--amazondotcom
--bing
--eBay
- google
-+twitter
- wikipedia
--yahoo
-+canaima
-+canaima-list
-+canaima-wiki
-diff --git a/l10n-ta-LK/browser/searchplugins/list.txt b/l10n-ta-LK/browser/searchplugins/list.txt
-index 5166a8c..eedc75c 100644
---- a/l10n-ta-LK/browser/searchplugins/list.txt
-+++ b/l10n-ta-LK/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-ta-LK/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-ta-LK/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-ta-LK/browser/searchplugins/list.txt	2013-08-28 16:07:22.251368100 -0430
 @@ -1,3 +1,6 @@
 -creativecommons
  google
@@ -3026,10 +2936,10 @@ index 5166a8c..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-ta/browser/searchplugins/list.txt b/l10n-ta/browser/searchplugins/list.txt
-index 1864e96..eedc75c 100644
---- a/l10n-ta/browser/searchplugins/list.txt
-+++ b/l10n-ta/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-ta/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-ta/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-ta/browser/searchplugins/list.txt	2013-08-28 16:07:22.251368100 -0430
 @@ -1,5 +1,6 @@
 -creativecommons
 -eBay-in
@@ -3041,10 +2951,10 @@ index 1864e96..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-te/browser/searchplugins/list.txt b/l10n-te/browser/searchplugins/list.txt
-index 227533e..eedc75c 100755
---- a/l10n-te/browser/searchplugins/list.txt
-+++ b/l10n-te/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-te/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-te/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-te/browser/searchplugins/list.txt	2013-08-28 16:07:22.251368100 -0430
 @@ -1,7 +1,6 @@
 -amazondotcom
 -creativecommons
@@ -3058,10 +2968,10 @@ index 227533e..eedc75c 100755
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-th/browser/searchplugins/list.txt b/l10n-th/browser/searchplugins/list.txt
-index 7f3e2a7..eedc75c 100755
---- a/l10n-th/browser/searchplugins/list.txt
-+++ b/l10n-th/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-th/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-th/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-th/browser/searchplugins/list.txt	2013-08-28 16:07:22.251368100 -0430
 @@ -1,8 +1,6 @@
 -amazondotcom
 -bing
@@ -3076,10 +2986,10 @@ index 7f3e2a7..eedc75c 100755
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-th/mobile/searchplugins/list.txt b/l10n-th/mobile/searchplugins/list.txt
-index f241bfe..eedc75c 100755
---- a/l10n-th/mobile/searchplugins/list.txt
-+++ b/l10n-th/mobile/searchplugins/list.txt
+Index: cunaguaro/l10n-th/mobile/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-th/mobile/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-th/mobile/searchplugins/list.txt	2013-08-28 16:07:22.251368100 -0430
 @@ -1,4 +1,6 @@
 -amazondotcom
  google
@@ -3088,10 +2998,10 @@ index f241bfe..eedc75c 100755
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-tr/browser/searchplugins/list.txt b/l10n-tr/browser/searchplugins/list.txt
-index 9df6434..eedc75c 100644
---- a/l10n-tr/browser/searchplugins/list.txt
-+++ b/l10n-tr/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-tr/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-tr/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-tr/browser/searchplugins/list.txt	2013-08-28 16:07:22.251368100 -0430
 @@ -1,5 +1,6 @@
  google
 -yandex-tr
@@ -3103,22 +3013,10 @@ index 9df6434..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-tr/mobile/searchplugins/list.txt b/l10n-tr/mobile/searchplugins/list.txt
-index c0bc86c..eedc75c 100644
---- a/l10n-tr/mobile/searchplugins/list.txt
-+++ b/l10n-tr/mobile/searchplugins/list.txt
-@@ -1,3 +1,6 @@
- google
- twitter
--wikipedia-tr 
-+wikipedia
-+canaima
-+canaima-list
-+canaima-wiki
-diff --git a/l10n-tr/suite/searchplugins/list.txt b/l10n-tr/suite/searchplugins/list.txt
-index e17ef39..eedc75c 100644
---- a/l10n-tr/suite/searchplugins/list.txt
-+++ b/l10n-tr/suite/searchplugins/list.txt
+Index: cunaguaro/l10n-tr/suite/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-tr/suite/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-tr/suite/searchplugins/list.txt	2013-08-28 16:07:22.251368100 -0430
 @@ -1,3 +1,6 @@
  google
 +twitter
@@ -3127,10 +3025,10 @@ index e17ef39..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-uk/browser/searchplugins/list.txt b/l10n-uk/browser/searchplugins/list.txt
-index b23c876..eedc75c 100755
---- a/l10n-uk/browser/searchplugins/list.txt
-+++ b/l10n-uk/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-uk/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-uk/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-uk/browser/searchplugins/list.txt	2013-08-28 16:07:22.255368100 -0430
 @@ -1,5 +1,6 @@
  google
 -yandex
@@ -3142,10 +3040,10 @@ index b23c876..eedc75c 100755
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-uk/mobile/searchplugins/list.txt b/l10n-uk/mobile/searchplugins/list.txt
-index 7a0993c..eedc75c 100755
---- a/l10n-uk/mobile/searchplugins/list.txt
-+++ b/l10n-uk/mobile/searchplugins/list.txt
+Index: cunaguaro/l10n-uk/mobile/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-uk/mobile/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-uk/mobile/searchplugins/list.txt	2013-08-28 16:07:22.255368100 -0430
 @@ -1,4 +1,6 @@
  google
  twitter
@@ -3155,10 +3053,10 @@ index 7a0993c..eedc75c 100755
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-uk/suite/searchplugins/list.txt b/l10n-uk/suite/searchplugins/list.txt
-index 16ad622..eedc75c 100644
---- a/l10n-uk/suite/searchplugins/list.txt
-+++ b/l10n-uk/suite/searchplugins/list.txt
+Index: cunaguaro/l10n-uk/suite/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-uk/suite/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-uk/suite/searchplugins/list.txt	2013-08-28 16:07:22.255368100 -0430
 @@ -1,4 +1,6 @@
 -creativecommons
  google
@@ -3168,10 +3066,10 @@ index 16ad622..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-vi/browser/searchplugins/list.txt b/l10n-vi/browser/searchplugins/list.txt
-index 05b7482..eedc75c 100644
---- a/l10n-vi/browser/searchplugins/list.txt
-+++ b/l10n-vi/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-vi/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-vi/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-vi/browser/searchplugins/list.txt	2013-08-28 16:07:22.255368100 -0430
 @@ -1,7 +1,6 @@
 -5giay
 -baambootratuav
@@ -3185,10 +3083,10 @@ index 05b7482..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-vi/mail/searchplugins/list.txt b/l10n-vi/mail/searchplugins/list.txt
-index 78fc4eb..eedc75c 100644
---- a/l10n-vi/mail/searchplugins/list.txt
-+++ b/l10n-vi/mail/searchplugins/list.txt
+Index: cunaguaro/l10n-vi/mail/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-vi/mail/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-vi/mail/searchplugins/list.txt	2013-08-28 16:07:22.255368100 -0430
 @@ -1,8 +1,6 @@
 -amazondotcom
 -aol-web-search
@@ -3201,10 +3099,10 @@ index 78fc4eb..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-vi/mobile/searchplugins/list.txt b/l10n-vi/mobile/searchplugins/list.txt
-index f241bfe..eedc75c 100644
---- a/l10n-vi/mobile/searchplugins/list.txt
-+++ b/l10n-vi/mobile/searchplugins/list.txt
+Index: cunaguaro/l10n-vi/mobile/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-vi/mobile/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-vi/mobile/searchplugins/list.txt	2013-08-28 16:07:22.255368100 -0430
 @@ -1,4 +1,6 @@
 -amazondotcom
  google
@@ -3213,10 +3111,10 @@ index f241bfe..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-zh-CN/browser/searchplugins/list.txt b/l10n-zh-CN/browser/searchplugins/list.txt
-index bc20332..eedc75c 100644
---- a/l10n-zh-CN/browser/searchplugins/list.txt
-+++ b/l10n-zh-CN/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-zh-CN/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-zh-CN/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-zh-CN/browser/searchplugins/list.txt	2013-08-28 16:07:22.255368100 -0430
 @@ -1,9 +1,6 @@
 -amazondotcn
 -creativecommons
@@ -3232,10 +3130,10 @@ index bc20332..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-zh-CN/mail/searchplugins/list.txt b/l10n-zh-CN/mail/searchplugins/list.txt
-index 96866db..eedc75c 100644
---- a/l10n-zh-CN/mail/searchplugins/list.txt
-+++ b/l10n-zh-CN/mail/searchplugins/list.txt
+Index: cunaguaro/l10n-zh-CN/mail/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-zh-CN/mail/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-zh-CN/mail/searchplugins/list.txt	2013-08-28 16:07:22.255368100 -0430
 @@ -1,7 +1,6 @@
 -amazondotcom
 -aol-web-search
@@ -3248,10 +3146,10 @@ index 96866db..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-zh-CN/mobile/searchplugins/list.txt b/l10n-zh-CN/mobile/searchplugins/list.txt
-index 5029a8f..eedc75c 100644
---- a/l10n-zh-CN/mobile/searchplugins/list.txt
-+++ b/l10n-zh-CN/mobile/searchplugins/list.txt
+Index: cunaguaro/l10n-zh-CN/mobile/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-zh-CN/mobile/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-zh-CN/mobile/searchplugins/list.txt	2013-08-28 16:07:22.255368100 -0430
 @@ -1,3 +1,6 @@
  google
  twitter
@@ -3260,10 +3158,10 @@ index 5029a8f..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-zh-CN/suite/searchplugins/list.txt b/l10n-zh-CN/suite/searchplugins/list.txt
-index 16ad622..eedc75c 100644
---- a/l10n-zh-CN/suite/searchplugins/list.txt
-+++ b/l10n-zh-CN/suite/searchplugins/list.txt
+Index: cunaguaro/l10n-zh-CN/suite/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-zh-CN/suite/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-zh-CN/suite/searchplugins/list.txt	2013-08-28 16:07:22.255368100 -0430
 @@ -1,4 +1,6 @@
 -creativecommons
  google
@@ -3273,10 +3171,10 @@ index 16ad622..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-zh-TW/browser/searchplugins/list.txt b/l10n-zh-TW/browser/searchplugins/list.txt
-index 3520398..eedc75c 100644
---- a/l10n-zh-TW/browser/searchplugins/list.txt
-+++ b/l10n-zh-TW/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-zh-TW/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-zh-TW/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-zh-TW/browser/searchplugins/list.txt	2013-08-28 16:07:22.255368100 -0430
 @@ -1,7 +1,6 @@
  google
 -yahoo-zh-TW
@@ -3290,10 +3188,10 @@ index 3520398..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-zh-TW/mail/searchplugins/list.txt b/l10n-zh-TW/mail/searchplugins/list.txt
-index b42012f..eedc75c 100644
---- a/l10n-zh-TW/mail/searchplugins/list.txt
-+++ b/l10n-zh-TW/mail/searchplugins/list.txt
+Index: cunaguaro/l10n-zh-TW/mail/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-zh-TW/mail/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-zh-TW/mail/searchplugins/list.txt	2013-08-28 16:07:22.255368100 -0430
 @@ -1,8 +1,6 @@
 -google
 -yahoo-zh-TW
@@ -3310,10 +3208,10 @@ index b42012f..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-zh-TW/mobile/searchplugins/list.txt b/l10n-zh-TW/mobile/searchplugins/list.txt
-index b7f94a0..eedc75c 100644
---- a/l10n-zh-TW/mobile/searchplugins/list.txt
-+++ b/l10n-zh-TW/mobile/searchplugins/list.txt
+Index: cunaguaro/l10n-zh-TW/mobile/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-zh-TW/mobile/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-zh-TW/mobile/searchplugins/list.txt	2013-08-28 16:07:22.255368100 -0430
 @@ -1,2 +1,6 @@
  google
 -wikipedia-zh-TW
@@ -3322,10 +3220,10 @@ index b7f94a0..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-zh-TW/suite/searchplugins/list.txt b/l10n-zh-TW/suite/searchplugins/list.txt
-index 053c5e2..eedc75c 100644
---- a/l10n-zh-TW/suite/searchplugins/list.txt
-+++ b/l10n-zh-TW/suite/searchplugins/list.txt
+Index: cunaguaro/l10n-zh-TW/suite/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-zh-TW/suite/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-zh-TW/suite/searchplugins/list.txt	2013-08-28 16:07:22.255368100 -0430
 @@ -1,5 +1,6 @@
  google
 -yahoo-zh-TW
@@ -3337,10 +3235,10 @@ index 053c5e2..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/l10n-zu/browser/searchplugins/list.txt b/l10n-zu/browser/searchplugins/list.txt
-index f8af371..eedc75c 100644
---- a/l10n-zu/browser/searchplugins/list.txt
-+++ b/l10n-zu/browser/searchplugins/list.txt
+Index: cunaguaro/l10n-zu/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-zu/browser/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/l10n-zu/browser/searchplugins/list.txt	2013-08-28 16:07:22.255368100 -0430
 @@ -1,6 +1,6 @@
  google
 -amazondotcom
@@ -3353,15 +3251,88 @@ index f8af371..eedc75c 100644
 +canaima
 +canaima-list
 +canaima-wiki
-diff --git a/mobile/locales/en-US/searchplugins/list.txt b/mobile/locales/en-US/searchplugins/list.txt
-index f241bfe..eedc75c 100644
---- a/mobile/locales/en-US/searchplugins/list.txt
-+++ b/mobile/locales/en-US/searchplugins/list.txt
+Index: cunaguaro/mobile/locales/en-US/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/mobile/locales/en-US/searchplugins/list.txt	2013-08-28 16:07:22.263368100 -0430
++++ cunaguaro/mobile/locales/en-US/searchplugins/list.txt	2013-08-28 16:07:22.255368100 -0430
 @@ -1,4 +1,6 @@
 -amazondotcom
  google
  twitter
  wikipedia
++canaima
++canaima-list
++canaima-wiki
+Index: cunaguaro/l10n-hu/browser/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-hu/browser/searchplugins/list.txt	2013-08-28 16:06:54.000000000 -0430
++++ cunaguaro/l10n-hu/browser/searchplugins/list.txt	2013-08-28 16:10:15.563376488 -0430
+@@ -1,5 +1,6 @@
+-eBay-hu
+ google
+-sztaki-en-hu
+-vatera
+-wikipedia-hu
++twitter
++wikipedia
++canaima
++canaima-list
++canaima-wiki
+Index: cunaguaro/l10n-hu/mobile/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-hu/mobile/searchplugins/list.txt	2013-08-28 16:06:54.000000000 -0430
++++ cunaguaro/l10n-hu/mobile/searchplugins/list.txt	2013-08-28 16:12:02.343381656 -0430
+@@ -1,5 +1,5 @@
+ google
+-sztaki-en-hu
+-vatera
+ twitter
+-wikipedia-hu
++canaima
++canaima-list
++canaima-wiki
+Index: cunaguaro/l10n-hu/suite/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-hu/suite/searchplugins/list.txt	2013-08-28 16:06:54.000000000 -0430
++++ cunaguaro/l10n-hu/suite/searchplugins/list.txt	2013-08-28 16:13:04.963384686 -0430
+@@ -1,6 +1,6 @@
+-creativecommons
+-eBay-hu
+ google
+-sztaki-en-hu
+-vatera
+-wikipedia-hu
++twitter
++wikipedia
++canaima
++canaima-list
++canaima-wiki
+Index: cunaguaro/l10n-sr/mail/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-sr/mail/searchplugins/list.txt	2013-08-28 16:06:54.000000000 -0430
++++ cunaguaro/l10n-sr/mail/searchplugins/list.txt	2013-08-28 16:14:19.579388297 -0430
+@@ -1,8 +1,6 @@
+-amazondotcom
+-aol-web-search
+-bing
+-eBay
+ google
+ twitter
+ wikipedia
+-yahoo
++canaima
++canaima-list
++canaima-wiki
+Index: cunaguaro/l10n-tr/mobile/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/l10n-tr/mobile/searchplugins/list.txt	2013-08-28 16:06:54.000000000 -0430
++++ cunaguaro/l10n-tr/mobile/searchplugins/list.txt	2013-08-28 16:15:17.651391108 -0430
+@@ -1,4 +1,6 @@
+ google
+-yandex-tr
+ twitter
+-wikipedia-tr
++wikipedia
 +canaima
 +canaima-list
 +canaima-wiki
