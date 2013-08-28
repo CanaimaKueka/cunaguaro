@@ -1,4 +1,0 @@
-<!--LOCALIZATION NOTE sendprogress.dtd Main UI for Send Message Progress Dialog -->
-<!ENTITY sendWindow.title "Захиаг илгээж байна"> 
-<!ENTITY status.label "Төлөв:">
-<!ENTITY progress.label "Явц:">
