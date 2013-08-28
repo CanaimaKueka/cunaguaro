@@ -1,0 +1,397 @@
+#!/usr/bin/make -f
+ifeq (,$(shell dh_testdir || echo no))
+include debian/make.mk
+# Use dpkg-buildflags to get hardening flags, exclude non-hardening flags,
+# and disable read-only relocations.
+dpkg_buildflags = $(and $(1),$(shell DEB_BUILD_MAINT_OPTIONS=hardening=-relro DEB_CFLAGS_MAINT_STRIP="$(shell DEB_BUILD_MAINT_OPTIONS=hardening=-all dpkg-buildflags --get $(1))" dpkg-buildflags --get $(1)))
+$(call lazy,CFLAGS,$$(call dpkg_buildflags,CFLAGS))
+$(call lazy,CPPFLAGS,$$(call dpkg_buildflags,CPPFLAGS))
+$(call lazy,LDFLAGS,$$(call dpkg_buildflags,LDFLAGS))
+
+$(call lazy,DEB_HOST_GNU_TYPE,$$(shell dpkg-architecture -qDEB_HOST_GNU_TYPE))
+$(call lazy,DEB_BUILD_GNU_TYPE,$$(shell dpkg-architecture -qDEB_BUILD_GNU_TYPE))
+$(call lazy,DEB_BUILD_ARCH,$$(shell dpkg-architecture -qDEB_BUILD_ARCH))
+
+PYTHON := python -B
+
+PRODUCT := browser
+PRODUCT_NAME := firefox
+include debian/upstream.mk
+
+OFFICIAL_BRANDING := browser/branding/official
+ifeq ($(DEBIAN_SOURCE),$(PRODUCT_NAME))
+MOZILLA_OFFICIAL := 1
+# ESR, Beta and Releases use the official branding
+ifneq (,$(filter %-release %-beta,$(SOURCE_CHANNEL))$(findstring -esr,$(SOURCE_CHANNEL)))
+BRANDING := $(OFFICIAL_BRANDING)
+else
+ifneq (,$(filter %-aurora,$(SOURCE_CHANNEL)))
+BRANDING := browser/branding/aurora
+else
+ifneq (,$(filter %-central,$(SOURCE_CHANNEL)))
+BRANDING := browser/branding/nightly
+else
+$(error $(PRODUCT_NAME) branding for $(SOURCE_CHANNEL) is unsupported)
+endif
+endif
+endif
+
+else
+BRANDING := debian/branding
+
+# Betas and Releases need to get MOZ_UA_BUILDID from the official branding
+ifneq (,$(filter %-release %-beta,$(SOURCE_CHANNEL)))
+include $(OFFICIAL_BRANDING)/configure.sh
+export MOZ_UA_BUILDID
+endif
+endif
+
+include $(BRANDING)/configure.sh
+
+# Define PRODUCT, product and Product variables (replacing product with the
+# actual value of $(PRODUCT))
+$(PRODUCT) := $(call lc,$(DEBIAN_SOURCE))
+$(call uc,$(PRODUCT)) := $(call uc,$(subst ",,$(MOZ_APP_DISPLAYNAME)))
+Product := $(strip $(eval __tmp := $(PRODUCT))$(foreach l,$(letters),$(eval __tmp := $(subst $(l),$(l) ,$(__tmp))))$(call uc,$(firstword $(__tmp)))$(PRODUCT:$(firstword $(__tmp))%=%))
+$(Product) := $(subst ",,$(MOZ_APP_DISPLAYNAME))
+
+LIB_DIR := /usr/lib/$($(PRODUCT))
+SHARE_DIR := /usr/share/$($(PRODUCT))
+
+LDFLAGS := -Wl,--as-needed
+
+# Reduce memory usage of the linker at the expense of processing time
+# This should help on lower-end architectures like arm and mips, which
+# spend an immense amount of time swapping.
+LDFLAGS += -Wl,--no-keep-memory -Wl,--reduce-memory-overheads
+# Also add execution time and memory usage stats in the logs
+LDFLAGS += -Wl,--stats
+
+AUTOCONF_DIRS := build/autoconf js/src/build/autoconf
+
+ifneq (,$(filter noopt,$(DEB_BUILD_OPTIONS)))
+	CONFIGURE_FLAGS += --disable-optimize
+endif
+
+ifeq ($(DEB_BUILD_ARCH),ppc64)
+	CFLAGS += -mminimal-toc
+endif
+
+ifneq (,$(filter kfreebsd-% hurd-%,$(DEB_BUILD_ARCH)))
+	CONFIGURE_FLAGS += --disable-necko-wifi
+endif
+
+ifneq (,$(filter armel,$(DEB_BUILD_ARCH)))
+	CONFIGURE_FLAGS += --disable-methodjit
+	CFLAGS += -D__ARM_PCS
+endif
+
+ifeq (8.0_sparc,$(GRE_MILESTONE)_$(DEB_BUILD_ARCH))
+	CONFIGURE_FLAGS += --disable-methodjit
+endif
+
+ifneq (,$(filter ia64,$(DEB_BUILD_ARCH)))
+	CONFIGURE_FLAGS += --enable-optimize=-O2
+endif
+
+ifneq (,$(filter debug,$(DEB_BUILD_OPTIONS)))
+	CONFIGURE_FLAGS += --enable-debug
+endif
+ifeq (,$(filter debug noopt,$(DEB_BUILD_OPTIONS)))
+	GENSYMBOLS_FLAGS := -c4
+endif
+
+ifeq (default,$(origin CC))
+CC := gcc
+endif
+ifeq (default,$(origin CXX))
+CXX := g++
+endif
+CXXFLAGS = $(CFLAGS)
+
+EXPORTS := CC CXX CFLAGS CXXFLAGS CPPFLAGS MOZILLA_OFFICIAL
+$(call lazy,CONFIGURE_ENV,$$(foreach export,$(EXPORTS),$$(export)="$$($$(export))"))
+
+GENERATED_FILES += debian/dh/dh_xulrunner.1
+
+debian/$($(PRODUCT)).xpm: stamps/build-$(PRODUCT)
+	convert build-$(PRODUCT)/dist/bin/browser/chrome/icons/default/default32.png $@
+GENERATED_FILES += debian/$($(PRODUCT)).xpm
+
+debian/dh/dh_xulrunner.1: debian/dh/dh_xulrunner
+	pod2man -c Debhelper -r $(GRE_VERSION) $^ > $@
+
+build-xulrunner/dist/bin/npapi_getinfo: debian/dh/npapi_getinfo.c
+	$(CC) -o $@ $< -Ibuild-xulrunner/dist/include -ldl -lpthread -Wl,-rpath,\$$ORIGIN
+
+IN_FILES := $(wildcard debian/*.in debian/dh/*.in)
+ifeq ($(DEBIAN_SOURCE),$(PRODUCT_NAME))
+IN_FILES := $(filter-out debian/$($(PRODUCT)).in,$(IN_FILES))
+endif
+preprocessed_filename = $(subst $(PRODUCT),$($(PRODUCT)),$(subst JS_SO_VERSION,$(JS_SO_VERSION),$(subst GRE_VERSION,$(GRE_VERSION),$(1:.in=))))
+define preprocess
+$(call preprocessed_filename,$(1)): $(1)
+PREPROCESSED_FILES += $(call preprocessed_filename,$(1))
+endef
+$(foreach f,$(IN_FILES),$(eval $(call preprocess, $(f))))
+
+GENERATED_FILES += $(filter-out debian/control,$(PREPROCESSED_FILES))
+debian/control: debian/rules debian/changelog debian/l10n/$(PRODUCT)-l10n.control
+
+$(call lazy,L10N_PACKAGES,$$(foreach lang,$$(L10N_LANGS),$($(PRODUCT))-l10n-$$(call lc,$$(lang))))
+$(call lazy,L10N_PACKAGES_DEPS,$$(shell echo $$(L10N_PACKAGES) | sed 's/ /, /g'))
+
+debian/l10n/$(PRODUCT)-l10n.control: %: %.in
+	$(PYTHON) debian/l10n/gen $(L10N_LANGS) > $@
+
+DICT_DIR := /usr/share/hunspell
+
+$(PREPROCESSED_FILES): VARS = GRE_VERSION JS_SO_VERSION DICT_DIR $(PRODUCT) $(call uc,$(PRODUCT)) $(Product)
+debian/control: VARS += L10N_PACKAGES_DEPS PRODUCT
+$(PREPROCESSED_FILES):
+	$(PYTHON) config/Preprocessor.py --marker % -Fsubstitution $(foreach var,$(VARS),-D$(var)="$($(var))" )$< > $@
+
+%/Makefile: DIR=$(firstword $(subst /, ,$@))
+%/Makefile:
+	$(DIR)/config.status -n -v --file=$@
+
+%/package-manifest: %/Makefile
+	$(MAKE) -C $*
+
+override_dh_auto_configure:
+
+stamps/prepare-configure:: stamps/dummy
+	for dir in $(AUTOCONF_DIRS); do \
+		for file in config.guess config.sub; do \
+			sed -i '2!b;/^#/ i\exec "/usr/share/misc/'$$file'" "$$@"' $$dir/$$file; \
+		done; \
+	done
+	chmod 755 configure js/src/configure
+
+stamps/configure-xulrunner:: stamps/prepare-configure
+	$(if $(wildcard build-xulrunner),,mkdir build-xulrunner)
+	cd build-xulrunner && \
+	MOZCONFIG=$(CURDIR)/debian/xulrunner.mozconfig \
+	ASFLAGS="-g" \
+	$(CONFIGURE_ENV) \
+	../configure --host=$(DEB_HOST_GNU_TYPE) --build=$(DEB_BUILD_GNU_TYPE) --prefix=/usr $(CONFIGURE_FLAGS) \
+		--with-default-mozilla-five-home=/usr/lib/xulrunner-$(GRE_VERSION)
+	sed -i '/^OS_LDFLAGS/s|=|& $(LDFLAGS)|' build-xulrunner/config/autoconf.mk
+	sed -i '/^OS_LDFLAGS/s|=|& $(LDFLAGS)|' build-xulrunner/js/src/config/autoconf.mk
+
+stamps/configure-check-xulrunner:: stamps/configure-xulrunner
+# Ensure --{with,enable}-system options properly set expected variables
+# according to the definitions in the mozconfig file.
+	@awk -F' *# *| *$$' ' \
+	BEGIN { "find $(CURDIR)/build-xulrunner \\( -name autoconf.mk -o -name emptyvars.mk \\) -printf \"%p \"" | getline confs } \
+	$$1 ~ /system/ { \
+		if (! $$2) { \
+			print FILENAME ": Missing variable for",$$1; \
+			error=1; \
+		} else { \
+			split($$2,var,"="); \
+			cmd = "grep -l " var[1] " " confs; \
+			cmd | getline dir; \
+			sub(/\/[^\/]*$$/, "", dir); \
+			cmd = "$(MAKE) -C " dir " --no-print-directory echo-variable-" var[1]; \
+			cmd | getline value; \
+			if (value != var[2]) { print $$1, "triggered", var[1] "=" value,"instead of",$$2; error=1 } \
+		} \
+	} \
+	END { if (error) { exit 1 }}' debian/xulrunner.mozconfig
+
+stamps/build-xulrunner:: stamps/configure-check-xulrunner
+	dh_auto_build --parallel --builddirectory=build-xulrunner -- \
+		JS_READLINE=1
+
+stamps/build-xulrunner-extra:: stamps/build-xulrunner build-xulrunner/debian/extra-stuff/Makefile
+	$(MAKE) -C build-xulrunner/debian/extra-stuff
+
+stamps/configure-$(PRODUCT):: stamps/build-xulrunner-extra
+	$(if $(wildcard build-$(PRODUCT)),,mkdir build-$(PRODUCT))
+	cd build-$(PRODUCT) && \
+	MOZCONFIG=$(CURDIR)/debian/$(PRODUCT).mozconfig \
+	$(CONFIGURE_ENV) \
+	../configure --host=$(DEB_HOST_GNU_TYPE) --build=$(DEB_BUILD_GNU_TYPE) --prefix=/usr $(CONFIGURE_FLAGS) \
+		--with-libxul-sdk=$(CURDIR)/build-xulrunner/dist \
+		$(if $(filter $(BRANDING),$(OFFICIAL_BRANDING)),--enable-official-branding,--with-branding=$(BRANDING)) \
+		--with-system-libxul --with-system-nspr --with-system-nss
+	sed -i '/^OS_LDFLAGS/s|=|& $(LDFLAGS)|' build-$(PRODUCT)/config/autoconf.mk
+
+stamps/build-$(PRODUCT):: stamps/configure-$(PRODUCT)
+	dh_auto_build --builddirectory=build-$(PRODUCT)
+
+ifeq (1,)
+ifneq ($(DEBIAN_SOURCE),$(PRODUCT_NAME))
+build-$(PRODUCT)/%/filelist: stamps/build-$(PRODUCT) build-$(PRODUCT)/%/Makefile
+	rm -rf build-$(PRODUCT)/$*/dist
+	$(MAKE) -C build-$(PRODUCT)/$* MOZ_CHROME_FILE_FORMAT=flat DIST=$(CURDIR)/build-$(PRODUCT)/$*/dist BRANDING_TEST=1
+	cd build-$(PRODUCT)/$*/dist/bin && find -type f | sort > $(CURDIR)/$@
+
+stamps/build-check-branding:: build-$(PRODUCT)/$(OFFICIAL_BRANDING)/filelist build-$(PRODUCT)/$(BRANDING)/filelist
+# Ensure the iceweasel branding contains everything it's supposed to
+	diff $^
+endif
+endif
+
+L10N_BUILD_STAMPS = $(foreach lang,$(L10N_LANGS),stamps/build-l10n-$(lang))
+stamps/build-l10n:: $(L10N_BUILD_STAMPS)
+
+$(L10N_BUILD_STAMPS):: stamps/build-l10n-%: stamps/build-xulrunner stamps/build-$(PRODUCT) $(foreach d,toolkit services/sync extensions/spellcheck intl netwerk dom security/manager,build-$(PRODUCT)/$(d)/locales/Makefile)
+	$(if $(wildcard l10n),,mkdir -p l10n)
+	$(if $(wildcard l10n/$*),,ln -sf ../l10n-$* l10n/$*)
+	$(PYTHON) config/pythonpath.py -I$(CURDIR)/compare-locales/lib $(CURDIR)/compare-locales/scripts/compare-locales -m $(CURDIR)/build-$(PRODUCT)/l10n-$* $(PRODUCT)/locales/l10n.ini $(CURDIR)/l10n $*
+	$(MAKE) -C build-$(PRODUCT)/$(PRODUCT)/locales langpack-$* L10NBASEDIR=$(CURDIR)/l10n MOZ_CHROME_FILE_FORMAT=flat MOZ_LANGPACK_EID=langpack-$*@$($(PRODUCT)).mozilla.org PKG_LANGPACK_BASENAME='$$(MOZ_LANGPACK_EID)' PKG_LANGPACK_PATH=xpi/ LOCALE_MERGEDIR=$(CURDIR)/build-$(PRODUCT)/l10n-$* STANDALONE_MAKEFILE=1
+
+override_dh_auto_build: stamps/build-xulrunner stamps/build-$(PRODUCT) stamps/build-check-branding
+
+ifeq (,$(filter nocheck,$(DEB_BUILD_OPTIONS)))
+include debian/test.mk
+endif
+
+override_dh_auto_clean::
+	rm -f MPL
+	rm -f $(GENERATED_FILES)
+	rm -rf stamps l10n
+
+	dh_auto_clean --builddirectory=build-$(PRODUCT)
+	dh_auto_clean --builddirectory=build-xulrunner
+	find . -name "*.pyc" -o -name "*.pyo" | xargs --no-run-if-empty rm -f
+
+	for dir in $(AUTOCONF_DIRS); do \
+		for file in config.guess config.sub; do \
+			sed -i '2!b;/^exec "/ d' $$dir/$$file; \
+		done; \
+	done
+
+override_dh_auto_install: stamps/install-$(PRODUCT) stamps/install-xulrunner
+
+stamps/install-xulrunner:: build-xulrunner/debian/installer/package-manifest
+	dh_auto_install --sourcedirectory=build-xulrunner/xulrunner/installer -- \
+		MOZ_APP_BASE_VERSION=$(GRE_VERSION) \
+		MOZ_PKG_MANIFEST=$(CURDIR)/$< \
+		MOZ_NONLOCALIZED_PKG_LIST="xpcom xulrunner debian" \
+		MOZ_LOCALIZED_PKG_LIST=en-US \
+		SIGN_NSS=
+
+	mv debian/tmp/usr/bin/xulrunner debian/tmp/usr/bin/xulrunner-$(GRE_VERSION)
+
+	# Fixup permissions
+	find debian/tmp/usr/share debian/tmp/usr/include -type f -print0 | xargs -0 chmod 644
+
+	# Replace some installed files by symlinks
+	for d in lib bin; do \
+		cd "$(CURDIR)/debian/tmp/usr/lib/xulrunner-devel-$(GRE_VERSION)/sdk/$$d"; \
+		for f in *; do \
+			if [ -f "$(CURDIR)/debian/tmp/usr/lib/xulrunner-$(GRE_VERSION)/$$f" ]; then \
+				rm -f $$f ; ln -s /usr/lib/xulrunner-$(GRE_VERSION)/$$f $$f; \
+			fi; \
+		done; \
+	done
+
+	dh_auto_install --sourcedirectory=build-xulrunner/js/src -- prefix=/usr MODULE=mozjs FORCE_STATIC_LIB= _MOZBUILD_EXTERNAL_VARIABLES= REAL_LIBRARY=
+	cp -r debian/tmp/usr/include/xulrunner-$(GRE_VERSION)/js debian/tmp/usr/include/mozjs
+	mv debian/tmp/usr/lib/pkgconfig/mozjs.pc debian/tmp/usr/lib/pkgconfig/mozilla-js.pc
+	rm debian/tmp/usr/bin/js-config
+	find debian/tmp/usr/include/mozjs -type f -printf %P\\n | while read f; do \
+		file=$$(echo debian/tmp/usr/include/xulrunner-$(GRE_VERSION)/$$f); \
+		rm $$file; \
+		ln -s /usr/include/mozjs/$$f $$file; \
+	done
+	for f in /usr/include/nspr/* /usr/include/nss/*; do \
+		ln -s $$f debian/tmp/usr/include/xulrunner-$(GRE_VERSION)/$$(basename $$f); \
+	done
+	for h in $$(grep -l -r EXPORTS build-xulrunner/media | grep Makefile$ | \
+		while read f; do $(MAKE) --no-print-directory -C $$(dirname $$f) echo-variable-EXPORTS echo-variable-EXPORTS_NAMESPACES; done); do \
+		rm -rf debian/tmp/usr/include/xulrunner-$(GRE_VERSION)/$$h; \
+	done
+
+	mv debian/tmp/usr/bin/js debian/tmp/usr/bin/smjs
+
+	sed -i '/^Cflags/ s,$${includedir},/usr/include/mozjs,' debian/tmp/usr/lib/pkgconfig/mozilla-js.pc
+
+stamps/install-$(PRODUCT):: build-$(PRODUCT)/debian/installer/package-manifest
+	dh_auto_install --builddirectory=build-$(PRODUCT) -- installdir=$(LIB_DIR) \
+		MOZ_PKG_FATAL_WARNINGS=0 \
+		MOZ_PKG_MANIFEST=$(CURDIR)/$<
+
+MPL: LICENSE
+	cp -f $< $@
+
+override_dh_installdocs: MPL
+	dh_installdocs -A $^
+
+L10N_DH_INSTALL_STAMPS = $(foreach lang,$(L10N_LANGS),stamps/dh_install-l10n-$(lang))
+stamps/dh_install-l10n:: $(L10N_DH_INSTALL_STAMPS)
+
+$(L10N_DH_INSTALL_STAMPS):: stamps/dh_install-l10n-%: stamps/build-l10n-%
+	dh_install -p$($(PRODUCT))-l10n-$(call lc,$*) build-$(PRODUCT)/dist/xpi/langpack-$*@$($(PRODUCT)).mozilla.org.xpi usr/lib/$($(PRODUCT))/browser/extensions/
+	dh_install -p$($(PRODUCT))-l10n-$(call lc,$*) build-$(PRODUCT)/dist/xpi-stage/locale-$*/browser/searchplugins/* /etc/$($(PRODUCT))/searchplugins/locale/$*/
+
+branding_icon = $(or $(wildcard $(BRANDING)/$(1)),$(wildcard build-$(PRODUCT)/$(BRANDING)/$(1)))
+
+stamps/dh_install:: debian/dh/dh_xulrunner debian/noinstall build-xulrunner/dist/bin/npapi_getinfo
+	awk '{print "debian/tmp/" $$1 }' < debian/noinstall | xargs rm -r
+	dh_install --fail-missing
+
+# Install icons
+	install -d -m 755 debian/$($(PRODUCT))/usr/share/icons/hicolor/16x16/apps
+	install -m 644 $(call branding_icon,default16.png) \
+		debian/$($(PRODUCT))/usr/share/icons/hicolor/16x16/apps/$($(PRODUCT)).png
+	install -d -m 755 debian/$($(PRODUCT))/usr/share/icons/hicolor/32x32/apps
+	install -m 644 $(call branding_icon,default32.png) \
+		debian/$($(PRODUCT))/usr/share/icons/hicolor/32x32/apps/$($(PRODUCT)).png
+	install -d -m 755 debian/$($(PRODUCT))/usr/share/icons/hicolor/64x64/apps
+	install -m 644 $(call branding_icon,content/icon64.png) \
+		debian/$($(PRODUCT))/usr/share/icons/hicolor/64x64/apps/$($(PRODUCT)).png
+ifeq ($(BRANDING),debian/branding)
+	install -d -m 755 debian/$($(PRODUCT))/usr/share/icons/hicolor/scalable/apps
+	install -m 644 debian/branding/iceweasel_icon.svg \
+		debian/iceweasel/usr/share/icons/hicolor/scalable/apps/iceweasel.svg
+endif
+
+CMP_AWK := '$$0 !~ /^\t/ { txt = txt ? txt "\n" $$0 : $$0 } END { if (txt != expected) { print "Expected:\n" expected "\nGot:\n" txt; exit 1 }}'
+
+stamps/check-dh_xulrunner-glue:: stamps/dh_install debian/dh/dh_xulrunner
+	# Make sure dh_xulrunner is able to spot the current XPCOM standalone glue.
+	perl debian/dh/dh_xulrunner_test -pxulrunner-$(GRE_VERSION) | awk -v expected='addsubstvar("xulrunner-$(GRE_VERSION)", "shlibs:Depends", "xulrunner-$(GRE_VERSION)");' $(CMP_AWK)
+
+stamps/check-dh_xulrunner-npapi:: stamps/dh_install debian/dh/dh_xulrunner build-xulrunner/dist/bin/npapi_getinfo
+	$(if $(wildcard build-xulrunner/tmp/usr/lib/mozilla),,mkdir -p build-xulrunner/tmp/usr/lib/mozilla/)
+	$(if $(wildcard build-xulrunner/tmp/usr/lib/mozilla/plugins),,ln -s $(CURDIR)/build-xulrunner/dist/plugins build-xulrunner/tmp/usr/lib/mozilla)
+	PATH=build-xulrunner/dist/bin:$(PATH) perl debian/dh/dh_xulrunner_test -p$($(PRODUCT)) -Pbuild-xulrunner/tmp | awk -v expected='addsubstvar("$($(PRODUCT))", "npapi:Mimetypes", "application/x-second-test, application/x-test");' $(CMP_AWK)
+
+override_dh_install: stamps/check-dh_xulrunner-glue stamps/check-dh_xulrunner-npapi
+
+override_dh_strip:
+	dh_strip -a -N$($(PRODUCT)) -Nlibmozjs$(JS_SO_VERSION) -Nspidermonkey-bin --dbg-package=xulrunner-$(GRE_VERSION)-dbg
+	dh_strip -p$($(PRODUCT)) --dbg-package=$($(PRODUCT))-dbg
+	dh_strip -plibmozjs$(JS_SO_VERSION) --dbg-package=libmozjs$(JS_SO_VERSION)-dbg
+	dh_strip -pspidermonkey-bin
+
+override_dh_shlibdeps:
+	dh_shlibdeps -a -l$(CURDIR)/debian/tmp/usr/lib/xulrunner-$(GRE_VERSION) -Xlibdbusservice
+	LD_LIBRARY_PATH=$(CURDIR)/debian/tmp/usr/lib/xulrunner-$(GRE_VERSION) dpkg-shlibdeps -Tdebian/xulrunner-$(GRE_VERSION).substvars -dDepends -pgnome $(foreach lib,dbusservice,debian/xulrunner-$(GRE_VERSION)/usr/lib/xulrunner-$(GRE_VERSION)/components/lib$(lib).so)
+
+override_dh_gencontrol:
+	dh_gencontrol$(foreach pkg,$(L10N_PACKAGES) $($(PRODUCT))-l10n-all, -p$(pkg)) -- -v1:$(DEBIAN_VERSION)
+	dh_gencontrol$(foreach pkg,$(L10N_PACKAGES) $($(PRODUCT))-l10n-all, -N$(pkg))
+
+override_dh_builddeb:
+	dh_builddeb -- -Zxz
+
+install binary binary-arch binary-indep: $(GENERATED_FILES)
+
+binary binary-indep: stamps/dh_install-l10n
+
+binary binary-arch binary-indep build clean install:
+	dh $@
+
+.PHONY: build clean binary-indep binary-arch binary install
+
+.NOTPARALLEL:
+
+$(shell awk -F:: '$$1 ~ /^stamps\// && !/%/ { print $$1 }' debian/rules) stamps/dummy $(L10N_BUILD_STAMPS) $(L10N_DH_INSTALL_STAMPS)::
+	@mkdir -p stamps
+	$(if $(wildcard $@),,touch $@)
+endif

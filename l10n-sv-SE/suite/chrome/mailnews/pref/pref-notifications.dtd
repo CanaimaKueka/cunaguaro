@@ -1,0 +1,24 @@
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+
+<!ENTITY pref.notifications.title         "Varskoendesignaler">
+<!ENTITY notifications.caption            "Varskoendesignaler">
+<!ENTITY newMessagesArrive.label          "När nya meddelanden kommer:">
+<!ENTITY playSound.label                  "Ge en ljudsignal">
+<!ENTITY playSound.accesskey              "l">
+<!ENTITY showAnimatedAlert.label          "Visa en notifiering">
+<!ENTITY showAnimatedAlert.accesskey      "V">
+<!ENTITY showTrayIcon.label               "Visa en fältikon">
+<!ENTITY showTrayIcon.accesskey           "i">
+<!ENTITY bounceSystemDockIcon.label       "Animera dockikonen">
+<!ENTITY bounceSystemDockIcon.accesskey   "A">
+<!ENTITY playButton.label                 "Spela">
+<!ENTITY playButton.accesskey             "l">
+<!ENTITY systemsound.label                "Systemljudsignal för ny e-post">
+<!ENTITY systemsound.accesskey            "m">
+<!ENTITY customsound.label                "Egen ljudfil">
+<!ENTITY customsound.accesskey            "E">
+<!ENTITY browse.label                     "Välj…">
+<!ENTITY browse.accesskey                 "ä">
+<!ENTITY browse.title                     "Välj fil">

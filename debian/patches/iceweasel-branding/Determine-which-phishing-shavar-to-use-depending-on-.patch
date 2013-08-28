@@ -1,0 +1,41 @@
+From: Mike Hommey <mh@glandium.org>
+Date: Thu, 1 Apr 2010 15:34:59 +0200
+Subject: Determine which phishing shavar to use depending on
+ MOZ_OFFICIAL_BRANDING
+
+---
+ browser/app/Makefile.in        | 4 ++++
+ browser/app/profile/firefox.js | 4 ++++
+ 2 files changed, 8 insertions(+)
+
+diff --git a/browser/app/Makefile.in b/browser/app/Makefile.in
+index 55b6138..aa8d1dc 100644
+--- a/browser/app/Makefile.in
++++ b/browser/app/Makefile.in
+@@ -143,6 +143,10 @@ libs::
+ 	$(INSTALL) $(IFLAGS1) $(DIST)/branding/default48.png  $(FINAL_TARGET)/chrome/icons/default
+ endif
+ 
++ifdef MOZ_OFFICIAL_BRANDING
++DEFINES += -DMOZ_OFFICIAL_BRANDING
++endif
++
+ libs:: $(srcdir)/profile/prefs.js
+ 	$(INSTALL) $(IFLAGS1) $^ $(FINAL_TARGET)/defaults/profile
+ 
+diff --git a/browser/app/profile/firefox.js b/browser/app/profile/firefox.js
+index f59046e..a63b0b3 100644
+--- a/browser/app/profile/firefox.js
++++ b/browser/app/profile/firefox.js
+@@ -762,7 +762,11 @@ pref("urlclassifier.alternate_error_page", "blocked");
+ pref("urlclassifier.gethashnoise", 4);
+ 
+ // The list of tables that use the gethash request to confirm partial results.
++#ifdef MOZ_OFFICIAL_BRANDING
+ pref("urlclassifier.gethashtables", "goog-phish-shavar,goog-malware-shavar");
++#else
++pref("urlclassifier.gethashtables", "googpub-phish-shavar,goog-malware-shavar");
++#endif
+ 
+ // If an urlclassifier table has not been updated in this number of seconds,
+ // a gethash request will be forced to check that the result is still in

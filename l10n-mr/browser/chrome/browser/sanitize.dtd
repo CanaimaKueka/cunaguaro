@@ -1,0 +1,45 @@
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+
+<!ENTITY itemPasswords.label "पासवर्ड संचयीत केले">
+<!ENTITY itemPasswords.accesskey "P">
+<!ENTITY itemCookies.label "कुकीज">
+<!ENTITY itemCookies.accesskey "C">
+<!ENTITY itemOfflineApps.label        "ऑफलाइन संकेतस्थळ माहिती">
+<!ENTITY itemOfflineApps.accesskey    "O">
+
+<!ENTITY sanitizeDialog2.title         "अलिकडील इतिहास नष्ट करा">
+<!ENTITY clearDataSettings2.label     "&brandShortName; पासू बाहेर पडल्यास, सर्व आपोआप नष्ट व्हायला हवे:">
+
+<!ENTITY historySection.label         "इतिहास">
+<!ENTITY dataSection.label            "माहिती">
+
+<!ENTITY itemActiveLogins.label       "सक्रीय दाखलन">
+<!ENTITY itemActiveLogins.accesskey   "L">
+<!ENTITY clearTimeDuration.label          "पूसण्याकरीता वेळ क्षेत्र: ">
+<!ENTITY clearTimeDuration.accesskey      "T">
+<!ENTITY clearTimeDuration.lastHour       "शेवटचा तास">
+<!ENTITY clearTimeDuration.last2Hours     "शेवटचे दोन तास">
+<!ENTITY clearTimeDuration.last4Hours     "शेवटचे चार तास">
+<!ENTITY clearTimeDuration.today          "आज">
+<!ENTITY clearTimeDuration.everything     "सगळं काही">
+<!ENTITY clearTimeDuration.suffix         "">
+<!ENTITY clearTimeDuration.dateColumn     "भेट दिनांक">
+<!ENTITY clearTimeDuration.nameColumn     "नाव">
+
+<!ENTITY detailsProgressiveDisclosure.label     "तपशील">
+<!ENTITY detailsProgressiveDisclosure.accesskey "e">
+<!ENTITY itemHistoryAndDownloads.label     "इतिहास संचार व डाऊनलोड करत आहे">
+<!ENTITY itemHistoryAndDownloads.accesskey "B">
+<!ENTITY itemFormSearchHistory.label       "फॉर्म &amp; इतिहास शोधा">
+<!ENTITY itemFormSearchHistory.accesskey   "F">
+<!ENTITY itemCache.label                   "कॅशे">
+<!ENTITY itemCache.accesskey               "A">
+<!ENTITY itemSitePreferences.label         "स्थळ आवड निवड">
+<!ENTITY itemSitePreferences.accesskey     "S">
+<!ENTITY sanitizeEverythingUndoWarning     "ही कृती रद्द करणे अशक्य.">
+<!ENTITY sanitizePrefs2.title          "इतिहास पूसण्याकरीता संयोजना">
+<!ENTITY column.width2                 "17em">
+<!ENTITY dialog.width2                 "34em">
+

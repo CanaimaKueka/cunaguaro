@@ -1,0 +1,11 @@
+<!ENTITY identitiesListAdd.label "Amestar…">
+<!ENTITY identitiesListAdd.accesskey "A">
+<!ENTITY identitiesListEdit.label "Editar…">
+<!ENTITY identitiesListEdit.accesskey "E">
+<!ENTITY identitiesListDelete.label "Desaniciar">
+<!ENTITY identitiesListDelete.accesskey "r">
+<!ENTITY identitiesListClose.label "Zarrar">
+<!ENTITY identitiesListClose.accesskey "Z">
+<!ENTITY identitiesListManageDesc.label "Alministra les identidaes d'esta cuenta. Úsase por defeutu la primera identidá.">
+<!ENTITY identitiesListDefault.label "Afitar predet">
+<!ENTITY identitiesListDefault.accesskey "i">
