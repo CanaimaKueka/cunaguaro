@@ -1,9 +1,3 @@
-cunaguaro (23.0-1~bpo70+1) UNRELEASED; urgency=low
-
-  * Rebuild for wheezy-backports.
-
- -- Mike Hommey <glandium@debian.org>  Wed, 07 Aug 2013 09:59:38 +0900
-
 cunaguaro (23.0-1) experimental; urgency=low
 
   * New upstream release.
