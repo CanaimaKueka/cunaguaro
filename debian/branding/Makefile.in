@@ -33,7 +33,7 @@ export:: $(BROWSER_APP_FILES)
 	$(NSINSTALL) -D $(DIST)/branding
 	cp $(BROWSER_APP_FILES) $(DIST)/branding/
 
-GARBAGE += iceweasel.png
+GARBAGE += cunaguaro.png
 
 default64.png: SIZE=64
 mozicon128.png: SIZE=128
@@ -42,10 +42,10 @@ default32.png: SIZE=32
 default48.png: SIZE=48
 GARBAGE += document_icon.png default64.png
 
-mozicon128.png default16.png default32.png default48.png default64.png: $(srcdir)/iceweasel_icon.svg
+mozicon128.png default16.png default32.png default48.png default64.png: $(srcdir)/cunaguaro_icon.svg
 	rsvg-convert -w $(SIZE) -h $(SIZE) -o $@ $<
 
-iceweasel_logo.png: $(srcdir)/iceweasel_logo.svg
+cunaguaro_logo.png: $(srcdir)/cunaguaro_logo.svg
 	rsvg-convert -w 256 -a -o $@ $<
 
-GARBAGE += iceweasel_logo.png
+GARBAGE += cunaguaro_logo.png

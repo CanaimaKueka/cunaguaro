@@ -3,8 +3,8 @@ Date: Sat, 21 Jun 2008 03:09:21 +0200
 Subject: Add another preferences directory for applications:
  preferences/syspref
 
-It was existing in previous versions of iceweasel as a symlink to
-/etc/iceweasel/pref.
+It was existing in previous versions of cunaguaro as a symlink to
+/etc/cunaguaro/pref.
 
 This has the side effect to make these preferences there work again, and
 to disable the "set as default browser" dialog.

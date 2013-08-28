@@ -229,7 +229,7 @@ build-$(PRODUCT)/%/filelist: stamps/build-$(PRODUCT) build-$(PRODUCT)/%/Makefile
 	cd build-$(PRODUCT)/$*/dist/bin && find -type f | sort > $(CURDIR)/$@
 
 stamps/build-check-branding:: build-$(PRODUCT)/$(OFFICIAL_BRANDING)/filelist build-$(PRODUCT)/$(BRANDING)/filelist
-# Ensure the iceweasel branding contains everything it's supposed to
+# Ensure the cunaguaro branding contains everything it's supposed to
 	diff $^
 endif
 endif
@@ -346,8 +346,8 @@ stamps/dh_install:: debian/dh/dh_xulrunner debian/noinstall build-xulrunner/dist
 		debian/$($(PRODUCT))/usr/share/icons/hicolor/64x64/apps/$($(PRODUCT)).png
 ifeq ($(BRANDING),debian/branding)
 	install -d -m 755 debian/$($(PRODUCT))/usr/share/icons/hicolor/scalable/apps
-	install -m 644 debian/branding/iceweasel_icon.svg \
-		debian/iceweasel/usr/share/icons/hicolor/scalable/apps/iceweasel.svg
+	install -m 644 debian/branding/cunaguaro_icon.svg \
+		debian/cunaguaro/usr/share/icons/hicolor/scalable/apps/cunaguaro.svg
 endif
 
 CMP_AWK := '$$0 !~ /^\t/ { txt = txt ? txt "\n" $$0 : $$0 } END { if (txt != expected) { print "Expected:\n" expected "\nGot:\n" txt; exit 1 }}'
