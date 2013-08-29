@@ -1,5 +1,6 @@
 cunaguaro (23.0-2) kerepakupai; urgency=low
 
+  * [788d91c] Listando SHELL entre las variables a exportar.
   * [8de333d] Cambiando página de inicio para la bienvenida. Corrigiendo
     bug del no reconocimiento de una shell cuando se está en chroot.
   * [99da239] Removiendo .gitignore.
