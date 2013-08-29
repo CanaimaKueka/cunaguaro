@@ -109,6 +109,8 @@ CXX := g++
 endif
 CXXFLAGS = $(CFLAGS)
 
+SHELL = /bin/sh
+
 EXPORTS := CC CXX CFLAGS CXXFLAGS CPPFLAGS MOZILLA_OFFICIAL
 $(call lazy,CONFIGURE_ENV,$$(foreach export,$(EXPORTS),$$(export)="$$($$(export))"))
 
