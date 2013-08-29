@@ -1,5 +1,7 @@
-cunaguaro (23.0-2) experimental; urgency=low
+cunaguaro (23.0-2) kerepakupai; urgency=low
 
+  * [8de333d] Cambiando página de inicio para la bienvenida. Corrigiendo
+    bug del no reconocimiento de una shell cuando se está en chroot.
   * [99da239] Removiendo .gitignore.
   * [e975fb7] Agregando script de conversión a Cunaguaro.
   * [46cddc7] Convirtiendo Iceweasel a Cunaguaro.
