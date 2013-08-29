@@ -1,5 +1,6 @@
 cunaguaro (23.0-2) experimental; urgency=low
 
+  * [99da239] Removiendo .gitignore.
   * [e975fb7] Agregando script de conversión a Cunaguaro.
   * [46cddc7] Convirtiendo Iceweasel a Cunaguaro.
   * [a3ca877] Agregando parches desde Cunaguaro 22.
