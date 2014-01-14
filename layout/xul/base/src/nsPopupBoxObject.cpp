@@ -13,7 +13,11 @@
 #include "nsINameSpaceManager.h"
 #include "nsGkAtoms.h"
 #include "nsMenuPopupFrame.h"
-#include "nsClientRect.h"
+#include "nsView.h"
+#include "mozilla/AppUnits.h"
+#include "mozilla/dom/DOMRect.h"
+
+using namespace mozilla::dom;
 
 class nsPopupBoxObject : public nsBoxObject,
                          public nsIPopupBoxObject
@@ -277,7 +281,7 @@ nsPopupBoxObject::GetAnchorNode(nsIDOMElement** aAnchor)
 NS_IMETHODIMP
 nsPopupBoxObject::GetOuterScreenRect(nsIDOMClientRect** aRect)
 {
-  nsClientRect* rect = new nsClientRect(mContent);
+  DOMRect* rect = new DOMRect(mContent);
 
   NS_ADDREF(*aRect = rect);
 
@@ -352,6 +356,23 @@ nsPopupBoxObject::GetAlignmentPosition(nsAString& positionStr)
       break;
   }
 
+  return NS_OK;
+}
+
+NS_IMETHODIMP
+nsPopupBoxObject::GetAlignmentOffset(int32_t *aAlignmentOffset)
+{
+  nsMenuPopupFrame *menuPopupFrame = do_QueryFrame(GetFrame(false));
+  if (!menuPopupFrame)
+    return NS_OK;
+
+  int32_t pp = mozilla::AppUnitsPerCSSPixel();
+  // Note that the offset might be along either the X or Y axis, but for the
+  // sake of simplicity we use a point with only the X axis set so we can
+  // use ToNearestPixels().
+  nsPoint appOffset(menuPopupFrame->GetAlignmentOffset(), 0);
+  nsIntPoint popupOffset = appOffset.ToNearestPixels(pp);
+  *aAlignmentOffset = popupOffset.x;
   return NS_OK;
 }
 

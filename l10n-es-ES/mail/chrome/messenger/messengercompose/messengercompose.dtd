@@ -46,6 +46,8 @@
 <!ENTITY sendLaterCmd.accesskey "t">
 <!ENTITY printSetupCmd.label "Configurar página…">
 <!ENTITY printSetupCmd.accesskey "u">
+<!ENTITY printPreviewCmd.label "Vista preliminar">
+<!ENTITY printPreviewCmd.accesskey "v">
 <!ENTITY printCmd.label "Imprimir…">
 <!ENTITY printCmd.key "P">
 <!ENTITY printCmd.accesskey "P">
@@ -81,6 +83,7 @@
 <!ENTITY findCmd.label "Buscar y reemplazar…">
 <!ENTITY findCmd.key "F">
 <!ENTITY findCmd.accesskey "B">
+<!ENTITY findReplaceCmd.key "H">
 <!ENTITY findAgainCmd.label "Repetir la búsqueda">
 <!ENTITY findAgainCmd.key "G">
 <!ENTITY findAgainCmd.accesskey "q">

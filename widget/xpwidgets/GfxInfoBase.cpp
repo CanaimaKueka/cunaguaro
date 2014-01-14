@@ -87,7 +87,7 @@ void InitGfxDriverInfoShutdownObserver()
 using namespace mozilla::widget;
 using namespace mozilla;
 
-NS_IMPL_THREADSAFE_ISUPPORTS3(GfxInfoBase, nsIGfxInfo, nsIObserver, nsISupportsWeakReference)
+NS_IMPL_ISUPPORTS3(GfxInfoBase, nsIGfxInfo, nsIObserver, nsISupportsWeakReference)
 
 #define BLACKLIST_PREF_BRANCH "gfx.blacklist."
 #define SUGGESTED_VERSION_PREF BLACKLIST_PREF_BRANCH "suggested-driver-version"
@@ -211,6 +211,8 @@ BlacklistOSToOperatingSystem(const nsAString& os)
     return DRIVER_OS_WINDOWS_7;
   else if (os == NS_LITERAL_STRING("WINNT 6.2"))
     return DRIVER_OS_WINDOWS_8;
+  else if (os == NS_LITERAL_STRING("WINNT 6.3"))
+    return DRIVER_OS_WINDOWS_8_1;
   else if (os == NS_LITERAL_STRING("Linux"))
     return DRIVER_OS_LINUX;
   else if (os == NS_LITERAL_STRING("Darwin 9"))

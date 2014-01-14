@@ -13,13 +13,11 @@
 #include "prrng.h"
 #endif
 
-#include "nsMemory.h"
-
 #include "nsUUIDGenerator.h"
 
 using namespace mozilla;
 
-NS_IMPL_THREADSAFE_ISUPPORTS1(nsUUIDGenerator, nsIUUIDGenerator)
+NS_IMPL_ISUPPORTS1(nsUUIDGenerator, nsIUUIDGenerator)
 
 nsUUIDGenerator::nsUUIDGenerator()
     : mLock("nsUUIDGenerator.mLock")
@@ -124,7 +122,7 @@ nsUUIDGenerator::GenerateUUIDInPlace(nsID* id)
     while (bytesLeft > 0) {
 #ifdef ANDROID
         long rval = arc4random();
-        const int mRBytes = 4;
+        const size_t mRBytes = 4;
 #else
         long rval = random();
 #endif

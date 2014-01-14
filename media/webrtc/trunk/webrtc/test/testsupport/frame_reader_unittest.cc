@@ -8,10 +8,10 @@
  *  be found in the AUTHORS file in the root of the source tree.
  */
 
-#include "testsupport/frame_reader.h"
+#include "webrtc/test/testsupport/frame_reader.h"
 
-#include "gtest/gtest.h"
-#include "testsupport/fileutils.h"
+#include "testing/gtest/include/gtest/gtest.h"
+#include "webrtc/test/testsupport/fileutils.h"
 
 namespace webrtc {
 namespace test {
@@ -20,7 +20,7 @@ const std::string kInputFilename = "temp_inputfile.tmp";
 const std::string kInputFileContents = "baz";
 // Setting the kFrameLength value to a value much larger than the
 // file to test causes the ReadFrame test to fail on Windows.
-const int kFrameLength = 1000;
+const size_t kFrameLength = 1000;
 
 class FrameReaderTest: public testing::Test {
  protected:
@@ -54,7 +54,7 @@ TEST_F(FrameReaderTest, InitSuccess) {
 }
 
 TEST_F(FrameReaderTest, ReadFrame) {
-  WebRtc_UWord8 buffer[3];
+  uint8_t buffer[3];
   bool result = frame_reader_->ReadFrame(buffer);
   ASSERT_FALSE(result);  // No more files to read.
   ASSERT_EQ(kInputFileContents[0], buffer[0]);
@@ -63,7 +63,7 @@ TEST_F(FrameReaderTest, ReadFrame) {
 }
 
 TEST_F(FrameReaderTest, ReadFrameUninitialized) {
-  WebRtc_UWord8 buffer[3];
+  uint8_t buffer[3];
   FrameReaderImpl file_reader(kInputFilename, kFrameLength);
   ASSERT_FALSE(file_reader.ReadFrame(buffer));
 }

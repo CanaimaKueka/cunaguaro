@@ -7,36 +7,24 @@
 #ifndef WebSocket_h__
 #define WebSocket_h__
 
-#include "mozilla/Util.h"
-
-#include "nsWrapperCache.h"
-#include "nsIWebSocketListener.h"
-#include "nsISupports.h"
-
-#include "mozilla/ErrorResult.h"
+#include "mozilla/Attributes.h"
 #include "mozilla/dom/TypedArray.h"
-#include "mozilla/dom/BindingUtils.h"
-#include "mozilla/dom/EventHandlerBinding.h"
-
-// Need this for BinaryType.
-#include "mozilla/dom/WebSocketBinding.h"
-
-#include "jsfriendapi.h"
-#include "nsISupportsUtils.h"
-#include "nsCOMPtr.h"
-#include "nsString.h"
-#include "nsIPrincipal.h"
-#include "nsCycleCollectionParticipant.h"
-#include "nsIDOMEventListener.h"
-#include "nsDOMEventTargetHelper.h"
+#include "mozilla/dom/WebSocketBinding.h" // for BinaryType
+#include "mozilla/ErrorResult.h"
 #include "nsAutoPtr.h"
-#include "nsIDOMDOMStringList.h"
+#include "nsCOMPtr.h"
+#include "nsCycleCollectionParticipant.h"
+#include "nsDOMEventTargetHelper.h"
 #include "nsIInterfaceRequestor.h"
-#include "nsIWebSocketChannel.h"
-#include "nsIWebSocketListener.h"
 #include "nsIObserver.h"
 #include "nsIRequest.h"
+#include "nsISupports.h"
+#include "nsISupportsUtils.h"
+#include "nsIWebSocketChannel.h"
+#include "nsIWebSocketListener.h"
+#include "nsString.h"
 #include "nsWeakReference.h"
+#include "nsWrapperCache.h"
 
 #define DEFAULT_WS_SCHEME_PORT  80
 #define DEFAULT_WSS_SCHEME_PORT 443
@@ -71,26 +59,11 @@ public:
   NS_DECL_NSIOBSERVER
   NS_DECL_NSIREQUEST
 
-  // nsIDOMEventTarget
-  NS_IMETHOD AddEventListener(const nsAString& aType,
-                              nsIDOMEventListener *aListener,
-                              bool aUseCapture,
-                              bool aWantsUntrusted,
-                              uint8_t optional_argc);
-  virtual void AddEventListener(const nsAString& aType,
-                                nsIDOMEventListener* aListener,
-                                bool aCapture,
-                                const Nullable<bool>& aWantsUntrusted,
-                                ErrorResult& aRv) MOZ_OVERRIDE;
-  NS_IMETHOD RemoveEventListener(const nsAString& aType,
-                                 nsIDOMEventListener* aListener,
-                                 bool aUseCapture);
-  virtual void RemoveEventListener(const nsAString& aType,
-                                   nsIDOMEventListener* aListener,
-                                   bool aUseCapture,
-                                   ErrorResult& aRv) MOZ_OVERRIDE;
+  // EventTarget
+  virtual void EventListenerAdded(nsIAtom* aType) MOZ_OVERRIDE;
+  virtual void EventListenerRemoved(nsIAtom* aType) MOZ_OVERRIDE;
 
-  virtual void DisconnectFromOwner();
+  virtual void DisconnectFromOwner() MOZ_OVERRIDE;
 
   // nsWrapperCache
   nsPIDOMWindow* GetParentObject() { return GetOwner(); }
@@ -107,18 +80,15 @@ public: // WebIDL interface:
 
   // Constructor:
   static already_AddRefed<WebSocket> Constructor(const GlobalObject& aGlobal,
-                                                 JSContext *aCx,
                                                  const nsAString& aUrl,
                                                  ErrorResult& rv);
 
   static already_AddRefed<WebSocket> Constructor(const GlobalObject& aGlobal,
-                                                 JSContext *aCx,
                                                  const nsAString& aUrl,
                                                  const nsAString& aProtocol,
                                                  ErrorResult& rv);
 
   static already_AddRefed<WebSocket> Constructor(const GlobalObject& aGlobal,
-                                                 JSContext *aCx,
                                                  const nsAString& aUrl,
                                                  const Sequence<nsString>& aProtocols,
                                                  ErrorResult& rv);
@@ -164,9 +134,9 @@ public: // WebIDL interface:
             ErrorResult& aRv);
   void Send(nsIDOMBlob* aData,
             ErrorResult& aRv);
-  void Send(ArrayBuffer& aData,
+  void Send(const ArrayBuffer& aData,
             ErrorResult& aRv);
-  void Send(ArrayBufferView& aData,
+  void Send(const ArrayBufferView& aData,
             ErrorResult& aRv);
 
 private: // constructor && distructor

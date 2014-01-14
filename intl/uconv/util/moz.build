@@ -6,3 +6,19 @@
 
 MODULE = 'uconv'
 
+SOURCES += [
+    'UnifiedUCVUtils.cpp',
+]
+
+LIBRARY_NAME = 'ucvutil_s'
+
+LIBXUL_LIBRARY = True
+
+SOURCES += [
+    'UnifiedUCVCUtils.c',
+]
+
+MSVC_ENABLE_PGO = True
+
+EXPORT_LIBRARY = True
+

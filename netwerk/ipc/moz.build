@@ -22,3 +22,29 @@ EXPORTS.mozilla.net += [
     'RemoteOpenFileParent.h',
 ]
 
+SOURCES += [
+    'ChannelEventQueue.cpp',
+    'NeckoChild.cpp',
+    'NeckoCommon.cpp',
+    'NeckoParent.cpp',
+    'RemoteOpenFileChild.cpp',
+    'RemoteOpenFileParent.cpp',
+]
+
+IPDL_SOURCES = [
+    'NeckoChannelParams.ipdlh',
+    'PNecko.ipdl',
+    'PRemoteOpenFile.ipdl',
+    'PRtspController.ipdl',
+]
+
+FAIL_ON_WARNINGS = True
+
+LIBXUL_LIBRARY = True
+
+LIBRARY_NAME = 'neckoipc_s'
+
+EXPORT_LIBRARY = True
+
+include('/ipc/chromium/chromium-config.mozbuild')
+

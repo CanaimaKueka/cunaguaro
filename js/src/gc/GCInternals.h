@@ -4,10 +4,12 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef jsgc_internal_h___
-#define jsgc_internal_h___
+#ifndef gc_GCInternals_h
+#define gc_GCInternals_h
 
-#include "jsapi.h"
+#include "jsworkers.h"
+
+#include "vm/Runtime.h"
 
 namespace js {
 namespace gc {
@@ -18,7 +20,8 @@ MarkRuntime(JSTracer *trc, bool useSavedRoots = false);
 void
 BufferGrayRoots(GCMarker *gcmarker);
 
-class AutoCopyFreeListToArenas {
+class AutoCopyFreeListToArenas
+{
     JSRuntime *runtime;
 
   public:
@@ -35,7 +38,8 @@ struct AutoFinishGC
  * This class should be used by any code that needs to exclusive access to the
  * heap in order to trace through it...
  */
-class AutoTraceSession {
+class AutoTraceSession
+{
   public:
     AutoTraceSession(JSRuntime *rt, HeapState state = Tracing);
     ~AutoTraceSession();
@@ -53,6 +57,7 @@ class AutoTraceSession {
 struct AutoPrepareForTracing
 {
     AutoFinishGC finish;
+    AutoPauseWorkersForTracing pause;
     AutoTraceSession session;
     AutoCopyFreeListToArenas copy;
 
@@ -66,14 +71,14 @@ class IncrementalSafety
     IncrementalSafety(const char *reason) : reason_(reason) {}
 
   public:
-    static IncrementalSafety Safe() { return IncrementalSafety(NULL); }
+    static IncrementalSafety Safe() { return IncrementalSafety(nullptr); }
     static IncrementalSafety Unsafe(const char *reason) { return IncrementalSafety(reason); }
 
     typedef void (IncrementalSafety::* ConvertibleToBool)();
     void nonNull() {}
 
     operator ConvertibleToBool() const {
-        return reason_ == NULL ? &IncrementalSafety::nonNull : 0;
+        return reason_ == nullptr ? &IncrementalSafety::nonNull : 0;
     }
 
     const char *reason() {
@@ -105,9 +110,43 @@ EndVerifyPostBarriers(JSRuntime *rt);
 
 void
 FinishVerifier(JSRuntime *rt);
+
+class AutoStopVerifyingBarriers
+{
+    JSRuntime *runtime;
+    bool restartPreVerifier;
+    bool restartPostVerifier;
+    MOZ_DECL_USE_GUARD_OBJECT_NOTIFIER
+
+  public:
+    AutoStopVerifyingBarriers(JSRuntime *rt, bool isShutdown
+                       MOZ_GUARD_OBJECT_NOTIFIER_PARAM)
+      : runtime(rt)
+    {
+        restartPreVerifier = !isShutdown && rt->gcVerifyPreData;
+        restartPostVerifier = !isShutdown && rt->gcVerifyPostData && rt->gcGenerationalEnabled;
+        if (rt->gcVerifyPreData)
+            EndVerifyPreBarriers(rt);
+        if (rt->gcVerifyPostData)
+            EndVerifyPostBarriers(rt);
+        MOZ_GUARD_OBJECT_NOTIFIER_INIT;
+    }
+
+    ~AutoStopVerifyingBarriers() {
+        if (restartPreVerifier)
+            StartVerifyPreBarriers(runtime);
+        if (restartPostVerifier)
+            StartVerifyPostBarriers(runtime);
+    }
+};
+#else
+struct AutoStopVerifyingBarriers
+{
+    AutoStopVerifyingBarriers(JSRuntime *, bool) {}
+};
 #endif /* JS_GC_ZEAL */
 
 } /* namespace gc */
 } /* namespace js */
 
-#endif /* jsgc_internal_h___ */
+#endif /* gc_GCInternals_h */

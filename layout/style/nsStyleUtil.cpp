@@ -7,10 +7,11 @@
 #include "nsStyleConsts.h"
 
 #include "nsIContent.h"
-#include "nsReadableUtils.h"
 #include "nsCSSProps.h"
 #include "nsRuleNode.h"
+#include "nsROCSSPrimitiveValue.h"
 #include "nsIContentSecurityPolicy.h"
+#include "nsIURI.h"
 
 using namespace mozilla;
 
@@ -157,10 +158,33 @@ nsStyleUtil::AppendBitmaskCSSValue(nsCSSProperty aProperty,
 }
 
 /* static */ void
+nsStyleUtil::AppendAngleValue(const nsStyleCoord& aAngle, nsAString& aResult)
+{
+  MOZ_ASSERT(aAngle.IsAngleValue(), "Should have angle value");
+
+  nsROCSSPrimitiveValue tmpVal;
+  nsAutoString tokenString;
+
+  // Append number.
+  tmpVal.SetNumber(aAngle.GetAngleValue());
+  tmpVal.GetCssText(tokenString);
+  aResult.Append(tokenString);
+
+  // Append unit.
+  switch (aAngle.GetUnit()) {
+    case eStyleUnit_Degree: aResult.AppendLiteral("deg");  break;
+    case eStyleUnit_Grad:   aResult.AppendLiteral("grad"); break;
+    case eStyleUnit_Radian: aResult.AppendLiteral("rad");  break;
+    case eStyleUnit_Turn:   aResult.AppendLiteral("turn"); break;
+    default: NS_NOTREACHED("unrecognized angle unit");
+  }
+}
+
+/* static */ void
 nsStyleUtil::AppendPaintOrderValue(uint8_t aValue,
                                    nsAString& aResult)
 {
-  MOZ_STATIC_ASSERT
+  static_assert
     (NS_STYLE_PAINT_ORDER_BITWIDTH * NS_STYLE_PAINT_ORDER_LAST_VALUE <= 8,
      "SVGStyleStruct::mPaintOrder and local variables not big enough");
 
@@ -170,8 +194,8 @@ nsStyleUtil::AppendPaintOrderValue(uint8_t aValue,
   }
 
   // Append the minimal value necessary for the given paint order.
-  MOZ_STATIC_ASSERT(NS_STYLE_PAINT_ORDER_LAST_VALUE == 3,
-                    "paint-order values added; check serialization");
+  static_assert(NS_STYLE_PAINT_ORDER_LAST_VALUE == 3,
+                "paint-order values added; check serialization");
 
   // The following relies on the default order being the order of the
   // constant values.
@@ -270,6 +294,118 @@ nsStyleUtil::AppendFontFeatureSettings(const nsCSSValue& aSrc,
   AppendFontFeatureSettings(featureSettings, aResult);
 }
 
+/* static */ void
+nsStyleUtil::GetFunctionalAlternatesName(int32_t aFeature,
+                                         nsAString& aFeatureName)
+{
+  aFeatureName.Truncate();
+  nsCSSKeyword key =
+    nsCSSProps::ValueToKeywordEnum(aFeature,
+                           nsCSSProps::kFontVariantAlternatesFuncsKTable);
+
+  NS_ASSERTION(key != eCSSKeyword_UNKNOWN, "bad alternate feature type");
+  AppendUTF8toUTF16(nsCSSKeywords::GetStringValue(key), aFeatureName);
+}
+
+/* static */ void
+nsStyleUtil::SerializeFunctionalAlternates(
+    const nsTArray<gfxAlternateValue>& aAlternates,
+    nsAString& aResult)
+{
+  nsAutoString funcName, funcParams;
+  uint32_t numValues = aAlternates.Length();
+
+  uint32_t feature = 0;
+  for (uint32_t i = 0; i < numValues; i++) {
+    const gfxAlternateValue& v = aAlternates.ElementAt(i);
+    if (feature != v.alternate) {
+      feature = v.alternate;
+      if (!funcName.IsEmpty() && !funcParams.IsEmpty()) {
+        if (!aResult.IsEmpty()) {
+          aResult.Append(PRUnichar(' '));
+        }
+
+        // append the previous functional value
+        aResult.Append(funcName);
+        aResult.Append(PRUnichar('('));
+        aResult.Append(funcParams);
+        aResult.Append(PRUnichar(')'));
+      }
+
+      // function name
+      GetFunctionalAlternatesName(v.alternate, funcName);
+      NS_ASSERTION(!funcName.IsEmpty(), "unknown property value name");
+
+      // function params
+      funcParams.Truncate();
+      AppendEscapedCSSIdent(v.value, funcParams);
+    } else {
+      if (!funcParams.IsEmpty()) {
+        funcParams.Append(NS_LITERAL_STRING(", "));
+      }
+      AppendEscapedCSSIdent(v.value, funcParams);
+    }
+  }
+
+    // append the previous functional value
+  if (!funcName.IsEmpty() && !funcParams.IsEmpty()) {
+    if (!aResult.IsEmpty()) {
+      aResult.Append(PRUnichar(' '));
+    }
+
+    aResult.Append(funcName);
+    aResult.Append(PRUnichar('('));
+    aResult.Append(funcParams);
+    aResult.Append(PRUnichar(')'));
+  }
+}
+
+/* static */ void
+nsStyleUtil::ComputeFunctionalAlternates(const nsCSSValueList* aList,
+                                  nsTArray<gfxAlternateValue>& aAlternateValues)
+{
+  gfxAlternateValue v;
+
+  aAlternateValues.Clear();
+  for (const nsCSSValueList* curr = aList; curr != nullptr; curr = curr->mNext) {
+    // list contains function units
+    if (curr->mValue.GetUnit() != eCSSUnit_Function) {
+      continue;
+    }
+
+    // element 0 is the propval in ident form
+    const nsCSSValue::Array *func = curr->mValue.GetArrayValue();
+
+    // lookup propval
+    nsCSSKeyword key = func->Item(0).GetKeywordValue();
+    NS_ASSERTION(key != eCSSKeyword_UNKNOWN, "unknown alternate property value");
+
+    int32_t alternate;
+    if (key == eCSSKeyword_UNKNOWN ||
+        !nsCSSProps::FindKeyword(key,
+                                 nsCSSProps::kFontVariantAlternatesFuncsKTable,
+                                 alternate)) {
+      NS_NOTREACHED("keyword not a font-variant-alternates value");
+      continue;
+    }
+    v.alternate = alternate;
+
+    // other elements are the idents associated with the propval
+    // append one alternate value for each one
+    uint32_t numElems = func->Count();
+    for (uint32_t i = 1; i < numElems; i++) {
+      const nsCSSValue& value = func->Item(i);
+      NS_ASSERTION(value.GetUnit() == eCSSUnit_Ident,
+                   "weird unit found in variant alternate");
+      if (value.GetUnit() != eCSSUnit_Ident) {
+        continue;
+      }
+      value.GetStringValue(v.value);
+      aAlternateValues.AppendElement(v);
+    }
+  }
+}
+
 /* static */ float
 nsStyleUtil::ColorComponentToFloat(uint8_t aAlpha)
 {
@@ -328,7 +464,7 @@ nsStyleUtil::CSPAllowsInlineStyle(nsIPrincipal* aPrincipal,
 
   if (csp) {
     bool inlineOK = true;
-    bool reportViolation = false;
+    bool reportViolation;
     rv = csp->GetAllowsInlineStyle(&reportViolation, &inlineOK);
     if (NS_FAILED(rv)) {
       if (aRv)
@@ -349,9 +485,9 @@ nsStyleUtil::CSPAllowsInlineStyle(nsIPrincipal* aPrincipal,
       }
 
       csp->LogViolationDetails(nsIContentSecurityPolicy::VIOLATION_TYPE_INLINE_STYLE,
-                              NS_ConvertUTF8toUTF16(asciiSpec),
-                              aStyleText,
-                              aLineNumber);
+                               NS_ConvertUTF8toUTF16(asciiSpec),
+                               aStyleText,
+                               aLineNumber);
     }
 
     if (!inlineOK) {

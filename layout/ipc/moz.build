@@ -12,3 +12,22 @@ EXPORTS.mozilla.layout += [
     'RenderFrameUtils.h',
 ]
 
+SOURCES += [
+    'RenderFrameChild.cpp',
+    'RenderFrameParent.cpp',
+]
+
+IPDL_SOURCES = [
+    'PRenderFrame.ipdl',
+]
+
+FAIL_ON_WARNINGS = True
+
+LIBXUL_LIBRARY = True
+
+LIBRARY_NAME = 'gkipc_s'
+
+EXPORT_LIBRARY = True
+
+include('/ipc/chromium/chromium-config.mozbuild')
+

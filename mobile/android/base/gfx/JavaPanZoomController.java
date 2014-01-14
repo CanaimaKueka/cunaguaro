@@ -30,9 +30,6 @@ import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
 
-import java.util.Timer;
-import java.util.TimerTask;
-
 /*
  * Handles the kinetic scrolling and zooming physics for a layer controller.
  *
@@ -77,8 +74,8 @@ class JavaPanZoomController
     // The maximum zoom factor adjustment per frame of the AUTONAV animation
     private static final float MAX_ZOOM_DELTA = 0.125f;
 
-    // Length of the bounce animation in ms
-    private static final int BOUNCE_ANIMATION_DURATION = 250;
+    // The duration of the bounce animation in ns
+    private static final int BOUNCE_ANIMATION_DURATION = 250000000;
 
     private enum PanZoomState {
         NOTHING,                /* no touch-start events received */
@@ -115,10 +112,8 @@ class JavaPanZoomController
     private final TouchEventHandler mTouchEventHandler;
     private final EventDispatcher mEventDispatcher;
 
-    /* The timer that handles flings or bounces. */
-    private Timer mAnimationTimer;
-    /* The runnable being scheduled by the animation timer. */
-    private AnimationRunnable mAnimationRunnable;
+    /* The task that handles flings, autonav or bounces. */
+    private PanZoomRenderTask mAnimationRenderTask;
     /* The zoom focus at the first zoom event (in page coordinates). */
     private PointF mLastZoomFocus;
     /* The time the last motion event took place. */
@@ -129,6 +124,13 @@ class JavaPanZoomController
     private float mAutonavZoomDelta;
     /* The user selected panning mode */
     private AxisLockMode mMode;
+    /* A medium-length tap/press is happening */
+    private boolean mMediumPress;
+    /* Used to change the scrollY direction */
+    private boolean mNegateWheelScrollY;
+
+    // Handler to be notified when overscroll occurs
+    private Overscroll mOverscroll;
 
     public JavaPanZoomController(PanZoomTarget target, View view, EventDispatcher eventDispatcher) {
         mTarget = target;
@@ -148,14 +150,32 @@ class JavaPanZoomController
 
         mMode = AxisLockMode.STANDARD;
 
-        PrefsHelper.getPref("ui.scrolling.axis_lock_mode", new PrefsHelper.PrefHandlerBase() {
+        String[] prefs = { "ui.scrolling.axis_lock_mode",
+                           "ui.scrolling.negate_wheel_scrollY",
+                           "ui.scrolling.gamepad_dead_zone" };
+        mNegateWheelScrollY = false;
+        PrefsHelper.getPrefs(prefs, new PrefsHelper.PrefHandlerBase() {
             @Override public void prefValue(String pref, String value) {
-                if (value.equals("standard")) {
-                    mMode = AxisLockMode.STANDARD;
-                } else if (value.equals("free")) {
-                    mMode = AxisLockMode.FREE;
-                } else {
-                    mMode = AxisLockMode.STICKY;
+                if (pref.equals("ui.scrolling.axis_lock_mode")) {
+                    if (value.equals("standard")) {
+                        mMode = AxisLockMode.STANDARD;
+                    } else if (value.equals("free")) {
+                        mMode = AxisLockMode.FREE;
+                    } else {
+                        mMode = AxisLockMode.STICKY;
+                    }
+                }
+            }
+
+            @Override public void prefValue(String pref, int value) {
+                if (pref.equals("ui.scrolling.gamepad_dead_zone")) {
+                    GamepadUtils.overrideDeadZoneThreshold((float)value / 1000f);
+                }
+            }
+
+            @Override public void prefValue(String pref, boolean value) {
+                if (pref.equals("ui.scrolling.negate_wheel_scrollY")) {
+                    mNegateWheelScrollY = value;
                 }
             }
 
@@ -406,7 +426,7 @@ class JavaPanZoomController
     private boolean handleTouchStart(MotionEvent event) {
         // user is taking control of movement, so stop
         // any auto-movement we have going
-        stopAnimationTimer();
+        stopAnimationTask();
 
         switch (mState) {
         case ANIMATED_ZOOM:
@@ -553,7 +573,9 @@ class JavaPanZoomController
         if (mState == PanZoomState.NOTHING || mState == PanZoomState.FLING) {
             float scrollX = event.getAxisValue(MotionEvent.AXIS_HSCROLL);
             float scrollY = event.getAxisValue(MotionEvent.AXIS_VSCROLL);
-
+            if (mNegateWheelScrollY) {
+                scrollY *= -1.0;
+            }
             scrollBy(scrollX * MAX_SCROLL, scrollY * MAX_SCROLL);
             bounce();
             return true;
@@ -591,7 +613,7 @@ class JavaPanZoomController
 
         if (mState == PanZoomState.NOTHING) {
             setState(PanZoomState.AUTONAV);
-            startAnimationTimer(new AutonavRunnable());
+            startAnimationRenderTask(new AutonavRenderTask());
         }
         if (mState == PanZoomState.AUTONAV) {
             mX.setAutoscrollVelocity(velocityX);
@@ -717,18 +739,18 @@ class JavaPanZoomController
     private void fling() {
         updatePosition();
 
-        stopAnimationTimer();
+        stopAnimationTask();
 
         boolean stopped = stopped();
         mX.startFling(stopped);
         mY.startFling(stopped);
 
-        startAnimationTimer(new FlingRunnable());
+        startAnimationRenderTask(new FlingRenderTask());
     }
 
     /* Performs a bounce-back animation to the given viewport metrics. */
     private void bounce(ImmutableViewportMetrics metrics, PanZoomState state) {
-        stopAnimationTimer();
+        stopAnimationTask();
 
         ImmutableViewportMetrics bounceStartMetrics = getMetrics();
         if (bounceStartMetrics.fuzzyEquals(metrics)) {
@@ -743,7 +765,7 @@ class JavaPanZoomController
         // setAnimationTarget to set the new final display port and not have it get
         // clobbered by display ports from intermediate animation frames.
         mTarget.setAnimationTarget(metrics);
-        startAnimationTimer(new BounceRunnable(bounceStartMetrics, metrics));
+        startAnimationRenderTask(new BounceRenderTask(bounceStartMetrics, metrics));
     }
 
     /* Performs a bounce-back animation to the nearest valid viewport metrics. */
@@ -752,29 +774,22 @@ class JavaPanZoomController
     }
 
     /* Starts the fling or bounce animation. */
-    private void startAnimationTimer(final AnimationRunnable runnable) {
-        if (mAnimationTimer != null) {
-            Log.e(LOGTAG, "Attempted to start a new timer without canceling the old one!");
-            stopAnimationTimer();
+    private void startAnimationRenderTask(final PanZoomRenderTask task) {
+        if (mAnimationRenderTask != null) {
+            Log.e(LOGTAG, "Attempted to start a new task without canceling the old one!");
+            stopAnimationTask();
         }
 
-        mAnimationTimer = new Timer("Animation Timer");
-        mAnimationRunnable = runnable;
-        mAnimationTimer.scheduleAtFixedRate(new TimerTask() {
-            @Override
-            public void run() { mTarget.post(runnable); }
-        }, 0, (int)Axis.MS_PER_FRAME);
+        mAnimationRenderTask = task;
+        mTarget.postRenderTask(mAnimationRenderTask);
     }
 
     /* Stops the fling or bounce animation. */
-    private void stopAnimationTimer() {
-        if (mAnimationTimer != null) {
-            mAnimationTimer.cancel();
-            mAnimationTimer = null;
-        }
-        if (mAnimationRunnable != null) {
-            mAnimationRunnable.terminate();
-            mAnimationRunnable = null;
+    private void stopAnimationTask() {
+        if (mAnimationRenderTask != null) {
+            mAnimationRenderTask.terminate();
+            mTarget.removeRenderTask(mAnimationRenderTask);
+            mAnimationRenderTask = null;
         }
     }
 
@@ -815,33 +830,64 @@ class JavaPanZoomController
         }
     }
 
-    private abstract class AnimationRunnable implements Runnable {
-        private boolean mAnimationTerminated;
+    /**
+     * This class is an implementation of RenderTask which enforces its implementor to run in the UI thread.
+     *
+     */
+    private abstract class PanZoomRenderTask extends RenderTask {
 
-        /* This should always run on the UI thread */
-        @Override
-        public final void run() {
-            /*
-             * Since the animation timer queues this runnable on the UI thread, it
-             * is possible that even when the animation timer is cancelled, there
-             * are multiple instances of this queued, so we need to have another
-             * mechanism to abort. This is done by using the mAnimationTerminated flag.
-             */
-            if (mAnimationTerminated) {
-                return;
+        /**
+         * the time when the current frame was started in ns.
+         */
+        protected long mCurrentFrameStartTime;
+        /**
+         * The current frame duration in ns.
+         */
+        protected long mLastFrameTimeDelta;
+
+        private final Runnable mRunnable = new Runnable() {
+            @Override
+            public final void run() {
+                if (mContinueAnimation) {
+                    animateFrame();
+                }
             }
-            animateFrame();
+        };
+
+        private boolean mContinueAnimation = true;
+
+        public PanZoomRenderTask() {
+            super(false);
         }
 
+        @Override
+        protected final boolean internalRun(long timeDelta, long currentFrameStartTime) {
+
+            mCurrentFrameStartTime = currentFrameStartTime;
+            mLastFrameTimeDelta = timeDelta;
+
+            mTarget.post(mRunnable);
+            return mContinueAnimation;
+        }
+
+        /**
+         * The method subclasses must override. This method is run on the UI thread thanks to internalRun
+         */
         protected abstract void animateFrame();
 
-        /* This should always run on the UI thread */
-        protected final void terminate() {
-            mAnimationTerminated = true;
+        /**
+         * Terminate the animation.
+         */
+        public void terminate() {
+            mContinueAnimation = false;
         }
     }
 
-    private class AutonavRunnable extends AnimationRunnable {
+    private class AutonavRenderTask extends PanZoomRenderTask {
+        public AutonavRenderTask() {
+            super();
+        }
+
         @Override
         protected void animateFrame() {
             if (mState != PanZoomState.AUTONAV) {
@@ -856,18 +902,20 @@ class JavaPanZoomController
         }
     }
 
-    /* The callback that performs the bounce animation. */
-    private class BounceRunnable extends AnimationRunnable {
-        /* The current frame of the bounce-back animation */
-        private int mBounceFrame;
+    /* The task that performs the bounce animation. */
+    private class BounceRenderTask extends PanZoomRenderTask {
+
         /*
          * The viewport metrics that represent the start and end of the bounce-back animation,
          * respectively.
          */
         private ImmutableViewportMetrics mBounceStartMetrics;
         private ImmutableViewportMetrics mBounceEndMetrics;
+        // How long ago this bounce was started in ns.
+        private long mBounceDuration;
 
-        BounceRunnable(ImmutableViewportMetrics startMetrics, ImmutableViewportMetrics endMetrics) {
+        BounceRenderTask(ImmutableViewportMetrics startMetrics, ImmutableViewportMetrics endMetrics) {
+            super();
             mBounceStartMetrics = startMetrics;
             mBounceEndMetrics = endMetrics;
         }
@@ -885,7 +933,8 @@ class JavaPanZoomController
             }
 
             /* Perform the next frame of the bounce-back animation. */
-            if (mBounceFrame < (int)(BOUNCE_ANIMATION_DURATION / Axis.MS_PER_FRAME)) {
+            mBounceDuration = mCurrentFrameStartTime - getStartTime();
+            if (mBounceDuration < BOUNCE_ANIMATION_DURATION) {
                 advanceBounce();
                 return;
             }
@@ -899,10 +948,9 @@ class JavaPanZoomController
         /* Performs one frame of a bounce animation. */
         private void advanceBounce() {
             synchronized (mTarget.getLock()) {
-                float t = easeOut(mBounceFrame * Axis.MS_PER_FRAME / BOUNCE_ANIMATION_DURATION);
+                float t = easeOut((float)mBounceDuration / BOUNCE_ANIMATION_DURATION);
                 ImmutableViewportMetrics newMetrics = mBounceStartMetrics.interpolate(mBounceEndMetrics, t);
                 mTarget.setViewportMetrics(newMetrics);
-                mBounceFrame++;
             }
         }
 
@@ -910,13 +958,17 @@ class JavaPanZoomController
         private void finishBounce() {
             synchronized (mTarget.getLock()) {
                 mTarget.setViewportMetrics(mBounceEndMetrics);
-                mBounceFrame = -1;
             }
         }
     }
 
     // The callback that performs the fling animation.
-    private class FlingRunnable extends AnimationRunnable {
+    private class FlingRenderTask extends PanZoomRenderTask {
+
+        public FlingRenderTask() {
+            super();
+        }
+
         @Override
         protected void animateFrame() {
             /*
@@ -930,8 +982,8 @@ class JavaPanZoomController
             }
 
             /* Advance flings, if necessary. */
-            boolean flingingX = mX.advanceFling();
-            boolean flingingY = mY.advanceFling();
+            boolean flingingX = mX.advanceFling(mLastFrameTimeDelta);
+            boolean flingingY = mY.advanceFling(mLastFrameTimeDelta);
 
             boolean overscrolled = (mX.overscrolled() || mY.overscrolled());
 
@@ -968,7 +1020,7 @@ class JavaPanZoomController
     private void finishAnimation() {
         checkMainThread();
 
-        stopAnimationTimer();
+        stopAnimationTask();
 
         // Force a viewport synchronisation
         mTarget.forceRedraw(null);
@@ -1053,7 +1105,29 @@ class JavaPanZoomController
         @Override
         protected float getPageStart() { return getMetrics().pageRectLeft; }
         @Override
+        protected float getMarginStart() { return mTarget.getMaxMargins().left - getMetrics().marginLeft; }
+        @Override
+        protected float getMarginEnd() { return mTarget.getMaxMargins().right - getMetrics().marginRight; }
+        @Override
         protected float getPageLength() { return getMetrics().getPageWidthWithMargins(); }
+        @Override
+        protected boolean marginsHidden() {
+            ImmutableViewportMetrics metrics = getMetrics();
+            RectF maxMargins = mTarget.getMaxMargins();
+            return (metrics.marginLeft < maxMargins.left || metrics.marginRight < maxMargins.right);
+        }
+        @Override
+        protected void overscrollFling(final float velocity) {
+            if (mOverscroll != null) {
+                mOverscroll.setVelocity(velocity, Overscroll.Axis.X);
+            }
+        }
+        @Override
+        protected void overscrollPan(final float distance) {
+            if (mOverscroll != null) {
+                mOverscroll.setDistance(distance, Overscroll.Axis.X);
+            }
+        }
     }
 
     private class AxisY extends Axis {
@@ -1066,6 +1140,28 @@ class JavaPanZoomController
         protected float getPageStart() { return getMetrics().pageRectTop; }
         @Override
         protected float getPageLength() { return getMetrics().getPageHeightWithMargins(); }
+        @Override
+        protected float getMarginStart() { return mTarget.getMaxMargins().top - getMetrics().marginTop; }
+        @Override
+        protected float getMarginEnd() { return mTarget.getMaxMargins().bottom - getMetrics().marginBottom; }
+        @Override
+        protected boolean marginsHidden() {
+            ImmutableViewportMetrics metrics = getMetrics();
+            RectF maxMargins = mTarget.getMaxMargins();
+            return (metrics.marginTop < maxMargins.top || metrics.marginBottom < maxMargins.bottom);
+        }
+        @Override
+        protected void overscrollFling(final float velocity) {
+            if (mOverscroll != null) {
+                mOverscroll.setVelocity(velocity, Overscroll.Axis.Y);
+            }
+        }
+        @Override
+        protected void overscrollPan(final float distance) {
+            if (mOverscroll != null) {
+                mOverscroll.setDistance(distance, Overscroll.Axis.Y);
+            }
+        }
     }
 
     /*
@@ -1108,6 +1204,11 @@ class JavaPanZoomController
                      mLastZoomFocus.y - detector.getFocusY());
             mLastZoomFocus.set(detector.getFocusX(), detector.getFocusY());
             ImmutableViewportMetrics target = getMetrics().scaleTo(zoomFactor, mLastZoomFocus);
+
+            // If overscroll is diabled, prevent zooming outside the normal document pans.
+            if (mX.getOverScrollMode() == View.OVER_SCROLL_NEVER || mY.getOverScrollMode() == View.OVER_SCROLL_NEVER) {
+                target = getValidViewportMetrics(target);
+            }
             mTarget.setViewportMetrics(target);
         }
 
@@ -1237,14 +1338,33 @@ class JavaPanZoomController
     }
 
     @Override
+    public boolean onDown(MotionEvent motionEvent) {
+        mMediumPress = false;
+        return false;
+    }
+
+    @Override
+    public void onShowPress(MotionEvent motionEvent) {
+        // If we get this, it will be followed either by a call to
+        // onSingleTapUp (if the user lifts their finger before the
+        // long-press timeout) or a call to onLongPress (if the user
+        // does not). In the former case, we want to make sure it is
+        // treated as a click. (Note that if this is called, we will
+        // not get a call to onDoubleTap).
+        mMediumPress = true;
+    }
+
+    @Override
     public void onLongPress(MotionEvent motionEvent) {
         sendPointToGecko("Gesture:LongPress", motionEvent);
     }
 
     @Override
     public boolean onSingleTapUp(MotionEvent motionEvent) {
-        // When zooming is enabled, wait to see if there's a double-tap.
-        if (!mTarget.getZoomConstraints().getAllowZoom()) {
+        // When zooming is enabled, we wait to see if there's a double-tap.
+        // However, if mMediumPress is true then we know there will be no
+        // double-tap so we treat this as a click.
+        if (mMediumPress || !mTarget.getZoomConstraints().getAllowZoom()) {
             sendPointToGecko("Gesture:SingleTap", motionEvent);
         }
         // return false because we still want to get the ACTION_UP event that triggers this
@@ -1335,5 +1455,15 @@ class JavaPanZoomController
     @Override
     public int getOverScrollMode() {
         return mX.getOverScrollMode();
+    }
+
+    @Override
+    public void updateScrollOffset(float cssX, float cssY) {
+        // Nothing to update, this class doesn't store the scroll offset locally.
+    }
+
+    @Override
+    public void setOverscrollHandler(final Overscroll handler) {
+        mOverscroll = handler;
     }
 }

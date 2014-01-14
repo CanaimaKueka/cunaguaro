@@ -21,6 +21,7 @@ EXPORTS += [
     'nsFrameMessageManager.h',
     'nsGkAtomList.h',
     'nsGkAtoms.h',
+    'nsImageLoadingContent.h',
     'nsMappedAttributeElement.h',
     'nsNodeInfoManager.h',
     'nsNodeUtils.h',
@@ -35,18 +36,151 @@ EXPORTS += [
 ]
 
 if CONFIG['MOZ_WEBRTC']:
-    EXPORTS += ['nsDOMDataChannel.h']
+    EXPORTS += [
+        'nsDOMDataChannel.h',
+        'nsDOMDataChannelDeclarations.h',
+    ]
+    SOURCES += [
+        'nsDOMDataChannel.cpp',
+    ]
+
+# Are we targeting x86-32 or x86-64?  If so, we want to include SSE2 code for
+# nsTextFragment.cpp
+if CONFIG['INTEL_ARCHITECTURE']:
+    SOURCES += [
+        'nsTextFragmentSSE2.cpp',
+    ]
 
 EXPORTS.mozilla.dom += [
     'Attr.h',
     'Comment.h',
-    'DOMImplementation.h',
     'DocumentFragment.h',
     'DocumentType.h',
+    'DOMImplementation.h',
+    'DOMParser.h',
+    'DOMRect.h',
     'EventSource.h',
     'Link.h',
     'NodeIterator.h',
     'Text.h',
     'TreeWalker.h',
 ]
+
+SOURCES += [
+    'Attr.cpp',
+    'ChildIterator.cpp',
+    'Comment.cpp',
+    'DirectionalityUtils.cpp',
+    'DocumentFragment.cpp',
+    'DocumentType.cpp',
+    'DOMImplementation.cpp',
+    'DOMParser.cpp',
+    'DOMRect.cpp',
+    'Element.cpp',
+    'EventSource.cpp',
+    'FileIOObject.cpp',
+    'FragmentOrElement.cpp',
+    'Link.cpp',
+    'NodeIterator.cpp',
+    'nsAtomListUtils.cpp',
+    'nsAttrAndChildArray.cpp',
+    'nsAttrValue.cpp',
+    'nsAttrValueOrString.cpp',
+    'nsCCUncollectableMarker.cpp',
+    'nsChannelPolicy.cpp',
+    'nsContentAreaDragDrop.cpp',
+    'nsContentIterator.cpp',
+    'nsContentList.cpp',
+    'nsContentPolicy.cpp',
+    'nsContentSink.cpp',
+    'nsContentUtils.cpp',
+    'nsCopySupport.cpp',
+    'nsCrossSiteListenerProxy.cpp',
+    'nsCSPService.cpp',
+    'nsDataDocumentContentPolicy.cpp',
+    'nsDocument.cpp',
+    'nsDocumentEncoder.cpp',
+    'nsDOMAttributeMap.cpp',
+    'nsDOMBlobBuilder.cpp',
+    'nsDOMCaretPosition.cpp',
+    'nsDOMFile.cpp',
+    'nsDOMFileReader.cpp',
+    'nsDOMLists.cpp',
+    'nsDOMMutationObserver.cpp',
+    'nsDOMSerializer.cpp',
+    'nsDOMSettableTokenList.cpp',
+    'nsDOMTokenList.cpp',
+    'nsFormData.cpp',
+    'nsFrameLoader.cpp',
+    'nsFrameMessageManager.cpp',
+    'nsGenConImageContent.cpp',
+    'nsGenericDOMDataNode.cpp',
+    'nsGkAtoms.cpp',
+    'nsHostObjectProtocolHandler.cpp',
+    'nsHostObjectURI.cpp',
+    'nsHTMLContentSerializer.cpp',
+    'nsImageLoadingContent.cpp',
+    'nsINode.cpp',
+    'nsInProcessTabChildGlobal.cpp',
+    'nsLineBreaker.cpp',
+    'nsMappedAttributeElement.cpp',
+    'nsMappedAttributes.cpp',
+    'nsMixedContentBlocker.cpp',
+    'nsNameSpaceManager.cpp',
+    'nsNoDataProtocolContentPolicy.cpp',
+    'nsNodeInfo.cpp',
+    'nsNodeInfoManager.cpp',
+    'nsNodeUtils.cpp',
+    'nsObjectLoadingContent.cpp',
+    'nsPlainTextSerializer.cpp',
+    'nsPropertyTable.cpp',
+    'nsRange.cpp',
+    'nsReferencedElement.cpp',
+    'nsScriptElement.cpp',
+    'nsScriptLoader.cpp',
+    'nsStubDocumentObserver.cpp',
+    'nsStubMutationObserver.cpp',
+    'nsStyledElement.cpp',
+    'nsStyleLinkElement.cpp',
+    'nsSyncLoadService.cpp',
+    'nsTextFragment.cpp',
+    'nsTextNode.cpp',
+    'nsTraversal.cpp',
+    'nsTreeSanitizer.cpp',
+    'nsViewportInfo.cpp',
+    'nsXHTMLContentSerializer.cpp',
+    'nsXMLContentSerializer.cpp',
+    'nsXMLHttpRequest.cpp',
+    'nsXMLNameSpaceMap.cpp',
+    'Text.cpp',
+    'ThirdPartyUtil.cpp',
+    'TreeWalker.cpp',
+    'WebSocket.cpp',
+]
+
+EXTRA_COMPONENTS += [
+    'contentAreaDropListener.js',
+    'contentAreaDropListener.manifest',
+    'contentSecurityPolicy.manifest',
+    'messageWakeupService.js',
+    'messageWakeupService.manifest',
+]
+
+EXTRA_PP_COMPONENTS += [
+    'contentSecurityPolicy.js',
+]
+
+EXTRA_JS_MODULES += [
+    'CSPUtils.jsm',
+]
+
+FAIL_ON_WARNINGS = True
+
+LIBXUL_LIBRARY = True
+
+MSVC_ENABLE_PGO = True
+
+LIBRARY_NAME = 'gkconbase_s'
+
+include('/ipc/chromium/chromium-config.mozbuild')
 

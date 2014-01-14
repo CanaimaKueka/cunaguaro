@@ -11,18 +11,10 @@ interface nsIDOMDOMCursor;
 interface nsIDOMDOMRequest;
 interface nsIDOMBlob;
 
-dictionary MmsParameters
-{
-  jsval      receivers; // DOMString[]
-  DOMString? subject;
-  DOMString? smil;
-  jsval      attachments; // MmsAttachment[]
-};
-
-[scriptable, builtinclass, uuid(a7984cb3-27c8-4e3d-82a4-01553e93c078)]
+[scriptable, builtinclass, uuid(3f81dcbc-00cf-11e3-ae66-538115636543)]
 interface nsIDOMMozMobileMessageManager : nsIDOMEventTarget
 {
-  nsIDOMMozSmsSegmentInfo getSegmentInfoForText(in DOMString text);
+  nsIDOMDOMRequest getSegmentInfoForText(in DOMString text);
 
   // The first parameter can be either a DOMString (only one number) or an array
   // of DOMStrings.
@@ -49,6 +41,7 @@ interface nsIDOMMozMobileMessageManager : nsIDOMEventTarget
   nsIDOMDOMRequest retrieveMMS(in long id);
 
   [implicit_jscontext] attribute jsval onreceived;
+  [implicit_jscontext] attribute jsval onretrieving;
   [implicit_jscontext] attribute jsval onsending;
   [implicit_jscontext] attribute jsval onsent;
   [implicit_jscontext] attribute jsval onfailed;

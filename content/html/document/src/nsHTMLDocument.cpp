@@ -4,14 +4,15 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include "mozilla/DebugOnly.h"
+#include "nsHTMLDocument.h"
 
+#include "mozilla/DebugOnly.h"
+#include "mozilla/dom/HTMLAllCollection.h"
 #include "nsCOMPtr.h"
 #include "nsXPIDLString.h"
 #include "nsPrintfCString.h"
 #include "nsReadableUtils.h"
 #include "nsUnicharUtils.h"
-#include "nsHTMLDocument.h"
 #include "nsIHTMLContentSink.h"
 #include "nsIXMLContentSink.h"
 #include "nsHTMLParts.h"
@@ -116,10 +117,6 @@ using namespace mozilla::dom;
 
 #include "prtime.h"
 
-// Find/Search Includes
-const int32_t kForward  = 0;
-const int32_t kBackward = 1;
-
 //#define DEBUG_charset
 
 static NS_DEFINE_CID(kCParserCID, NS_PARSER_CID);
@@ -149,7 +146,7 @@ static void
 ReportUseOfDeprecatedMethod(nsHTMLDocument* aDoc, const char* aWarning)
 {
   nsContentUtils::ReportToConsole(nsIScriptError::warningFlag,
-                                  "DOM Events", aDoc,
+                                  NS_LITERAL_CSTRING("DOM Events"), aDoc,
                                   nsContentUtils::eDOM_PROPERTIES,
                                   aWarning);
 }
@@ -205,54 +202,33 @@ nsHTMLDocument::nsHTMLDocument()
   mIsRegularHTML = true;
   mDefaultElementType = kNameSpaceID_XHTML;
   mCompatMode = eCompatibility_NavQuirks;
-
-  SetIsDOMBinding();
 }
 
+nsHTMLDocument::~nsHTMLDocument()
+{
+}
 
-NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN_INHERITED(nsHTMLDocument, nsDocument)
-  NS_ASSERTION(!nsCCUncollectableMarker::InGeneration(cb, tmp->GetMarkedCCGeneration()),
-               "Shouldn't traverse nsHTMLDocument!");
-  NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mImages)
-  NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mApplets)
-  NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mEmbeds)
-  NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mLinks)
-  NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mAnchors)
-  NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mScripts)
-  NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mForms)
-  NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mFormControls)
-  NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mWyciwygChannel)
-  NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mMidasCommandManager)
-NS_IMPL_CYCLE_COLLECTION_TRAVERSE_END
-
-NS_IMPL_CYCLE_COLLECTION_UNLINK_BEGIN_INHERITED(nsHTMLDocument, nsDocument)
-  NS_IMPL_CYCLE_COLLECTION_UNLINK(mImages)
-  NS_IMPL_CYCLE_COLLECTION_UNLINK(mApplets)
-  NS_IMPL_CYCLE_COLLECTION_UNLINK(mEmbeds)
-  NS_IMPL_CYCLE_COLLECTION_UNLINK(mLinks)
-  NS_IMPL_CYCLE_COLLECTION_UNLINK(mAnchors)
-  NS_IMPL_CYCLE_COLLECTION_UNLINK(mScripts)
-  NS_IMPL_CYCLE_COLLECTION_UNLINK(mForms)
-  NS_IMPL_CYCLE_COLLECTION_UNLINK(mFormControls)
-  NS_IMPL_CYCLE_COLLECTION_UNLINK(mWyciwygChannel)
-  NS_IMPL_CYCLE_COLLECTION_UNLINK(mMidasCommandManager)
-NS_IMPL_CYCLE_COLLECTION_UNLINK_END
+NS_IMPL_CYCLE_COLLECTION_INHERITED_11(nsHTMLDocument, nsDocument,
+                                      mAll,
+                                      mImages,
+                                      mApplets,
+                                      mEmbeds,
+                                      mLinks,
+                                      mAnchors,
+                                      mScripts,
+                                      mForms,
+                                      mFormControls,
+                                      mWyciwygChannel,
+                                      mMidasCommandManager)
 
 NS_IMPL_ADDREF_INHERITED(nsHTMLDocument, nsDocument)
 NS_IMPL_RELEASE_INHERITED(nsHTMLDocument, nsDocument)
 
-
-DOMCI_NODE_DATA(HTMLDocument, nsHTMLDocument)
-
 // QueryInterface implementation for nsHTMLDocument
 NS_INTERFACE_TABLE_HEAD_CYCLE_COLLECTION_INHERITED(nsHTMLDocument)
-  NS_DOCUMENT_INTERFACE_TABLE_BEGIN(nsHTMLDocument)
-    NS_INTERFACE_TABLE_ENTRY(nsHTMLDocument, nsIHTMLDocument)
-    NS_INTERFACE_TABLE_ENTRY(nsHTMLDocument, nsIDOMHTMLDocument)
-  NS_OFFSET_AND_INTERFACE_TABLE_END
-  NS_OFFSET_AND_INTERFACE_TABLE_TO_MAP_SEGUE
-  NS_DOM_INTERFACE_MAP_ENTRY_CLASSINFO(HTMLDocument)
-NS_INTERFACE_MAP_END_INHERITING(nsDocument)
+  NS_INTERFACE_TABLE_INHERITED2(nsHTMLDocument, nsIHTMLDocument,
+                                nsIDOMHTMLDocument)
+NS_INTERFACE_TABLE_TAIL_INHERITING(nsDocument)
 
 JSObject*
 nsHTMLDocument::WrapNode(JSContext* aCx, JS::Handle<JSObject*> aScope)
@@ -380,17 +356,16 @@ nsHTMLDocument::TryUserForcedCharset(nsIMarkupDocumentViewer* aMarkupDV,
 
   if (aDocShell) {
     // This is the Character Encoding menu code path in Firefox
-    nsCOMPtr<nsIAtom> csAtom;
-    aDocShell->GetForcedCharset(getter_AddRefs(csAtom));
-    if (csAtom) {
-      nsAutoCString charset;
-      csAtom->ToUTF8String(charset);
+    nsAutoCString charset;
+    rv = aDocShell->GetForcedCharset(charset);
+
+    if (NS_SUCCEEDED(rv) && !charset.IsEmpty()) {
       if (!EncodingUtils::IsAsciiCompatible(charset)) {
         return;
       }
       aCharset = charset;
       aCharsetSource = kCharsetFromUserForced;
-      aDocShell->SetForcedCharset(nullptr);
+      aDocShell->SetForcedCharset(NS_LITERAL_CSTRING(""));
     }
   }
 }
@@ -420,22 +395,8 @@ nsHTMLDocument::TryCacheCharset(nsICachingChannel* aCachingChannel,
   }
 }
 
-static bool
-CheckSameOrigin(nsINode* aNode1, nsINode* aNode2)
-{
-  NS_PRECONDITION(aNode1, "Null node?");
-  NS_PRECONDITION(aNode2, "Null node?");
-
-  bool equal;
-  return
-    NS_SUCCEEDED(aNode1->NodePrincipal()->
-                   Equals(aNode2->NodePrincipal(), &equal)) &&
-    equal;
-}
-
 void
 nsHTMLDocument::TryParentCharset(nsIDocShell*  aDocShell,
-                                 nsIDocument* aParentDocument,
                                  int32_t& aCharsetSource,
                                  nsACString& aCharset)
 {
@@ -446,15 +407,15 @@ nsHTMLDocument::TryParentCharset(nsIDocShell*  aDocShell,
     return;
   }
 
-  nsCOMPtr<nsIAtom> csAtom;
   int32_t parentSource;
   nsAutoCString parentCharset;
-  aDocShell->GetParentCharset(getter_AddRefs(csAtom));
-  if (!csAtom) {
+  nsCOMPtr<nsIPrincipal> parentPrincipal;
+  aDocShell->GetParentCharset(parentCharset,
+                              &parentSource,
+                              getter_AddRefs(parentPrincipal));
+  if (parentCharset.IsEmpty()) {
     return;
   }
-  aDocShell->GetParentCharsetSource(&parentSource);
-  csAtom->ToUTF8String(parentCharset);
   if (kCharsetFromParentForced == parentSource ||
       kCharsetFromUserForced == parentSource) {
     if (WillIgnoreCharsetOverride() ||
@@ -467,33 +428,13 @@ nsHTMLDocument::TryParentCharset(nsIDocShell*  aDocShell,
     return;
   }
 
-  if (aCharsetSource >= kCharsetFromHintPrevDoc) {
-    return;
-  }
-
-  if (kCharsetFromHintPrevDoc == parentSource) {
-    // Make sure that's OK
-    if (!aParentDocument ||
-        !CheckSameOrigin(this, aParentDocument) ||
-        !EncodingUtils::IsAsciiCompatible(parentCharset)) {
-      return;
-    }
-
-    // if parent is posted doc, set this prevent autodetections
-    // I'm not sure this makes much sense... but whatever.
-    aCharset.Assign(parentCharset);
-    aCharsetSource = kCharsetFromHintPrevDoc;
-    return;
-  }
-
   if (aCharsetSource >= kCharsetFromParentFrame) {
     return;
   }
 
   if (kCharsetFromCache <= parentSource) {
     // Make sure that's OK
-    if (!aParentDocument ||
-        !CheckSameOrigin(this, aParentDocument) ||
+    if (!NodePrincipal()->Equals(parentPrincipal) ||
         !EncodingUtils::IsAsciiCompatible(parentCharset)) {
       return;
     }
@@ -524,25 +465,6 @@ nsHTMLDocument::TryWeakDocTypeDefault(int32_t& aCharsetSource,
   }
   aCharsetSource = kCharsetFromWeakDocTypeDefault;
   return;
-}
-
-void
-nsHTMLDocument::TryDefaultCharset( nsIMarkupDocumentViewer* aMarkupDV,
-                                   int32_t& aCharsetSource,
-                                   nsACString& aCharset)
-{
-  if(kCharsetFromUserDefault <= aCharsetSource)
-    return;
-
-  nsAutoCString defaultCharsetFromDocShell;
-  if (aMarkupDV) {
-    nsresult rv =
-      aMarkupDV->GetDefaultCharacterSet(defaultCharsetFromDocShell);
-    if(NS_SUCCEEDED(rv) && EncodingUtils::IsAsciiCompatible(defaultCharsetFromDocShell)) {
-      aCharset = defaultCharsetFromDocShell;
-      aCharsetSource = kCharsetFromUserDefault;
-    }
-  }
 }
 
 void
@@ -679,21 +601,13 @@ nsHTMLDocument::StartDocumentLoad(const char* aCommand,
   }
 
   nsCOMPtr<nsIDocShell> parent(do_QueryInterface(parentAsItem));
-  nsCOMPtr<nsIDocument> parentDocument;
   nsCOMPtr<nsIContentViewer> parentContentViewer;
   if (parent) {
     rv = parent->GetContentViewer(getter_AddRefs(parentContentViewer));
     NS_ENSURE_SUCCESS(rv, rv);
-    if (parentContentViewer) {
-      parentDocument = parentContentViewer->GetDocument();
-    }
   }
 
-  //
-  // The following logic is mirrored in nsWebShell::Embed!
-  //
   nsCOMPtr<nsIMarkupDocumentViewer> muCV;
-  bool muCVIsParent = false;
   nsCOMPtr<nsIContentViewer> cv;
   if (docShell) {
     docShell->GetContentViewer(getter_AddRefs(cv));
@@ -702,9 +616,6 @@ nsHTMLDocument::StartDocumentLoad(const char* aCommand,
      muCV = do_QueryInterface(cv);
   } else {
     muCV = do_QueryInterface(parentContentViewer);
-    if (muCV) {
-      muCVIsParent = true;
-    }
   }
 
   nsAutoCString urlSpec;
@@ -766,34 +677,13 @@ nsHTMLDocument::StartDocumentLoad(const char* aCommand,
     TryUserForcedCharset(muCV, docShell, charsetSource, charset);
 
     TryHintCharset(muCV, charsetSource, charset); // XXX mailnews-only
-    TryParentCharset(docShell, parentDocument, charsetSource, charset);
+    TryParentCharset(docShell, charsetSource, charset);
 
     if (cachingChan && !urlSpec.IsEmpty()) {
       TryCacheCharset(cachingChan, charsetSource, charset);
     }
 
-    TryDefaultCharset(muCV, charsetSource, charset);
-
     TryWeakDocTypeDefault(charsetSource, charset);
-
-    bool isPostPage = false;
-    // check if current doc is from POST command
-    nsCOMPtr<nsIHttpChannel> httpChannel(do_QueryInterface(aChannel));
-    if (httpChannel) {
-      nsAutoCString methodStr;
-      rv = httpChannel->GetRequestMethod(methodStr);
-      isPostPage = (NS_SUCCEEDED(rv) &&
-                    methodStr.EqualsLiteral("POST"));
-    }
-
-    if (isPostPage && muCV && kCharsetFromHintPrevDoc > charsetSource) {
-      nsAutoCString requestCharset;
-      muCV->GetPrevDocCharacterSet(requestCharset);
-      if (!requestCharset.IsEmpty()) {
-        charsetSource = kCharsetFromHintPrevDoc;
-        charset = requestCharset;
-      }
-    }
 
     if (wyciwygChannel) {
       // We know for sure that the parser needs to be using UTF16.
@@ -822,11 +712,6 @@ nsHTMLDocument::StartDocumentLoad(const char* aCommand,
 
   SetDocumentCharacterSetSource(charsetSource);
   SetDocumentCharacterSet(charset);
-
-  // set doc charset to muCV for next document.
-  // Don't propagate this back up to the parent document if we have one.
-  if (muCV && !muCVIsParent)
-    muCV->SetPrevDocCharacterSet(charset);
 
   if (cachingChan) {
     NS_ASSERTION(charset == parserCharset,
@@ -1007,6 +892,12 @@ nsHTMLDocument::SetDomain(const nsAString& aDomain)
 void
 nsHTMLDocument::SetDomain(const nsAString& aDomain, ErrorResult& rv)
 {
+  if (mSandboxFlags & SANDBOXED_DOMAIN) {
+    // We're sandboxed; disallow setting domain
+    rv.Throw(NS_ERROR_DOM_SECURITY_ERR);
+    return;
+  }
+
   if (aDomain.IsEmpty()) {
     rv.Throw(NS_ERROR_DOM_BAD_DOCUMENT_DOMAIN);
     return;
@@ -1081,20 +972,20 @@ nsHTMLDocument::SetDomain(const nsAString& aDomain, ErrorResult& rv)
 nsGenericHTMLElement*
 nsHTMLDocument::GetBody()
 {
-  Element* body = GetBodyElement();
-
-  if (body) {
-    // There is a body element, return that as the body.
-    return static_cast<nsGenericHTMLElement*>(body);
+  Element* html = GetHtmlElement();
+  if (!html) {
+    return nullptr;
   }
 
-  // The document is most likely a frameset document so look for the
-  // outer most frameset element
-  nsRefPtr<nsContentList> nodeList =
-    NS_GetContentList(this, kNameSpaceID_XHTML, NS_LITERAL_STRING("frameset"));
-  Element* frameset = nodeList->GetElementAt(0);
-  MOZ_ASSERT(!frameset || frameset->IsHTML());
-  return static_cast<nsGenericHTMLElement*>(frameset);
+  for (nsIContent* child = html->GetFirstChild();
+       child;
+       child = child->GetNextSibling()) {
+    if (child->IsHTML(nsGkAtoms::body) || child->IsHTML(nsGkAtoms::frameset)) {
+      return static_cast<nsGenericHTMLElement*>(child);
+    }
+  }
+
+  return nullptr;
 }
 
 NS_IMETHODIMP
@@ -1682,6 +1573,8 @@ nsHTMLDocument::Open(JSContext* cx,
     }
   }
 
+  mDidDocumentOpen = true;
+
   // Call Reset(), this will now do the full reset
   Reset(channel, group);
   if (baseURI) {
@@ -1865,7 +1758,7 @@ nsHTMLDocument::WriteCommon(JSContext *cx,
     if (mExternalScriptsBeingEvaluated) {
       // Instead of implying a call to document.open(), ignore the call.
       nsContentUtils::ReportToConsole(nsIScriptError::warningFlag,
-                                      "DOM Events", this,
+                                      NS_LITERAL_CSTRING("DOM Events"), this,
                                       nsContentUtils::eDOM_PROPERTIES,
                                       "DocumentWriteIgnored",
                                       nullptr, 0,
@@ -1880,7 +1773,7 @@ nsHTMLDocument::WriteCommon(JSContext *cx,
     if (mExternalScriptsBeingEvaluated) {
       // Instead of implying a call to document.open(), ignore the call.
       nsContentUtils::ReportToConsole(nsIScriptError::warningFlag,
-                                      "DOM Events", this,
+                                      NS_LITERAL_CSTRING("DOM Events"), this,
                                       nsContentUtils::eDOM_PROPERTIES,
                                       "DocumentWriteIgnored",
                                       nullptr, 0,
@@ -2264,13 +2157,6 @@ nsHTMLDocument::ReleaseEvents(int32_t aEventFlags)
   return NS_OK;
 }
 
-NS_IMETHODIMP
-nsHTMLDocument::RouteEvent(nsIDOMEvent* aEvt)
-{
-  ReportUseOfDeprecatedMethod(this, "UseOfRouteEventWarning");
-  return NS_OK;
-}
-
 // Mapped to document.embeds for NS4 compatibility
 NS_IMETHODIMP
 nsHTMLDocument::GetPlugins(nsIDOMHTMLCollection** aPlugins)
@@ -2324,39 +2210,6 @@ nsHTMLDocument::ResolveName(const nsAString& aName, nsWrapperCache **aCache)
   return nullptr;
 }
 
-already_AddRefed<nsISupports>
-nsHTMLDocument::ResolveName(const nsAString& aName,
-                            nsIContent *aForm,
-                            nsWrapperCache **aCache)
-{
-  nsISupports* result = ResolveName(aName, aCache);
-  if (!result) {
-    return nullptr;
-  }
-
-  nsCOMPtr<nsIContent> node = do_QueryInterface(result);
-  if (!node) {
-    // We create a nsFormContentList which will filter out the elements in the
-    // list that don't belong to aForm.
-    nsRefPtr<nsBaseContentList> list =
-      new nsFormContentList(aForm, *static_cast<nsBaseContentList*>(result));
-    if (list->Length() > 1) {
-      *aCache = list;
-      return list.forget();
-    }
-
-    // After the nsFormContentList is done filtering there's either nothing or
-    // one element in the list. Return that element, or null if there's no
-    // element in the list.
-    node = list->Item(0);
-  } else if (!nsContentUtils::BelongsInForm(aForm, node)) {
-    node = nullptr;
-  }
-
-  *aCache = node;
-  return node.forget();
-}
-
 JSObject*
 nsHTMLDocument::NamedGetter(JSContext* cx, const nsAString& aName, bool& aFound,
                             ErrorResult& rv)
@@ -2365,11 +2218,6 @@ nsHTMLDocument::NamedGetter(JSContext* cx, const nsAString& aName, bool& aFound,
   nsISupports* supp = ResolveName(aName, &cache);
   if (!supp) {
     aFound = false;
-    if (GetCompatibilityMode() == eCompatibility_NavQuirks &&
-        aName.EqualsLiteral("all")) {
-      JS::Rooted<JSObject*> obj(cx, GetWrapper());
-      rv = nsHTMLDocumentSH::TryResolveAll(cx, this, obj);
-    }
     return nullptr;
   }
 
@@ -2379,7 +2227,7 @@ nsHTMLDocument::NamedGetter(JSContext* cx, const nsAString& aName, bool& aFound,
     JSAutoCompartment ac(cx, wrapper);
     // XXXbz Should we call the (slightly misnamed, really) WrapNativeParent
     // here?
-    if (!dom::WrapObject(cx, wrapper, supp, cache, nullptr, val.address())) {
+    if (!dom::WrapObject(cx, wrapper, supp, cache, nullptr, &val)) {
       rv.Throw(NS_ERROR_OUT_OF_MEMORY);
       return nullptr;
     }
@@ -2752,6 +2600,16 @@ nsHTMLDocument::GetDocumentAllResult(const nsAString& aID,
   *aCache = cont = docAllList->Item(0, true);
 
   return cont;
+}
+
+JSObject*
+nsHTMLDocument::GetAll(JSContext* aCx, ErrorResult& aRv)
+{
+  if (!mAll) {
+    mAll = new HTMLAllCollection(this);
+  }
+
+  return mAll->GetObject(aCx, aRv);
 }
 
 static void
@@ -3330,7 +3188,6 @@ nsHTMLDocument::DoClipboardSecurityCheck(bool aPaste)
   if (!cx) {
     return NS_OK;
   }
-  JSAutoRequest ar(cx);
 
   NS_NAMED_LITERAL_CSTRING(classNameStr, "Clipboard");
 
@@ -3775,7 +3632,6 @@ nsHTMLDocument::Clone(nsINodeInfo *aNodeInfo, nsINode **aResult) const
                "Can't import this document into another document!");
 
   nsRefPtr<nsHTMLDocument> clone = new nsHTMLDocument();
-  NS_ENSURE_TRUE(clone, NS_ERROR_OUT_OF_MEMORY);
   nsresult rv = CloneDocHelper(clone.get());
   NS_ENSURE_SUCCESS(rv, rv);
 
@@ -3806,9 +3662,9 @@ nsHTMLDocument::RemovedFromDocShell()
 }
 
 /* virtual */ void
-nsHTMLDocument::DocSizeOfExcludingThis(nsWindowSizes* aWindowSizes) const
+nsHTMLDocument::DocAddSizeOfExcludingThis(nsWindowSizes* aWindowSizes) const
 {
-  nsDocument::DocSizeOfExcludingThis(aWindowSizes);
+  nsDocument::DocAddSizeOfExcludingThis(aWindowSizes);
 
   // Measurement of the following members may be added later if DMD finds it is
   // worthwhile:

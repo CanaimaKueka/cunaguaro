@@ -50,6 +50,8 @@
 <!ENTITY sendLaterCmd.accesskey "l">
 <!ENTITY printSetupCmd.label "Oldalbeállítás…">
 <!ENTITY printSetupCmd.accesskey "l">
+<!ENTITY printPreviewCmd.label "Nyomtatási kép">
+<!ENTITY printPreviewCmd.accesskey "t">
 <!ENTITY printCmd.label "Nyomtatás…">
 <!ENTITY printCmd.key "P">
 <!ENTITY printCmd.accesskey "N">
@@ -87,6 +89,7 @@
 <!ENTITY findCmd.label "Keresés és csere…">
 <!ENTITY findCmd.key "F">
 <!ENTITY findCmd.accesskey "K">
+<!ENTITY findReplaceCmd.key "H">
 <!ENTITY findAgainCmd.label "Következő keresése">
 <!ENTITY findAgainCmd.key "G">
 <!ENTITY findAgainCmd.accesskey "z">

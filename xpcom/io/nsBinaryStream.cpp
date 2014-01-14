@@ -20,7 +20,6 @@
 #include <string.h>
 #include "nsBinaryStream.h"
 #include "nsCRT.h"
-#include "prlong.h"
 #include "nsString.h"
 #include "nsISerializable.h"
 #include "nsIClassInfo.h"
@@ -28,7 +27,6 @@
 #include "nsIURI.h" // for NS_IURI_IID
 #include "mozilla/Endian.h"
 
-#include "jsapi.h"
 #include "jsfriendapi.h"
 
 NS_IMPL_ISUPPORTS3(nsBinaryOutputStream, nsIObjectOutputStream, nsIBinaryOutputStream, nsIOutputStream)
@@ -716,7 +714,6 @@ nsBinaryInputStream::ReadByteArray(uint32_t aLength, uint8_t* *_rval)
 NS_IMETHODIMP
 nsBinaryInputStream::ReadArrayBuffer(uint32_t aLength, const JS::Value& aBuffer, JSContext* cx)
 {
-    JSAutoRequest ar(cx);
     if (!aBuffer.isObject()) {
         return NS_ERROR_FAILURE;
     }

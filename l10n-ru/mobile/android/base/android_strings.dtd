@@ -2,21 +2,19 @@
    - License, v. 2.0. If a copy of the MPL was not distributed with this
    - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
 
-<!ENTITY splash_settingup "Настройка вашего &brandShortName;">
-<!ENTITY splash_bookmarks_history "Идёт обновление ваших закладок и истории, что может занять примерно минуту.">
 <!ENTITY no_space_to_start_error "Недостаточно свободного места для запуска &brandShortName;.">
 <!ENTITY error_loading_file "При попытке загрузки файлов, требуемых для запуска &brandShortName;, произошла ошибка.">
-<!ENTITY awesomebar_all_pages_title "Топ сайтов">
-<!ENTITY awesomebar_bookmarks_title "Закладки">
-<!ENTITY awesomebar_history_title "История">
-<!ENTITY awesomebar_switch_to_tab "Перейти на вкладку">
+<!ENTITY bookmarks_title "Закладки">
+<!ENTITY history_title "История">
+<!ENTITY reading_list_title "Список для чтения">
+<!ENTITY switch_to_tab "Перейти на вкладку">
 <!ENTITY crash_reporter_title "Сообщение о падении &brandShortName;">
 <!ENTITY crash_message2 "&brandShortName; столкнулся с проблемой и упал. После перезапуска список ваших вкладок будет показан на начальной странице &brandShortName;.">
-<!ENTITY crash_send_report_message2 "Сообщить в Mozilla об этом падении, чтобы они смогли это исправить">
+<!ENTITY crash_send_report_message3 "Сообщить в &vendorShortName; об этом падении, чтобы они смогли это исправить">
 <!ENTITY crash_include_url2 "Включить адрес страницы на которой я был в это время">
 <!ENTITY crash_sorry "Приносим свои извинения">
 <!ENTITY crash_comment "Добавить комментарий (комментарии публично доступны)">
-<!ENTITY crash_allow_contact "Разрешить Mozilla связаться со мной по поводу этого сообщения">
+<!ENTITY crash_allow_contact2 "Разрешить &vendorShortName; связаться со мной по поводу этого сообщения">
 <!ENTITY crash_email "Ваш адрес эл. почты">
 <!ENTITY crash_closing_alert "Выйти, не отправляя сообщение о падении?">
 <!ENTITY sending_crash_report "Отправка сообщения о падении\u2026">
@@ -26,13 +24,12 @@
 <!ENTITY launcher_shortcuts_title "Веб-приложения &brandShortName;">
 <!ENTITY launcher_shortcuts_empty "Веб-приложения не найдены">
 <!ENTITY choose_file "Выбор файла">
-<!ENTITY awesomebar_default_text "Введите поиск или адрес">
-<!ENTITY remote_tabs "Синхронизированные вкладки">
-<!ENTITY remote_tabs_show_all "Показать все вкладки">
+<!ENTITY url_bar_default_text "Введите поисковый запрос или адрес">
 <!ENTITY bookmark "Закладка">
 <!ENTITY bookmark_added "Закладка добавлена">
 <!ENTITY bookmark_removed "Закладка удалена">
 <!ENTITY bookmark_updated "Закладка обновлена">
+<!ENTITY bookmark_options "Настройки">
 <!ENTITY history_today_section "Сегодня">
 <!ENTITY history_yesterday_section "Вчера">
 <!ENTITY history_week_section "7 дней назад">
@@ -51,15 +48,26 @@
 <!ENTITY new_tab_opened "Открыта новая вкладка">
 <!ENTITY settings "Параметры">
 <!ENTITY settings_title "Параметры">
-<!ENTITY pref_category_general "Основные">
-<!ENTITY pref_category_privacy "Приватность и защита">
-<!ENTITY pref_category_content "Содержимое">
+<!ENTITY pref_category_advanced "Дополнительно">
+<!ENTITY pref_category_customize "Настройка">
+<!ENTITY pref_category_search2 "Параметры поиска">
+<!ENTITY pref_category_display "Отображение">
+<!ENTITY pref_category_privacy_short "Приватность">
+<!ENTITY pref_category_vendor "&vendorShortName;">
 <!ENTITY pref_category_datareporting "Выбор данных">
-<!ENTITY pref_about_firefox "О &brandShortName;">
+<!ENTITY pref_category_installed_search_engines "Установленные поисковые системы">
+<!ENTITY pref_category_add_search_providers "Добавить других провайдеров поиска">
+<!ENTITY pref_search_tip "СОВЕТ: Добавляйте любой веб-сайт в список провайдеров поиска путем долгого нажатия на его поле поиска.">
+<!ENTITY pref_category_devtools "Инструменты разработки">
+<!ENTITY pref_developer_remotedebugging "Удалённый отладчик">
+<!ENTITY pref_developer_remotedebugging_docs "Подробнее">
 <!ENTITY pref_remember_signons "Запоминать пароли">
-<!ENTITY pref_header_general "Основные">
-<!ENTITY pref_header_privacy "Приватность и защита">
-<!ENTITY pref_header_content "Содержимое">
+<!ENTITY pref_header_customize "Настройка">
+<!ENTITY pref_header_display "Отображение">
+<!ENTITY pref_header_privacy_short "Приватность">
+<!ENTITY pref_header_help "Справка">
+<!ENTITY pref_header_vendor "&vendorShortName;">
+<!ENTITY pref_header_devtools "Инструменты разработки">
 <!ENTITY pref_cookies_menu "Куки">
 <!ENTITY pref_cookies_accept_all "Включены">
 <!ENTITY pref_cookies_not_accept_foreign "Включены, кроме сторонних сайтов">
@@ -77,7 +85,10 @@
 <!ENTITY pref_plugins_tap_to_play "По нажатию">
 <!ENTITY pref_plugins_disabled "Отключены">
 <!ENTITY pref_text_size "Размер текста">
-<!ENTITY pref_reflow_on_zoom2 "Перерисовка после увеличения">
+<!ENTITY pref_reflow_on_zoom4 "Перерисовка текста">
+<!ENTITY pref_restore "Вкладки">
+<!ENTITY pref_restore_always "Всегда восстанавливать">
+<!ENTITY pref_restore_quit "Не восстанавливать после выхода из &brandShortName;">
 <!ENTITY pref_font_size_tiny "Мелкий">
 <!ENTITY pref_font_size_small "Маленький">
 <!ENTITY pref_font_size_medium "Средний">
@@ -89,7 +100,7 @@
 <!ENTITY pref_use_master_password "Задать мастер-пароль">
 <!ENTITY pref_show_product_announcements "Анонсы продукта">
 <!ENTITY pref_sync "Синхронизация">
-<!ENTITY pref_search_suggestions "Поиск. предложения">
+<!ENTITY pref_search_suggestions "Поисковые предложения">
 <!ENTITY pref_import_android "Импорт из Android">
 <!ENTITY pref_private_data_history "Журнал посещений и загрузок">
 <!ENTITY pref_private_data_formdata "Журнал форм и поиска">
@@ -99,16 +110,28 @@
 <!ENTITY pref_private_data_offlineApps "Данные автономных веб-сайтов">
 <!ENTITY pref_private_data_siteSettings2 "Настройки сайтов">
 <!ENTITY pref_private_data_downloadFiles "Загруженные файлы">
+<!ENTITY pref_about_firefox "О &brandShortName;">
+<!ENTITY pref_vendor_faqs "FAQ">
+<!ENTITY pref_vendor_feedback "Отправить отзыв">
+<!ENTITY pref_search_set_default "Установить по умолчанию">
+<!ENTITY pref_search_default "По умолчанию">
+<!ENTITY pref_search_remove "Удалить">
+<!ENTITY pref_search_last_toast "Вы не можете удалить или отключить вашу последнюю поисковую систему.">
 <!ENTITY datareporting_notification_title "Статистика и данные &brandShortName;">
+<!ENTITY datareporting_notification_action_long "Выбрать, какой информацией поделиться">
 <!ENTITY datareporting_notification_action "Выбрать, чем поделиться">
 <!ENTITY datareporting_notification_summary "Чтобы улучшить вашу работу, &brandShortName; автоматически отправляет некоторые данные в &vendorShortName;.">
 <!ENTITY datareporting_notification_summary_short "Чтобы улучшить вашу работу, &brandShortName;…">
-<!ENTITY datareporting_fhr_title "Отчёт о работоспособности &brandShortName;">
-<!ENTITY datareporting_fhr_summary "Помогает вам больше узнать о скорости работы вашего браузера и поделиться данными о его работоспособности с &vendorShortName;">
+<!ENTITY datareporting_notification_ticker_text "&datareporting_notification_title;: &datareporting_notification_action_long;">
+<!ENTITY datareporting_fhr_title "Отчёт о здоровье &brandShortName;">
+<!ENTITY datareporting_fhr_summary2 "Делится данными о здоровье вашего браузера с &vendorShortName; и помогает вам больше узнать о скорости его работы">
+<!ENTITY datareporting_abouthr_title "Посмотреть мой отчёт о здоровье">
 <!ENTITY datareporting_telemetry_title "Телеметрия">
-<!ENTITY datareporting_telemetry_summary "Поделиться сведениями о производительности, использовании, аппаратном обеспечении и настройках вашего браузера с &vendorShortName;, чтобы помочь нам сделать &brandShortName; ещё лучше">
+<!ENTITY datareporting_telemetry_summary "Делится сведениями о производительности, использовании, аппаратном обеспечении и настройках вашего браузера с &vendorShortName;, чтобы помочь нам сделать &brandShortName; ещё лучше">
 <!ENTITY datareporting_crashreporter_summary "&brandShortName; отправляет сообщения о падениях, чтобы помочь &vendorShortName; сделать ваш браузер более стабильным и безопасным">
-<!ENTITY datareporting_crashreporter_title "Сообщения о падениях &brandShortName;">
+<!ENTITY datareporting_crashreporter_title_short "Сообщения о падениях">
+<!ENTITY datareporting_wifi_title "Службы местоположения &vendorShortName;">
+<!ENTITY datareporting_wifi_summary "Помогите улучшить службы определения местоположения для открытого Интернета, позволив &brandShortName; собирать и отправлять анонимные данные о базовых станциях сотовой сети">
 <!ENTITY pref_update_autodownload "Автообновление">
 <!ENTITY pref_update_autodownload_wifi "Только через Wi-Fi">
 <!ENTITY pref_update_autodownload_disabled "Отключено">
@@ -131,9 +154,8 @@
 <!ENTITY tabs_normal "Вкладки">
 <!ENTITY tabs_private "Приватные">
 <!ENTITY tabs_synced "Синхронизированные">
-<!ENTITY wallpaper_success "Обои обновлены">
-<!ENTITY wallpaper_progress "Установка обоев">
-<!ENTITY wallpaper_fail "Не удалось установить обои">
+<!ENTITY set_image_fail "Не удалось установить изображение">
+<!ENTITY set_image_chooser_title "Установить изображение как">
 <!ENTITY find_text "Найти на странице">
 <!ENTITY find_prev "Назад">
 <!ENTITY find_next "Далее">
@@ -141,8 +163,7 @@
 <!ENTITY contextmenu_open_new_tab "Открыть в новой вкладке">
 <!ENTITY contextmenu_open_private_tab "Открыть в приватной вкладке">
 <!ENTITY contextmenu_open_in_reader "Открыть для чтения">
-<!ENTITY contextmenu_remove_history "Удалить">
-<!ENTITY contextmenu_remove_bookmark "Удалить">
+<!ENTITY contextmenu_remove "Удалить">
 <!ENTITY contextmenu_add_to_launcher "Добавить на домашний экран">
 <!ENTITY contextmenu_share "Поделиться">
 <!ENTITY contextmenu_pasteandgo "Вставить и перейти">
@@ -151,6 +172,9 @@
 <!ENTITY contextmenu_edit_bookmark "Изменить">
 <!ENTITY contextmenu_subscribe "Подписаться на страницу">
 <!ENTITY contextmenu_site_settings "Изменить параметры сайта">
+<!ENTITY contextmenu_top_sites_edit "Изменить">
+<!ENTITY contextmenu_top_sites_pin "Закрепить сайт">
+<!ENTITY contextmenu_top_sites_unpin "Открепить сайт">
 <!ENTITY pref_titlebar_mode "Панель заголовка">
 <!ENTITY pref_titlebar_mode_title "Отображать заголовок страницы">
 <!ENTITY pref_titlebar_mode_url "Отображать адрес страницы">
@@ -163,12 +187,11 @@
 <!ENTITY site_settings_cancel "Отмена">
 <!ENTITY site_settings_clear "Очистить">
 <!ENTITY site_settings_no_settings "Нет настроек для очистки">
-<!ENTITY reading_list "Список для чтения">
 <!ENTITY reading_list_added "Страница добавлена в ваш Список для чтения">
 <!ENTITY reading_list_removed "Страница удалена из вашего Списка для чтения">
 <!ENTITY reading_list_failed "Не удалось добавить страницу в ваш Список для чтения">
 <!ENTITY reading_list_duplicate "Страница уже в вашем Списке для чтения">
-<!ENTITY reader "Чтение">
+<!ENTITY page_action_dropmarker_description "Дополнительные действия">
 <!ENTITY masterpassword_create_title "Создать мастер-пароль">
 <!ENTITY masterpassword_remove_title "Удалить мастер-пароль">
 <!ENTITY masterpassword_password "Пароль">
@@ -180,24 +203,32 @@
 <!ENTITY button_clear_data "Удалить данные">
 <!ENTITY button_set "Установить">
 <!ENTITY button_clear "Очистить">
-<!ENTITY abouthome_addons_title "Дополнения для вашего &brandShortName;">
-<!ENTITY abouthome_addons_browse "Обзор всех дополнений &brandShortName;">
-<!ENTITY abouthome_last_tabs_title "Вкладки открытые в прошлый раз">
-<!ENTITY abouthome_last_tabs_open "Открыть все вкладки с прошлого раза">
-<!ENTITY abouthome_top_sites_title "Топ сайтов">
-<!ENTITY abouthome_topsites_edit "Изменить">
-<!ENTITY abouthome_topsites_pin "Закрепить сайт">
-<!ENTITY abouthome_topsites_unpin "Открепить сайт">
-<!ENTITY abouthome_about_sync3 "Настройте Firefox Sync для доступа к закладкам, журналу и вкладкам с других ваших устройств »">
-<!ENTITY abouthome_about_apps3 "Загрузите приложения из магазина Firefox и откройте для себя всё самое лучшее, что может предложить Интернет »">
-<!ENTITY abouthome_sync_bold_name "Firefox Sync">
-<!ENTITY abouthome_apps_bold_name2 "Магазин Firefox">
+<!ENTITY home_top_sites_title "Топ сайтов">
+<!ENTITY home_top_sites_add "Добавить сайт">
+<!ENTITY home_history_title "История">
+<!ENTITY home_bookmarks_empty "Сохраняемые вами закладки появятся здесь.">
+<!ENTITY home_last_tabs_title "Вкладки с прошлого раза">
+<!ENTITY home_last_tabs_open "Открыть все вкладки с прошлого раза">
+<!ENTITY home_last_tabs_empty "Ваши недавние вкладки появятся здесь.">
+<!ENTITY home_most_recent_title "Недавно посещённые">
+<!ENTITY home_most_recent_empty "Недавно посещённые вами веб-сайты появятся здесь.">
+<!ENTITY home_reading_list_empty "Статьи, сохранённые вами для последующего чтения, появятся здесь.">
+<!ENTITY home_reading_list_hint "СОВЕТ: Сохраняйте статьи в ваш список для чтения путём долгого нажатия на значок &#037;I, когда он появится в строке заголовка.">
+<!ENTITY home_reading_list_hint_accessible "СОВЕТ: Сохраняйте статьи в ваш список для чтения путём долгого нажатия на кнопку режима чтения, когда она появится в строке заголовка.">
+<!ENTITY pin_site_dialog_hint "Введите поисковый запрос">
 <!ENTITY filepicker_title "Выбрать файл">
 <!ENTITY filepicker_audio_title "Выбрать или записать звук">
 <!ENTITY filepicker_image_title "Выбрать или сделать фотографию">
 <!ENTITY filepicker_video_title "Выбрать или записать видео">
 <!ENTITY identity_connected_to "Вы соединены с">
 <!ENTITY identity_run_by "который управляется">
+<!ENTITY loaded_mixed_content_message "Эта страница отображает содержимое, не являющееся безопасным.">
+<!ENTITY blocked_mixed_content_message_top "&brandShortName; заблокировал содержимое, не являющееся безопасным.">
+<!ENTITY blocked_mixed_content_message_bottom "Большинство веб-сайтов будут продолжать нормально работать, даже когда это содержимое заблокировано.">
+<!ENTITY learn_more "Подробнее">
+<!ENTITY enable_protection "Включить защиту">
+<!ENTITY disable_protection "Отключить защиту">
+<!ENTITY keep_blocking "Продолжать блокировать">
 <!ENTITY private_data_success "Личные данные удалены">
 <!ENTITY private_data_fail "Не удалось удалить некоторые личные данные">
 <!ENTITY bookmarkhistory_button_import "Импорт">
@@ -206,8 +237,10 @@
 <!ENTITY bookmarkhistory_import_history "Импорт истории из Android">
 <!ENTITY bookmarkhistory_import_wait "Пожалуйста, подождите…">
 <!ENTITY suggestions_prompt2 "Вы хотите включить поисковые предложения &formatS;?">
+<!ENTITY suggestion_for_engine "Искать &formatS2; в &formatS1;">
 <!ENTITY webapp_generic_name "Приложение">
 <!ENTITY searchable_description "Закладки и история">
+<!ENTITY devtools_remote_debugging_forward "Не забудьте настроить перенаправление портов!">
 <!ENTITY updater_start_title2 "Доступно обновление &brandShortName;">
 <!ENTITY updater_start_select2 "Нажмите для загрузки">
 <!ENTITY updater_downloading_title2 "Загрузка &brandShortName;">
@@ -216,3 +249,11 @@
 <!ENTITY updater_downloading_retry2 "Нажмите для повтора">
 <!ENTITY updater_apply_title2 "Доступно обновление &brandShortName;">
 <!ENTITY updater_apply_select2 "Нажмите для обновления">
+<!ENTITY new_guest_session "Новая гостевая сессия">
+<!ENTITY exit_guest_session "Выйти из гостевой сессии">
+<!ENTITY guest_session_dialog_continue "Продолжить">
+<!ENTITY guest_session_dialog_cancel "Отмена">
+<!ENTITY new_guest_session_title "&brandShortName; сейчас будет перезапущен">
+<!ENTITY new_guest_session_text "Человек, использующий гостевую сессию, не увидит ничего из ваших личных данных веб-сёрфинга (таких как сохранённые пароли, история или закладки).\n\nКогда ваш гость закончит, его данные веб-сёрфинга будут удалены, а ваша сессия будет восстановлена.">
+<!ENTITY exit_guest_session_title "&brandShortName; сейчас будет перезапущен">
+<!ENTITY exit_guest_session_text "Данные веб-серфинга из этой сессии будут удалены.">

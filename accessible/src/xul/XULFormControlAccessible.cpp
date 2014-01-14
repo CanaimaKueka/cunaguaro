@@ -28,6 +28,7 @@
 #include "nsINameSpaceManager.h"
 #include "nsITextControlFrame.h"
 #include "nsMenuPopupFrame.h"
+#include "mozilla/dom/Element.h"
 
 using namespace mozilla::a11y;
 
@@ -159,63 +160,29 @@ XULButtonAccessible::ContainerWidget() const
   return nullptr;
 }
 
-////////////////////////////////////////////////////////////////////////////////
-// XULButtonAccessible: Accessible protected
-
-void
-XULButtonAccessible::CacheChildren()
+bool
+XULButtonAccessible::IsAcceptableChild(Accessible* aPossibleChild) const
 {
   // In general XUL button has not accessible children. Nevertheless menu
   // buttons can have button (@type="menu-button") and popup accessibles
-  // (@type="menu-button" or @type="menu").
+  // (@type="menu-button", @type="menu" or columnpicker.
 
   // XXX: no children until the button is menu button. Probably it's not
   // totally correct but in general AT wants to have leaf buttons.
-  bool isMenu = mContent->AttrValueIs(kNameSpaceID_None,
-                                       nsGkAtoms::type,
-                                       nsGkAtoms::menu,
-                                       eCaseMatters);
+  roles::Role role = aPossibleChild->Role();
 
-  bool isMenuButton = isMenu ?
-    false :
-    mContent->AttrValueIs(kNameSpaceID_None, nsGkAtoms::type,
-                          nsGkAtoms::menuButton, eCaseMatters);
+  // Get an accessible for menupopup or panel elements.
+  if (role == roles::MENUPOPUP)
+    return true;
 
-  NS_ENSURE_TRUE_VOID(mDoc);
-  if (!isMenu && !isMenuButton)
-    return;
+  // Button type="menu-button" contains a real button. Get an accessible
+  // for it. Ignore dropmarker button which is placed as a last child.
+  if (role != roles::PUSHBUTTON ||
+      aPossibleChild->GetContent()->Tag() == nsGkAtoms::dropMarker)
+    return false;
 
-  Accessible* menupopup = nullptr;
-  Accessible* button = nullptr;
-
-  TreeWalker walker(this, mContent);
-
-  Accessible* child = nullptr;
-  while ((child = walker.NextChild())) {
-    roles::Role role = child->Role();
-
-    if (role == roles::MENUPOPUP) {
-      // Get an accessible for menupopup or panel elements.
-      menupopup = child;
-
-    } else if (isMenuButton && role == roles::PUSHBUTTON) {
-      // Button type="menu-button" contains a real button. Get an accessible
-      // for it. Ignore dropmarker button which is placed as a last child.
-      button = child;
-      break;
-
-    } else {
-      // Unbind rejected accessible from document.
-      Document()->UnbindFromDocument(child);
-    }
-  }
-
-  if (!menupopup)
-    return;
-
-  AppendChild(menupopup);
-  if (button)
-    AppendChild(button);
+  return mContent->AttrValueIs(kNameSpaceID_None, nsGkAtoms::type,
+                               nsGkAtoms::menuButton, eCaseMatters);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -254,7 +221,7 @@ XULDropmarkerAccessible::DropmarkerOpen(bool aToggleOpen)
   bool isOpen = false;
 
   nsCOMPtr<nsIDOMXULButtonElement> parentButtonElement =
-    do_QueryInterface(mContent->GetParent());
+    do_QueryInterface(mContent->GetFlattenedTreeParent());
 
   if (parentButtonElement) {
     parentButtonElement->GetOpen(&isOpen);
@@ -418,7 +385,7 @@ XULGroupboxAccessible::NativeName(nsString& aName)
 {
   // XXX: we use the first related accessible only.
   Accessible* label =
-    RelationByType(nsIAccessibleRelation::RELATION_LABELLED_BY).Next();
+    RelationByType(RelationType::LABELLED_BY).Next();
   if (label)
     return label->Name(aName);
 
@@ -426,10 +393,10 @@ XULGroupboxAccessible::NativeName(nsString& aName)
 }
 
 Relation
-XULGroupboxAccessible::RelationByType(uint32_t aType)
+XULGroupboxAccessible::RelationByType(RelationType aType)
 {
   Relation rel = AccessibleWrap::RelationByType(aType);
-  if (aType != nsIAccessibleRelation::RELATION_LABELLED_BY)
+  if (aType != RelationType::LABELLED_BY)
     return rel;
 
   // The label for xul:groupbox is generated from xul:label that is
@@ -440,8 +407,7 @@ XULGroupboxAccessible::RelationByType(uint32_t aType)
     Accessible* childAcc = GetChildAt(childIdx);
     if (childAcc->Role() == roles::LABEL) {
       // Ensure that it's our label
-      Relation reverseRel =
-        childAcc->RelationByType(nsIAccessibleRelation::RELATION_LABEL_FOR);
+      Relation reverseRel = childAcc->RelationByType(RelationType::LABEL_FOR);
       Accessible* testGroupbox = nullptr;
       while ((testGroupbox = reverseRel.Next()))
         if (testGroupbox == this) {
@@ -801,6 +767,15 @@ XULTextFieldAccessible::CanHaveAnonChildren()
   return false;
 }
 
+bool
+XULTextFieldAccessible::IsAcceptableChild(Accessible* aPossibleChild) const
+{
+  // XXX: entry shouldn't contain anything but text leafs. Currently it may
+  // contain a trailing fake HTML br element added for layout needs. We don't
+  // need to expose it since it'd be confusing for AT.
+  return aPossibleChild->IsTextLeaf();
+}
+
 already_AddRefed<nsIEditor>
 XULTextFieldAccessible::GetEditor() const
 {
@@ -828,9 +803,8 @@ XULTextFieldAccessible::CacheChildren()
     return;
 
   TreeWalker walker(this, inputContent);
-
-  Accessible* child = nullptr;
-  while ((child = walker.NextChild()) && AppendChild(child));
+  while (Accessible* child = walker.NextChild())
+    AppendChild(child);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -840,6 +814,10 @@ already_AddRefed<nsFrameSelection>
 XULTextFieldAccessible::FrameSelection()
 {
   nsCOMPtr<nsIContent> inputContent(GetInputField());
+  NS_ASSERTION(inputContent, "No input content");
+  if (!inputContent)
+    return nullptr;
+
   nsIFrame* frame = inputContent->GetPrimaryFrame();
   return frame ? frame->GetFrameSelection() : nullptr;
 }

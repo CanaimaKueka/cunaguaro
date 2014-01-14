@@ -40,8 +40,7 @@ function search_observer(subject, topic, data) {
       let retrievedEngine = Services.search.getEngineByName("Test search engine");
       do_check_eq(engine, retrievedEngine);
       Services.search.defaultEngine = engine;
-      // XXX bug 493051
-      // Services.search.currentEngine = engine;
+      Services.search.currentEngine = engine;
       do_execute_soon(function () {
         Services.search.removeEngine(engine);
       });
@@ -65,7 +64,7 @@ function run_test() {
   updateAppInfo();
 
   let httpServer = new HttpServer();
-  httpServer.start(4444);
+  httpServer.start(-1);
   httpServer.registerDirectory("/", do_get_cwd());
 
   do_register_cleanup(function cleanup() {
@@ -77,7 +76,9 @@ function run_test() {
 
   Services.obs.addObserver(search_observer, "browser-search-engine-modified", false);
 
-  Services.search.addEngine("http://localhost:4444/data/engine.xml",
+  Services.search.addEngine("http://localhost:" +
+                            httpServer.identity.primaryPort +
+                            "/data/engine.xml",
                             Ci.nsISearchEngine.DATA_XML,
                             null, false);
 }

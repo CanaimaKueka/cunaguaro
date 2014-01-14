@@ -12,7 +12,6 @@
 #include "prlog.h"
 
 #include "nsServiceManagerUtils.h"
-#include "nsReadableUtils.h"
 #include "nsExpirationTracker.h"
 #include "nsILanguageAtomService.h"
 #include "nsITimer.h"
@@ -22,7 +21,6 @@
 #include "nsGkAtoms.h"
 
 #include "gfxTypes.h"
-#include "nsAlgorithm.h"
 #include "gfxContext.h"
 #include "gfxFontMissingGlyphs.h"
 #include "gfxUserFontSet.h"
@@ -35,19 +33,23 @@
 #include "nsStyleConsts.h"
 #include "mozilla/FloatingPoint.h"
 #include "mozilla/Likely.h"
+#include "mozilla/MemoryReporting.h"
 #include "mozilla/Preferences.h"
 #include "mozilla/Services.h"
 #include "mozilla/Telemetry.h"
 #include "gfxSVGGlyphs.h"
+#include "gfx2DGlue.h"
 
 #include "cairo.h"
 #include "gfxFontTest.h"
 
 #include "harfbuzz/hb.h"
 #include "harfbuzz/hb-ot.h"
+#include "graphite2/Font.h"
 
 #include "nsCRT.h"
 #include "GeckoProfiler.h"
+#include "gfxFontConstants.h"
 
 #include <algorithm>
 
@@ -87,6 +89,63 @@ gfxCharacterMap::NotifyReleased()
     delete this;
 }
 
+gfxFontEntry::gfxFontEntry() :
+    mItalic(false), mFixedPitch(false),
+    mIsProxy(false), mIsValid(true),
+    mIsBadUnderlineFont(false),
+    mIsUserFont(false),
+    mIsLocalUserFont(false),
+    mStandardFace(false),
+    mSymbolFont(false),
+    mIgnoreGDEF(false),
+    mIgnoreGSUB(false),
+    mSVGInitialized(false),
+    mHasSpaceFeaturesInitialized(false),
+    mHasSpaceFeatures(false),
+    mHasSpaceFeaturesKerning(false),
+    mHasSpaceFeaturesNonKerning(false),
+    mHasSpaceFeaturesSubDefault(false),
+    mCheckedForGraphiteTables(false),
+    mHasCmapTable(false),
+    mGrFaceInitialized(false),
+    mWeight(500), mStretch(NS_FONT_STRETCH_NORMAL),
+    mUVSOffset(0), mUVSData(nullptr),
+    mLanguageOverride(NO_FONT_LANGUAGE_OVERRIDE),
+    mUnitsPerEm(0),
+    mHBFace(nullptr),
+    mGrFace(nullptr),
+    mGrFaceRefCnt(0)
+{
+}
+
+gfxFontEntry::gfxFontEntry(const nsAString& aName, bool aIsStandardFace) :
+    mName(aName), mItalic(false), mFixedPitch(false),
+    mIsProxy(false), mIsValid(true),
+    mIsBadUnderlineFont(false), mIsUserFont(false),
+    mIsLocalUserFont(false), mStandardFace(aIsStandardFace),
+    mSymbolFont(false),
+    mIgnoreGDEF(false),
+    mIgnoreGSUB(false),
+    mSVGInitialized(false),
+    mHasSpaceFeaturesInitialized(false),
+    mHasSpaceFeatures(false),
+    mHasSpaceFeaturesKerning(false),
+    mHasSpaceFeaturesNonKerning(false),
+    mHasSpaceFeaturesSubDefault(false),
+    mCheckedForGraphiteTables(false),
+    mHasCmapTable(false),
+    mGrFaceInitialized(false),
+    mWeight(500), mStretch(NS_FONT_STRETCH_NORMAL),
+    mUVSOffset(0), mUVSData(nullptr),
+    mLanguageOverride(NO_FONT_LANGUAGE_OVERRIDE),
+    mUnitsPerEm(0),
+    mHBFace(nullptr),
+    mGrFace(nullptr),
+    mGrFaceRefCnt(0)
+{
+    memset(&mHasSpaceFeaturesSub, 0, sizeof(mHasSpaceFeaturesSub));
+}
+
 gfxFontEntry::~gfxFontEntry()
 {
     // For downloaded fonts, we need to tell the user font cache that this
@@ -95,10 +154,11 @@ gfxFontEntry::~gfxFontEntry()
         gfxUserFontSet::UserFontCache::ForgetFont(this);
     }
 
-    if (mSVGGlyphs) {
-        delete mSVGGlyphs;
-    }
-    delete mUserFontData;
+    // By the time the entry is destroyed, all font instances that were
+    // using it should already have been deleted, and so the HB and/or Gr
+    // face objects should have been released.
+    MOZ_ASSERT(!mHBFace);
+    MOZ_ASSERT(!mGrFaceInitialized);
 }
 
 bool gfxFontEntry::IsSymbolFont() 
@@ -130,17 +190,19 @@ nsresult gfxFontEntry::InitializeUVSMap()
 
     if (!mUVSData) {
         const uint32_t kCmapTag = TRUETYPE_TAG('c','m','a','p');
-        AutoFallibleTArray<uint8_t,16384> buffer;
-        if (GetFontTable(kCmapTag, buffer) != NS_OK) {
+        AutoTable cmapTable(this, kCmapTag);
+        if (!cmapTable) {
             mUVSOffset = 0; // don't bother to read the table again
             return NS_ERROR_FAILURE;
         }
 
         uint8_t* uvsData;
+        unsigned int cmapLen;
+        const char* cmapData = hb_blob_get_data(cmapTable, &cmapLen);
         nsresult rv = gfxFontUtils::ReadCMAPTableFormat14(
-                          buffer.Elements() + mUVSOffset,
-                          buffer.Length() - mUVSOffset,
-                          uvsData);
+                          (const uint8_t*)cmapData + mUVSOffset,
+                          cmapLen - mUVSOffset, uvsData);
+
         if (NS_FAILED(rv)) {
             mUVSOffset = 0; // don't bother to read the table again
             return rv;
@@ -173,11 +235,10 @@ nsresult gfxFontEntry::ReadCMAP()
 nsString
 gfxFontEntry::RealFaceName()
 {
-    FallibleTArray<uint8_t> nameTable;
-    nsresult rv = GetFontTable(TRUETYPE_TAG('n','a','m','e'), nameTable);
-    if (NS_SUCCEEDED(rv)) {
+    AutoTable nameTable(this, TRUETYPE_TAG('n','a','m','e'));
+    if (nameTable) {
         nsAutoString name;
-        rv = gfxFontUtils::GetFullNameFromTable(nameTable, name);
+        nsresult rv = gfxFontUtils::GetFullNameFromTable(nameTable, name);
         if (NS_SUCCEEDED(rv)) {
             return name;
         }
@@ -205,6 +266,30 @@ gfxFontEntry::FindOrMakeFont(const gfxFontStyle *aStyle, bool aNeedsBold)
     return font.forget();
 }
 
+uint16_t
+gfxFontEntry::UnitsPerEm()
+{
+    if (!mUnitsPerEm) {
+        AutoTable headTable(this, TRUETYPE_TAG('h','e','a','d'));
+        if (headTable) {
+            uint32_t len;
+            const HeadTable* head =
+                reinterpret_cast<const HeadTable*>(hb_blob_get_data(headTable,
+                                                                    &len));
+            if (len >= sizeof(HeadTable)) {
+                mUnitsPerEm = head->unitsPerEm;
+            }
+        }
+
+        // if we didn't find a usable 'head' table, or if the value was
+        // outside the valid range, record it as invalid
+        if (mUnitsPerEm < kMinUPEM || mUnitsPerEm > kMaxUPEM) {
+            mUnitsPerEm = kInvalidUPEM;
+        }
+    }
+    return mUnitsPerEm;
+}
+
 bool
 gfxFontEntry::HasSVGGlyph(uint32_t aGlyphId)
 {
@@ -216,57 +301,77 @@ bool
 gfxFontEntry::GetSVGGlyphExtents(gfxContext *aContext, uint32_t aGlyphId,
                                  gfxRect *aResult)
 {
-    NS_ABORT_IF_FALSE(mSVGInitialized, "SVG data has not yet been loaded. TryGetSVGData() first.");
+    NS_ABORT_IF_FALSE(mSVGInitialized,
+                      "SVG data has not yet been loaded. TryGetSVGData() first.");
+    NS_ABORT_IF_FALSE(mUnitsPerEm >= kMinUPEM && mUnitsPerEm <= kMaxUPEM,
+                      "font has invalid unitsPerEm");
 
     gfxContextAutoSaveRestore matrixRestore(aContext);
     cairo_matrix_t fontMatrix;
     cairo_get_font_matrix(aContext->GetCairo(), &fontMatrix);
 
     gfxMatrix svgToAppSpace = *reinterpret_cast<gfxMatrix*>(&fontMatrix);
-    svgToAppSpace.Scale(1.0f / gfxSVGGlyphs::SVG_UNITS_PER_EM,
-                        1.0f / gfxSVGGlyphs::SVG_UNITS_PER_EM);
+    svgToAppSpace.Scale(1.0f / mUnitsPerEm, 1.0f / mUnitsPerEm);
 
     return mSVGGlyphs->GetGlyphExtents(aGlyphId, svgToAppSpace, aResult);
 }
 
 bool
 gfxFontEntry::RenderSVGGlyph(gfxContext *aContext, uint32_t aGlyphId,
-                             int aDrawMode, gfxTextObjectPaint *aObjectPaint)
+                             int aDrawMode, gfxTextContextPaint *aContextPaint)
 {
     NS_ASSERTION(mSVGInitialized, "SVG data has not yet been loaded. TryGetSVGData() first.");
-    return mSVGGlyphs->RenderGlyph(aContext, aGlyphId, gfxFont::DrawMode(aDrawMode),
-                                   aObjectPaint);
+    return mSVGGlyphs->RenderGlyph(aContext, aGlyphId, DrawMode(aDrawMode),
+                                   aContextPaint);
 }
 
 bool
-gfxFontEntry::TryGetSVGData()
+gfxFontEntry::TryGetSVGData(gfxFont* aFont)
 {
+    if (!gfxPlatform::GetPlatform()->OpenTypeSVGEnabled()) {
+        return false;
+    }
+
     if (!mSVGInitialized) {
         mSVGInitialized = true;
 
-        bool svgEnabled;
-        nsresult rv =
-            Preferences::GetBool("gfx.font_rendering.opentype_svg.enabled",
-                                 &svgEnabled);
-
-        if (NS_FAILED(rv) || !svgEnabled) {
+        // If UnitsPerEm is not known/valid, we can't use SVG glyphs
+        if (UnitsPerEm() == kInvalidUPEM) {
             return false;
         }
 
-        FallibleTArray<uint8_t> svgTable;
-        rv = GetFontTable(TRUETYPE_TAG('S', 'V', 'G', ' '), svgTable);
-        if (NS_FAILED(rv)) {
+        // We don't use AutoTable here because we'll pass ownership of this
+        // blob to the gfxSVGGlyphs, once we've confirmed the table exists
+        hb_blob_t *svgTable = GetFontTable(TRUETYPE_TAG('S','V','G',' '));
+        if (!svgTable) {
             return false;
         }
 
-        FallibleTArray<uint8_t> cmapTable;
-        rv = GetFontTable(TRUETYPE_TAG('c', 'm', 'a', 'p'), cmapTable);
-        NS_ENSURE_SUCCESS(rv, false);
+        // gfxSVGGlyphs will hb_blob_destroy() the table when it is finished
+        // with it.
+        mSVGGlyphs = new gfxSVGGlyphs(svgTable, this);
+    }
 
-        mSVGGlyphs = new gfxSVGGlyphs(svgTable, cmapTable);
+    if (!mFontsUsingSVGGlyphs.Contains(aFont)) {
+        mFontsUsingSVGGlyphs.AppendElement(aFont);
     }
 
     return !!mSVGGlyphs;
+}
+
+void
+gfxFontEntry::NotifyFontDestroyed(gfxFont* aFont)
+{
+    mFontsUsingSVGGlyphs.RemoveElement(aFont);
+}
+
+void
+gfxFontEntry::NotifyGlyphsChanged()
+{
+    for (uint32_t i = 0, count = mFontsUsingSVGGlyphs.Length(); i < count; ++i) {
+        gfxFont* font = mFontsUsingSVGGlyphs[i];
+        font->NotifyGlyphsChanged();
+    }
 }
 
 /**
@@ -316,10 +421,10 @@ public:
         mHashKey = 0;
     }
 
-    size_t SizeOfExcludingThis(nsMallocSizeOfFun aMallocSizeOf) const {
+    size_t SizeOfExcludingThis(MallocSizeOf aMallocSizeOf) const {
         return mTableData.SizeOfExcludingThis(aMallocSizeOf);
     }
-    size_t SizeOfIncludingThis(nsMallocSizeOfFun aMallocSizeOf) const {
+    size_t SizeOfIncludingThis(MallocSizeOf aMallocSizeOf) const {
         return aMallocSizeOf(this) + SizeOfExcludingThis(aMallocSizeOf);
     }
 
@@ -393,13 +498,13 @@ gfxFontEntry::FontTableHashEntry::GetBlob() const
 bool
 gfxFontEntry::GetExistingFontTable(uint32_t aTag, hb_blob_t **aBlob)
 {
-    if (!mFontTableCache.IsInitialized()) {
+    if (!mFontTableCache) {
         // we do this here rather than on fontEntry construction
         // because not all shapers will access the table cache at all
-        mFontTableCache.Init(10);
+        mFontTableCache = new nsTHashtable<FontTableHashEntry>(10);
     }
 
-    FontTableHashEntry *entry = mFontTableCache.GetEntry(aTag);
+    FontTableHashEntry *entry = mFontTableCache->GetEntry(aTag);
     if (!entry) {
         return false;
     }
@@ -412,13 +517,13 @@ hb_blob_t *
 gfxFontEntry::ShareFontTableAndGetBlob(uint32_t aTag,
                                        FallibleTArray<uint8_t>* aBuffer)
 {
-    if (MOZ_UNLIKELY(!mFontTableCache.IsInitialized())) {
+    if (MOZ_UNLIKELY(!mFontTableCache)) {
         // we do this here rather than on fontEntry construction
         // because not all shapers will access the table cache at all
-        mFontTableCache.Init(10);
+      mFontTableCache = new nsTHashtable<FontTableHashEntry>(10);
     }
 
-    FontTableHashEntry *entry = mFontTableCache.PutEntry(aTag);
+    FontTableHashEntry *entry = mFontTableCache->PutEntry(aTag);
     if (MOZ_UNLIKELY(!entry)) { // OOM
         return nullptr;
     }
@@ -429,40 +534,195 @@ gfxFontEntry::ShareFontTableAndGetBlob(uint32_t aTag,
         return nullptr;
     }
 
-    return entry->ShareTableAndGetBlob(*aBuffer, &mFontTableCache);
+    return entry->ShareTableAndGetBlob(*aBuffer, mFontTableCache);
+}
+
+static int
+DirEntryCmp(const void* aKey, const void* aItem)
+{
+    int32_t tag = *static_cast<const int32_t*>(aKey);
+    const TableDirEntry* entry = static_cast<const TableDirEntry*>(aItem);
+    return tag - int32_t(entry->tag);
+}
+
+hb_blob_t*
+gfxFontEntry::GetTableFromFontData(const void* aFontData, uint32_t aTableTag)
+{
+    const SFNTHeader* header =
+        reinterpret_cast<const SFNTHeader*>(aFontData);
+    const TableDirEntry* dir =
+        reinterpret_cast<const TableDirEntry*>(header + 1);
+    dir = static_cast<const TableDirEntry*>
+        (bsearch(&aTableTag, dir, uint16_t(header->numTables),
+                 sizeof(TableDirEntry), DirEntryCmp));
+    if (dir) {
+        return hb_blob_create(reinterpret_cast<const char*>(aFontData) +
+                                  dir->offset, dir->length,
+                              HB_MEMORY_MODE_READONLY, nullptr, nullptr);
+
+    }
+    return nullptr;
+}
+
+hb_blob_t *
+gfxFontEntry::GetFontTable(uint32_t aTag)
+{
+    hb_blob_t *blob;
+    if (GetExistingFontTable(aTag, &blob)) {
+        return blob;
+    }
+
+    FallibleTArray<uint8_t> buffer;
+    bool haveTable = NS_SUCCEEDED(CopyFontTable(aTag, buffer));
+
+    return ShareFontTableAndGetBlob(aTag, haveTable ? &buffer : nullptr);
+}
+
+// callback for HarfBuzz to get a font table (in hb_blob_t form)
+// from the font entry (passed as aUserData)
+/*static*/ hb_blob_t *
+gfxFontEntry::HBGetTable(hb_face_t *face, uint32_t aTag, void *aUserData)
+{
+    gfxFontEntry *fontEntry = static_cast<gfxFontEntry*>(aUserData);
+
+    // bug 589682 - ignore the GDEF table in buggy fonts (applies to
+    // Italic and BoldItalic faces of Times New Roman)
+    if (aTag == TRUETYPE_TAG('G','D','E','F') &&
+        fontEntry->IgnoreGDEF()) {
+        return nullptr;
+    }
+
+    // bug 721719 - ignore the GSUB table in buggy fonts (applies to Roboto,
+    // at least on some Android ICS devices; set in gfxFT2FontList.cpp)
+    if (aTag == TRUETYPE_TAG('G','S','U','B') &&
+        fontEntry->IgnoreGSUB()) {
+        return nullptr;
+    }
+
+    return fontEntry->GetFontTable(aTag);
+}
+
+/*static*/ void
+gfxFontEntry::HBFaceDeletedCallback(void *aUserData)
+{
+    gfxFontEntry *fe = static_cast<gfxFontEntry*>(aUserData);
+    fe->ForgetHBFace();
+}
+
+void
+gfxFontEntry::ForgetHBFace()
+{
+    mHBFace = nullptr;
+}
+
+hb_face_t*
+gfxFontEntry::GetHBFace()
+{
+    if (!mHBFace) {
+        mHBFace = hb_face_create_for_tables(HBGetTable, this,
+                                            HBFaceDeletedCallback);
+        return mHBFace;
+    }
+    return hb_face_reference(mHBFace);
+}
+
+/*static*/ const void*
+gfxFontEntry::GrGetTable(const void *aAppFaceHandle, unsigned int aName,
+                         size_t *aLen)
+{
+    gfxFontEntry *fontEntry =
+        static_cast<gfxFontEntry*>(const_cast<void*>(aAppFaceHandle));
+    hb_blob_t *blob = fontEntry->GetFontTable(aName);
+    if (blob) {
+        unsigned int blobLength;
+        const void *tableData = hb_blob_get_data(blob, &blobLength);
+        fontEntry->mGrTableMap->Put(tableData, blob);
+        *aLen = blobLength;
+        return tableData;
+    }
+    *aLen = 0;
+    return nullptr;
+}
+
+/*static*/ void
+gfxFontEntry::GrReleaseTable(const void *aAppFaceHandle,
+                             const void *aTableBuffer)
+{
+    gfxFontEntry *fontEntry =
+        static_cast<gfxFontEntry*>(const_cast<void*>(aAppFaceHandle));
+    void *data;
+    if (fontEntry->mGrTableMap->Get(aTableBuffer, &data)) {
+        fontEntry->mGrTableMap->Remove(aTableBuffer);
+        hb_blob_destroy(static_cast<hb_blob_t*>(data));
+    }
+}
+
+gr_face*
+gfxFontEntry::GetGrFace()
+{
+    if (!mGrFaceInitialized) {
+        gr_face_ops faceOps = {
+            sizeof(gr_face_ops),
+            GrGetTable,
+            GrReleaseTable
+        };
+        mGrTableMap = new nsDataHashtable<nsPtrHashKey<const void>,void*>;
+        mGrFace = gr_make_face_with_ops(this, &faceOps, gr_face_default);
+        mGrFaceInitialized = true;
+    }
+    ++mGrFaceRefCnt;
+    return mGrFace;
+}
+
+void
+gfxFontEntry::ReleaseGrFace(gr_face *aFace)
+{
+    MOZ_ASSERT(aFace == mGrFace); // sanity-check
+    MOZ_ASSERT(mGrFaceRefCnt > 0);
+    if (--mGrFaceRefCnt == 0) {
+        gr_face_destroy(mGrFace);
+        mGrFace = nullptr;
+        mGrFaceInitialized = false;
+        delete mGrTableMap;
+        mGrTableMap = nullptr;
+    }
+}
+
+void
+gfxFontEntry::DisconnectSVG()
+{
+    if (mSVGInitialized && mSVGGlyphs) {
+        mSVGGlyphs = nullptr;
+        mSVGInitialized = false;
+    }
 }
 
 void
 gfxFontEntry::CheckForGraphiteTables()
 {
-    AutoFallibleTArray<uint8_t,16384> buffer;
-    mHasGraphiteTables =
-        NS_SUCCEEDED(GetFontTable(TRUETYPE_TAG('S','i','l','f'), buffer));
+    AutoTable silfTable(this, TRUETYPE_TAG('S','i','l','f'));
+    mHasGraphiteTables = silfTable && hb_blob_get_length(silfTable) > 0;
 }
 
 /* static */ size_t
 gfxFontEntry::FontTableHashEntry::SizeOfEntryExcludingThis
     (FontTableHashEntry *aEntry,
-     nsMallocSizeOfFun   aMallocSizeOf,
-     void*               aUserArg)
+     MallocSizeOf aMallocSizeOf,
+     void* aUserArg)
 {
-    FontListSizes *sizes = static_cast<FontListSizes*>(aUserArg);
+    size_t n = 0;
     if (aEntry->mBlob) {
-        sizes->mFontTableCacheSize += aMallocSizeOf(aEntry->mBlob);
+        n += aMallocSizeOf(aEntry->mBlob);
     }
     if (aEntry->mSharedBlobData) {
-        sizes->mFontTableCacheSize +=
-            aEntry->mSharedBlobData->SizeOfIncludingThis(aMallocSizeOf);
+        n += aEntry->mSharedBlobData->SizeOfIncludingThis(aMallocSizeOf);
     }
-
-    // the size of the table is recorded in the FontListSizes record,
-    // so we return 0 here for the function result
-    return 0;
+    return n;
 }
 
 void
-gfxFontEntry::SizeOfExcludingThis(nsMallocSizeOfFun aMallocSizeOf,
-                                  FontListSizes*    aSizes) const
+gfxFontEntry::AddSizeOfExcludingThis(MallocSizeOf aMallocSizeOf,
+                                     FontListSizes* aSizes) const
 {
     aSizes->mFontListSize += mName.SizeOfExcludingThisIfUnshared(aMallocSizeOf);
 
@@ -471,18 +731,20 @@ gfxFontEntry::SizeOfExcludingThis(nsMallocSizeOfFun aMallocSizeOf,
         aSizes->mCharMapsSize +=
             mCharacterMap->SizeOfIncludingThis(aMallocSizeOf);
     }
-    aSizes->mFontTableCacheSize +=
-        mFontTableCache.SizeOfExcludingThis(
-            FontTableHashEntry::SizeOfEntryExcludingThis,
-            aMallocSizeOf, aSizes);
+    if (mFontTableCache) {
+        aSizes->mFontTableCacheSize +=
+            mFontTableCache->SizeOfExcludingThis(
+                FontTableHashEntry::SizeOfEntryExcludingThis,
+                aMallocSizeOf);
+    }
 }
 
 void
-gfxFontEntry::SizeOfIncludingThis(nsMallocSizeOfFun aMallocSizeOf,
-                                  FontListSizes*    aSizes) const
+gfxFontEntry::AddSizeOfIncludingThis(MallocSizeOf aMallocSizeOf,
+                                     FontListSizes* aSizes) const
 {
     aSizes->mFontListSize += aMallocSizeOf(this);
-    SizeOfExcludingThis(aMallocSizeOf, aSizes);
+    AddSizeOfExcludingThis(aMallocSizeOf, aSizes);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -545,7 +807,7 @@ gfxFontFamily::FindFontForStyle(const gfxFontStyle& aFontStyle,
 
     // Most families are "simple", having just Regular/Bold/Italic/BoldItalic,
     // or some subset of these. In this case, we have exactly 4 entries in mAvailableFonts,
-    // stored in the above order; note that some of the entries may be NULL.
+    // stored in the above order; note that some of the entries may be nullptr.
     // We can then pick the required entry based on whether the request is for
     // bold or non-bold, italic or non-italic, without running the more complex
     // matching algorithm used for larger families with many weights and/or widths.
@@ -724,7 +986,7 @@ gfxFontFamily::FindWeightsForStyle(gfxFontEntry* aFontsForWeights[],
     uint32_t count = mAvailableFonts.Length();
     for (uint32_t i = 0; i < count; i++) {
         // this is not called for "simple" families, and therefore it does not
-        // need to check the mAvailableFonts entries for NULL
+        // need to check the mAvailableFonts entries for nullptr.
         gfxFontEntry *fe = mAvailableFonts[i];
         uint32_t distance = StyleDistance(fe, anItalic, aStretch);
         if (distance <= bestMatchDistance) {
@@ -830,14 +1092,13 @@ gfxFontFamily::FindFontForChar(GlobalFontMatch *aMatchData)
             PRLogModuleInfo *log = gfxPlatform::GetLog(eGfxLog_textrun);
 
             if (MOZ_UNLIKELY(log)) {
-                uint32_t charRange = gfxFontUtils::CharRangeBit(aMatchData->mCh);
                 uint32_t unicodeRange = FindCharUnicodeRange(aMatchData->mCh);
                 uint32_t script = GetScriptCode(aMatchData->mCh);
                 PR_LOG(log, PR_LOG_DEBUG,\
                        ("(textrun-systemfallback-fonts) char: u+%6.6x "
-                        "char-range: %d unicode-range: %d script: %d match: [%s]\n",
+                        "unicode-range: %d script: %d match: [%s]\n",
                         aMatchData->mCh,
-                        charRange, unicodeRange, script,
+                        unicodeRange, script,
                         NS_ConvertUTF16toUTF8(fe->Name()).get()));
             }
 #endif
@@ -889,11 +1150,11 @@ gfxFontFamily::SearchAllFontsForChar(GlobalFontMatch *aMatchData)
 // returns true if other names were found, false otherwise
 bool
 gfxFontFamily::ReadOtherFamilyNamesForFace(gfxPlatformFontList *aPlatformFontList,
-                                           FallibleTArray<uint8_t>& aNameTable,
-                                           bool useFullName)
+                                           hb_blob_t           *aNameTable,
+                                           bool                 useFullName)
 {
-    const uint8_t *nameData = aNameTable.Elements();
-    uint32_t dataLength = aNameTable.Length();
+    uint32_t dataLength;
+    const char *nameData = hb_blob_get_data(aNameTable, &dataLength);
     const gfxFontUtils::NameHeader *nameHeader =
         reinterpret_cast<const gfxFontUtils::NameHeader*>(nameData);
 
@@ -952,18 +1213,18 @@ gfxFontFamily::ReadOtherFamilyNames(gfxPlatformFontList *aPlatformFontList)
     // read in other family names for the first face in the list
     uint32_t i, numFonts = mAvailableFonts.Length();
     const uint32_t kNAME = TRUETYPE_TAG('n','a','m','e');
-    AutoFallibleTArray<uint8_t,8192> buffer;
 
     for (i = 0; i < numFonts; ++i) {
         gfxFontEntry *fe = mAvailableFonts[i];
-        if (!fe)
+        if (!fe) {
             continue;
-
-        if (fe->GetFontTable(kNAME, buffer) != NS_OK)
+        }
+        gfxFontEntry::AutoTable nameTable(fe, kNAME);
+        if (!nameTable) {
             continue;
-
+        }
         mHasOtherFamilyNames = ReadOtherFamilyNamesForFace(aPlatformFontList,
-                                                           buffer);
+                                                           nameTable);
         break;
     }
 
@@ -977,13 +1238,14 @@ gfxFontFamily::ReadOtherFamilyNames(gfxPlatformFontList *aPlatformFontList)
     // family names for individual weights (e.g. Hiragino Kaku Gothic Pro W6)
     for ( ; i < numFonts; i++) {
         gfxFontEntry *fe = mAvailableFonts[i];
-        if (!fe)
+        if (!fe) {
             continue;
-
-        if (fe->GetFontTable(kNAME, buffer) != NS_OK)
+        }
+        gfxFontEntry::AutoTable nameTable(fe, kNAME);
+        if (!nameTable) {
             continue;
-
-        ReadOtherFamilyNamesForFace(aPlatformFontList, buffer);
+        }
+        ReadOtherFamilyNamesForFace(aPlatformFontList, nameTable);
     }
 }
 
@@ -1000,48 +1262,49 @@ gfxFontFamily::ReadFaceNames(gfxPlatformFontList *aPlatformFontList,
 
     uint32_t i, numFonts = mAvailableFonts.Length();
     const uint32_t kNAME = TRUETYPE_TAG('n','a','m','e');
-    AutoFallibleTArray<uint8_t,8192> buffer;
     nsAutoString fullname, psname;
 
     bool firstTime = true, readAllFaces = false;
     for (i = 0; i < numFonts; ++i) {
         gfxFontEntry *fe = mAvailableFonts[i];
-        if (!fe)
+        if (!fe) {
             continue;
-
-        if (fe->GetFontTable(kNAME, buffer) != NS_OK)
+        }
+        gfxFontEntry::AutoTable nameTable(fe, kNAME);
+        if (!nameTable) {
             continue;
-
+        }
         if (aNeedFullnamePostscriptNames) {
             if (gfxFontUtils::ReadCanonicalName(
-                    buffer, gfxFontUtils::NAME_ID_FULL, fullname) == NS_OK)
+                    nameTable, gfxFontUtils::NAME_ID_FULL, fullname) == NS_OK)
             {
                 aPlatformFontList->AddFullname(fe, fullname);
             }
 
             if (gfxFontUtils::ReadCanonicalName(
-                    buffer, gfxFontUtils::NAME_ID_POSTSCRIPT, psname) == NS_OK)
+                    nameTable, gfxFontUtils::NAME_ID_POSTSCRIPT, psname) == NS_OK)
             {
                 aPlatformFontList->AddPostscriptName(fe, psname);
             }
         }
 
-       if (!mOtherFamilyNamesInitialized && (firstTime || readAllFaces)) {
-           bool foundOtherName = ReadOtherFamilyNamesForFace(aPlatformFontList,
-                                                               buffer);
+        if (!mOtherFamilyNamesInitialized && (firstTime || readAllFaces)) {
+            bool foundOtherName = ReadOtherFamilyNamesForFace(aPlatformFontList,
+                                                              nameTable);
 
-           // if the first face has a different name, scan all faces, otherwise
-           // assume the family doesn't have other names
-           if (firstTime && foundOtherName) {
-               mHasOtherFamilyNames = true;
-               readAllFaces = true;
-           }
-           firstTime = false;
-       }
+            // if the first face has a different name, scan all faces, otherwise
+            // assume the family doesn't have other names
+            if (firstTime && foundOtherName) {
+                mHasOtherFamilyNames = true;
+                readAllFaces = true;
+            }
+            firstTime = false;
+        }
 
-       // if not reading in any more names, skip other faces
-       if (!readAllFaces && !aNeedFullnamePostscriptNames)
-           break;
+        // if not reading in any more names, skip other faces
+        if (!readAllFaces && !aNeedFullnamePostscriptNames) {
+            break;
+        }
     }
 
     mFaceNamesInitialized = true;
@@ -1063,8 +1326,8 @@ gfxFontFamily::FindFont(const nsAString& aPostscriptName)
 }
 
 void
-gfxFontFamily::SizeOfExcludingThis(nsMallocSizeOfFun aMallocSizeOf,
-                                   FontListSizes*    aSizes) const
+gfxFontFamily::AddSizeOfExcludingThis(MallocSizeOf aMallocSizeOf,
+                                      FontListSizes* aSizes) const
 {
     aSizes->mFontListSize +=
         mName.SizeOfExcludingThisIfUnshared(aMallocSizeOf);
@@ -1076,19 +1339,19 @@ gfxFontFamily::SizeOfExcludingThis(nsMallocSizeOfFun aMallocSizeOf,
     for (uint32_t i = 0; i < mAvailableFonts.Length(); ++i) {
         gfxFontEntry *fe = mAvailableFonts[i];
         if (fe) {
-            fe->SizeOfIncludingThis(aMallocSizeOf, aSizes);
+            fe->AddSizeOfIncludingThis(aMallocSizeOf, aSizes);
         }
     }
 }
 
 void
-gfxFontFamily::SizeOfIncludingThis(nsMallocSizeOfFun aMallocSizeOf,
-                                   FontListSizes*    aSizes) const
+gfxFontFamily::AddSizeOfIncludingThis(MallocSizeOf aMallocSizeOf,
+                                      FontListSizes* aSizes) const
 {
     aSizes->mFontListSize += aMallocSizeOf(this);
-    SizeOfExcludingThis(aMallocSizeOf, aSizes);
+    AddSizeOfExcludingThis(aMallocSizeOf, aSizes);
 }
- 
+
 /*
  * gfxFontCache - global cache of gfxFont instances.
  * Expires unused fonts after a short interval;
@@ -1097,7 +1360,7 @@ gfxFontFamily::SizeOfIncludingThis(nsMallocSizeOfFun aMallocSizeOf,
  * shaped-word caches to free up memory.
  */
 
-NS_IMPL_ISUPPORTS1(gfxFontCache::MemoryReporter, nsIMemoryMultiReporter)
+NS_IMPL_ISUPPORTS1(gfxFontCache::MemoryReporter, nsIMemoryReporter)
 
 NS_MEMORY_REPORTER_MALLOC_SIZEOF_FUN(FontCacheMallocSizeOf)
 
@@ -1110,13 +1373,13 @@ gfxFontCache::MemoryReporter::GetName(nsACString &aName)
 
 NS_IMETHODIMP
 gfxFontCache::MemoryReporter::CollectReports
-    (nsIMemoryMultiReporterCallback* aCb,
+    (nsIMemoryReporterCallback* aCb,
      nsISupports* aClosure)
 {
     FontCacheSizes sizes;
 
-    gfxFontCache::GetCache()->SizeOfIncludingThis(&FontCacheMallocSizeOf,
-                                                  &sizes);
+    gfxFontCache::GetCache()->AddSizeOfIncludingThis(&FontCacheMallocSizeOf,
+                                                     &sizes);
 
     aCb->Callback(EmptyCString(),
                   NS_LITERAL_CSTRING("explicit/gfx/font-cache"),
@@ -1135,20 +1398,10 @@ gfxFontCache::MemoryReporter::CollectReports
     return NS_OK;
 }
 
-// Observer for the memory-pressure notification, to trigger
-// flushing of the shaped-word caches
-class MemoryPressureObserver MOZ_FINAL : public nsIObserver,
-                                         public nsSupportsWeakReference
-{
-public:
-    NS_DECL_ISUPPORTS
-    NS_DECL_NSIOBSERVER
-};
-
-NS_IMPL_ISUPPORTS2(MemoryPressureObserver, nsIObserver, nsISupportsWeakReference)
+NS_IMPL_ISUPPORTS1(gfxFontCache::Observer, nsIObserver)
 
 NS_IMETHODIMP
-MemoryPressureObserver::Observe(nsISupports *aSubject,
+gfxFontCache::Observer::Observe(nsISupports *aSubject,
                                 const char *aTopic,
                                 const PRUnichar *someData)
 {
@@ -1157,6 +1410,8 @@ MemoryPressureObserver::Observe(nsISupports *aSubject,
         if (fontCache) {
             fontCache->FlushShapedWordCaches();
         }
+    } else {
+        NS_NOTREACHED("unexpected notification topic");
     }
     return NS_OK;
 }
@@ -1169,7 +1424,7 @@ gfxFontCache::Init()
     if (!gGlobalCache) {
         return NS_ERROR_OUT_OF_MEMORY;
     }
-    NS_RegisterMemoryMultiReporter(new MemoryReporter);
+    NS_RegisterMemoryReporter(new MemoryReporter);
     return NS_OK;
 }
 
@@ -1195,14 +1450,14 @@ gfxFontCache::Shutdown()
 gfxFontCache::gfxFontCache()
     : nsExpirationTracker<gfxFont,3>(FONT_TIMEOUT_SECONDS * 1000)
 {
-    mFonts.Init();
-
     nsCOMPtr<nsIObserverService> obs = GetObserverService();
     if (obs) {
-        obs->AddObserver(new MemoryPressureObserver, "memory-pressure", false);
+        obs->AddObserver(new Observer, "memory-pressure", false);
     }
 
-#if 0 // disabled due to crashiness, see bug 717175
+#ifndef RELEASE_BUILD
+    // Currently disabled for release builds, due to unexplained crashes
+    // during expiration; see bug 717175 & 894798.
     mWordCacheExpirationTimer = do_CreateInstance("@mozilla.org/timer;1");
     if (mWordCacheExpirationTimer) {
         mWordCacheExpirationTimer->
@@ -1341,52 +1596,145 @@ gfxFontCache::ClearCachedWordsForFont(HashEntry* aHashEntry, void* aUserData)
 
 /*static*/
 size_t
-gfxFontCache::SizeOfFontEntryExcludingThis(HashEntry*        aHashEntry,
-                                           nsMallocSizeOfFun aMallocSizeOf,
-                                           void*             aUserArg)
+gfxFontCache::AddSizeOfFontEntryExcludingThis(HashEntry* aHashEntry,
+                                              MallocSizeOf aMallocSizeOf,
+                                              void* aUserArg)
 {
     HashEntry *entry = static_cast<HashEntry*>(aHashEntry);
     FontCacheSizes *sizes = static_cast<FontCacheSizes*>(aUserArg);
-    entry->mFont->SizeOfExcludingThis(aMallocSizeOf, sizes);
+    entry->mFont->AddSizeOfExcludingThis(aMallocSizeOf, sizes);
 
-    // The font records its size in the |sizes| parameter, so we return zero
+    // The entry's size is recorded in the |sizes| parameter, so we return zero
     // here to the hashtable enumerator.
     return 0;
 }
 
 void
-gfxFontCache::SizeOfExcludingThis(nsMallocSizeOfFun aMallocSizeOf,
-                                  FontCacheSizes*   aSizes) const
+gfxFontCache::AddSizeOfExcludingThis(MallocSizeOf aMallocSizeOf,
+                                     FontCacheSizes* aSizes) const
 {
     // TODO: add the overhead of the expiration tracker (generation arrays)
 
-    mFonts.SizeOfExcludingThis(SizeOfFontEntryExcludingThis,
-                               aMallocSizeOf, aSizes);
+    aSizes->mFontInstances +=
+        mFonts.SizeOfExcludingThis(AddSizeOfFontEntryExcludingThis,
+                                   aMallocSizeOf, aSizes);
 }
 
 void
-gfxFontCache::SizeOfIncludingThis(nsMallocSizeOfFun aMallocSizeOf,
-                                  FontCacheSizes*   aSizes) const
+gfxFontCache::AddSizeOfIncludingThis(MallocSizeOf aMallocSizeOf,
+                                     FontCacheSizes* aSizes) const
 {
     aSizes->mFontInstances += aMallocSizeOf(this);
-    SizeOfExcludingThis(aMallocSizeOf, aSizes);
+    AddSizeOfExcludingThis(aMallocSizeOf, aSizes);
+}
+
+#define MAX_SSXX_VALUE 99
+#define MAX_CVXX_VALUE 99
+
+static void
+LookupAlternateValues(gfxFontFeatureValueSet *featureLookup,
+                      const nsAString& aFamily,
+                      const nsTArray<gfxAlternateValue>& altValue,
+                      nsTArray<gfxFontFeature>& aFontFeatures)
+{
+    uint32_t numAlternates = altValue.Length();
+    for (uint32_t i = 0; i < numAlternates; i++) {
+        const gfxAlternateValue& av = altValue.ElementAt(i);
+        nsAutoTArray<uint32_t,4> values;
+
+        // map <family, name, feature> ==> <values>
+        bool found =
+            featureLookup->GetFontFeatureValuesFor(aFamily, av.alternate,
+                                                   av.value, values);
+        uint32_t numValues = values.Length();
+
+        // nothing defined, skip
+        if (!found || numValues == 0) {
+            continue;
+        }
+
+        gfxFontFeature feature;
+        if (av.alternate == NS_FONT_VARIANT_ALTERNATES_CHARACTER_VARIANT) {
+            NS_ASSERTION(numValues <= 2,
+                         "too many values allowed for character-variant");
+            // character-variant(12 3) ==> 'cv12' = 3
+            uint32_t nn = values.ElementAt(0);
+            // ignore values greater than 99
+            if (nn == 0 || nn > MAX_CVXX_VALUE) {
+                continue;
+            }
+            feature.mValue = 1;
+            if (numValues > 1) {
+                feature.mValue = values.ElementAt(1);
+            }
+            feature.mTag = HB_TAG('c','v',('0' + nn / 10), ('0' + nn % 10));
+            aFontFeatures.AppendElement(feature);
+
+        } else if (av.alternate == NS_FONT_VARIANT_ALTERNATES_STYLESET) {
+            // styleset(1 2 7) ==> 'ss01' = 1, 'ss02' = 1, 'ss07' = 1
+            feature.mValue = 1;
+            for (uint32_t v = 0; v < numValues; v++) {
+                uint32_t nn = values.ElementAt(v);
+                if (nn == 0 || nn > MAX_SSXX_VALUE) {
+                    continue;
+                }
+                feature.mTag = HB_TAG('s','s',('0' + nn / 10), ('0' + nn % 10));
+                aFontFeatures.AppendElement(feature);
+            }
+
+        } else {
+            NS_ASSERTION(numValues == 1,
+                   "too many values for font-specific font-variant-alternates");
+            feature.mValue = values.ElementAt(0);
+
+            switch (av.alternate) {
+                case NS_FONT_VARIANT_ALTERNATES_STYLISTIC:  // salt
+                    feature.mTag = HB_TAG('s','a','l','t');
+                    break;
+                case NS_FONT_VARIANT_ALTERNATES_SWASH:  // swsh, cswh
+                    feature.mTag = HB_TAG('s','w','s','h');
+                    aFontFeatures.AppendElement(feature);
+                    feature.mTag = HB_TAG('c','s','w','h');
+                    break;
+                case NS_FONT_VARIANT_ALTERNATES_ORNAMENTS: // ornm
+                    feature.mTag = HB_TAG('o','r','n','m');
+                    break;
+                case NS_FONT_VARIANT_ALTERNATES_ANNOTATION: // nalt
+                    feature.mTag = HB_TAG('n','a','l','t');
+                    break;
+                default:
+                    feature.mTag = 0;
+                    break;
+            }
+
+            NS_ASSERTION(feature.mTag, "unsupported alternate type");
+            if (!feature.mTag) {
+                continue;
+            }
+            aFontFeatures.AppendElement(feature);
+        }
+    }
 }
 
 /* static */ bool
 gfxFontShaper::MergeFontFeatures(
-    const nsTArray<gfxFontFeature>& aStyleRuleFeatures,
+    const gfxFontStyle *aStyle,
     const nsTArray<gfxFontFeature>& aFontFeatures,
     bool aDisableLigatures,
+    const nsAString& aFamilyName,
     nsDataHashtable<nsUint32HashKey,uint32_t>& aMergedFeatures)
 {
+    uint32_t numAlts = aStyle->alternateValues.Length();
+    const nsTArray<gfxFontFeature>& styleRuleFeatures =
+        aStyle->featureSettings;
+
     // bail immediately if nothing to do
-    if (aStyleRuleFeatures.IsEmpty() &&
+    if (styleRuleFeatures.IsEmpty() &&
         aFontFeatures.IsEmpty() &&
-        !aDisableLigatures) {
+        !aDisableLigatures &&
+        numAlts == 0) {
         return false;
     }
-
-    aMergedFeatures.Init();
 
     // Ligature features are enabled by default in the generic shaper,
     // so we explicitly turn them off if necessary (for letter-spacing)
@@ -1404,10 +1752,25 @@ gfxFontShaper::MergeFontFeatures(
         aMergedFeatures.Put(feature.mTag, feature.mValue);
     }
 
+    // add font-specific feature values from style rules
+    if (aStyle->featureValueLookup && numAlts > 0) {
+        nsAutoTArray<gfxFontFeature,4> featureList;
+
+        // insert list of alternate feature settings
+        LookupAlternateValues(aStyle->featureValueLookup, aFamilyName,
+                              aStyle->alternateValues, featureList);
+
+        count = featureList.Length();
+        for (i = 0; i < count; i++) {
+            const gfxFontFeature& feature = featureList.ElementAt(i);
+            aMergedFeatures.Put(feature.mTag, feature.mValue);
+        }
+    }
+
     // add feature values from style rules
-    count = aStyleRuleFeatures.Length();
+    count = styleRuleFeatures.Length();
     for (i = 0; i < count; i++) {
-        const gfxFontFeature& feature = aStyleRuleFeatures.ElementAt(i);
+        const gfxFontFeature& feature = styleRuleFeatures.ElementAt(i);
         aMergedFeatures.Put(feature.mTag, feature.mValue);
     }
 
@@ -1445,6 +1808,14 @@ gfxFont::gfxFont(gfxFontEntry *aFontEntry, const gfxFontStyle *aFontStyle,
     mKerningSet = HasFeatureSet(HB_TAG('k','e','r','n'), mKerningEnabled);
 }
 
+static PLDHashOperator
+NotifyFontDestroyed(nsPtrHashKey<gfxFont::GlyphChangeObserver>* aKey,
+                    void* aClosure)
+{
+    aKey->GetKey()->ForgetFont();
+    return PL_DHASH_NEXT;
+}
+
 gfxFont::~gfxFont()
 {
     uint32_t i, count = mGlyphExtentsArray.Length();
@@ -1453,6 +1824,12 @@ gfxFont::~gfxFont()
     // of classes that lack a proper copy constructor
     for (i = 0; i < count; ++i) {
         delete mGlyphExtentsArray[i];
+    }
+
+    mFontEntry->NotifyFontDestroyed(this);
+
+    if (mGlyphChangeObservers) {
+        mGlyphChangeObservers->EnumerateEntries(NotifyFontDestroyed, nullptr);
     }
 }
 
@@ -1468,26 +1845,6 @@ gfxFont::AgeCacheEntry(CacheHashEntry *aEntry, void *aUserData)
         return PL_DHASH_REMOVE;
     }
     return PL_DHASH_NEXT;
-}
-
-hb_blob_t *
-gfxFont::GetFontTable(uint32_t aTag) {
-    hb_blob_t *blob;
-    if (mFontEntry->GetExistingFontTable(aTag, &blob))
-        return blob;
-
-    FallibleTArray<uint8_t> buffer;
-    bool haveTable = NS_SUCCEEDED(mFontEntry->GetFontTable(aTag, buffer));
-
-    return mFontEntry->ShareFontTableAndGetBlob(aTag,
-                                                haveTable ? &buffer : nullptr);
-}
-
-static hb_blob_t *
-HBGetTable(hb_face_t *face, hb_tag_t aTag, void *aUserData)
-{
-    gfxFont* font = static_cast<gfxFont*>(aUserData);
-    return font->GetFontTable(aTag);
 }
 
 static bool
@@ -1644,7 +2001,7 @@ HasLookupRuleWithGlyph(hb_face_t *aFace, hb_tag_t aTableTag, bool& aHasGlyph,
     hb_set_destroy(lookups);
 }
 
-nsDataHashtable<nsUint32HashKey, int32_t> gfxFont::sScriptTagToCode;
+nsDataHashtable<nsUint32HashKey, int32_t> *gfxFont::sScriptTagToCode = nullptr;
 
 void
 gfxFont::CheckForFeaturesInvolvingSpace()
@@ -1653,7 +2010,7 @@ gfxFont::CheckForFeaturesInvolvingSpace()
 
     bool result = false;
 
-    hb_face_t *face = hb_face_create_for_tables(HBGetTable, this, nullptr);
+    hb_face_t *face = GetFontEntry()->GetHBFace();
 
     uint32_t i, len, offset;
     uint32_t spaceGlyph = GetSpaceGlyph();
@@ -1665,15 +2022,15 @@ gfxFont::CheckForFeaturesInvolvingSpace()
     if (hb_ot_layout_has_substitution(face)) {
 
         // set up the script ==> code hashtable if needed
-        if (!sScriptTagToCode.IsInitialized()) {
-            sScriptTagToCode.Init(MOZ_NUM_SCRIPT_CODES);
+        if (!sScriptTagToCode) {
+            sScriptTagToCode = new nsDataHashtable<nsUint32HashKey, int32_t>(MOZ_NUM_SCRIPT_CODES);
             for (s = MOZ_SCRIPT_ARABIC; s < MOZ_NUM_SCRIPT_CODES; s++) {
                 hb_script_t scriptTag = hb_script_t(GetScriptTagForCode(s));
                 hb_tag_t s1, s2;
                 hb_ot_tags_from_script(scriptTag, &s1, &s2);
-                sScriptTagToCode.Put(s1, s);
+                sScriptTagToCode->Put(s1, s);
                 if (s2 != HB_OT_TAG_DEFAULT_SCRIPT) {
-                    sScriptTagToCode.Put(s2, s);
+                    sScriptTagToCode->Put(s2, s);
                 }
             }
         }
@@ -1694,7 +2051,7 @@ gfxFont::CheckForFeaturesInvolvingSpace()
                     if (scriptTags[i] == HB_TAG('D','F','L','T')) {
                         mFontEntry->mHasSpaceFeaturesSubDefault = true;
                     }
-                    if (sScriptTagToCode.Get(scriptTags[i], &s)) {
+                    if (sScriptTagToCode->Get(scriptTags[i], &s)) {
                         uint32_t index = s >> 5;
                         uint32_t bit = s & 0x1f;
                         mFontEntry->mHasSpaceFeaturesSub[index] |= (1 << bit);
@@ -1795,8 +2152,8 @@ struct GlyphBuffer {
         return &mGlyphBuffer[mNumGlyphs++];
     }
 
-    void Flush(cairo_t *aCR, gfxFont::DrawMode aDrawMode, bool aReverse,
-               gfxTextObjectPaint *aObjectPaint,
+    void Flush(cairo_t *aCR, DrawMode aDrawMode, bool aReverse,
+               gfxTextContextPaint *aContextPaint,
                const gfxMatrix& aGlobalMatrix, bool aFinish = false) {
         // Ensure there's enough room for a glyph to be added to the buffer
         // and we actually have glyphs to draw
@@ -1812,18 +2169,18 @@ struct GlyphBuffer {
             }
         }
 
-        if (aDrawMode == gfxFont::GLYPH_PATH) {
+        if (aDrawMode == DrawMode::GLYPH_PATH) {
             cairo_glyph_path(aCR, mGlyphBuffer, mNumGlyphs);
         } else {
-            if ((aDrawMode & (gfxFont::GLYPH_STROKE | gfxFont::GLYPH_STROKE_UNDERNEATH)) ==
-                             (gfxFont::GLYPH_STROKE | gfxFont::GLYPH_STROKE_UNDERNEATH)) {
-                FlushStroke(aCR, aObjectPaint, aGlobalMatrix);
+            if ((int(aDrawMode) & (int(DrawMode::GLYPH_STROKE) | int(DrawMode::GLYPH_STROKE_UNDERNEATH))) ==
+                                  (int(DrawMode::GLYPH_STROKE) | int(DrawMode::GLYPH_STROKE_UNDERNEATH))) {
+                FlushStroke(aCR, aContextPaint, aGlobalMatrix);
             }
-            if (aDrawMode & gfxFont::GLYPH_FILL) {
+            if (int(aDrawMode) & int(DrawMode::GLYPH_FILL)) {
                 PROFILER_LABEL("GlyphBuffer", "cairo_show_glyphs");
                 nsRefPtr<gfxPattern> pattern;
-                if (aObjectPaint &&
-                    !!(pattern = aObjectPaint->GetFillPattern(aGlobalMatrix))) {
+                if (aContextPaint &&
+                    !!(pattern = aContextPaint->GetFillPattern(aGlobalMatrix))) {
                     cairo_save(aCR);
                     cairo_set_source(aCR, pattern->CairoPattern());
                 }
@@ -1834,9 +2191,9 @@ struct GlyphBuffer {
                     cairo_restore(aCR);
                 }
             }
-            if ((aDrawMode & (gfxFont::GLYPH_STROKE | gfxFont::GLYPH_STROKE_UNDERNEATH)) ==
-                              gfxFont::GLYPH_STROKE) {
-                FlushStroke(aCR, aObjectPaint, aGlobalMatrix);
+            if ((int(aDrawMode) & (int(DrawMode::GLYPH_STROKE) | int(DrawMode::GLYPH_STROKE_UNDERNEATH))) ==
+                                  int(DrawMode::GLYPH_STROKE)) {
+                FlushStroke(aCR, aContextPaint, aGlobalMatrix);
             }
         }
 
@@ -1844,11 +2201,11 @@ struct GlyphBuffer {
     }
 
 private:
-    void FlushStroke(cairo_t *aCR, gfxTextObjectPaint *aObjectPaint,
+    void FlushStroke(cairo_t *aCR, gfxTextContextPaint *aContextPaint,
                      const gfxMatrix& aGlobalMatrix) {
         nsRefPtr<gfxPattern> pattern;
-        if (aObjectPaint &&
-            !!(pattern = aObjectPaint->GetStrokePattern(aGlobalMatrix))) {
+        if (aContextPaint &&
+            !!(pattern = aContextPaint->GetStrokePattern(aGlobalMatrix))) {
             cairo_save(aCR);
             cairo_set_source(aCR, pattern->CairoPattern());
         }
@@ -1890,8 +2247,8 @@ struct GlyphBufferAzure {
         return &mGlyphBuffer[mNumGlyphs++];
     }
 
-    void Flush(DrawTarget *aDT, gfxTextObjectPaint *aObjectPaint, ScaledFont *aFont,
-               gfxFont::DrawMode aDrawMode, bool aReverse, const GlyphRenderingOptions *aOptions,
+    void Flush(DrawTarget *aDT, gfxTextContextPaint *aContextPaint, ScaledFont *aFont,
+               DrawMode aDrawMode, bool aReverse, const GlyphRenderingOptions *aOptions,
                gfxContext *aThebesContext, const Matrix *aInvFontMatrix, const DrawOptions &aDrawOptions,
                bool aFinish = false)
     {
@@ -1911,17 +2268,17 @@ struct GlyphBufferAzure {
         buf.mNumGlyphs = mNumGlyphs;
 
         gfxContext::AzureState state = aThebesContext->CurrentState();
-        if ((aDrawMode & (gfxFont::GLYPH_STROKE | gfxFont::GLYPH_STROKE_UNDERNEATH)) ==
-                         (gfxFont::GLYPH_STROKE | gfxFont::GLYPH_STROKE_UNDERNEATH)) {
-            FlushStroke(aDT, aObjectPaint, aFont, aThebesContext, buf, state);
+        if ((int(aDrawMode) & (int(DrawMode::GLYPH_STROKE) | int(DrawMode::GLYPH_STROKE_UNDERNEATH))) ==
+                              (int(DrawMode::GLYPH_STROKE) | int(DrawMode::GLYPH_STROKE_UNDERNEATH))) {
+            FlushStroke(aDT, aContextPaint, aFont, aThebesContext, buf, state);
         }
-        if (aDrawMode & gfxFont::GLYPH_FILL) {
-            if (state.pattern || aObjectPaint) {
+        if (int(aDrawMode) & int(DrawMode::GLYPH_FILL)) {
+            if (state.pattern || aContextPaint) {
                 Pattern *pat;
 
                 nsRefPtr<gfxPattern> fillPattern;
-                if (!aObjectPaint ||
-                    !(fillPattern = aObjectPaint->GetFillPattern(aThebesContext->CurrentMatrix()))) {
+                if (!aContextPaint ||
+                    !(fillPattern = aContextPaint->GetFillPattern(aThebesContext->CurrentMatrix()))) {
                     if (state.pattern) {
                         pat = state.pattern->GetPattern(aDT, state.patternTransformChanged ? &state.patternTransform : nullptr);
                     } else {
@@ -1972,27 +2329,28 @@ struct GlyphBufferAzure {
                                 aDrawOptions, aOptions);
             }
         }
-        if (aDrawMode & gfxFont::GLYPH_PATH) {
+        if (int(aDrawMode) & int(DrawMode::GLYPH_PATH)) {
             aThebesContext->EnsurePathBuilder();
-            aFont->CopyGlyphsToBuilder(buf, aThebesContext->mPathBuilder);
+			Matrix mat = aDT->GetTransform();
+            aFont->CopyGlyphsToBuilder(buf, aThebesContext->mPathBuilder, &mat);
         }
-        if ((aDrawMode & (gfxFont::GLYPH_STROKE | gfxFont::GLYPH_STROKE_UNDERNEATH)) ==
-                          gfxFont::GLYPH_STROKE) {
-            FlushStroke(aDT, aObjectPaint, aFont, aThebesContext, buf, state);
+        if ((int(aDrawMode) & (int(DrawMode::GLYPH_STROKE) | int(DrawMode::GLYPH_STROKE_UNDERNEATH))) ==
+                              int(DrawMode::GLYPH_STROKE)) {
+            FlushStroke(aDT, aContextPaint, aFont, aThebesContext, buf, state);
         }
 
         mNumGlyphs = 0;
     }
 
 private:
-    void FlushStroke(DrawTarget *aDT, gfxTextObjectPaint *aObjectPaint,
+    void FlushStroke(DrawTarget *aDT, gfxTextContextPaint *aContextPaint,
                      ScaledFont *aFont, gfxContext *aThebesContext,
                      gfx::GlyphBuffer& aBuf, gfxContext::AzureState& aState)
     {
         RefPtr<Path> path = aFont->GetPathForGlyphs(aBuf, aDT);
-        if (aObjectPaint) {
+        if (aContextPaint) {
             nsRefPtr<gfxPattern> strokePattern =
-              aObjectPaint->GetStrokePattern(aThebesContext->CurrentMatrix());
+              aContextPaint->GetStrokePattern(aThebesContext->CurrentMatrix());
             if (strokePattern) {
                 aDT->Stroke(path, *strokePattern->GetPattern(aDT), aState.strokeOptions);
             }
@@ -2029,21 +2387,21 @@ gfxFont::CalcXScale(gfxContext *aContext)
     return 1.0 / m;
 }
 
-static gfxFont::DrawMode
-ForcePaintingDrawMode(gfxFont::DrawMode aDrawMode)
+static DrawMode
+ForcePaintingDrawMode(DrawMode aDrawMode)
 {
-    return aDrawMode == gfxFont::GLYPH_PATH ?
-        gfxFont::DrawMode(gfxFont::GLYPH_FILL | gfxFont::GLYPH_STROKE) :
+    return aDrawMode == DrawMode::GLYPH_PATH ?
+        DrawMode(int(DrawMode::GLYPH_FILL) | int(DrawMode::GLYPH_STROKE)) :
         aDrawMode;
 }
 
 void
 gfxFont::Draw(gfxTextRun *aTextRun, uint32_t aStart, uint32_t aEnd,
               gfxContext *aContext, DrawMode aDrawMode, gfxPoint *aPt,
-              Spacing *aSpacing, gfxTextObjectPaint *aObjectPaint,
+              Spacing *aSpacing, gfxTextContextPaint *aContextPaint,
               gfxTextRunDrawCallbacks *aCallbacks)
 {
-    NS_ASSERTION(aDrawMode == gfxFont::GLYPH_PATH || !(aDrawMode & gfxFont::GLYPH_PATH),
+    NS_ASSERTION(aDrawMode == DrawMode::GLYPH_PATH || !(int(aDrawMode) & int(DrawMode::GLYPH_PATH)),
                  "GLYPH_PATH cannot be used with GLYPH_FILL, GLYPH_STROKE or GLYPH_STROKE_UNDERNEATH");
 
     if (aStart >= aEnd)
@@ -2056,26 +2414,28 @@ gfxFont::Draw(gfxTextRun *aTextRun, uint32_t aStart, uint32_t aEnd,
     double direction = aTextRun->GetDirection();
     gfxMatrix globalMatrix = aContext->CurrentMatrix();
 
-    bool haveSVGGlyphs = GetFontEntry()->TryGetSVGData();
-    nsAutoPtr<gfxTextObjectPaint> objectPaint;
-    if (haveSVGGlyphs && !aObjectPaint) {
+    bool haveSVGGlyphs = GetFontEntry()->TryGetSVGData(this);
+    nsAutoPtr<gfxTextContextPaint> contextPaint;
+    if (haveSVGGlyphs && !aContextPaint) {
         // If no pattern is specified for fill, use the current pattern
-        NS_ASSERTION((aDrawMode & GLYPH_STROKE) == 0, "no pattern supplied for stroking text");
+        NS_ASSERTION((int(aDrawMode) & int(DrawMode::GLYPH_STROKE)) == 0, "no pattern supplied for stroking text");
         nsRefPtr<gfxPattern> fillPattern = aContext->GetPattern();
-        objectPaint = new SimpleTextObjectPaint(fillPattern, nullptr,
-                                                aContext->CurrentMatrix());
-        aObjectPaint = objectPaint;
+        contextPaint = new SimpleTextContextPaint(fillPattern, nullptr,
+                                                 aContext->CurrentMatrix());
+        aContextPaint = contextPaint;
     }
 
     // synthetic-bold strikes are each offset one device pixel in run direction
     // (these values are only needed if IsSyntheticBold() is true)
     double synBoldOnePixelOffset = 0;
-    int32_t strikes = 0;
+    int32_t strikes = 1;
     if (IsSyntheticBold()) {
         double xscale = CalcXScale(aContext);
         synBoldOnePixelOffset = direction * xscale;
-        // use as many strikes as needed for the the increased advance
-        strikes = NS_lroundf(GetSyntheticBoldOffset() / xscale);
+        if (xscale != 0.0) {
+            // use as many strikes as needed for the the increased advance
+            strikes = NS_lroundf(GetSyntheticBoldOffset() / xscale);
+        }
     }
 
     uint32_t i;
@@ -2119,9 +2479,9 @@ gfxFont::Draw(gfxTextRun *aTextRun, uint32_t aStart, uint32_t aEnd,
                   }
                   gfxPoint point(ToDeviceUnits(glyphX, devUnitsPerAppUnit),
                                  ToDeviceUnits(y, devUnitsPerAppUnit));
-                  gfxFont::DrawMode mode = ForcePaintingDrawMode(aDrawMode);
+                  DrawMode mode = ForcePaintingDrawMode(aDrawMode);
                   if (RenderSVGGlyph(aContext, point, mode,
-                                     glyphData->GetSimpleGlyph(), aObjectPaint,
+                                     glyphData->GetSimpleGlyph(), aContextPaint,
                                      aCallbacks, emittedGlyphs)) {
                       continue;
                   }
@@ -2136,7 +2496,7 @@ gfxFont::Draw(gfxTextRun *aTextRun, uint32_t aStart, uint32_t aEnd,
               glyph->index = glyphData->GetSimpleGlyph();
               glyph->x = ToDeviceUnits(glyphX, devUnitsPerAppUnit);
               glyph->y = ToDeviceUnits(y, devUnitsPerAppUnit);
-              glyphs.Flush(cr, aDrawMode, isRTL, aObjectPaint, globalMatrix);
+              glyphs.Flush(cr, aDrawMode, isRTL, aContextPaint, globalMatrix);
             
               // synthetic bolding by multi-striking with 1-pixel offsets
               // at least once, more if there's room (large font sizes)
@@ -2152,7 +2512,7 @@ gfxFont::Draw(gfxTextRun *aTextRun, uint32_t aStart, uint32_t aEnd,
                                         devUnitsPerAppUnit);
                       doubleglyph->y = glyph->y;
                       strikeOffset += synBoldOnePixelOffset;
-                      glyphs.Flush(cr, aDrawMode, isRTL, aObjectPaint, globalMatrix);
+                      glyphs.Flush(cr, aDrawMode, isRTL, aContextPaint, globalMatrix);
                   } while (--strikeCount > 0);
               }
               emittedGlyphs = true;
@@ -2168,7 +2528,7 @@ gfxFont::Draw(gfxTextRun *aTextRun, uint32_t aStart, uint32_t aEnd,
                       if (glyphData->IsMissing()) {
                           // default ignorable characters will have zero advance width.
                           // we don't have to draw the hexbox for them
-                          if (aDrawMode != gfxFont::GLYPH_PATH && advance > 0) {
+                          if (aDrawMode != DrawMode::GLYPH_PATH && advance > 0) {
                               double glyphX = x;
                               if (isRTL) {
                                   glyphX -= advance;
@@ -2196,10 +2556,10 @@ gfxFont::Draw(gfxTextRun *aTextRun, uint32_t aStart, uint32_t aEnd,
                               if (!paintSVGGlyphs) {
                                   continue;
                               }
-                              gfxFont::DrawMode mode = ForcePaintingDrawMode(aDrawMode);
+                              DrawMode mode = ForcePaintingDrawMode(aDrawMode);
                               if (RenderSVGGlyph(aContext, point, mode,
                                                   details->mGlyphID,
-                                                  aObjectPaint, aCallbacks,
+                                                  aContextPaint, aCallbacks,
                                                   emittedGlyphs)) {
                                   continue;
                               }
@@ -2209,7 +2569,7 @@ gfxFont::Draw(gfxTextRun *aTextRun, uint32_t aStart, uint32_t aEnd,
                           glyph->index = details->mGlyphID;
                           glyph->x = ToDeviceUnits(glyphX, devUnitsPerAppUnit);
                           glyph->y = ToDeviceUnits(y + details->mYOffset, devUnitsPerAppUnit);
-                          glyphs.Flush(cr, aDrawMode, isRTL, aObjectPaint, globalMatrix);
+                          glyphs.Flush(cr, aDrawMode, isRTL, aContextPaint, globalMatrix);
 
                           if (IsSyntheticBold()) {
                               double strikeOffset = synBoldOnePixelOffset;
@@ -2224,7 +2584,7 @@ gfxFont::Draw(gfxTextRun *aTextRun, uint32_t aStart, uint32_t aEnd,
                                               devUnitsPerAppUnit);
                                   doubleglyph->y = glyph->y;
                                   strikeOffset += synBoldOnePixelOffset;
-                                  glyphs.Flush(cr, aDrawMode, isRTL, aObjectPaint, globalMatrix);
+                                  glyphs.Flush(cr, aDrawMode, isRTL, aContextPaint, globalMatrix);
                               } while (--strikeCount > 0);
                           }
                           emittedGlyphs = true;
@@ -2253,7 +2613,7 @@ gfxFont::Draw(gfxTextRun *aTextRun, uint32_t aStart, uint32_t aEnd,
       }
 
       // draw any remaining glyphs
-      glyphs.Flush(cr, aDrawMode, isRTL, aObjectPaint, globalMatrix, true);
+      glyphs.Flush(cr, aDrawMode, isRTL, aContextPaint, globalMatrix, true);
       if (aCallbacks && emittedGlyphs) {
           aCallbacks->NotifyGlyphPathEmitted();
       }
@@ -2277,8 +2637,8 @@ gfxFont::Draw(gfxTextRun *aTextRun, uint32_t aStart, uint32_t aEnd,
       Matrix mat, matInv;
       Matrix oldMat = dt->GetTransform();
 
-      // This is NULL when we have inverse-transformed glyphs and we need to
-      // transform the Brush inside flush.
+      // This is nullptr when we have inverse-transformed glyphs and we need
+      // to transform the Brush inside flush.
       Matrix *passedInvMatrix = nullptr;
 
       RefPtr<GlyphRenderingOptions> renderingOptions =
@@ -2287,7 +2647,10 @@ gfxFont::Draw(gfxTextRun *aTextRun, uint32_t aStart, uint32_t aEnd,
       DrawOptions drawOptions;
       drawOptions.mAntialiasMode = Get2DAAMode(mAntialiasOption);
 
-      if (mScaledFont) {
+      // The cairo DrawTarget backend uses the cairo_scaled_font directly
+      // and so has the font skew matrix applied already.
+      if (mScaledFont &&
+          dt->GetType() != BACKEND_CAIRO) {
         cairo_matrix_t matrix;
         cairo_scaled_font_get_font_matrix(mScaledFont, &matrix);
         if (matrix.xy != 0) {
@@ -2334,9 +2697,9 @@ gfxFont::Draw(gfxTextRun *aTextRun, uint32_t aStart, uint32_t aEnd,
                   }
                   gfxPoint point(ToDeviceUnits(glyphX, devUnitsPerAppUnit),
                                  ToDeviceUnits(y, devUnitsPerAppUnit));
-                  gfxFont::DrawMode mode = ForcePaintingDrawMode(aDrawMode);
+                  DrawMode mode = ForcePaintingDrawMode(aDrawMode);
                   if (RenderSVGGlyph(aContext, point, mode,
-                                     glyphData->GetSimpleGlyph(), aObjectPaint,
+                                     glyphData->GetSimpleGlyph(), aContextPaint,
                                      aCallbacks, emittedGlyphs)) {
                       continue;
                   }
@@ -2352,7 +2715,7 @@ gfxFont::Draw(gfxTextRun *aTextRun, uint32_t aStart, uint32_t aEnd,
               glyph->mPosition.x = ToDeviceUnits(glyphX, devUnitsPerAppUnit);
               glyph->mPosition.y = ToDeviceUnits(y, devUnitsPerAppUnit);
               glyph->mPosition = matInv * glyph->mPosition;
-              glyphs.Flush(dt, aObjectPaint, scaledFont,
+              glyphs.Flush(dt, aContextPaint, scaledFont,
                            aDrawMode, isRTL, renderingOptions,
                            aContext, passedInvMatrix,
                            drawOptions);
@@ -2372,7 +2735,7 @@ gfxFont::Draw(gfxTextRun *aTextRun, uint32_t aStart, uint32_t aEnd,
                       doubleglyph->mPosition.y = glyph->mPosition.y;
                       doubleglyph->mPosition = matInv * doubleglyph->mPosition;
                       strikeOffset += synBoldOnePixelOffset;
-                      glyphs.Flush(dt, aObjectPaint, scaledFont,
+                      glyphs.Flush(dt, aContextPaint, scaledFont,
                                    aDrawMode, isRTL, renderingOptions,
                                    aContext, passedInvMatrix,
                                    drawOptions);
@@ -2391,7 +2754,7 @@ gfxFont::Draw(gfxTextRun *aTextRun, uint32_t aStart, uint32_t aEnd,
                       if (glyphData->IsMissing()) {
                           // default ignorable characters will have zero advance width.
                           // we don't have to draw the hexbox for them
-                          if (aDrawMode != gfxFont::GLYPH_PATH && advance > 0) {
+                          if (aDrawMode != DrawMode::GLYPH_PATH && advance > 0) {
                               double glyphX = x;
                               if (isRTL) {
                                   glyphX -= advance;
@@ -2419,10 +2782,10 @@ gfxFont::Draw(gfxTextRun *aTextRun, uint32_t aStart, uint32_t aEnd,
                               if (!paintSVGGlyphs) {
                                   continue;
                               }
-                              gfxFont::DrawMode mode = ForcePaintingDrawMode(aDrawMode);
+                              DrawMode mode = ForcePaintingDrawMode(aDrawMode);
                               if (RenderSVGGlyph(aContext, point, mode,
                                                  details->mGlyphID,
-                                                 aObjectPaint, aCallbacks,
+                                                 aContextPaint, aCallbacks,
                                                  emittedGlyphs)) {
                                   continue;
                               }
@@ -2433,7 +2796,7 @@ gfxFont::Draw(gfxTextRun *aTextRun, uint32_t aStart, uint32_t aEnd,
                           glyph->mPosition.x = ToDeviceUnits(glyphX, devUnitsPerAppUnit);
                           glyph->mPosition.y = ToDeviceUnits(y + details->mYOffset, devUnitsPerAppUnit);
                           glyph->mPosition = matInv * glyph->mPosition;
-                          glyphs.Flush(dt, aObjectPaint, scaledFont, aDrawMode,
+                          glyphs.Flush(dt, aContextPaint, scaledFont, aDrawMode,
                                        isRTL, renderingOptions, aContext, passedInvMatrix,
                                        drawOptions);
 
@@ -2451,7 +2814,7 @@ gfxFont::Draw(gfxTextRun *aTextRun, uint32_t aStart, uint32_t aEnd,
                                   doubleglyph->mPosition.y = glyph->mPosition.y;
                                   strikeOffset += synBoldOnePixelOffset;
                                   doubleglyph->mPosition = matInv * doubleglyph->mPosition;
-                                  glyphs.Flush(dt, aObjectPaint, scaledFont,
+                                  glyphs.Flush(dt, aContextPaint, scaledFont,
                                                aDrawMode, isRTL, renderingOptions,
                                                aContext, passedInvMatrix, drawOptions);
                               } while (--strikeCount > 0);
@@ -2471,7 +2834,7 @@ gfxFont::Draw(gfxTextRun *aTextRun, uint32_t aStart, uint32_t aEnd,
           }
       }
 
-      glyphs.Flush(dt, aObjectPaint, scaledFont, aDrawMode, isRTL,
+      glyphs.Flush(dt, aContextPaint, scaledFont, aDrawMode, isRTL,
                    renderingOptions, aContext, passedInvMatrix,
                    drawOptions, true);
       if (aCallbacks && emittedGlyphs) {
@@ -2488,27 +2851,28 @@ gfxFont::Draw(gfxTextRun *aTextRun, uint32_t aStart, uint32_t aEnd,
 
 bool
 gfxFont::RenderSVGGlyph(gfxContext *aContext, gfxPoint aPoint, DrawMode aDrawMode,
-                        uint32_t aGlyphId, gfxTextObjectPaint *aObjectPaint)
+                        uint32_t aGlyphId, gfxTextContextPaint *aContextPaint)
 {
     if (!GetFontEntry()->HasSVGGlyph(aGlyphId)) {
         return false;
     }
 
-    const gfxFloat devUnitsPerSVGUnit = GetStyle()->size / gfxSVGGlyphs::SVG_UNITS_PER_EM;
+    const gfxFloat devUnitsPerSVGUnit =
+        GetAdjustedSize() / GetFontEntry()->UnitsPerEm();
     gfxContextMatrixAutoSaveRestore matrixRestore(aContext);
 
     aContext->Translate(gfxPoint(aPoint.x, aPoint.y));
     aContext->Scale(devUnitsPerSVGUnit, devUnitsPerSVGUnit);
 
-    aObjectPaint->InitStrokeGeometry(aContext, devUnitsPerSVGUnit);
+    aContextPaint->InitStrokeGeometry(aContext, devUnitsPerSVGUnit);
 
-    return GetFontEntry()->RenderSVGGlyph(aContext, aGlyphId, aDrawMode,
-                                          aObjectPaint);
+    return GetFontEntry()->RenderSVGGlyph(aContext, aGlyphId, int(aDrawMode),
+                                          aContextPaint);
 }
 
 bool
 gfxFont::RenderSVGGlyph(gfxContext *aContext, gfxPoint aPoint, DrawMode aDrawMode,
-                        uint32_t aGlyphId, gfxTextObjectPaint *aObjectPaint,
+                        uint32_t aGlyphId, gfxTextContextPaint *aContextPaint,
                         gfxTextRunDrawCallbacks *aCallbacks,
                         bool& aEmittedGlyphs)
 {
@@ -2520,7 +2884,7 @@ gfxFont::RenderSVGGlyph(gfxContext *aContext, gfxPoint aPoint, DrawMode aDrawMod
         aCallbacks->NotifyBeforeSVGGlyphPainted();
     }
     bool rendered = RenderSVGGlyph(aContext, aPoint, aDrawMode, aGlyphId,
-                                   aObjectPaint);
+                                   aContextPaint);
     if (aCallbacks) {
         aCallbacks->NotifyAfterSVGGlyphPainted();
     }
@@ -2694,6 +3058,28 @@ gfxFont::Measure(gfxTextRun *aTextRun,
     return metrics;
 }
 
+static PLDHashOperator
+NotifyGlyphChangeObservers(nsPtrHashKey<gfxFont::GlyphChangeObserver>* aKey,
+                           void* aClosure)
+{
+    aKey->GetKey()->NotifyGlyphsChanged();
+    return PL_DHASH_NEXT;
+}
+
+void
+gfxFont::NotifyGlyphsChanged()
+{
+    uint32_t i, count = mGlyphExtentsArray.Length();
+    for (i = 0; i < count; ++i) {
+        // Flush cached extents array
+        mGlyphExtentsArray[i]->NotifyGlyphsChanged();
+    }
+
+    if (mGlyphChangeObservers) {
+        mGlyphChangeObservers->EnumerateEntries(NotifyGlyphChangeObservers, nullptr);
+    }
+}
+
 static bool
 IsBoundarySpace(PRUnichar aChar, PRUnichar aNextChar)
 {
@@ -2717,7 +3103,9 @@ gfxFont::GetShapedWord(gfxContext *aContext,
                        uint32_t    aFlags)
 {
     // if the cache is getting too big, flush it and start over
-    if (mWordCache.Count() > 10000) {
+    uint32_t wordCacheMaxEntries =
+        gfxPlatform::GetPlatform()->WordCacheMaxEntries();
+    if (mWordCache->Count() > wordCacheMaxEntries) {
         NS_WARNING("flushing shaped-word cache");
         ClearCachedWords();
     }
@@ -2728,7 +3116,7 @@ gfxFont::GetShapedWord(gfxContext *aContext,
                      aAppUnitsPerDevUnit,
                      aFlags);
 
-    CacheHashEntry *entry = mWordCache.PutEntry(key);
+    CacheHashEntry *entry = mWordCache->PutEntry(key);
     if (!entry) {
         NS_WARNING("failed to create word cache entry - expect missing text");
         return nullptr;
@@ -3001,6 +3389,8 @@ gfxFont::SplitAndInitTextRun(gfxContext *aContext,
     }
 
     InitWordCache();
+    uint32_t wordCacheCharLimit =
+        gfxPlatform::GetPlatform()->WordCacheCharLimit();
 
     // the only flags we care about for ShapedWord construction/caching
     uint32_t flags = aTextRun->GetFlags();
@@ -3038,9 +3428,9 @@ gfxFont::SplitAndInitTextRun(gfxContext *aContext,
 
         // We've decided to break here (i.e. we're at the end of a "word");
         // shape the word and add it to the textrun.
-        // For words longer than gfxShapedWord::kMaxLength, we don't use the
+        // For words longer than the limit, we don't use the
         // font's word cache but just shape directly into the textrun.
-        if (length > gfxShapedWord::kMaxLength) {
+        if (length > wordCacheCharLimit) {
             bool ok = ShapeFragmentWithoutWordCache(aContext,
                                                     text + wordStart,
                                                     aRunStart + wordStart,
@@ -3142,6 +3532,19 @@ gfxFont::SetupGlyphExtents(gfxContext *aContext, uint32_t aGlyphID, bool aNeedTi
 {
     gfxContextMatrixAutoSaveRestore matrixRestore(aContext);
     aContext->IdentityMatrix();
+
+    gfxRect svgBounds;
+    if (mFontEntry->TryGetSVGData(this) && mFontEntry->HasSVGGlyph(aGlyphID) &&
+        mFontEntry->GetSVGGlyphExtents(aContext, aGlyphID, &svgBounds)) {
+        gfxFloat d2a = aExtents->GetAppUnitsPerDevUnit();
+        aExtents->SetTightGlyphExtents(aGlyphID,
+                                       gfxRect(svgBounds.x * d2a,
+                                               svgBounds.y * d2a,
+                                               svgBounds.width * d2a,
+                                               svgBounds.height * d2a));
+        return;
+    }
+
     cairo_glyph_t glyph;
     glyph.index = aGlyphID;
     glyph.x = 0;
@@ -3170,16 +3573,6 @@ gfxFont::SetupGlyphExtents(gfxContext *aContext, uint32_t aGlyphID, bool aNeedTi
     gfxFloat d2a = appUnitsPerDevUnit;
     gfxRect bounds(extents.x_bearing*d2a, extents.y_bearing*d2a,
                    extents.width*d2a, extents.height*d2a);
-
-    gfxRect svgBounds;
-    if (mFontEntry->TryGetSVGData() &&
-        mFontEntry->HasSVGGlyph(aGlyphID) &&
-        mFontEntry->GetSVGGlyphExtents(aContext, aGlyphID, &svgBounds)) {
-
-        bounds = bounds.Union(gfxRect(svgBounds.x * d2a, svgBounds.y * d2a,
-                                      svgBounds.width * d2a, svgBounds.height * d2a));
-    }
-
     aExtents->SetTightGlyphExtents(aGlyphID, bounds);
 }
 
@@ -3188,40 +3581,39 @@ gfxFont::SetupGlyphExtents(gfxContext *aContext, uint32_t aGlyphID, bool aNeedTi
 // Return FALSE if the gfxFontEntry subclass does not
 // implement GetFontTable(), or for non-sfnt fonts where tables are
 // not available.
+// If this returns TRUE without setting the mIsValid flag, then we -did-
+// apparently find an sfnt, but it was too broken to be used.
 bool
 gfxFont::InitMetricsFromSfntTables(Metrics& aMetrics)
 {
     mIsValid = false; // font is NOT valid in case of early return
 
-    const uint32_t kHeadTableTag = TRUETYPE_TAG('h','e','a','d');
     const uint32_t kHheaTableTag = TRUETYPE_TAG('h','h','e','a');
     const uint32_t kPostTableTag = TRUETYPE_TAG('p','o','s','t');
     const uint32_t kOS_2TableTag = TRUETYPE_TAG('O','S','/','2');
 
+    uint32_t len;
+
     if (mFUnitsConvFactor == 0.0) {
         // If the conversion factor from FUnits is not yet set,
-        // 'head' table is required; otherwise we cannot read any metrics
-        // because we don't know unitsPerEm
-        AutoFallibleTArray<uint8_t,sizeof(HeadTable)> headData;
-        if (NS_FAILED(mFontEntry->GetFontTable(kHeadTableTag, headData)) ||
-            headData.Length() < sizeof(HeadTable)) {
-            return false; // no 'head' table -> not an sfnt
-        }
-        HeadTable *head = reinterpret_cast<HeadTable*>(headData.Elements());
-        uint32_t unitsPerEm = head->unitsPerEm;
-        if (!unitsPerEm) {
-            return true; // is an sfnt, but not valid
+        // get the unitsPerEm from the 'head' table via the font entry
+        uint16_t unitsPerEm = GetFontEntry()->UnitsPerEm();
+        if (unitsPerEm == gfxFontEntry::kInvalidUPEM) {
+            return false;
         }
         mFUnitsConvFactor = mAdjustedSize / unitsPerEm;
     }
 
     // 'hhea' table is required to get vertical extents
-    AutoFallibleTArray<uint8_t,sizeof(HheaTable)> hheaData;
-    if (NS_FAILED(mFontEntry->GetFontTable(kHheaTableTag, hheaData)) ||
-        hheaData.Length() < sizeof(HheaTable)) {
+    gfxFontEntry::AutoTable hheaTable(mFontEntry, kHheaTableTag);
+    if (!hheaTable) {
         return false; // no 'hhea' table -> not an sfnt
     }
-    HheaTable *hhea = reinterpret_cast<HheaTable*>(hheaData.Elements());
+    const HheaTable* hhea =
+        reinterpret_cast<const HheaTable*>(hb_blob_get_data(hheaTable, &len));
+    if (len < sizeof(HheaTable)) {
+        return false;
+    }
 
 #define SET_UNSIGNED(field,src) aMetrics.field = uint16_t(src) * mFUnitsConvFactor
 #define SET_SIGNED(field,src)   aMetrics.field = int16_t(src) * mFUnitsConvFactor
@@ -3232,27 +3624,26 @@ gfxFont::InitMetricsFromSfntTables(Metrics& aMetrics)
     SET_SIGNED(externalLeading, hhea->lineGap);
 
     // 'post' table is required for underline metrics
-    AutoFallibleTArray<uint8_t,sizeof(PostTable)> postData;
-    if (NS_FAILED(mFontEntry->GetFontTable(kPostTableTag, postData))) {
+    gfxFontEntry::AutoTable postTable(mFontEntry, kPostTableTag);
+    if (!postTable) {
         return true; // no 'post' table -> sfnt is not valid
     }
-    if (postData.Length() <
-        offsetof(PostTable, underlineThickness) + sizeof(uint16_t)) {
+    const PostTable *post =
+        reinterpret_cast<const PostTable*>(hb_blob_get_data(postTable, &len));
+    if (len < offsetof(PostTable, underlineThickness) + sizeof(uint16_t)) {
         return true; // bad post table -> sfnt is not valid
     }
-    PostTable *post = reinterpret_cast<PostTable*>(postData.Elements());
 
     SET_SIGNED(underlineOffset, post->underlinePosition);
     SET_UNSIGNED(underlineSize, post->underlineThickness);
 
     // 'OS/2' table is optional, if not found we'll estimate xHeight
     // and aveCharWidth by measuring glyphs
-    AutoFallibleTArray<uint8_t,sizeof(OS2Table)> os2data;
-    if (NS_SUCCEEDED(mFontEntry->GetFontTable(kOS_2TableTag, os2data))) {
-        OS2Table *os2 = reinterpret_cast<OS2Table*>(os2data.Elements());
-
-        if (os2data.Length() >= offsetof(OS2Table, sxHeight) +
-                                sizeof(int16_t) &&
+    gfxFontEntry::AutoTable os2Table(mFontEntry, kOS_2TableTag);
+    if (os2Table) {
+        const OS2Table *os2 =
+            reinterpret_cast<const OS2Table*>(hb_blob_get_data(os2Table, &len));
+        if (len >= offsetof(OS2Table, sxHeight) + sizeof(int16_t) &&
             uint16_t(os2->version) >= 2) {
             // version 2 and later includes the x-height field
             SET_SIGNED(xHeight, os2->sxHeight);
@@ -3260,8 +3651,7 @@ gfxFont::InitMetricsFromSfntTables(Metrics& aMetrics)
             aMetrics.xHeight = Abs(aMetrics.xHeight);
         }
         // this should always be present
-        if (os2data.Length() >= offsetof(OS2Table, yStrikeoutPosition) +
-                                sizeof(int16_t)) {
+        if (len >= offsetof(OS2Table, yStrikeoutPosition) + sizeof(int16_t)) {
             SET_SIGNED(aveCharWidth, os2->xAvgCharWidth);
             SET_SIGNED(subscriptOffset, os2->ySubscriptYOffset);
             SET_SIGNED(superscriptOffset, os2->ySuperscriptYOffset);
@@ -3440,31 +3830,50 @@ gfxFont::SynthesizeSpaceWidth(uint32_t aCh)
 
 /*static*/ size_t
 gfxFont::WordCacheEntrySizeOfExcludingThis(CacheHashEntry*   aHashEntry,
-                                           nsMallocSizeOfFun aMallocSizeOf,
+                                           MallocSizeOf aMallocSizeOf,
                                            void*             aUserArg)
 {
     return aMallocSizeOf(aHashEntry->mShapedWord.get());
 }
 
 void
-gfxFont::SizeOfExcludingThis(nsMallocSizeOfFun aMallocSizeOf,
-                             FontCacheSizes*   aSizes) const
+gfxFont::AddSizeOfExcludingThis(MallocSizeOf aMallocSizeOf,
+                                FontCacheSizes* aSizes) const
 {
     for (uint32_t i = 0; i < mGlyphExtentsArray.Length(); ++i) {
         aSizes->mFontInstances +=
             mGlyphExtentsArray[i]->SizeOfIncludingThis(aMallocSizeOf);
     }
-    aSizes->mShapedWords +=
-        mWordCache.SizeOfExcludingThis(WordCacheEntrySizeOfExcludingThis,
-                                       aMallocSizeOf);
+    if (mWordCache) {
+        aSizes->mShapedWords +=
+            mWordCache->SizeOfExcludingThis(WordCacheEntrySizeOfExcludingThis,
+                                            aMallocSizeOf);
+    }
 }
 
 void
-gfxFont::SizeOfIncludingThis(nsMallocSizeOfFun aMallocSizeOf,
-                             FontCacheSizes*   aSizes) const
+gfxFont::AddSizeOfIncludingThis(MallocSizeOf aMallocSizeOf,
+                                FontCacheSizes* aSizes) const
 {
     aSizes->mFontInstances += aMallocSizeOf(this);
-    SizeOfExcludingThis(aMallocSizeOf, aSizes);
+    AddSizeOfExcludingThis(aMallocSizeOf, aSizes);
+}
+
+void
+gfxFont::AddGlyphChangeObserver(GlyphChangeObserver *aObserver)
+{
+    if (!mGlyphChangeObservers) {
+        mGlyphChangeObservers = new nsTHashtable<nsPtrHashKey<GlyphChangeObserver> >;
+    }
+    mGlyphChangeObservers->PutEntry(aObserver);
+}
+
+void
+gfxFont::RemoveGlyphChangeObserver(GlyphChangeObserver *aObserver)
+{
+    NS_ASSERTION(mGlyphChangeObservers, "No observers registered");
+    NS_ASSERTION(mGlyphChangeObservers->Contains(aObserver), "Observer not registered");
+    mGlyphChangeObservers->RemoveEntry(aObserver);
 }
 
 gfxGlyphExtents::~gfxGlyphExtents()
@@ -3517,7 +3926,7 @@ gfxGlyphExtents::GlyphWidths::~GlyphWidths()
 }
 
 uint32_t
-gfxGlyphExtents::GlyphWidths::SizeOfExcludingThis(nsMallocSizeOfFun aMallocSizeOf) const
+gfxGlyphExtents::GlyphWidths::SizeOfExcludingThis(MallocSizeOf aMallocSizeOf) const
 {
     uint32_t i;
     uint32_t size = mBlocks.SizeOfExcludingThis(aMallocSizeOf);
@@ -3581,27 +3990,29 @@ gfxGlyphExtents::SetTightGlyphExtents(uint32_t aGlyphID, const gfxRect& aExtents
 }
 
 size_t
-gfxGlyphExtents::SizeOfExcludingThis(nsMallocSizeOfFun aMallocSizeOf) const
+gfxGlyphExtents::SizeOfExcludingThis(MallocSizeOf aMallocSizeOf) const
 {
     return mContainedGlyphWidths.SizeOfExcludingThis(aMallocSizeOf) +
         mTightGlyphExtents.SizeOfExcludingThis(nullptr, aMallocSizeOf);
 }
 
 size_t
-gfxGlyphExtents::SizeOfIncludingThis(nsMallocSizeOfFun aMallocSizeOf) const
+gfxGlyphExtents::SizeOfIncludingThis(MallocSizeOf aMallocSizeOf) const
 {
     return aMallocSizeOf(this) + SizeOfExcludingThis(aMallocSizeOf);
 }
 
 gfxFontGroup::gfxFontGroup(const nsAString& aFamilies, const gfxFontStyle *aStyle, gfxUserFontSet *aUserFontSet)
-    : mFamilies(aFamilies), mStyle(*aStyle), mUnderlineOffset(UNDERLINE_OFFSET_NOT_SET)
+    : mFamilies(aFamilies)
+    , mStyle(*aStyle)
+    , mUnderlineOffset(UNDERLINE_OFFSET_NOT_SET)
+    , mUserFontSet(aUserFontSet)
+    , mPageLang(gfxPlatform::GetFontPrefLangFor(aStyle->language))
+    , mSkipDrawing(false)
 {
-    mUserFontSet = nullptr;
-    SetUserFontSet(aUserFontSet);
-
-    mSkipDrawing = false;
-
-    mPageLang = gfxPlatform::GetFontPrefLangFor(mStyle.language);
+    // We don't use SetUserFontSet() here, as we want to unconditionally call
+    // BuildFontList() rather than only do UpdateFontList() if it changed.
+    mCurrGeneration = GetGeneration();
     BuildFontList();
 }
 
@@ -3749,7 +4160,6 @@ gfxFontGroup::HasFont(const gfxFontEntry *aFontEntry)
 gfxFontGroup::~gfxFontGroup()
 {
     mFonts.Clear();
-    SetUserFontSet(nullptr);
 }
 
 gfxFontGroup *
@@ -3775,9 +4185,9 @@ gfxFontGroup::IsInvalidChar(PRUnichar ch)
     if (ch <= 0x9f) {
         return true;
     }
-    return ((ch & 0xFF00) == 0x2000 /* Unicode control character */ &&
-         (ch == 0x200B/*ZWSP*/ || ch == 0x2028/*LSEP*/ || ch == 0x2029/*PSEP*/ ||
-          IS_BIDI_CONTROL_CHAR(ch)));
+    return (((ch & 0xFF00) == 0x2000 /* Unicode control character */ &&
+             (ch == 0x200B/*ZWSP*/ || ch == 0x2028/*LSEP*/ || ch == 0x2029/*PSEP*/)) ||
+            IsBidiControl(ch));
 }
 
 bool
@@ -4131,7 +4541,36 @@ gfxFontGroup::InitTextRun(gfxContext *aContext,
         }
     }
 
+#ifdef PR_LOGGING
+    PRLogModuleInfo *log = (mStyle.systemFont ?
+                            gfxPlatform::GetLog(eGfxLog_textrunui) :
+                            gfxPlatform::GetLog(eGfxLog_textrun));
+#endif
+
     if (sizeof(T) == sizeof(uint8_t) && !transformedString) {
+
+#ifdef PR_LOGGING
+        if (MOZ_UNLIKELY(log)) {
+            nsAutoCString lang;
+            mStyle.language->ToUTF8String(lang);
+            nsAutoCString str((const char*)aString, aLength);
+            PR_LOG(log, PR_LOG_WARNING,\
+                   ("(%s) fontgroup: [%s] lang: %s script: %d len %d "
+                    "weight: %d width: %d style: %s size: %6.2f %d-byte "
+                    "TEXTRUN [%s] ENDTEXTRUN\n",
+                    (mStyle.systemFont ? "textrunui" : "textrun"),
+                    NS_ConvertUTF16toUTF8(mFamilies).get(),
+                    lang.get(), MOZ_SCRIPT_LATIN, aLength,
+                    uint32_t(mStyle.weight), uint32_t(mStyle.stretch),
+                    (mStyle.style & NS_FONT_STYLE_ITALIC ? "italic" :
+                    (mStyle.style & NS_FONT_STYLE_OBLIQUE ? "oblique" :
+                                                            "normal")),
+                    mStyle.size,
+                    sizeof(T),
+                    str.get()));
+        }
+#endif
+
         // the text is still purely 8-bit; bypass the script-run itemizer
         // and treat it as a single Latin run
         InitScriptRun(aContext, aTextRun, aString,
@@ -4150,12 +4589,6 @@ gfxFontGroup::InitTextRun(gfxContext *aContext,
         // the font matching process below
         gfxScriptItemizer scriptRuns(textPtr, aLength);
 
-#ifdef PR_LOGGING
-        PRLogModuleInfo *log = (mStyle.systemFont ?
-                                gfxPlatform::GetLog(eGfxLog_textrunui) :
-                                gfxPlatform::GetLog(eGfxLog_textrun));
-#endif
-
         uint32_t runStart = 0, runLimit = aLength;
         int32_t runScript = MOZ_SCRIPT_LATIN;
         while (scriptRuns.Next(runStart, runLimit, runScript)) {
@@ -4167,7 +4600,7 @@ gfxFontGroup::InitTextRun(gfxContext *aContext,
                 uint32_t runLen = runLimit - runStart;
                 PR_LOG(log, PR_LOG_WARNING,\
                        ("(%s) fontgroup: [%s] lang: %s script: %d len %d "
-                        "weight: %d width: %d style: %s "
+                        "weight: %d width: %d style: %s size: %6.2f %d-byte "
                         "TEXTRUN [%s] ENDTEXTRUN\n",
                         (mStyle.systemFont ? "textrunui" : "textrun"),
                         NS_ConvertUTF16toUTF8(mFamilies).get(),
@@ -4176,6 +4609,8 @@ gfxFontGroup::InitTextRun(gfxContext *aContext,
                         (mStyle.style & NS_FONT_STYLE_ITALIC ? "italic" :
                         (mStyle.style & NS_FONT_STYLE_OBLIQUE ? "oblique" :
                                                                 "normal")),
+                        mStyle.size,
+                        sizeof(T),
                         NS_ConvertUTF16toUTF8(textPtr + runStart, runLen).get()));
             }
 #endif
@@ -4577,10 +5012,12 @@ gfxFontGroup::GetUserFontSet()
 void 
 gfxFontGroup::SetUserFontSet(gfxUserFontSet *aUserFontSet)
 {
-    NS_IF_RELEASE(mUserFontSet);
+    if (aUserFontSet == mUserFontSet) {
+        return;
+    }
     mUserFontSet = aUserFontSet;
-    NS_IF_ADDREF(mUserFontSet);
-    mCurrGeneration = GetGeneration();
+    mCurrGeneration = GetGeneration() - 1;
+    UpdateFontList();
 }
 
 uint64_t
@@ -4594,7 +5031,7 @@ gfxFontGroup::GetGeneration()
 void
 gfxFontGroup::UpdateFontList()
 {
-    if (mUserFontSet && mCurrGeneration != GetGeneration()) {
+    if (mCurrGeneration != GetGeneration()) {
         // xxx - can probably improve this to detect when all fonts were found, so no need to update list
         mFonts.Clear();
         mUnderlineOffset = UNDERLINE_OFFSET_NOT_SET;
@@ -4755,7 +5192,7 @@ gfxFontStyle::gfxFontStyle() :
     size(DEFAULT_PIXEL_FONT_SIZE), sizeAdjust(0.0f),
     languageOverride(NO_FONT_LANGUAGE_OVERRIDE),
     weight(NS_FONT_WEIGHT_NORMAL), stretch(NS_FONT_STRETCH_NORMAL),
-    systemFont(true), printerFont(false), 
+    systemFont(true), printerFont(false), useGrayscaleAntialiasing(false),
     style(NS_FONT_STYLE_NORMAL)
 {
 }
@@ -4770,7 +5207,7 @@ gfxFontStyle::gfxFontStyle(uint8_t aStyle, uint16_t aWeight, int16_t aStretch,
     languageOverride(ParseFontLanguageOverride(aLanguageOverride)),
     weight(aWeight), stretch(aStretch),
     systemFont(aSystemFont), printerFont(aPrinterFont),
-    style(aStyle)
+    useGrayscaleAntialiasing(false), style(aStyle)
 {
     MOZ_ASSERT(!mozilla::IsNaN(size));
     MOZ_ASSERT(!mozilla::IsNaN(sizeAdjust));
@@ -4796,13 +5233,16 @@ gfxFontStyle::gfxFontStyle(uint8_t aStyle, uint16_t aWeight, int16_t aStretch,
 
 gfxFontStyle::gfxFontStyle(const gfxFontStyle& aStyle) :
     language(aStyle.language),
+    featureValueLookup(aStyle.featureValueLookup),
     size(aStyle.size), sizeAdjust(aStyle.sizeAdjust),
     languageOverride(aStyle.languageOverride),
     weight(aStyle.weight), stretch(aStyle.stretch),
     systemFont(aStyle.systemFont), printerFont(aStyle.printerFont),
+    useGrayscaleAntialiasing(aStyle.useGrayscaleAntialiasing),
     style(aStyle.style)
 {
     featureSettings.AppendElements(aStyle.featureSettings);
+    alternateValues.AppendElements(aStyle.alternateValues);
 }
 
 int8_t
@@ -4913,11 +5353,14 @@ gfxShapedText::SetGlyphs(uint32_t aIndex, CompressedGlyph aGlyph,
 
 #define ZWNJ 0x200C
 #define ZWJ  0x200D
+// U+061C ARABIC LETTER MARK is expected to be added to XIDMOD_DEFAULT_IGNORABLE
+// in a future Unicode update. Add it manually for now
+#define ALM  0x061C
 static inline bool
 IsDefaultIgnorable(uint32_t aChar)
 {
     return GetIdentifierModification(aChar) == XIDMOD_DEFAULT_IGNORABLE ||
-           aChar == ZWNJ || aChar == ZWJ;
+           aChar == ZWNJ || aChar == ZWJ || aChar == ALM;
 }
 
 void
@@ -5329,8 +5772,8 @@ gfxTextRun::ShrinkToLigatureBoundaries(uint32_t *aStart, uint32_t *aEnd)
 
 void
 gfxTextRun::DrawGlyphs(gfxFont *aFont, gfxContext *aContext,
-                       gfxFont::DrawMode aDrawMode, gfxPoint *aPt,
-                       gfxTextObjectPaint *aObjectPaint,
+                       DrawMode aDrawMode, gfxPoint *aPt,
+                       gfxTextContextPaint *aContextPaint,
                        uint32_t aStart, uint32_t aEnd,
                        PropertyProvider *aProvider,
                        uint32_t aSpacingStart, uint32_t aSpacingEnd,
@@ -5340,7 +5783,7 @@ gfxTextRun::DrawGlyphs(gfxFont *aFont, gfxContext *aContext,
     bool haveSpacing = GetAdjustedSpacingArray(aStart, aEnd, aProvider,
         aSpacingStart, aSpacingEnd, &spacingBuffer);
     aFont->Draw(this, aStart, aEnd, aContext, aDrawMode, aPt,
-                haveSpacing ? spacingBuffer.Elements() : nullptr, aObjectPaint,
+                haveSpacing ? spacingBuffer.Elements() : nullptr, aContextPaint,
                 aCallbacks);
 }
 
@@ -5403,7 +5846,7 @@ gfxTextRun::DrawPartialLigature(gfxFont *aFont, gfxContext *aCtx,
     gfxFloat direction = GetDirection();
     gfxPoint pt(aPt->x - direction*data.mPartAdvance, aPt->y);
     DrawGlyphs(aFont, aCtx,
-               aCallbacks ? gfxFont::GLYPH_PATH : gfxFont::GLYPH_FILL, &pt,
+               aCallbacks ? DrawMode::GLYPH_PATH : DrawMode::GLYPH_FILL, &pt,
                nullptr, data.mLigatureStart, data.mLigatureEnd, aProvider,
                aStart, aEnd, aCallbacks);
     aCtx->Restore();
@@ -5460,7 +5903,7 @@ struct BufferAlphaColor {
                     aBounds.Height() / appsPerDevUnit), true);
         mContext->Clip();
         mContext->SetColor(gfxRGBA(aAlphaColor.r, aAlphaColor.g, aAlphaColor.b));
-        mContext->PushGroup(gfxASurface::CONTENT_COLOR_ALPHA);
+        mContext->PushGroup(GFX_CONTENT_COLOR_ALPHA);
         mAlpha = aAlphaColor.a;
     }
 
@@ -5478,21 +5921,29 @@ struct BufferAlphaColor {
 };
 
 void
-gfxTextRun::Draw(gfxContext *aContext, gfxPoint aPt, gfxFont::DrawMode aDrawMode,
+gfxTextRun::Draw(gfxContext *aContext, gfxPoint aPt, DrawMode aDrawMode,
                  uint32_t aStart, uint32_t aLength,
                  PropertyProvider *aProvider, gfxFloat *aAdvanceWidth,
-                 gfxTextObjectPaint *aObjectPaint,
+                 gfxTextContextPaint *aContextPaint,
                  gfxTextRunDrawCallbacks *aCallbacks)
 {
     NS_ASSERTION(aStart + aLength <= GetLength(), "Substring out of range");
-    NS_ASSERTION(aDrawMode == gfxFont::GLYPH_PATH || !(aDrawMode & gfxFont::GLYPH_PATH),
+    NS_ASSERTION(aDrawMode == DrawMode::GLYPH_PATH || !(int(aDrawMode) & int(DrawMode::GLYPH_PATH)),
                  "GLYPH_PATH cannot be used with GLYPH_FILL, GLYPH_STROKE or GLYPH_STROKE_UNDERNEATH");
-    NS_ASSERTION(aDrawMode == gfxFont::GLYPH_PATH || !aCallbacks, "callback must not be specified unless using GLYPH_PATH");
+    NS_ASSERTION(aDrawMode == DrawMode::GLYPH_PATH || !aCallbacks, "callback must not be specified unless using GLYPH_PATH");
+
+    bool skipDrawing = mSkipDrawing;
+    if (aDrawMode == DrawMode::GLYPH_FILL) {
+        gfxRGBA currentColor;
+        if (aContext->GetDeviceColor(currentColor) && currentColor.a == 0) {
+            skipDrawing = true;
+        }
+    }
 
     gfxFloat direction = GetDirection();
 
-    if (mSkipDrawing) {
-        // We're waiting for a user font to finish downloading;
+    if (skipDrawing) {
+        // We don't need to draw anything;
         // but if the caller wants advance width, we need to compute it here
         if (aAdvanceWidth) {
             gfxTextRun::Metrics metrics = MeasureText(aStart, aLength,
@@ -5512,8 +5963,8 @@ gfxTextRun::Draw(gfxContext *aContext, gfxPoint aPt, gfxFont::DrawMode aDrawMode
     gfxRGBA currentColor;
     bool needToRestore = false;
 
-    if (aDrawMode == gfxFont::GLYPH_FILL && HasNonOpaqueColor(aContext, currentColor)
-                                         && HasSyntheticBold(this, aStart, aLength)) {
+    if (aDrawMode == DrawMode::GLYPH_FILL && HasNonOpaqueColor(aContext, currentColor)
+                                          && HasSyntheticBold(this, aStart, aLength)) {
         needToRestore = true;
         // measure text, use the bounding box
         gfxTextRun::Metrics metrics = MeasureText(aStart, aLength, gfxFont::LOOSE_INK_EXTENTS,
@@ -5531,15 +5982,15 @@ gfxTextRun::Draw(gfxContext *aContext, gfxPoint aPt, gfxFont::DrawMode aDrawMode
         uint32_t ligatureRunEnd = end;
         ShrinkToLigatureBoundaries(&ligatureRunStart, &ligatureRunEnd);
         
-        bool drawPartial = aDrawMode == gfxFont::GLYPH_FILL ||
-                           (aDrawMode == gfxFont::GLYPH_PATH && aCallbacks);
+        bool drawPartial = aDrawMode == DrawMode::GLYPH_FILL ||
+                           (aDrawMode == DrawMode::GLYPH_PATH && aCallbacks);
 
         if (drawPartial) {
             DrawPartialLigature(font, aContext, start, ligatureRunStart, &pt,
                                 aProvider, aCallbacks);
         }
 
-        DrawGlyphs(font, aContext, aDrawMode, &pt, aObjectPaint, ligatureRunStart,
+        DrawGlyphs(font, aContext, aDrawMode, &pt, aContextPaint, ligatureRunStart,
                    ligatureRunEnd, aProvider, ligatureRunStart, ligatureRunEnd,
                    aCallbacks);
 
@@ -6314,7 +6765,7 @@ gfxTextRun::ClusterIterator::ClusterAdvance(PropertyProvider *aProvider) const
 }
 
 size_t
-gfxTextRun::SizeOfExcludingThis(nsMallocSizeOfFun aMallocSizeOf)
+gfxTextRun::SizeOfExcludingThis(MallocSizeOf aMallocSizeOf)
 {
     // The second arg is how much gfxTextRun::AllocateStorage would have
     // allocated.
@@ -6328,7 +6779,7 @@ gfxTextRun::SizeOfExcludingThis(nsMallocSizeOfFun aMallocSizeOf)
 }
 
 size_t
-gfxTextRun::SizeOfIncludingThis(nsMallocSizeOfFun aMallocSizeOf)
+gfxTextRun::SizeOfIncludingThis(MallocSizeOf aMallocSizeOf)
 {
     return aMallocSizeOf(this) + SizeOfExcludingThis(aMallocSizeOf);
 }

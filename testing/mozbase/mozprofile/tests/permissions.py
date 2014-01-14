@@ -4,12 +4,10 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this file,
 # You can obtain one at http://mozilla.org/MPL/2.0/.
 
+import mozfile
 import os
 import shutil
-try:
-    import sqlite3
-except ImportError:
-    from pysqlite2 import dbapi2 as sqlite3
+import sqlite3
 import tempfile
 import unittest
 from mozprofile.permissions import Permissions
@@ -26,7 +24,7 @@ http://127.0.0.1:8888           privileged
 
     def setUp(self):
         self.profile_dir = tempfile.mkdtemp()
-        self.locations_file = tempfile.NamedTemporaryFile()
+        self.locations_file = mozfile.NamedTemporaryFile()
         self.locations_file.write(self.locations)
         self.locations_file.flush()
 
@@ -118,19 +116,7 @@ http://127.0.0.1:8888           privileged
         prefs, user_prefs = perms.network_prefs(False)
 
         self.assertEqual(len(user_prefs), 0)
-        self.assertEqual(len(prefs), 6)
-
-        self.assertEqual(prefs[0], ('capability.principal.codebase.p1.granted',
-                                    'UniversalXPConnect'))
-        self.assertEqual(prefs[1], ('capability.principal.codebase.p1.id',
-                                    'http://mochi.test:8888'))
-        self.assertEqual(prefs[2], ('capability.principal.codebase.p1.subjectName', ''))
-
-        self.assertEqual(prefs[3], ('capability.principal.codebase.p2.granted',
-                                    'UniversalXPConnect'))
-        self.assertEqual(prefs[4], ('capability.principal.codebase.p2.id',
-                                    'http://127.0.0.1:8888'))
-        self.assertEqual(prefs[5], ('capability.principal.codebase.p2.subjectName', ''))
+        self.assertEqual(len(prefs), 0)
 
         prefs, user_prefs = perms.network_prefs(True)
         self.assertEqual(len(user_prefs), 2)
@@ -142,7 +128,7 @@ http://127.0.0.1:8888           privileged
 
         proxy_check = ("if (isHttp) return 'PROXY mochi.test:8888';",
                        "if (isHttps) return 'PROXY mochi.test:4443';",
-                       "if (isWebSocket) return 'PROXY mochi.test:9988';",
+                       "if (isWebSocket) return 'PROXY mochi.test:4443';",
                        "if (isWebSocketSSL) return 'PROXY mochi.test:4443';")
         self.assertTrue(all(c in user_prefs[1][1] for c in proxy_check))
 

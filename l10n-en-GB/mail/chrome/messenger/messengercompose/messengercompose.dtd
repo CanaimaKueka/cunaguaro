@@ -50,6 +50,8 @@
 <!ENTITY sendLaterCmd.accesskey "L">
 <!ENTITY printSetupCmd.label "Page Setup…">
 <!ENTITY printSetupCmd.accesskey "u">
+<!ENTITY printPreviewCmd.label "Print Preview">
+<!ENTITY printPreviewCmd.accesskey "v">
 <!ENTITY printCmd.label "Print…">
 <!ENTITY printCmd.key "P">
 <!ENTITY printCmd.accesskey "P">
@@ -87,6 +89,7 @@
 <!ENTITY findCmd.label "Find and Replace…">
 <!ENTITY findCmd.key "F">
 <!ENTITY findCmd.accesskey "F">
+<!ENTITY findReplaceCmd.key "H">
 <!ENTITY findAgainCmd.label "Find Again">
 <!ENTITY findAgainCmd.key "G">
 <!ENTITY findAgainCmd.accesskey "g">

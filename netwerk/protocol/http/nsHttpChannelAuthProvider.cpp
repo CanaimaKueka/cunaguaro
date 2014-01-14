@@ -4,6 +4,9 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+// HttpLog.h should generally be included first
+#include "HttpLog.h"
+
 #include "nsHttpChannelAuthProvider.h"
 #include "nsNetUtil.h"
 #include "nsHttpHandler.h"
@@ -16,7 +19,9 @@
 #include "nsAuthInformationHolder.h"
 #include "nsIStringBundle.h"
 #include "nsIPrompt.h"
-#include "nsNetUtil.h"
+#include "netCore.h"
+#include "nsIHttpAuthenticableChannel.h"
+#include "nsIURI.h"
 
 static void
 GetAppIdAndBrowserStatus(nsIChannel* aChan, uint32_t* aAppId, bool* aInBrowserElem)
@@ -43,25 +48,19 @@ nsHttpChannelAuthProvider::nsHttpChannelAuthProvider()
     , mTriedProxyAuth(false)
     , mTriedHostAuth(false)
     , mSuppressDefensiveAuth(false)
+    , mHttpHandler(gHttpHandler)
 {
-    // grab a reference to the handler to ensure that it doesn't go away.
-    nsHttpHandler *handler = gHttpHandler;
-    NS_ADDREF(handler);
 }
 
 nsHttpChannelAuthProvider::~nsHttpChannelAuthProvider()
 {
-    NS_ASSERTION(!mAuthChannel, "Disconnect wasn't called");
-
-    // release our reference to the handler
-    nsHttpHandler *handler = gHttpHandler;
-    NS_RELEASE(handler);
+    MOZ_ASSERT(!mAuthChannel, "Disconnect wasn't called");
 }
 
 NS_IMETHODIMP
 nsHttpChannelAuthProvider::Init(nsIHttpAuthenticableChannel *channel)
 {
-    NS_ASSERTION(channel, "channel expected!");
+    MOZ_ASSERT(channel, "channel expected!");
 
     mAuthChannel = channel;
 
@@ -95,7 +94,7 @@ nsHttpChannelAuthProvider::ProcessAuthentication(uint32_t httpStatus,
          "[this=%p channel=%p code=%u SSLConnectFailed=%d]\n",
          this, mAuthChannel, httpStatus, SSLConnectFailed));
 
-    NS_ASSERTION(mAuthChannel, "Channel not initialized");
+    MOZ_ASSERT(mAuthChannel, "Channel not initialized");
 
     nsCOMPtr<nsIProxyInfo> proxyInfo;
     nsresult rv = mAuthChannel->GetProxyInfo(getter_AddRefs(proxyInfo));
@@ -158,7 +157,7 @@ nsHttpChannelAuthProvider::AddAuthorizationHeaders()
     LOG(("nsHttpChannelAuthProvider::AddAuthorizationHeaders? "
          "[this=%p channel=%p]\n", this, mAuthChannel));
 
-    NS_ASSERTION(mAuthChannel, "Channel not initialized");
+    MOZ_ASSERT(mAuthChannel, "Channel not initialized");
 
     nsCOMPtr<nsIProxyInfo> proxyInfo;
     nsresult rv = mAuthChannel->GetProxyInfo(getter_AddRefs(proxyInfo));
@@ -209,7 +208,7 @@ nsHttpChannelAuthProvider::CheckForSuperfluousAuth()
     LOG(("nsHttpChannelAuthProvider::CheckForSuperfluousAuth? "
          "[this=%p channel=%p]\n", this, mAuthChannel));
 
-    NS_ASSERTION(mAuthChannel, "Channel not initialized");
+    MOZ_ASSERT(mAuthChannel, "Channel not initialized");
 
     // we've been called because it has been determined that this channel is
     // getting loaded without taking the userpass from the URL.  if the URL
@@ -228,7 +227,7 @@ nsHttpChannelAuthProvider::CheckForSuperfluousAuth()
 NS_IMETHODIMP
 nsHttpChannelAuthProvider::Cancel(nsresult status)
 {
-    NS_ASSERTION(mAuthChannel, "Channel not initialized");
+    MOZ_ASSERT(mAuthChannel, "Channel not initialized");
 
     if (mAsyncPromptAuthCancelable) {
         mAsyncPromptAuthCancelable->Cancel(status);
@@ -550,8 +549,8 @@ nsHttpChannelAuthProvider::GetAuthorizationMembers(bool                 proxyAut
                                                    nsISupports**&       continuationState)
 {
     if (proxyAuth) {
-        NS_ASSERTION (UsingHttpProxy(),
-                      "proxyAuth is true, but no HTTP proxy is configured!");
+        MOZ_ASSERT (UsingHttpProxy(),
+                    "proxyAuth is true, but no HTTP proxy is configured!");
 
         host = ProxyHost();
         port = ProxyPort();
@@ -1039,7 +1038,7 @@ NS_IMETHODIMP nsHttpChannelAuthProvider::OnAuthAvailable(nsISupports *aContext,
     rv = GetAuthenticator(mCurrentChallenge.get(), unused,
                           getter_AddRefs(auth));
     if (NS_FAILED(rv)) {
-        NS_ASSERTION(false, "GetAuthenticator failed");
+        MOZ_ASSERT(false, "GetAuthenticator failed");
         OnAuthCancelled(aContext, true);
         return NS_OK;
     }
@@ -1200,8 +1199,6 @@ nsHttpChannelAuthProvider::ConfirmAuth(const nsString &bundleKey,
     bool confirmed;
     if (doYesNoPrompt) {
         int32_t choice;
-        // The actual value is irrelevant but we shouldn't be handing out
-        // malformed JSBools to XPConnect.
         bool checkState = false;
         rv = prompt->ConfirmEx(nullptr, msg,
                                nsIPrompt::BUTTON_POS_1_DEFAULT +

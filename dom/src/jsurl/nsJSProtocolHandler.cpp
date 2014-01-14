@@ -3,6 +3,7 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
 #include "nsCOMPtr.h"
 #include "nsAutoPtr.h"
 #include "jsapi.h"
@@ -36,6 +37,7 @@
 #include "nsIContentViewer.h"
 #include "nsIXPConnect.h"
 #include "nsContentUtils.h"
+#include "nsCxPusher.h"
 #include "nsJSUtils.h"
 #include "nsThreadUtils.h"
 #include "nsIScriptChannel.h"
@@ -55,7 +57,7 @@ class nsJSThunk : public nsIInputStream
 public:
     nsJSThunk();
 
-    NS_DECL_ISUPPORTS
+    NS_DECL_THREADSAFE_ISUPPORTS
     NS_FORWARD_SAFE_NSIINPUTSTREAM(mInnerStream)
 
     nsresult Init(nsIURI* uri);
@@ -75,7 +77,7 @@ protected:
 //
 // nsISupports implementation...
 //
-NS_IMPL_THREADSAFE_ISUPPORTS1(nsJSThunk, nsIInputStream)
+NS_IMPL_ISUPPORTS1(nsJSThunk, nsIInputStream)
 
 
 nsJSThunk::nsJSThunk()
@@ -196,8 +198,6 @@ nsresult nsJSThunk::EvaluateScript(nsIChannel *aChannel,
         return NS_ERROR_FAILURE;
     }
 
-    nsCOMPtr<nsPIDOMWindow> win(do_QueryInterface(global));
-
     // Sandboxed document check: javascript: URI's are disabled
     // in a sandboxed document unless 'allow-scripts' was specified.
     nsIDocument* doc = aOriginalInnerWindow->GetExtantDoc();
@@ -206,9 +206,10 @@ nsresult nsJSThunk::EvaluateScript(nsIChannel *aChannel,
     }
 
     // Push our popup control state
-    nsAutoPopupStatePusher popupStatePusher(win, aPopupState);
+    nsAutoPopupStatePusher popupStatePusher(aPopupState);
 
     // Make sure we still have the same inner window as we used to.
+    nsCOMPtr<nsPIDOMWindow> win = do_QueryInterface(global);
     nsPIDOMWindow *innerWin = win->GetCurrentInnerWindow();
 
     if (innerWin != aOriginalInnerWindow) {
@@ -258,8 +259,6 @@ nsresult nsJSThunk::EvaluateScript(nsIChannel *aChannel,
 
     JS::Rooted<JS::Value> v (cx, JS::UndefinedValue());
     // Finally, we have everything needed to evaluate the expression.
-
-    JSAutoRequest ar(cx);
     if (useSandbox) {
         // We were asked to use a sandbox, or the channel owner isn't allowed
         // to execute in this context.  Evaluate the javascript URL in a
@@ -290,9 +289,8 @@ nsresult nsJSThunk::EvaluateScript(nsIChannel *aChannel,
         // our current compartment. Because our current context doesn't necessarily
         // subsume that of the sandbox, we want to unwrap and enter the sandbox's
         // compartment. It's a shame that the APIs here are so clunkly. :-(
-        JS::Rooted<JSObject*> sandboxObj(cx);
-        rv = sandbox->GetJSObject(sandboxObj.address());
-        NS_ENSURE_SUCCESS(rv, rv);
+        JS::Rooted<JSObject*> sandboxObj(cx, sandbox->GetJSObject());
+        NS_ENSURE_STATE(sandboxObj);
         sandboxObj = js::UncheckedUnwrap(sandboxObj);
         JSAutoCompartment ac(cx, sandboxObj);
 
@@ -332,7 +330,7 @@ nsresult nsJSThunk::EvaluateScript(nsIChannel *aChannel,
 
     // If we took the sandbox path above, v might be in the sandbox
     // compartment.
-    if (!JS_WrapValue(cx, v.address())) {
+    if (!JS_WrapValue(cx, &v)) {
         return NS_ERROR_OUT_OF_MEMORY;
     }
 

@@ -5,13 +5,14 @@
 #ifndef mozilla_places_Database_h_
 #define mozilla_places_Database_h_
 
-#include "nsThreadUtils.h"
+#include "MainThreadUtils.h"
 #include "nsWeakReference.h"
 #include "nsIInterfaceRequestorUtils.h"
 #include "nsIObserver.h"
 #include "mozilla/storage.h"
 #include "mozilla/storage/StatementCache.h"
 #include "mozilla/Attributes.h"
+#include "nsIEventTarget.h"
 
 // This is the schema version. Update it at any schema change and add a
 // corresponding migrateVxx method below.
@@ -43,6 +44,7 @@
 #define TOPIC_PLACES_CONNECTION_CLOSED "places-connection-closed"
 
 class nsIStringBundle;
+class nsIRunnable;
 
 namespace mozilla {
 namespace places {
@@ -66,7 +68,7 @@ class Database MOZ_FINAL : public nsIObserver
   typedef mozilla::storage::StatementCache<mozIStorageAsyncStatement> AsyncStatementCache;
 
 public:
-  NS_DECL_ISUPPORTS
+  NS_DECL_THREADSAFE_ISUPPORTS
   NS_DECL_NSIOBSERVER
 
   Database();
@@ -122,7 +124,7 @@ public:
    */
   void DispatchToAsyncThread(nsIRunnable* aEvent) const
   {
-    if (mShuttingDown) {
+    if (mClosed) {
       return;
     }
     nsCOMPtr<nsIEventTarget> target = do_GetInterface(mMainConn);
@@ -283,10 +285,8 @@ private:
 
   /**
    * Singleton getter, invoked by class instantiation.
-   *
-   * Note: does AddRef.
    */
-  static Database* GetSingleton();
+  static already_AddRefed<Database> GetSingleton();
 
   static Database* gDatabase;
 
@@ -299,6 +299,7 @@ private:
   int32_t mDBPageSize;
   uint16_t mDatabaseStatus;
   bool mShuttingDown;
+  bool mClosed;
 };
 
 } // namespace places

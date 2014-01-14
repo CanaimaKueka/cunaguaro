@@ -1,4 +1,5 @@
-/* -*- Mode: C++; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+/* -*- Mode: C++; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+/* vim: set ts=8 sts=2 et sw=2 tw=80: */
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
@@ -23,7 +24,7 @@ namespace mozilla {
 
 /** Set the contents of |t| to 0. */
 template<typename T>
-static void
+static MOZ_ALWAYS_INLINE void
 PodZero(T* t)
 {
   memset(t, 0, sizeof(T));
@@ -31,7 +32,7 @@ PodZero(T* t)
 
 /** Set the contents of |nelem| elements starting at |t| to 0. */
 template<typename T>
-static void
+static MOZ_ALWAYS_INLINE void
 PodZero(T* t, size_t nelem)
 {
   /*
@@ -57,7 +58,7 @@ static void PodZero(T (&t)[N], size_t nelem) MOZ_DELETE;
 
 /** Set the contents of the array |t| to zero. */
 template <class T, size_t N>
-static void
+static MOZ_ALWAYS_INLINE void
 PodArrayZero(T (&t)[N])
 {
   memset(t, 0, N * sizeof(T));
@@ -68,7 +69,7 @@ PodArrayZero(T (&t)[N])
  * overlap.
  */
 template<typename T>
-static void
+static MOZ_ALWAYS_INLINE void
 PodAssign(T* dst, const T* src)
 {
   MOZ_ASSERT(dst != src);
@@ -82,7 +83,7 @@ PodAssign(T* dst, const T* src)
  * overlap!
  */
 template<typename T>
-MOZ_ALWAYS_INLINE static void
+static MOZ_ALWAYS_INLINE void
 PodCopy(T* dst, const T* src, size_t nelem)
 {
   MOZ_ASSERT(dst != src);
@@ -102,7 +103,7 @@ PodCopy(T* dst, const T* src, size_t nelem)
 }
 
 template<typename T>
-MOZ_ALWAYS_INLINE static void
+static MOZ_ALWAYS_INLINE void
 PodCopy(volatile T* dst, const volatile T* src, size_t nelem)
 {
   MOZ_ASSERT(dst != src);
@@ -126,7 +127,7 @@ PodCopy(volatile T* dst, const volatile T* src, size_t nelem)
  * The arrays must not overlap!
  */
 template <class T, size_t N>
-static void
+static MOZ_ALWAYS_INLINE void
 PodArrayCopy(T (&dst)[N], const T (&src)[N])
 {
   PodCopy(dst, src, N);
@@ -137,7 +138,7 @@ PodArrayCopy(T (&dst)[N], const T (&src)[N])
  * |len| elements at |two|.
  */
 template<typename T>
-MOZ_ALWAYS_INLINE static bool
+static MOZ_ALWAYS_INLINE bool
 PodEqual(const T* one, const T* two, size_t len)
 {
   if (len < 128) {
@@ -156,4 +157,4 @@ PodEqual(const T* one, const T* two, size_t len)
 
 } // namespace mozilla
 
-#endif // mozilla_PodOperations_h_
+#endif /* mozilla_PodOperations_h */

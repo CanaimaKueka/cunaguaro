@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include "mozilla/Attributes.h"
 #include "mozilla/dom/PSpeechSynthesisChild.h"
 #include "mozilla/dom/PSpeechSynthesisRequestChild.h"
 #include "nsSpeechTask.h"
@@ -30,13 +31,13 @@ protected:
   SpeechSynthesisChild();
   virtual ~SpeechSynthesisChild();
 
-  PSpeechSynthesisRequestChild* AllocPSpeechSynthesisRequest(const nsString& aLang,
-                                                             const nsString& aUri,
-                                                             const nsString& aText,
-                                                             const float& aVolume,
-                                                             const float& aPitch,
-                                                             const float& aRate);
-  bool DeallocPSpeechSynthesisRequest(PSpeechSynthesisRequestChild* aActor);
+  PSpeechSynthesisRequestChild* AllocPSpeechSynthesisRequestChild(const nsString& aLang,
+                                                                  const nsString& aUri,
+                                                                  const nsString& aText,
+                                                                  const float& aVolume,
+                                                                  const float& aPitch,
+                                                                  const float& aRate);
+  bool DeallocPSpeechSynthesisRequestChild(PSpeechSynthesisRequestChild* aActor);
 };
 
 class SpeechSynthesisRequestChild : public PSpeechSynthesisRequestChild
@@ -75,10 +76,12 @@ public:
   SpeechTaskChild(SpeechSynthesisUtterance* aUtterance);
 
   NS_IMETHOD Setup(nsISpeechTaskCallback* aCallback,
-                   uint32_t aChannels, uint32_t aRate, uint8_t argc);
+                   uint32_t aChannels, uint32_t aRate, uint8_t argc) MOZ_OVERRIDE;
 
-  NS_IMETHOD SendAudio (const JS::Value& aData, const JS::Value& aLandmarks,
-                        JSContext* aCx);
+  NS_IMETHOD SendAudio(const JS::Value& aData, const JS::Value& aLandmarks,
+                       JSContext* aCx) MOZ_OVERRIDE;
+
+  NS_IMETHOD SendAudioNative(int16_t* aData, uint32_t aDataLen) MOZ_OVERRIDE;
 
   virtual void Pause();
 

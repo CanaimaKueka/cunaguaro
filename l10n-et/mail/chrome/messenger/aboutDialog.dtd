@@ -37,7 +37,7 @@
      the latest version of Firefox (e.g. http://www.firefox.com). As this is all in
      one line, try to make the localized text short (see bug 596813 for screenshots). -->
 <!ENTITY update.failed.start        "Uuendamine ebaõnnestus. ">
-<!ENTITY update.failed.linkText     "Laadi alla viimane versioon">
+<!ENTITY update.failed.linkText     "Laadi alla uusim versioon">
 <!ENTITY update.failed.end          "">
 
 <!-- LOCALIZATION NOTE (update.manual.start,update.manual.end): update.manual.start and update.manual.end
@@ -47,6 +47,16 @@
 <!ENTITY update.manual.start        "Laadi alla ">
 <!ENTITY update.manual.linkText     "viimane versioon">
 <!ENTITY update.manual.end          "">
+
+<!-- LOCALIZATION NOTE (update.unsupported.start,update.unsupported.linkText,update.unsupported.end):
+     update.unsupported.start, update.unsupported.linkText, and
+     update.unsupported.end all go into one line with linkText being wrapped in
+     an anchor that links to a site to provide additional information regarding
+     why the system is no longer supported. As this is all in one line, try to
+     make the localized text short (see bug 843497 for screenshots). -->
+<!ENTITY update.unsupported.start   "Edasised uuendused selle süsteemi peal pole võimalikud. ">
+<!ENTITY update.unsupported.linkText "Rohkem teavet">
+<!ENTITY update.unsupported.end     "">
 
 <!-- LOCALIZATION NOTE (update.downloading.start,update.downloading.end): update.downloading.start and 
      update.downloading.end all go into one line, with the amount downloaded inserted in between. As this

@@ -46,10 +46,6 @@
 <!ENTITY downloadCert.viewCert.text "Undersøk CA-sertifikat">
 <!ENTITY downloadCert.viewPolicy.text "Undersøk CA-fremgangsmåter og prosedyrer">
 
-<!-- Certificate Exists in database -->
-<!ENTITY caCertExists.title "Sertifikatet finnes">
-<!ENTITY caCertExists.message "Sertifikatet finnes allerede.">
-
 <!-- Strings for the SSL client auth ask dialog -->
 <!ENTITY clientAuthAsk.title "Forespørsel om brukeridentifikasjon">
 <!ENTITY clientAuthAsk.message1 "Dette nettstedet ønsker at du identifiserer deg selv med et sertifikat:">
@@ -80,8 +76,6 @@
 <!ENTITY examineCert.label "Vis sertifikat">
 <!ENTITY examineCert.accesskey "V">
 
-<!ENTITY serverCrlNextupdate.message "Spør systemansvarlig om hjelp">
-
 <!-- Strings for the CreateCertInfo dialog  -->
 <!ENTITY createCertInfo.title "Genererer en privat nøkkel">
 <!ENTITY createCertInfo.msg1 "Nøkkeloppretting foregår … Dette kan ta en stund …">
@@ -97,6 +91,6 @@
 <!ENTITY protectedAuth.msg "Vennligst autentiser tegnet. Autentiseringsmetoden er avhengig av type signeringsenhet.">
 <!ENTITY protectedAuth.tokenName.label "Token:">
 
-<!ENTITY certErrorDlg.title "Sikker tilkobling feilet">
-<!ENTITY certErrorDlg.info1 "Dette kan være på grunn av et problem med tjenerens konfigurasjon, eller det kan være at noen forsøker å utgi seg for å være tjeneren.">
-<!ENTITY certErrorDlg.info2 "Dersom du har brukt denne tjeneren tidligere kan feilen være midlertidig, og du kan forsøke å koble til igjen senere.">
+<!ENTITY certErrorDlg.title "Sikker tilkobling mislyktes">
+<!ENTITY certErrorDlg.info1 "Dette kan være på grunn av et problem med serverens konfigurasjon, eller det kan være at noen forsøker å utgi seg for å være serveren.">
+<!ENTITY certErrorDlg.info2 "Dersom du har brukt denne serveren tidligere kan feilen være midlertidig, og du kan forsøke å koble til igjen senere.">

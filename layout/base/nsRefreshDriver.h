@@ -14,28 +14,29 @@
 
 #include "mozilla/TimeStamp.h"
 #include "mozFlushType.h"
-#include "nsCOMPtr.h"
 #include "nsTObserverArray.h"
 #include "nsTArray.h"
-#include "nsAutoPtr.h"
 #include "nsTHashtable.h"
+#include "nsClassHashtable.h"
 #include "nsHashKeys.h"
 #include "mozilla/Attributes.h"
+#include "mozilla/Maybe.h"
 
 class nsPresContext;
 class nsIPresShell;
 class nsIDocument;
 class imgIRequest;
+class nsIRunnable;
+
+namespace mozilla {
+class RefreshDriverTimer;
+}
 
 /**
  * An abstract base class to be implemented by callers wanting to be
  * notified at refresh times.  When nothing needs to be painted, callers
  * may not be notified.
  */
-namespace mozilla {
-    class RefreshDriverTimer;
-}
-
 class nsARefreshObserver {
 public:
   // AddRef and Release signatures that match nsISupports.  Implementors
@@ -48,6 +49,16 @@ public:
   NS_IMETHOD_(nsrefcnt) Release(void) = 0;
 
   virtual void WillRefresh(mozilla::TimeStamp aTime) = 0;
+};
+
+/**
+ * An abstract base class to be implemented by callers wanting to be notified
+ * that a refresh has occurred. Callers must ensure an observer is removed
+ * before it is destroyed.
+ */
+class nsAPostRefreshObserver {
+public:
+  virtual void DidRefresh() = 0;
 };
 
 class nsRefreshDriver MOZ_FINAL : public nsISupports {
@@ -101,11 +112,21 @@ public:
    *
    * The refresh driver does NOT own a reference to these observers;
    * they must remove themselves before they are destroyed.
+   *
+   * The observer will be called even if there is no other activity.
    */
   bool AddRefreshObserver(nsARefreshObserver *aObserver,
-                            mozFlushType aFlushType);
+                          mozFlushType aFlushType);
   bool RemoveRefreshObserver(nsARefreshObserver *aObserver,
-                               mozFlushType aFlushType);
+                             mozFlushType aFlushType);
+
+  /**
+   * Add an observer that will be called after each refresh. The caller
+   * must remove the observer before it is deleted. This does not trigger
+   * refresh driver ticks.
+   */
+  void AddPostRefreshObserver(nsAPostRefreshObserver *aObserver);
+  void RemovePostRefreshObserver(nsAPostRefreshObserver *aObserver);
 
   /**
    * Add/Remove imgIRequest versions of observers.
@@ -123,7 +144,6 @@ public:
    */
   bool AddImageRequest(imgIRequest* aRequest);
   void RemoveImageRequest(imgIRequest* aRequest);
-  void ClearAllImageRequests();
 
   /**
    * Add / remove presshells that we should flush style and layout on
@@ -229,20 +249,18 @@ public:
    */
   static int32_t DefaultInterval();
 
-  /**
-   * Enable/disable paint flashing.
-   */
-  void SetPaintFlashing(bool aPaintFlashing) {
-    mPaintFlashing = aPaintFlashing;
-  }
-
-  bool GetPaintFlashing() {
-    return mPaintFlashing;
-  }
-
 private:
   typedef nsTObserverArray<nsARefreshObserver*> ObserverArray;
   typedef nsTHashtable<nsISupportsHashKey> RequestTable;
+  struct ImageStartData {
+    ImageStartData()
+    {
+    }
+
+    mozilla::Maybe<mozilla::TimeStamp> mStartTime;
+    RequestTable mEntries;
+  };
+  typedef nsClassHashtable<nsUint32HashKey, ImageStartData> ImageStartTable;
 
   void Tick(int64_t aNowEpoch, mozilla::TimeStamp aNowTime);
 
@@ -252,13 +270,21 @@ private:
   uint32_t ObserverCount() const;
   uint32_t ImageRequestCount() const;
   static PLDHashOperator ImageRequestEnumerator(nsISupportsHashKey* aEntry,
-                                          void* aUserArg);
+                                                void* aUserArg);
+  static PLDHashOperator StartTableRequestCounter(const uint32_t& aKey,
+                                                  ImageStartData* aEntry,
+                                                  void* aUserArg);
+  static PLDHashOperator StartTableRefresh(const uint32_t& aKey,
+                                           ImageStartData* aEntry,
+                                           void* aUserArg);
+  static PLDHashOperator BeginRefreshingImages(nsISupportsHashKey* aEntry,
+                                               void* aUserArg);
   ObserverArray& ArrayFor(mozFlushType aFlushType);
   // Trigger a refresh immediately, if haven't been disconnected or frozen.
   void DoRefresh();
 
   double GetRefreshTimerInterval() const;
-  double GetRegularTimerInterval() const;
+  double GetRegularTimerInterval(bool *outIsDefault = nullptr) const;
   double GetThrottledTimerInterval() const;
 
   bool HaveFrameRequestCallbacks() const {
@@ -276,7 +302,6 @@ private:
   bool mTestControllingRefreshes;
   bool mViewManagerFlushIsPending;
   bool mRequestedHighPrecision;
-  bool mPaintFlashing;
 
   int64_t mMostRecentRefreshEpochTime;
   mozilla::TimeStamp mMostRecentRefresh;
@@ -284,16 +309,21 @@ private:
   // separate arrays for each flush type we support
   ObserverArray mObservers[3];
   RequestTable mRequests;
+  ImageStartTable mStartTable;
 
   nsAutoTArray<nsIPresShell*, 16> mStyleFlushObservers;
   nsAutoTArray<nsIPresShell*, 16> mLayoutFlushObservers;
   nsAutoTArray<nsIPresShell*, 16> mPresShellsToInvalidateIfHidden;
   // nsTArray on purpose, because we want to be able to swap.
   nsTArray<nsIDocument*> mFrameRequestCallbackDocs;
+  nsTArray<nsAPostRefreshObserver*> mPostRefreshObservers;
 
   // Helper struct for processing image requests
   struct ImageRequestParameters {
-      mozilla::TimeStamp ts;
+    mozilla::TimeStamp mCurrent;
+    mozilla::TimeStamp mPrevious;
+    RequestTable* mRequests;
+    mozilla::TimeStamp mDesired;
   };
 
   friend class mozilla::RefreshDriverTimer;

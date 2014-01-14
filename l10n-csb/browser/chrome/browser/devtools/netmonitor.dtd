@@ -11,9 +11,8 @@
   - A good criteria is the language in which you'd find the best
   - documentation on web development on the web. -->
 
-<!-- LOCALIZATION NOTE (netmonitorUI.emptyNotice): This is the label displayed
-  -  in the network table when empty. -->
-<!ENTITY netmonitorUI.emptyNotice         "Zladëjë stronã znowa bë òbôczëc infòrmacje ò sécowi aktiwnoscë about network activity.">
+<!ENTITY netmonitorUI.emptyNotice2        "Zrëszë pòlet, abò zladëje stronã znowa bë òbôczëc infòrmacje ò sécowi aktiwnoscë.">
+
 
 <!-- LOCALIZATION NOTE (netmonitorUI.toolbar.status): This is the label displayed
   -  in the network table toolbar, above the "status" column. -->
@@ -33,7 +32,7 @@
 
 <!-- LOCALIZATION NOTE (netmonitorUI.toolbar.type): This is the label displayed
   -  in the network table toolbar, above the "type" column. -->
-<!ENTITY netmonitorUI.toolbar.type        "Tip">
+<!ENTITY netmonitorUI.toolbar.type        "Ôrt">
 
 <!-- LOCALIZATION NOTE (netmonitorUI.toolbar.size): This is the label displayed
   -  in the network table toolbar, above the "size" column. -->
@@ -97,7 +96,7 @@
 
 <!-- LOCALIZATION NOTE (debuggerUI.response.mime): This is the label displayed
   -  in the network details response tab identifying an image's mime. -->
-<!ENTITY netmonitorUI.response.mime       "Tip MIME:">
+<!ENTITY netmonitorUI.response.mime       "Ôrt MIME:">
 
 <!-- LOCALIZATION NOTE (debuggerUI.response.encoding): This is the label displayed
   -  in the network details response tab identifying an image's encoding. -->
@@ -132,3 +131,28 @@
   -  in the network details timings tab identifying the amount of time spent
   -  in a "receive" state. -->
 <!ENTITY netmonitorUI.timings.receive     "Dostôwanié:">
+
+<!ENTITY netmonitorUI.footer.filterAll    "Wszëtkò">
+
+<!ENTITY netmonitorUI.footer.filterCSS    "CSS">
+<!ENTITY netmonitorUI.footer.filterFlash  "Flash">
+<!ENTITY netmonitorUI.footer.filterFonts  "Fòntë">
+<!ENTITY netmonitorUI.footer.filterHTML   "HTML">
+<!ENTITY netmonitorUI.footer.filterImages "Òbrôzczi">
+<!ENTITY netmonitorUI.footer.filterJS     "JS">
+<!ENTITY netmonitorUI.footer.filterMedia  "Media">
+<!ENTITY netmonitorUI.footer.filterXHR    "XHR">
+
+<!ENTITY netmonitorUI.context.copyUrl      "Kòpérëjë adres URL">
+<!ENTITY netmonitorUI.context.copyUrl.accesskey  "ò">
+<!ENTITY netmonitorUI.custom.cancel       "Òprzestóń">
+<!ENTITY netmonitorUI.custom.headers      "Nôdpis żądaniô:">
+<!ENTITY netmonitorUI.custom.newRequest   "Nowé żądanié">
+<!ENTITY netmonitorUI.custom.postData     "Żądanié:">
+<!ENTITY netmonitorUI.custom.query        "Teskt szëkbë:">
+<!ENTITY netmonitorUI.custom.send         "Sélôj">
+
+<!ENTITY netmonitorUI.context.newTab      "Òtemkni w nowi kôrce">
+<!ENTITY netmonitorUI.context.newTab.accesskey  "k">
+<!ENTITY netmonitorUI.summary.editAndResend      "Editëjë i sélôj jesz rôz">
+<!ENTITY netmonitorUI.summary.editAndResend.accesskey  "r">

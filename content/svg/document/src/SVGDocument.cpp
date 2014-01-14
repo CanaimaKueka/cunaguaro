@@ -19,30 +19,8 @@ namespace dom {
 //----------------------------------------------------------------------
 // Implementation
 
-SVGDocument::SVGDocument()
-{
-}
-
-SVGDocument::~SVGDocument()
-{
-}
-
 //----------------------------------------------------------------------
 // nsISupports methods:
-
-NS_IMPL_ISUPPORTS_INHERITED1(SVGDocument, XMLDocument, nsIDOMSVGDocument)
-
-//----------------------------------------------------------------------
-// nsIDOMSVGDocument methods:
-
-/* readonly attribute DOMString domain; */
-NS_IMETHODIMP
-SVGDocument::GetDomain(nsAString& aDomain)
-{
-  ErrorResult rv;
-  GetDomain(aDomain, rv);
-  return rv.ErrorCode();
-}
 
 void
 SVGDocument::GetDomain(nsAString& aDomain, ErrorResult& aRv)
@@ -61,16 +39,6 @@ SVGDocument::GetDomain(nsAString& aDomain, ErrorResult& aRv)
     }
     CopyUTF8toUTF16(domain, aDomain);
   }
-}
-
-/* readonly attribute SVGSVGElement rootElement; */
-NS_IMETHODIMP
-SVGDocument::GetRootElement(nsIDOMSVGElement** aRootElement)
-{
-  ErrorResult rv;
-  nsCOMPtr<nsIDOMSVGElement> retval = GetRootElement(rv);
-  retval.forget(aRootElement);
-  return rv.ErrorCode();
 }
 
 nsSVGElement*
@@ -94,7 +62,6 @@ SVGDocument::Clone(nsINodeInfo *aNodeInfo, nsINode **aResult) const
                "Can't import this document into another document!");
 
   nsRefPtr<SVGDocument> clone = new SVGDocument();
-  NS_ENSURE_TRUE(clone, NS_ERROR_OUT_OF_MEMORY);
   nsresult rv = CloneDocHelper(clone.get());
   NS_ENSURE_SUCCESS(rv, rv);
 

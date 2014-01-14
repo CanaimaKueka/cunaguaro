@@ -7,6 +7,7 @@
 #ifndef nsInProcessTabChildGlobal_h
 #define nsInProcessTabChildGlobal_h
 
+#include "mozilla/Attributes.h"
 #include "nsCOMPtr.h"
 #include "nsFrameMessageManager.h"
 #include "nsIScriptContext.h"
@@ -14,18 +15,19 @@
 #include "nsIScriptObjectPrincipal.h"
 #include "nsIScriptContext.h"
 #include "nsIClassInfo.h"
-#include "jsapi.h"
 #include "nsIDocShell.h"
 #include "nsIDOMElement.h"
 #include "nsCOMArray.h"
-#include "nsThreadUtils.h"
+#include "nsIRunnable.h"
 #include "nsIGlobalObject.h"
+#include "nsIScriptObjectPrincipal.h"
 #include "nsWeakReference.h"
 
 class nsInProcessTabChildGlobal : public nsDOMEventTargetHelper,
                                   public nsFrameScriptExecutor,
                                   public nsIInProcessContentFrameMessageManager,
                                   public nsIGlobalObject,
+                                  public nsIScriptObjectPrincipal,
                                   public nsSupportsWeakReference,
                                   public mozilla::dom::ipc::MessageManagerCallback
 {
@@ -40,38 +42,55 @@ public:
   NS_FORWARD_SAFE_NSIMESSAGESENDER(mMessageManager)
   NS_IMETHOD SendSyncMessage(const nsAString& aMessageName,
                              const JS::Value& aObject,
+                             const JS::Value& aRemote,
                              JSContext* aCx,
                              uint8_t aArgc,
                              JS::Value* aRetval)
   {
     return mMessageManager
-      ? mMessageManager->SendSyncMessage(aMessageName, aObject, aCx, aArgc, aRetval)
+      ? mMessageManager->SendSyncMessage(aMessageName, aObject, aRemote, aCx, aArgc, aRetval)
       : NS_ERROR_NULL_POINTER;
   }
-  NS_IMETHOD GetContent(nsIDOMWindow** aContent);
-  NS_IMETHOD GetDocShell(nsIDocShell** aDocShell);
-  NS_IMETHOD Dump(const nsAString& aStr)
+  NS_IMETHOD SendRpcMessage(const nsAString& aMessageName,
+                            const JS::Value& aObject,
+                            const JS::Value& aRemote,
+                            JSContext* aCx,
+                            uint8_t aArgc,
+                            JS::Value* aRetval)
+  {
+    return mMessageManager
+      ? mMessageManager->SendRpcMessage(aMessageName, aObject, aRemote, aCx, aArgc, aRetval)
+      : NS_ERROR_NULL_POINTER;
+  }
+  NS_IMETHOD GetContent(nsIDOMWindow** aContent) MOZ_OVERRIDE;
+  NS_IMETHOD GetDocShell(nsIDocShell** aDocShell) MOZ_OVERRIDE;
+  NS_IMETHOD Dump(const nsAString& aStr) MOZ_OVERRIDE
   {
     return mMessageManager ? mMessageManager->Dump(aStr) : NS_OK;
   }
-  NS_IMETHOD PrivateNoteIntentionalCrash();
+  NS_IMETHOD PrivateNoteIntentionalCrash() MOZ_OVERRIDE;
   NS_IMETHOD Btoa(const nsAString& aBinaryData,
-                  nsAString& aAsciiBase64String);
+                  nsAString& aAsciiBase64String) MOZ_OVERRIDE;
   NS_IMETHOD Atob(const nsAString& aAsciiString,
-                  nsAString& aBinaryData);
+                  nsAString& aBinaryData) MOZ_OVERRIDE;
 
   NS_DECL_NSIINPROCESSCONTENTFRAMEMESSAGEMANAGER
 
   /**
    * MessageManagerCallback methods that we override.
    */
-  virtual bool DoSendSyncMessage(const nsAString& aMessage,
-                                 const mozilla::dom::StructuredCloneData& aData,
-                                 InfallibleTArray<nsString>* aJSONRetVal);
-  virtual bool DoSendAsyncMessage(const nsAString& aMessage,
-                                  const mozilla::dom::StructuredCloneData& aData);
+  virtual bool DoSendBlockingMessage(JSContext* aCx,
+                                      const nsAString& aMessage,
+                                      const mozilla::dom::StructuredCloneData& aData,
+                                      JS::Handle<JSObject *> aCpows,
+                                      InfallibleTArray<nsString>* aJSONRetVal,
+                                      bool aIsSync) MOZ_OVERRIDE;
+  virtual bool DoSendAsyncMessage(JSContext* aCx,
+                                  const nsAString& aMessage,
+                                  const mozilla::dom::StructuredCloneData& aData,
+                                  JS::Handle<JSObject *> aCpows);
 
-  virtual nsresult PreHandleEvent(nsEventChainPreVisitor& aVisitor);
+  virtual nsresult PreHandleEvent(nsEventChainPreVisitor& aVisitor) MOZ_OVERRIDE;
   NS_IMETHOD AddEventListener(const nsAString& aType,
                               nsIDOMEventListener* aListener,
                               bool aUseCapture)
@@ -83,7 +102,7 @@ public:
   NS_IMETHOD AddEventListener(const nsAString& aType,
                               nsIDOMEventListener* aListener,
                               bool aUseCapture, bool aWantsUntrusted,
-                              uint8_t optional_argc)
+                              uint8_t optional_argc) MOZ_OVERRIDE
   {
     return nsDOMEventTargetHelper::AddEventListener(aType, aListener,
                                                     aUseCapture,
@@ -92,8 +111,8 @@ public:
   }
   using nsDOMEventTargetHelper::AddEventListener;
 
-  virtual JSContext* GetJSContextForEventHandlers() { return mCx; }
-  virtual nsIPrincipal* GetPrincipal() { return mPrincipal; }
+  virtual JSContext* GetJSContextForEventHandlers() MOZ_OVERRIDE { return nsContentUtils::GetSafeJSContext(); }
+  virtual nsIPrincipal* GetPrincipal() MOZ_OVERRIDE { return mPrincipal; }
   void LoadFrameScript(const nsAString& aURL);
   void Disconnect();
   void SendMessageToParent(const nsString& aMessage, bool aSync,
@@ -116,15 +135,12 @@ public:
 
   void DelayedDisconnect();
 
-  virtual JSObject* GetGlobalJSObject() {
+  virtual JSObject* GetGlobalJSObject() MOZ_OVERRIDE {
     if (!mGlobal) {
       return nullptr;
     }
 
-    JSObject* global;
-    mGlobal->GetJSObject(&global);
-
-    return global;
+    return mGlobal->GetJSObject();
   }
 protected:
   nsresult Init();

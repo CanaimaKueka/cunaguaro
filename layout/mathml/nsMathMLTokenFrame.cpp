@@ -3,15 +3,11 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include "nsCOMPtr.h"
-#include "nsFrame.h"
-#include "nsPresContext.h"
-#include "nsStyleContext.h"
-#include "nsStyleConsts.h"
-#include "nsContentUtils.h"
-#include "nsCSSFrameConstructor.h"
 #include "nsMathMLTokenFrame.h"
+#include "nsPresContext.h"
+#include "nsContentUtils.h"
 #include "nsTextFrame.h"
+#include "RestyleManager.h"
 #include <algorithm>
 
 nsIFrame*
@@ -31,12 +27,6 @@ nsMathMLTokenFrame::InheritAutomaticData(nsIFrame* aParent)
 {
   // let the base class get the default from our parent
   nsMathMLContainerFrame::InheritAutomaticData(aParent);
-
-  if (mContent->Tag() != nsGkAtoms::mspace_ &&
-      mContent->Tag() != nsGkAtoms::annotation_) {
-    // see if the directionality attribute is there
-    nsMathMLFrame::FindAttrDirectionality(mContent, mPresentationData);
-  }
 
   ProcessTextData();
 
@@ -90,14 +80,17 @@ nsMathMLTokenFrame::GetMathMLFrameType()
 }
 
 void
-nsMathMLTokenFrame::ForceTrimChildTextFrames()
+nsMathMLTokenFrame::MarkTextFramesAsTokenMathML()
 {
   // Set flags on child text frames to force them to trim their leading and
   // trailing whitespaces.
   for (nsIFrame* childFrame = GetFirstPrincipalChild(); childFrame;
        childFrame = childFrame->GetNextSibling()) {
-    if (childFrame->GetType() == nsGkAtoms::textFrame) {
-      childFrame->AddStateBits(TEXT_FORCE_TRIM_WHITESPACE);
+    for (nsIFrame* childFrame2 = childFrame->GetFirstPrincipalChild();
+         childFrame2; childFrame2 = childFrame2->GetNextSibling()) {
+      if (childFrame2->GetType() == nsGkAtoms::textFrame) {
+        childFrame2->AddStateBits(TEXT_IS_IN_TOKEN_MATHML);
+      }
     }
   }
 }
@@ -111,7 +104,7 @@ nsMathMLTokenFrame::SetInitialChildList(ChildListID     aListID,
   if (NS_FAILED(rv))
     return rv;
 
-  ForceTrimChildTextFrames();
+  MarkTextFramesAsTokenMathML();
 
   ProcessTextData();
   return rv;
@@ -125,7 +118,7 @@ nsMathMLTokenFrame::AppendFrames(ChildListID aListID,
   if (NS_FAILED(rv))
     return rv;
 
-  ForceTrimChildTextFrames();
+  MarkTextFramesAsTokenMathML();
 
   return rv;
 }
@@ -140,7 +133,7 @@ nsMathMLTokenFrame::InsertFrames(ChildListID aListID,
   if (NS_FAILED(rv))
     return rv;
 
-  ForceTrimChildTextFrames();
+  MarkTextFramesAsTokenMathML();
 
   return rv;
 }
@@ -257,7 +250,7 @@ nsMathMLTokenFrame::ProcessTextData()
     return;
 
   // explicitly request a re-resolve to pick up the change of style
-  PresContext()->PresShell()->FrameConstructor()->
+  PresContext()->RestyleManager()->
     PostRestyleEvent(mContent->AsElement(), eRestyle_Subtree, NS_STYLE_HINT_NONE);
 }
 

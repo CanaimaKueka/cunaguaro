@@ -5,6 +5,7 @@
 <!ENTITY quickFilterBar.qfbShowFilterBar.label "Filtro rápido">
 <!ENTITY quickFilterBar.toggleBarVisibility.menu.label "Barra de filtrado rápido">
 <!ENTITY quickFilterBar.toggleBarVisibility.menu.accesskey "f">
+<!ENTITY quickFilterBar.toggleBarVisibility.appmenu.label "Barra de filtrado rápido">
 <!ENTITY quickFilterBar.toggleBarVisibility.button.tooltip "Mostrar/ocultar la barra de filtrado rápido">
 <!ENTITY quickFilterBar.sticky.tooltip "Mantener filtros aplicados al cambiar de carpetas">
 <!ENTITY quickFilterBar.barLabel.label "Filtro rápido:">
@@ -25,6 +26,11 @@
 <!ENTITY quickFilterBar.show.key2 "k">
 <!ENTITY quickFilterBar.textbox.emptyText.keyLabel2.nonmac "&lt;Ctrl+Mayús+K&gt;">
 <!ENTITY quickFilterBar.textbox.emptyText.keyLabel2.mac "&lt;⇧⌘K&gt;">
+<!ENTITY quickFilterBar.booleanMode.tooltip "Modo de filtrado de etiquetas">
+<!ENTITY quickFilterBar.booleanModeAny.label "Cualquiera de ellas">
+<!ENTITY quickFilterBar.booleanModeAny.tooltip "Al menos una de las etiquetas seleccionadas debe coincidir">
+<!ENTITY quickFilterBar.booleanModeAll.label "Todas ellas">
+<!ENTITY quickFilterBar.booleanModeAll.tooltip "Todas las etiquetas seleccionadas deben coincidir">
 <!ENTITY quickFilterBar.textbox.idealWidth "320">
 <!ENTITY quickFilterBar.textbox.minWidth "280">
 <!ENTITY quickFilterBar.textFilter.explanation.label "Filtrar mensajes por:">

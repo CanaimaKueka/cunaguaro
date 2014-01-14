@@ -559,7 +559,7 @@ this.PlacesUtils = {
         };
 
         let [node, shouldClose] = convertNode(aNode);
-        this.serializeNodeAsJSONToOutputStream(node, writer, true, aForceCopy);
+        this._serializeNodeAsJSONToOutputStream(node, writer, true, aForceCopy);
         if (shouldClose)
           node.containerOpen = false;
 
@@ -688,13 +688,7 @@ this.PlacesUtils = {
       case this.TYPE_X_MOZ_PLACE:
       case this.TYPE_X_MOZ_PLACE_SEPARATOR:
       case this.TYPE_X_MOZ_PLACE_CONTAINER:
-        var json = Cc["@mozilla.org/dom/json;1"].createInstance(Ci.nsIJSON);
-        // Old profiles (pre-Firefox 4) may contain bookmarks.json files with
-        // trailing commas, which we once accepted but no longer do -- except
-        // when decoded using the legacy decoder.  This can be reverted to
-        // json.decode (better yet, to the ECMA-standard JSON.parse) when we no
-        // longer support upgrades from pre-Firefox 4 profiles.
-        nodes = json.legacyDecode("[" + blob + "]");
+        nodes = JSON.parse("[" + blob + "]");
         break;
       case this.TYPE_X_MOZ_URL:
         var parts = blob.split("\n");
@@ -778,28 +772,19 @@ this.PlacesUtils = {
    * @param aURI
    *        The URI for which annotations are to be retrieved.
    * @return Array of objects, each containing the following properties:
-   *         name, flags, expires, mimeType, type, value
+   *         name, flags, expires, value
    */
   getAnnotationsForURI: function PU_getAnnotationsForURI(aURI) {
     var annosvc = this.annotations;
     var annos = [], val = null;
     var annoNames = annosvc.getPageAnnotationNames(aURI);
     for (var i = 0; i < annoNames.length; i++) {
-      var flags = {}, exp = {}, mimeType = {}, storageType = {};
-      annosvc.getPageAnnotationInfo(aURI, annoNames[i], flags, exp, mimeType, storageType);
-      if (storageType.value == annosvc.TYPE_BINARY) {
-        var data = {}, length = {}, mimeType = {};
-        annosvc.getPageAnnotationBinary(aURI, annoNames[i], data, length, mimeType);
-        val = data.value;
-      }
-      else
-        val = annosvc.getPageAnnotation(aURI, annoNames[i]);
-
+      var flags = {}, exp = {}, storageType = {};
+      annosvc.getPageAnnotationInfo(aURI, annoNames[i], flags, exp, storageType);
+      val = annosvc.getPageAnnotation(aURI, annoNames[i]);
       annos.push({name: annoNames[i],
                   flags: flags.value,
                   expires: exp.value,
-                  mimeType: mimeType.value,
-                  type: storageType.value,
                   value: val});
     }
     return annos;
@@ -819,21 +804,12 @@ this.PlacesUtils = {
     var annos = [], val = null;
     var annoNames = annosvc.getItemAnnotationNames(aItemId);
     for (var i = 0; i < annoNames.length; i++) {
-      var flags = {}, exp = {}, mimeType = {}, storageType = {};
-      annosvc.getItemAnnotationInfo(aItemId, annoNames[i], flags, exp, mimeType, storageType);
-      if (storageType.value == annosvc.TYPE_BINARY) {
-        var data = {}, length = {}, mimeType = {};
-        annosvc.geItemAnnotationBinary(aItemId, annoNames[i], data, length, mimeType);
-        val = data.value;
-      }
-      else
-        val = annosvc.getItemAnnotation(aItemId, annoNames[i]);
-
+      var flags = {}, exp = {}, storageType = {};
+      annosvc.getItemAnnotationInfo(aItemId, annoNames[i], flags, exp, storageType);
+      val = annosvc.getItemAnnotation(aItemId, annoNames[i]);
       annos.push({name: annoNames[i],
                   flags: flags.value,
                   expires: exp.value,
-                  mimeType: mimeType.value,
-                  type: storageType.value,
                   value: val});
     }
     return annos;
@@ -845,27 +821,21 @@ this.PlacesUtils = {
    *        The URI for which annotations are to be set.
    * @param aAnnotations
    *        Array of objects, each containing the following properties:
-   *        name, flags, expires, type, mimeType (only used for binary
-   *        annotations) value.
+   *        name, flags, expires.
    *        If the value for an annotation is not set it will be removed.
    */
   setAnnotationsForURI: function PU_setAnnotationsForURI(aURI, aAnnos) {
     var annosvc = this.annotations;
     aAnnos.forEach(function(anno) {
-      if (!anno.value) {
+      if (anno.value === undefined || anno.value === null) {
         annosvc.removePageAnnotation(aURI, anno.name);
-        return;
       }
-      var flags = ("flags" in anno) ? anno.flags : 0;
-      var expires = ("expires" in anno) ?
-        anno.expires : Ci.nsIAnnotationService.EXPIRE_NEVER;
-      if (anno.type == annosvc.TYPE_BINARY) {
-        annosvc.setPageAnnotationBinary(aURI, anno.name, anno.value,
-                                        anno.value.length, anno.mimeType,
-                                        flags, expires);
-      }
-      else
+      else {
+        let flags = ("flags" in anno) ? anno.flags : 0;
+        let expires = ("expires" in anno) ?
+          anno.expires : Ci.nsIAnnotationService.EXPIRE_NEVER;
         annosvc.setPageAnnotation(aURI, anno.name, anno.value, flags, expires);
+      }
     });
   },
 
@@ -875,27 +845,20 @@ this.PlacesUtils = {
    *        The identifier of the item for which annotations are to be set
    * @param aAnnotations
    *        Array of objects, each containing the following properties:
-   *        name, flags, expires, type, mimeType (only used for binary
-   *        annotations) value.
+   *        name, flags, expires.
    *        If the value for an annotation is not set it will be removed.
    */
   setAnnotationsForItem: function PU_setAnnotationsForItem(aItemId, aAnnos) {
     var annosvc = this.annotations;
 
     aAnnos.forEach(function(anno) {
-      if (!anno.value) {
+      if (anno.value === undefined || anno.value === null) {
         annosvc.removeItemAnnotation(aItemId, anno.name);
-        return;
-      }
-      var flags = ("flags" in anno) ? anno.flags : 0;
-      var expires = ("expires" in anno) ?
-        anno.expires : Ci.nsIAnnotationService.EXPIRE_NEVER;
-      if (anno.type == annosvc.TYPE_BINARY) {
-        annosvc.setItemAnnotationBinary(aItemId, anno.name, anno.value,
-                                        anno.value.length, anno.mimeType,
-                                        flags, expires);
       }
       else {
+        let flags = ("flags" in anno) ? anno.flags : 0;
+        let expires = ("expires" in anno) ?
+          anno.expires : Ci.nsIAnnotationService.EXPIRE_NEVER;
         annosvc.setItemAnnotation(aItemId, anno.name, anno.value, flags,
                                   expires);
       }
@@ -1332,8 +1295,8 @@ this.PlacesUtils = {
    * @param   aExcludeItems
    *          An array of item ids that should not be written to the backup.
    */
-  serializeNodeAsJSONToOutputStream:
-  function PU_serializeNodeAsJSONToOutputStream(aNode, aStream, aIsUICommand,
+  _serializeNodeAsJSONToOutputStream:
+  function PU__serializeNodeAsJSONToOutputStream(aNode, aStream, aIsUICommand,
                                                 aResolveShortcuts,
                                                 aExcludeItems) {
     function addGenericProperties(aPlacesNode, aJSNode) {
@@ -1389,9 +1352,11 @@ this.PlacesUtils = {
 
       // last character-set
       var uri = PlacesUtils._uri(aPlacesNode.uri);
-      var lastCharset = PlacesUtils.history.getCharsetForURI(uri);
-      if (lastCharset)
+      try {
+        var lastCharset = PlacesUtils.annotations.getPageAnnotation(
+                            uri, PlacesUtils.CHARSET_ANNO);
         aJSNode.charset = lastCharset;
+      } catch (e) {}
     }
 
     function addSeparatorProperties(aPlacesNode, aJSNode) {
@@ -1524,6 +1489,36 @@ this.PlacesUtils = {
     else {
       throw Cr.NS_ERROR_UNEXPECTED;
     }
+  },
+
+  /**
+   * Serializes the given node (and all its descendents) as JSON
+   * and writes the serialization to the given output stream.
+   *
+   * @param   aNode
+   *          An nsINavHistoryResultNode
+   * @param   aStream
+   *          An nsIOutputStream. NOTE: it only uses the write(str, len)
+   *          method of nsIOutputStream. The caller is responsible for
+   *          closing the stream.
+   * @param   aIsUICommand
+   *          Boolean - If true, modifies serialization so that each node self-contained.
+   *          For Example, tags are serialized inline with each bookmark.
+   * @param   aResolveShortcuts
+   *          Converts folder shortcuts into actual folders.
+   * @param   aExcludeItems
+   *          An array of item ids that should not be written to the backup.
+   */
+  serializeNodeAsJSONToOutputStream:
+  function PU_serializeNodeAsJSONToOutputStream(aNode, aStream, aIsUICommand,
+                                                aResolveShortcuts,
+                                                aExcludeItems) {
+    Deprecated.warning(
+      "serializeNodeAsJSONToOutputStream is deprecated and will be removed in a future version",
+      "https://bugzilla.mozilla.org/show_bug.cgi?id=854761");
+
+    this._serializeNodeAsJSONToOutputStream(aNode, aStream, aIsUICommand,
+                                            aResolveShortcuts, aExcludeItems);
   },
 
   /**
@@ -1729,6 +1724,56 @@ this.PlacesUtils = {
 
       deferred.resolve(charset);
     }, Ci.nsIThread.DISPATCH_NORMAL);
+
+    return deferred.promise;
+  },
+
+  /**
+   * Promised wrapper for mozIAsyncHistory::updatePlaces for a single place.
+   *
+   * @param aPlaces
+   *        a single mozIPlaceInfo object
+   * @resolves {Promise}
+   */
+  promiseUpdatePlace: function PU_promiseUpdatePlaces(aPlace) {
+    let deferred = Promise.defer();
+    PlacesUtils.asyncHistory.updatePlaces(aPlace, {
+      _placeInfo: null,
+      handleResult: function handleResult(aPlaceInfo) {
+        this._placeInfo = aPlaceInfo;
+      },
+      handleError: function handleError(aResultCode, aPlaceInfo) {
+        deferred.reject(new Components.Exception("Error", aResultCode));
+      },
+      handleCompletion: function() {
+        deferred.resolve(this._placeInfo);
+      }
+    });
+
+    return deferred.promise;
+  },
+
+  /**
+   * Promised wrapper for mozIAsyncHistory::getPlacesInfo for a single place.
+   *
+   * @param aPlaceIdentifier
+   *        either an nsIURI or a GUID (@see getPlacesInfo)
+   * @resolves to the place info object handed to handleResult.
+   */
+  promisePlaceInfo: function PU_promisePlaceInfo(aPlaceIdentifier) {
+    let deferred = Promise.defer();
+    PlacesUtils.asyncHistory.getPlacesInfo(aPlaceIdentifier, {
+      _placeInfo: null,
+      handleResult: function handleResult(aPlaceInfo) {
+        this._placeInfo = aPlaceInfo;
+      },
+      handleError: function handleError(aResultCode, aPlaceInfo) {
+        deferred.reject(new Components.Exception("Error", aResultCode));
+      },
+      handleCompletion: function() {
+        deferred.resolve(this._placeInfo);
+      }
+    });
 
     return deferred.promise;
   }
@@ -2624,8 +2669,7 @@ PlacesEditBookmarkURITransaction.prototype = {
  *        id of the item where to set annotation
  * @param aAnnotationObject
  *        Object representing an annotation, containing the following
- *        properties: name, flags, expires, type, mimeType (only used for
- *        binary annotations), value.
+ *        properties: name, flags, expires, value.
  *        If value is null the annotation will be removed
  *
  * @return nsITransaction object
@@ -2647,9 +2691,9 @@ PlacesSetItemAnnotationTransaction.prototype = {
     let annoName = this.new.annotations[0].name;
     if (PlacesUtils.annotations.itemHasAnnotation(this.item.id, annoName)) {
       // fill the old anno if it is set
-      let flags = {}, expires = {}, mimeType = {}, type = {};
+      let flags = {}, expires = {}, type = {};
       PlacesUtils.annotations.getItemAnnotationInfo(this.item.id, annoName, flags,
-                                                    expires, mimeType, type);
+                                                    expires, type);
       let value = PlacesUtils.annotations.getItemAnnotation(this.item.id,
                                                             annoName);
       this.item.annotations = [{ name: annoName,
@@ -2661,7 +2705,6 @@ PlacesSetItemAnnotationTransaction.prototype = {
     else {
       // create an empty old anno
       this.item.annotations = [{ name: annoName,
-                                type: Ci.nsIAnnotationService.TYPE_STRING,
                                 flags: 0,
                                 value: null,
                                 expires: Ci.nsIAnnotationService.EXPIRE_NEVER }];
@@ -2684,8 +2727,7 @@ PlacesSetItemAnnotationTransaction.prototype = {
  *        URI of the page where to set annotation
  * @param aAnnotationObject
  *        Object representing an annotation, containing the following
- *        properties: name, flags, expires, type, mimeType (only used for
- *        binary annotations), value.
+ *        properties: name, flags, expires, value.
  *        If value is null the annotation will be removed
  *
  * @return nsITransaction object
@@ -2707,13 +2749,12 @@ PlacesSetPageAnnotationTransaction.prototype = {
     let annoName = this.new.annotations[0].name;
     if (PlacesUtils.annotations.pageHasAnnotation(this.item.uri, annoName)) {
       // fill the old anno if it is set
-      let flags = {}, expires = {}, mimeType = {}, type = {};
+      let flags = {}, expires = {}, type = {};
       PlacesUtils.annotations.getPageAnnotationInfo(this.item.uri, annoName, flags,
-                                                    expires, mimeType, type);
+                                                    expires, type);
       let value = PlacesUtils.annotations.getPageAnnotation(this.item.uri,
                                                             annoName);
       this.item.annotations = [{ name: annoName,
-                                type: type.value,
                                 flags: flags.value,
                                 value: value,
                                 expires: expires.value }];

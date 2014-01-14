@@ -12,10 +12,11 @@
 #ifndef nsContentList_h___
 #define nsContentList_h___
 
+#include "mozilla/Attributes.h"
 #include "nsContentListDeclarations.h"
 #include "nsISupports.h"
 #include "nsTArray.h"
-#include "nsStringGlue.h"
+#include "nsString.h"
 #include "nsIHTMLCollection.h"
 #include "nsIDOMNodeList.h"
 #include "nsINodeList.h"
@@ -49,8 +50,8 @@ public:
   NS_DECL_NSIDOMNODELIST
 
   // nsINodeList
-  virtual int32_t IndexOf(nsIContent* aContent);
-  virtual nsIContent* Item(uint32_t aIndex);
+  virtual int32_t IndexOf(nsIContent* aContent) MOZ_OVERRIDE;
+  virtual nsIContent* Item(uint32_t aIndex) MOZ_OVERRIDE;
 
   uint32_t Length() const { 
     return mElements.Length();
@@ -95,6 +96,14 @@ public:
     MOZ_OVERRIDE = 0;
 
 protected:
+  /**
+   * To be called from non-destructor locations (e.g. unlink) that want to
+   * remove from caches.  Cacheable subclasses should override.
+   */
+  virtual void RemoveFromCaches()
+  {
+  }
+
   nsTArray< nsCOMPtr<nsIContent> > mElements;
 };
 
@@ -111,7 +120,7 @@ public:
   NS_DECL_CYCLE_COLLECTION_CLASS_INHERITED(nsSimpleContentList,
                                            nsBaseContentList)
 
-  virtual nsINode* GetParentObject()
+  virtual nsINode* GetParentObject() MOZ_OVERRIDE
   {
     return mRoot;
   }
@@ -121,16 +130,6 @@ public:
 private:
   // This has to be a strong reference, the root might go away before the list.
   nsCOMPtr<nsINode> mRoot;
-};
-
-// This class is used only by form element code and this is a static
-// list of elements. NOTE! This list holds strong references to
-// the elements in the list.
-class nsFormContentList : public nsSimpleContentList
-{
-public:
-  nsFormContentList(nsIContent *aForm,
-                    nsBaseContentList& aContentList);
 };
 
 /**
@@ -254,18 +253,18 @@ public:
   NS_DECL_NSIDOMHTMLCOLLECTION
 
   // nsBaseContentList overrides
-  virtual int32_t IndexOf(nsIContent *aContent, bool aDoFlush);
-  virtual int32_t IndexOf(nsIContent* aContent);
-  virtual nsINode* GetParentObject()
+  virtual int32_t IndexOf(nsIContent *aContent, bool aDoFlush) MOZ_OVERRIDE;
+  virtual int32_t IndexOf(nsIContent* aContent) MOZ_OVERRIDE;
+  virtual nsINode* GetParentObject() MOZ_OVERRIDE
   {
     return mRootNode;
   }
 
-  virtual nsIContent* Item(uint32_t aIndex);
-  virtual mozilla::dom::Element* GetElementAt(uint32_t index);
+  virtual nsIContent* Item(uint32_t aIndex) MOZ_OVERRIDE;
+  virtual mozilla::dom::Element* GetElementAt(uint32_t index) MOZ_OVERRIDE;
   virtual JSObject* NamedItem(JSContext* cx, const nsAString& name,
-                              mozilla::ErrorResult& error);
-  virtual void GetSupportedNames(nsTArray<nsString>& aNames);
+                              mozilla::ErrorResult& error) MOZ_OVERRIDE;
+  virtual void GetSupportedNames(nsTArray<nsString>& aNames) MOZ_OVERRIDE;
 
   // nsContentList public methods
   NS_HIDDEN_(uint32_t) Length(bool aDoFlush);
@@ -306,6 +305,16 @@ public:
       mXMLMatchAtom->Equals(aKey.mTagname) &&
       mRootNode == aKey.mRootNode &&
       mMatchNameSpaceId == aKey.mMatchNameSpaceId;
+  }
+
+  /**
+   * Sets the state to LIST_DIRTY and clears mElements array.
+   * @note This is the only acceptable way to set state to LIST_DIRTY.
+   */
+  void SetDirty()
+  {
+    mState = LIST_DIRTY;
+    Reset();
   }
 
 protected:
@@ -360,21 +369,12 @@ protected:
   inline void BringSelfUpToDate(bool aDoFlush);
 
   /**
-   * Sets the state to LIST_DIRTY and clears mElements array.
-   * @note This is the only acceptable way to set state to LIST_DIRTY.
-   */
-  void SetDirty()
-  {
-    mState = LIST_DIRTY;
-    Reset();
-  }
-
-  /**
    * To be called from non-destructor locations that want to remove from caches.
    * Needed because if subclasses want to have cache behavior they can't just
    * override RemoveFromHashtable(), since we call that in our destructor.
    */
-  virtual void RemoveFromCaches() {
+  virtual void RemoveFromCaches() MOZ_OVERRIDE
+  {
     RemoveFromHashtable();
   }
 
@@ -492,7 +492,7 @@ protected:
     MOZ_ASSERT(mData);
   }
 
-  virtual void RemoveFromCaches() {
+  virtual void RemoveFromCaches() MOZ_OVERRIDE {
     RemoveFromFuncStringHashtable();
   }
   void RemoveFromFuncStringHashtable();

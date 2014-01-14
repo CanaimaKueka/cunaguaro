@@ -48,9 +48,9 @@
 
 #include "mozilla/TimeStamp.h"
 #include "nsCRT.h"
-#include "prenv.h"
 #include "prprf.h"
 #include "prthread.h"
+#include "nsDebug.h"
 
 // Estimate of the smallest duration of time we can measure.
 static uint64_t sResolution;
@@ -131,9 +131,6 @@ ClockResolutionNs()
 }
 
 namespace mozilla {
-
-TimeStamp TimeStamp::sFirstTimeStamp;
-TimeStamp TimeStamp::sProcessCreation;
 
 double
 TimeDuration::ToSeconds() const
@@ -283,11 +280,11 @@ ComputeProcessUptimeThread(void *aTime)
   *uptime = ((threadJiffies - selfJiffies) * kNsPerSec) / hz;
 }
 
-// Computes and returns the process uptime in ns on Linux & its derivatives.
+// Computes and returns the process uptime in us on Linux & its derivatives.
 // Returns 0 if an error was encountered.
 
-static uint64_t
-ComputeProcessUptime()
+uint64_t
+TimeStamp::ComputeProcessUptime()
 {
   uint64_t uptime = 0;
   PRThread *thread = PR_CreateThread(PR_USER_THREAD,
@@ -300,17 +297,17 @@ ComputeProcessUptime()
 
   PR_JoinThread(thread);
 
-  return uptime;
+  return uptime / kNsPerUs;
 }
 
 #elif defined(__DragonFly__) || defined(__FreeBSD__) \
       || defined(__NetBSD__) || defined(__OpenBSD__)
 
-// Computes and returns the process uptime in ns on various BSD flavors.
+// Computes and returns the process uptime in us on various BSD flavors.
 // Returns 0 if an error was encountered.
 
-static uint64_t
-ComputeProcessUptime()
+uint64_t
+TimeStamp::ComputeProcessUptime()
 {
   struct timespec ts;
   int rv = clock_gettime(CLOCK_REALTIME, &ts);
@@ -333,7 +330,7 @@ ComputeProcessUptime()
 
   KINFO_PROC proc;
   size_t bufferSize = sizeof(proc);
-  rv = sysctl(mib, mibLen, &proc, &bufferSize, NULL, 0);
+  rv = sysctl(mib, mibLen, &proc, &bufferSize, nullptr, 0);
 
   if (rv == -1)
     return 0;
@@ -345,55 +342,17 @@ ComputeProcessUptime()
   if (startTime > now)
     return 0;
 
-  return (now - startTime);
+  return (now - startTime) / kNsPerUs;
 }
 
 #else
 
-static uint64_t
-ComputeProcessUptime()
+uint64_t
+TimeStamp::ComputeProcessUptime()
 {
   return 0;
 }
 
 #endif
 
-TimeStamp
-TimeStamp::ProcessCreation(bool& aIsInconsistent)
-{
-  aIsInconsistent = false;
-
-  if (sProcessCreation.IsNull()) {
-    char *mozAppRestart = PR_GetEnv("MOZ_APP_RESTART");
-    TimeStamp ts;
-
-    if (mozAppRestart) {
-      ts = TimeStamp(nsCRT::atoll(mozAppRestart));
-    } else {
-      TimeStamp now = TimeStamp::Now();
-      uint64_t uptime = ComputeProcessUptime();
-
-      ts = now - TimeDuration::FromMicroseconds(uptime / 1000);
-
-      if ((ts > sFirstTimeStamp) || (uptime == 0)) {
-        // If the process creation timestamp was inconsistent replace it with the
-        // first one instead and notify that a telemetry error was detected.
-        aIsInconsistent = true;
-        ts = sFirstTimeStamp;
-      }
-    }
-
-    sProcessCreation = ts;
-  }
-
-  return sProcessCreation;
-}
-
-void
-TimeStamp::RecordProcessRestart()
-{
-  PR_SetEnv(PR_smprintf("MOZ_APP_RESTART=%lld", ClockTimeNs()));
-  sProcessCreation = TimeStamp();
-}
-
-}
+} // namespace mozilla

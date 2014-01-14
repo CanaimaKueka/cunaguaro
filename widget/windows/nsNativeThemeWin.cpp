@@ -64,11 +64,11 @@ GetTopLevelWindowActiveState(nsIFrame *aFrame)
   // Get the widget. nsIFrame's GetNearestWidget walks up the view chain
   // until it finds a real window.
   nsIWidget* widget = aFrame->GetNearestWidget();
-  nsWindow * window = static_cast<nsWindow*>(widget);
+  nsWindowBase * window = static_cast<nsWindowBase*>(widget);
   if (!window)
     return mozilla::widget::themeconst::FS_INACTIVE;
   if (widget && !window->IsTopLevelWidget() &&
-      !(window = window->GetParentWindow(false)))
+      !(window = window->GetParentWindowBase(false)))
     return mozilla::widget::themeconst::FS_INACTIVE;
 
   if (window->GetWindowHandle() == ::GetActiveWindow())
@@ -103,22 +103,6 @@ GetClassicWindowFrameButtonState(nsEventStates eventState)
   return DFCS_BUTTONPUSH;
 }
 
-static void
-QueryForButtonData(nsIFrame *aFrame)
-{
-  if (nsUXThemeData::sTitlebarInfoPopulatedThemed && nsUXThemeData::sTitlebarInfoPopulatedAero)
-    return;
-  nsIWidget* widget = aFrame->GetNearestWidget();
-  nsWindow * window = static_cast<nsWindow*>(widget);
-  if (!window)
-    return;
-  if (!window->IsTopLevelWidget() &&
-      !(window = window->GetParentWindow(false)))
-    return;
-
-  nsUXThemeData::UpdateTitlebarInfo(window->GetWindowHandle());
-}
-
 static bool
 IsTopLevelMenu(nsIFrame *aFrame)
 {
@@ -135,7 +119,7 @@ GetCheckboxMargins(HANDLE theme, HDC hdc)
 {
     MARGINS checkboxContent = {0};
     GetThemeMargins(theme, hdc, MENU_POPUPCHECK, MCB_NORMAL,
-                    TMT_CONTENTMARGINS, NULL, &checkboxContent);
+                    TMT_CONTENTMARGINS, nullptr, &checkboxContent);
     return checkboxContent;
 }
 
@@ -144,7 +128,7 @@ GetCheckboxBGSize(HANDLE theme, HDC hdc)
 {
     SIZE checkboxSize;
     GetThemePartSize(theme, hdc, MENU_POPUPCHECK, MC_CHECKMARKNORMAL,
-                     NULL, TS_TRUE, &checkboxSize);
+                     nullptr, TS_TRUE, &checkboxSize);
 
     MARGINS checkboxMargins = GetCheckboxMargins(theme, hdc);
 
@@ -167,9 +151,9 @@ GetCheckboxBGBounds(HANDLE theme, HDC hdc)
     MARGINS checkboxBGSizing = {0};
     MARGINS checkboxBGContent = {0};
     GetThemeMargins(theme, hdc, MENU_POPUPCHECKBACKGROUND, MCB_NORMAL,
-                    TMT_SIZINGMARGINS, NULL, &checkboxBGSizing);
+                    TMT_SIZINGMARGINS, nullptr, &checkboxBGSizing);
     GetThemeMargins(theme, hdc, MENU_POPUPCHECKBACKGROUND, MCB_NORMAL,
-                    TMT_CONTENTMARGINS, NULL, &checkboxBGContent);
+                    TMT_CONTENTMARGINS, nullptr, &checkboxBGContent);
 
 #define posdx(d) ((d) > 0 ? d : 0)
 
@@ -194,12 +178,12 @@ static SIZE
 GetGutterSize(HANDLE theme, HDC hdc)
 {
     SIZE gutterSize;
-    GetThemePartSize(theme, hdc, MENU_POPUPGUTTER, 0, NULL, TS_TRUE, &gutterSize);
+    GetThemePartSize(theme, hdc, MENU_POPUPGUTTER, 0, nullptr, TS_TRUE, &gutterSize);
 
     SIZE checkboxBGSize(GetCheckboxBGBounds(theme, hdc));
 
     SIZE itemSize;
-    GetThemePartSize(theme, hdc, MENU_POPUPITEM, MPI_NORMAL, NULL, TS_TRUE, &itemSize);
+    GetThemePartSize(theme, hdc, MENU_POPUPITEM, MPI_NORMAL, nullptr, TS_TRUE, &itemSize);
 
     // Figure out how big the menuitem's icon will be (if present) at current DPI
     double scaleFactor = nsIWidget::DefaultScaleOverride();
@@ -213,7 +197,7 @@ GetGutterSize(HANDLE theme, HDC hdc)
     // Not really sure what margins should be used here, but this seems to work in practice...
     MARGINS margins = {0};
     GetThemeMargins(theme, hdc, MENU_POPUPCHECKBACKGROUND, MCB_NORMAL,
-                    TMT_CONTENTMARGINS, NULL, &margins);
+                    TMT_CONTENTMARGINS, nullptr, &margins);
     iconSize.cx += margins.cxLeftWidth + margins.cxRightWidth;
     iconSize.cy += margins.cyTopHeight + margins.cyBottomHeight;
 
@@ -271,7 +255,7 @@ DrawThemeBGRTLAware(HANDLE aTheme, HDC aHdc, int aPart, int aState,
     newWRect.right = bitmap.bmWidth - (aWidgetRect->left + 2*vpOrg.x);
 
     RECT newCRect;
-    RECT *newCRectPtr = NULL;
+    RECT *newCRectPtr = nullptr;
 
     if (aClipRect) {
       newCRect.top = aClipRect->top;
@@ -752,7 +736,7 @@ nsNativeThemeWin::GetTheme(uint8_t aWidgetType)
     case NS_THEME_TOOLTIP:
       // XP/2K3 should force a classic treatment of tooltips
       return WinUtils::GetWindowsVersion() < WinUtils::VISTA_VERSION ?
-        NULL : nsUXThemeData::GetTheme(eUXTooltip);
+        nullptr : nsUXThemeData::GetTheme(eUXTooltip);
     case NS_THEME_TOOLBOX:
       return nsUXThemeData::GetTheme(eUXRebar);
     case NS_THEME_WIN_MEDIA_TOOLBOX:
@@ -839,7 +823,7 @@ nsNativeThemeWin::GetTheme(uint8_t aWidgetType)
     case NS_THEME_WIN_BORDERLESS_GLASS:
       return nsUXThemeData::GetTheme(eUXWindowFrame);
   }
-  return NULL;
+  return nullptr;
 }
 
 int32_t
@@ -1762,7 +1746,7 @@ RENDER_AGAIN:
   {
     DrawThemeBackground(theme, hdc, MENU_POPUPBORDERS, /* state */ 0, &widgetRect, &clipRect);
     SIZE borderSize;
-    GetThemePartSize(theme, hdc, MENU_POPUPBORDERS, 0, NULL, TS_TRUE, &borderSize);
+    GetThemePartSize(theme, hdc, MENU_POPUPBORDERS, 0, nullptr, TS_TRUE, &borderSize);
 
     RECT bgRect = widgetRect;
     bgRect.top += borderSize.cy;
@@ -1847,9 +1831,9 @@ RENDER_AGAIN:
 
         uint8_t id = SaveDC(hdc);
 
-        ::SelectClipRgn(hdc, NULL);
+        ::SelectClipRgn(hdc, nullptr);
         ::GetViewportOrgEx(hdc, &vpOrg);
-        ::SetBrushOrgEx(hdc, vpOrg.x + widgetRect.left, vpOrg.y + widgetRect.top, NULL);
+        ::SetBrushOrgEx(hdc, vpOrg.x + widgetRect.left, vpOrg.y + widgetRect.top, nullptr);
 
         // On vista, choose our own colors and draw an XP style half focus rect
         // for focused checkboxes and a full rect when active.
@@ -1860,18 +1844,18 @@ RENDER_AGAIN:
           lb.lbColor = RGB(255,255,255);
           lb.lbHatch = 0;
 
-          hPen = ::ExtCreatePen(PS_COSMETIC|PS_ALTERNATE, 1, &lb, 0, NULL);
+          hPen = ::ExtCreatePen(PS_COSMETIC|PS_ALTERNATE, 1, &lb, 0, nullptr);
           ::SelectObject(hdc, hPen);
 
           // If pressed, draw the upper left corner of the dotted rect.
           if (contentState.HasState(NS_EVENT_STATE_ACTIVE)) {
-            ::MoveToEx(hdc, widgetRect.left, widgetRect.bottom-1, NULL);
+            ::MoveToEx(hdc, widgetRect.left, widgetRect.bottom-1, nullptr);
             ::LineTo(hdc, widgetRect.left, widgetRect.top);
             ::LineTo(hdc, widgetRect.right-1, widgetRect.top);
           }
 
           // Draw the lower right corner of the dotted rect.
-          ::MoveToEx(hdc, widgetRect.right-1, widgetRect.top, NULL);
+          ::MoveToEx(hdc, widgetRect.right-1, widgetRect.top, nullptr);
           ::LineTo(hdc, widgetRect.right-1, widgetRect.bottom-1);
           ::LineTo(hdc, widgetRect.left, widgetRect.bottom-1);
         } else {
@@ -1892,7 +1876,7 @@ RENDER_AGAIN:
       return NS_ERROR_FAILURE;
 
     widgetRect.bottom = widgetRect.top + TB_SEPARATOR_HEIGHT;
-    DrawThemeEdge(theme, hdc, RP_BAND, 0, &widgetRect, EDGE_ETCHED, BF_TOP, NULL);
+    DrawThemeEdge(theme, hdc, RP_BAND, 0, &widgetRect, EDGE_ETCHED, BF_TOP, nullptr);
   }
   else if (aWidgetType == NS_THEME_SCROLLBAR_THUMB_HORIZONTAL ||
            aWidgetType == NS_THEME_SCROLLBAR_THUMB_VERTICAL)
@@ -1904,8 +1888,8 @@ RENDER_AGAIN:
     int gripPart = (aWidgetType == NS_THEME_SCROLLBAR_THUMB_HORIZONTAL) ?
                    SP_GRIPPERHOR : SP_GRIPPERVERT;
 
-    if (GetThemePartSize(theme, hdc, gripPart, state, NULL, TS_TRUE, &gripSize) == S_OK &&
-        GetThemeMargins(theme, hdc, part, state, TMT_CONTENTMARGINS, NULL, &thumbMgns) == S_OK &&
+    if (GetThemePartSize(theme, hdc, gripPart, state, nullptr, TS_TRUE, &gripSize) == S_OK &&
+        GetThemeMargins(theme, hdc, part, state, TMT_CONTENTMARGINS, nullptr, &thumbMgns) == S_OK &&
         gripSize.cx + thumbMgns.cxLeftWidth + thumbMgns.cxRightWidth <= widgetRect.right - widgetRect.left &&
         gripSize.cy + thumbMgns.cyTopHeight + thumbMgns.cyBottomHeight <= widgetRect.bottom - widgetRect.top)
     {
@@ -2006,7 +1990,7 @@ nsNativeThemeWin::GetWidgetBorder(nsDeviceContext* aContext,
   outerRect.top = outerRect.left = 100;
   outerRect.right = outerRect.bottom = 200;
   RECT contentRect(outerRect);
-  HRESULT res = GetThemeBackgroundContentRect(theme, NULL, part, state, &outerRect, &contentRect);
+  HRESULT res = GetThemeBackgroundContentRect(theme, nullptr, part, state, &outerRect, &contentRect);
   
   if (FAILED(res))
     return NS_ERROR_FAILURE;
@@ -2095,7 +2079,7 @@ nsNativeThemeWin::GetWidgetPadding(nsDeviceContext* aContext,
   if (aWidgetType == NS_THEME_MENUPOPUP)
   {
     SIZE popupSize;
-    GetThemePartSize(theme, NULL, MENU_POPUPBORDERS, /* state */ 0, NULL, TS_TRUE, &popupSize);
+    GetThemePartSize(theme, nullptr, MENU_POPUPBORDERS, /* state */ 0, nullptr, TS_TRUE, &popupSize);
     aResult->top = aResult->bottom = popupSize.cy;
     aResult->left = aResult->right = popupSize.cx;
     return true;
@@ -2150,13 +2134,13 @@ nsNativeThemeWin::GetWidgetPadding(nsDeviceContext* aContext,
         // There seem to be exactly 4 pixels from the edge
         // of the gutter to the text: 2px margin (CSS) + 2px padding (here)
         {
-          SIZE size(GetGutterSize(theme, NULL));
+          SIZE size(GetGutterSize(theme, nullptr));
           left = size.cx + 2;
         }
         break;
     case NS_THEME_MENUSEPARATOR:
         {
-          SIZE size(GetGutterSize(theme, NULL));
+          SIZE size(GetGutterSize(theme, nullptr));
           left = size.cx + 5;
           top = 10;
           bottom = 7;
@@ -2274,7 +2258,7 @@ nsNativeThemeWin::GetMinimumWidgetSize(nsRenderingContext* aContext, nsIFrame* a
     case NS_THEME_RADIOMENUITEM:
       if(!IsTopLevelMenu(aFrame))
       {
-        SIZE gutterSize(GetGutterSize(theme, NULL));
+        SIZE gutterSize(GetGutterSize(theme, nullptr));
         aResult->width = gutterSize.cx;
         aResult->height = gutterSize.cy;
         return NS_OK;
@@ -2285,7 +2269,7 @@ nsNativeThemeWin::GetMinimumWidgetSize(nsRenderingContext* aContext, nsIFrame* a
     case NS_THEME_MENUCHECKBOX:
     case NS_THEME_MENURADIO:
       {
-        SIZE boxSize(GetGutterSize(theme, NULL));
+        SIZE boxSize(GetGutterSize(theme, nullptr));
         aResult->width = boxSize.cx+2;
         aResult->height = boxSize.cy;
         *aIsOverridable = false;
@@ -2354,7 +2338,6 @@ nsNativeThemeWin::GetMinimumWidgetSize(nsRenderingContext* aContext, nsIFrame* a
       // The only way to get accurate titlebar button info is to query a
       // window w/buttons when it's visible. nsWindow takes care of this and
       // stores that info in nsUXThemeData.
-      QueryForButtonData(aFrame);
       aResult->width = nsUXThemeData::sCommandButtons[CMDBUTTONIDX_RESTORE].cx;
       aResult->height = nsUXThemeData::sCommandButtons[CMDBUTTONIDX_RESTORE].cy;
       // For XP, subtract 4 from system metrics dimensions.
@@ -2367,7 +2350,6 @@ nsNativeThemeWin::GetMinimumWidgetSize(nsRenderingContext* aContext, nsIFrame* a
       return NS_OK;
 
     case NS_THEME_WINDOW_BUTTON_MINIMIZE:
-      QueryForButtonData(aFrame);
       aResult->width = nsUXThemeData::sCommandButtons[CMDBUTTONIDX_MINIMIZE].cx;
       aResult->height = nsUXThemeData::sCommandButtons[CMDBUTTONIDX_MINIMIZE].cy;
       if (WinUtils::GetWindowsVersion() == WinUtils::WINXP_VERSION) {
@@ -2379,7 +2361,6 @@ nsNativeThemeWin::GetMinimumWidgetSize(nsRenderingContext* aContext, nsIFrame* a
       return NS_OK;
 
     case NS_THEME_WINDOW_BUTTON_CLOSE:
-      QueryForButtonData(aFrame);
       aResult->width = nsUXThemeData::sCommandButtons[CMDBUTTONIDX_CLOSE].cx;
       aResult->height = nsUXThemeData::sCommandButtons[CMDBUTTONIDX_CLOSE].cy;
       if (WinUtils::GetWindowsVersion() == WinUtils::WINXP_VERSION) {
@@ -2401,7 +2382,6 @@ nsNativeThemeWin::GetMinimumWidgetSize(nsRenderingContext* aContext, nsIFrame* a
     case NS_THEME_WINDOW_BUTTON_BOX:
     case NS_THEME_WINDOW_BUTTON_BOX_MAXIMIZED:
       if (nsUXThemeData::CheckForCompositor()) {
-        QueryForButtonData(aFrame);
         aResult->width = nsUXThemeData::sCommandButtons[CMDBUTTONIDX_BUTTONBOX].cx;
         aResult->height = nsUXThemeData::sCommandButtons[CMDBUTTONIDX_BUTTONBOX].cy
                           - GetSystemMetrics(SM_CYFRAME)
@@ -2434,7 +2414,7 @@ nsNativeThemeWin::GetMinimumWidgetSize(nsRenderingContext* aContext, nsIFrame* a
     return NS_ERROR_FAILURE;
 
   SIZE sz;
-  GetThemePartSize(theme, hdc, part, state, NULL, sizeReq, &sz);
+  GetThemePartSize(theme, hdc, part, state, nullptr, sizeReq, &sz);
   aResult->width = sz.cx;
   aResult->height = sz.cy;
 
@@ -2555,7 +2535,7 @@ nsNativeThemeWin::ThemeSupportsWidget(nsPresContext* aPresContext,
   if (aPresContext && !aPresContext->PresShell()->IsThemeSupportEnabled())
     return false;
 
-  HANDLE theme = NULL;
+  HANDLE theme = nullptr;
   if (aWidgetType == NS_THEME_CHECKBOX_CONTAINER)
     theme = GetTheme(NS_THEME_CHECKBOX);
   else if (aWidgetType == NS_THEME_RADIO_CONTAINER)
@@ -2582,7 +2562,7 @@ nsNativeThemeWin::WidgetIsContainer(uint8_t aWidgetType)
 }
 
 bool
-nsNativeThemeWin::ThemeDrawsFocusForWidget(nsPresContext* aPresContext, nsIFrame* aFrame, uint8_t aWidgetType)
+nsNativeThemeWin::ThemeDrawsFocusForWidget(uint8_t aWidgetType)
 {
   return false;
 }
@@ -2591,6 +2571,25 @@ bool
 nsNativeThemeWin::ThemeNeedsComboboxDropmarker()
 {
   return true;
+}
+
+bool
+nsNativeThemeWin::WidgetAppearanceDependsOnWindowFocus(uint8_t aWidgetType)
+{
+  switch (aWidgetType) {
+    case NS_THEME_WINDOW_TITLEBAR:
+    case NS_THEME_WINDOW_TITLEBAR_MAXIMIZED:
+    case NS_THEME_WINDOW_FRAME_LEFT:
+    case NS_THEME_WINDOW_FRAME_RIGHT:
+    case NS_THEME_WINDOW_FRAME_BOTTOM:
+    case NS_THEME_WINDOW_BUTTON_CLOSE:
+    case NS_THEME_WINDOW_BUTTON_MINIMIZE:
+    case NS_THEME_WINDOW_BUTTON_MAXIMIZE:
+    case NS_THEME_WINDOW_BUTTON_RESTORE:
+      return true;
+    default:
+      return false;
+  }
 }
 
 nsITheme::Transparency
@@ -3407,7 +3406,7 @@ static void DrawMenuImage(HDC hdc, const RECT& rc, int32_t aComponent, uint32_t 
     int checkW = ::GetSystemMetrics(SM_CXMENUCHECK);
     int checkH = ::GetSystemMetrics(SM_CYMENUCHECK);
 
-    HBITMAP hMonoBitmap = ::CreateBitmap(checkW, checkH, 1, 1, NULL);
+    HBITMAP hMonoBitmap = ::CreateBitmap(checkW, checkH, 1, 1, nullptr);
     if (hMonoBitmap) {
 
       HBITMAP hPrevBitmap = (HBITMAP) ::SelectObject(hMemoryDC, hMonoBitmap);
@@ -3459,7 +3458,7 @@ void nsNativeThemeWin::DrawCheckedRect(HDC hdc, const RECT& rc, int32_t fore, in
 
       ::UnrealizeObject(brush);
       ::GetViewportOrgEx(hdc, &vpOrg);
-      ::SetBrushOrgEx(hdc, vpOrg.x + rc.left, vpOrg.y + rc.top, NULL);
+      ::SetBrushOrgEx(hdc, vpOrg.x + rc.left, vpOrg.y + rc.top, nullptr);
       HBRUSH oldBrush = (HBRUSH) ::SelectObject(hdc, brush);
       ::FillRect(hdc, &rc, brush);
       ::SetTextColor(hdc, oldForeColor);
@@ -3548,7 +3547,7 @@ RENDER_AGAIN:
         // setup DC to make DrawFocusRect draw correctly
         POINT vpOrg;
         ::GetViewportOrgEx(hdc, &vpOrg);
-        ::SetBrushOrgEx(hdc, vpOrg.x + widgetRect.left, vpOrg.y + widgetRect.top, NULL);
+        ::SetBrushOrgEx(hdc, vpOrg.x + widgetRect.left, vpOrg.y + widgetRect.top, nullptr);
         int32_t oldColor;
         oldColor = ::SetTextColor(hdc, 0);
         // draw focus rectangle

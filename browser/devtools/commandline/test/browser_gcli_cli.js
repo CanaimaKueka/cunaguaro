@@ -37,15 +37,18 @@ function test() {
 
 // var helpers = require('gclitest/helpers');
 // var mockCommands = require('gclitest/mockCommands');
+var nodetype = require('gcli/types/node');
 
 // var assert = require('test/assert');
 
 exports.setup = function(options) {
   mockCommands.setup();
+  nodetype.setDocument(options.window.document);
 };
 
 exports.shutdown = function(options) {
   mockCommands.shutdown();
+  nodetype.unsetDocument();
 };
 
 exports.testBlank = function(options) {
@@ -63,7 +66,7 @@ exports.testBlank = function(options) {
         status: 'ERROR'
       },
       post: function() {
-        assert.is(undefined, requisition.commandAssignment.value);
+        assert.is(requisition.commandAssignment.value, undefined);
       }
     },
     {
@@ -77,7 +80,7 @@ exports.testBlank = function(options) {
         status: 'ERROR'
       },
       post: function() {
-        assert.is(undefined, requisition.commandAssignment.value);
+        assert.is(requisition.commandAssignment.value, undefined);
       }
     },
     {
@@ -94,7 +97,7 @@ exports.testBlank = function(options) {
         status: 'ERROR'
       },
       post: function() {
-        assert.is(undefined, requisition.commandAssignment.value);
+        assert.is(requisition.commandAssignment.value, undefined);
       }
     }
   ]);
@@ -310,7 +313,7 @@ exports.testTsv = function(options) {
         status: 'ERROR',
         predictions: [ ],
         unassigned: [ ],
-        tooltipState: 'true:isError',
+        tooltipState: 'false:default',
         args: {
           command: { name: 'tsv' },
           optionType: {
@@ -531,7 +534,6 @@ exports.testSingleString = function(options) {
         cursor: 3,
         current: '__command',
         status: 'ERROR',
-        predictions: [ ],
         unassigned: [ ],
         args: {
           command: { name: 'tsr' },
@@ -1072,7 +1074,7 @@ exports.testNestedCommand = function(options) {
       setup:    'tsn',
       check: {
         input:  'tsn',
-        hints:     '',
+        hints:     ' deep down nested cmd',
         markup: 'III',
         cursor: 3,
         current: '__command',
@@ -1091,7 +1093,7 @@ exports.testNestedCommand = function(options) {
       setup:    'tsn ',
       check: {
         input:  'tsn ',
-        hints:      '',
+        hints:      ' deep down nested cmd',
         markup: 'IIIV',
         cursor: 4,
         current: '__command',
@@ -1286,12 +1288,12 @@ exports.testDeeplyNested = function(options) {
       setup:    'tsn deep down nested',
       check: {
         input:  'tsn deep down nested',
-        hints:                      '',
+        hints:                      ' cmd',
         markup: 'IIIVIIIIVIIIIVIIIIII',
         cursor: 20,
         current: '__command',
         status: 'ERROR',
-        predictions: [ 'tsn deep down nested', 'tsn deep down nested cmd' ],
+        predictions: [ 'tsn deep down nested cmd' ],
         unassigned: [ ],
         outputState: 'false:default',
         tooltipState: 'false:default',

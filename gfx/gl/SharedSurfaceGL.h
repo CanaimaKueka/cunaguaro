@@ -11,7 +11,8 @@
 #include "SurfaceTypes.h"
 #include "GLContextTypes.h"
 #include "nsAutoPtr.h"
-#include "gfxASurface.h"
+#include "gfxTypes.h"
+#include "mozilla/Mutex.h"
 
 #include <queue>
 
@@ -56,6 +57,11 @@ public:
         MOZ_ASSERT(surf->APIType() == APITypeT::OpenGL);
 
         return (SharedSurface_GL*)surf;
+    }
+
+    virtual bool ReadPixels(GLint x, GLint y, GLsizei width, GLsizei height,
+                            GLenum format, GLenum type, GLvoid *pixels) {
+        return false;
     }
 
     virtual void LockProd();
@@ -131,7 +137,7 @@ protected:
     SharedSurface_Basic(GLContext* gl,
                         const gfxIntSize& size,
                         bool hasAlpha,
-                        gfxASurface::gfxImageFormat format,
+                        gfxImageFormat format,
                         GLuint tex);
 
 public:
@@ -192,9 +198,10 @@ public:
     }
 
 protected:
-    GLContext* const mConsGL;
+    GLContext* mConsGL;
     const GLuint mTex;
     GLsync mSync;
+    mutable Mutex mMutex;
 
     SharedSurface_GLTexture(GLContext* prodGL,
                             GLContext* consGL,
@@ -209,6 +216,7 @@ protected:
         , mConsGL(consGL)
         , mTex(tex)
         , mSync(0)
+        , mMutex("SharedSurface_GLTexture mutex")
     {
     }
 
@@ -226,6 +234,9 @@ public:
     virtual GLuint Texture() const {
         return mTex;
     }
+
+    // Custom:
+    void SetConsumerGL(GLContext* consGL);
 };
 
 class SurfaceFactory_GLTexture
@@ -235,12 +246,17 @@ protected:
     GLContext* const mConsGL;
 
 public:
+    // If we don't know `consGL` at construction time, use `nullptr`, and call
+    // `SetConsumerGL()` on each `SharedSurface_GLTexture` before calling its
+    // `WaitSync()`.
     SurfaceFactory_GLTexture(GLContext* prodGL,
                              GLContext* consGL,
                              const SurfaceCaps& caps)
         : SurfaceFactory_GL(prodGL, SharedSurfaceType::GLTextureShare, caps)
         , mConsGL(consGL)
-    {}
+    {
+        MOZ_ASSERT(consGL != prodGL);
+    }
 
     virtual SharedSurface* CreateShared(const gfxIntSize& size) {
         bool hasAlpha = mReadCaps.alpha;

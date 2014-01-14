@@ -15,7 +15,9 @@
 <!ENTITY manageSubscriptions.label "Upravljanje pretplatama…"> 
 <!ENTITY manageSubscriptions.accesskey "m">
 
+<!ENTITY feedWindowTitle.label "Čarobnjak računa kanala">
 <!-- entities from rss.rdf -->
+
 <!ENTITY feeds.accountName "Blogovi i vijesti">
 <!ENTITY feeds.wizardShortName "Kanali">
 <!ENTITY feeds.wizardLongName "Blogovi i vijesti">

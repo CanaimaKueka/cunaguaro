@@ -3,8 +3,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "nsPrefetchService.h"
-#include "nsICacheSession.h"
-#include "nsICacheService.h"
+#include "nsICacheEntry.h"
 #include "nsIServiceManager.h"
 #include "nsICategoryManager.h"
 #include "nsIObserverService.h"
@@ -264,7 +263,7 @@ nsPrefetchNode::OnStartRequest(nsIRequest *aRequest,
     if (!cacheToken)
         return NS_ERROR_ABORT; // bail, no cache entry
 
-    nsCOMPtr<nsICacheEntryInfo> entryInfo =
+    nsCOMPtr<nsICacheEntry> entryInfo =
         do_QueryInterface(cacheToken, &rv);
     if (NS_FAILED(rv)) return rv;
 
@@ -470,7 +469,8 @@ nsPrefetchService::ProcessNextURI()
         //
         // if opening the channel fails, then just skip to the next uri
         //
-        rv = mCurrentNode->OpenChannel();
+        nsRefPtr<nsPrefetchNode> node = mCurrentNode;
+        rv = node->OpenChannel();
     }
     while (NS_FAILED(rv));
 }
@@ -751,22 +751,8 @@ nsPrefetchService::PrefetchURI(nsIURI *aURI,
 }
 
 NS_IMETHODIMP
-nsPrefetchService::PrefetchURIForOfflineUse(nsIURI *aURI,
-                                            nsIURI *aReferrerURI,
-                                            nsIDOMNode *aSource,
-                                            bool aExplicit)
+nsPrefetchService::EnumerateQueue(nsISimpleEnumerator **aEnumerator)
 {
-    return NS_ERROR_NOT_IMPLEMENTED;
-}
-
-NS_IMETHODIMP
-nsPrefetchService::EnumerateQueue(bool aIncludeNormalItems,
-                                  bool aIncludeOfflineItems,
-                                  nsISimpleEnumerator **aEnumerator)
-{
-    NS_ENSURE_TRUE(aIncludeNormalItems && !aIncludeOfflineItems,
-                   NS_ERROR_NOT_IMPLEMENTED);
-
     *aEnumerator = new nsPrefetchQueueEnumerator(this);
     if (!*aEnumerator) return NS_ERROR_OUT_OF_MEMORY;
 

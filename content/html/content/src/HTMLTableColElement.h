@@ -5,37 +5,20 @@
 #ifndef mozilla_dom_HTMLTableColElement_h
 #define mozilla_dom_HTMLTableColElement_h
 
+#include "mozilla/Attributes.h"
 #include "nsGenericHTMLElement.h"
-#include "nsIDOMHTMLTableColElement.h"
 
 namespace mozilla {
 namespace dom {
 
-class HTMLTableColElement : public nsGenericHTMLElement,
-                            public nsIDOMHTMLTableColElement
+class HTMLTableColElement MOZ_FINAL : public nsGenericHTMLElement
 {
 public:
   HTMLTableColElement(already_AddRefed<nsINodeInfo> aNodeInfo)
     : nsGenericHTMLElement(aNodeInfo)
   {
-    SetIsDOMBinding();
   }
   virtual ~HTMLTableColElement();
-
-  // nsISupports
-  NS_DECL_ISUPPORTS_INHERITED
-
-  // nsIDOMNode
-  NS_FORWARD_NSIDOMNODE_TO_NSINODE
-
-  // nsIDOMElement
-  NS_FORWARD_NSIDOMELEMENT_TO_GENERIC
-
-  // nsIDOMHTMLElement
-  NS_FORWARD_NSIDOMHTMLELEMENT_TO_GENERIC
-
-  // nsIDOMHTMLTableColElement
-  NS_DECL_NSIDOMHTMLTABLECOLELEMENT
 
   uint32_t Span() const
   {
@@ -90,13 +73,11 @@ public:
   virtual bool ParseAttribute(int32_t aNamespaceID,
                                 nsIAtom* aAttribute,
                                 const nsAString& aValue,
-                                nsAttrValue& aResult);
-  nsMapRuleToAttributesFunc GetAttributeMappingFunction() const;
-  NS_IMETHOD_(bool) IsAttributeMapped(const nsIAtom* aAttribute) const;
+                                nsAttrValue& aResult) MOZ_OVERRIDE;
+  nsMapRuleToAttributesFunc GetAttributeMappingFunction() const MOZ_OVERRIDE;
+  NS_IMETHOD_(bool) IsAttributeMapped(const nsIAtom* aAttribute) const MOZ_OVERRIDE;
 
-  virtual nsresult Clone(nsINodeInfo *aNodeInfo, nsINode **aResult) const;
-
-  virtual nsIDOMNode* AsDOMNode() { return this; }
+  virtual nsresult Clone(nsINodeInfo *aNodeInfo, nsINode **aResult) const MOZ_OVERRIDE;
 
 protected:
   virtual JSObject* WrapNode(JSContext *aCx,

@@ -1,8 +1,8 @@
 <!-- This Source Code Form is subject to the terms of the Mozilla Public
    - License, v. 2.0. If a copy of the MPL was not distributed with this
    - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
-
 <!-- Note: each tab panel must contain unique accesskeys -->
+
 
 <!ENTITY generalTab.label                "Hollek">
 
@@ -27,17 +27,18 @@
 <!ENTITY checkSpelling.accesskey         "G">
 
 <!ENTITY systemDefaults.label            "Arventennoù dre ziouer ar reizhiad">
-<!ENTITY alwaysCheckDefault.label        "Gwiriañ atav evit gwelout hag eñ eo &brandShortName; ar merdeer dre ziouer e-kerz al loc'hañ"><!--XXX-->
+<!--XXX-->
+<!ENTITY alwaysCheckDefault.label        "Gwiriañ atav evit gwelout hag eñ eo &brandShortName; ar merdeer dre ziouer e-kerz al loc'hañ">
 <!ENTITY alwaysCheckDefault.accesskey    "w">
-<!ENTITY setDefault.label                "Arverañ &brandShortName; evel merdeer dre ziouer">
+<!ENTITY setDefault.label                "Arverañ &brandShortName; da verdeer dre ziouer">
 <!ENTITY setDefault.accesskey            "i">
 <!ENTITY isDefault.label                 "Ho merdeer dre ziouer eo &brandShortName;">
 
 <!ENTITY dataChoicesTab.label            "Roadennoù">
 
-<!ENTITY healthReportSection.label       "Danevell a-fet yec'hed &brandShortName;">
+<!ENTITY healthReportSection.label       "Danevell yec'hed &brandShortName;">
 <!ENTITY healthReportDesc.label          "Skoazellañ a ra ac'hanoc'h kompren digonusted ho merdeer ha rannañ roadennoù a-fet yec'hed ho merdeer gant &vendorShortName;">
-<!ENTITY enableHealthReport.label        "Gweredekaat an danevell a-fet yec'hed &brandShortName;">
+<!ENTITY enableHealthReport.label        "Gweredekaat danevell yec'hed &brandShortName;">
 <!ENTITY enableHealthReport.accesskey    "y">
 <!ENTITY healthReportLearnMore.label     "Gouzout hiroc'h">
 
@@ -64,13 +65,13 @@
 <!ENTITY httpCache.label                 "Krubuilh an endalc'had Web">
 
 <!ENTITY offlineStorage2.label           "Endalc'had Web ezlinenn ha roadennoù an arveriad">
-
 <!-- LOCALIZATION NOTE:
   The entities limitCacheSizeBefore.label and limitCacheSizeAfter.label appear on a single
   line in preferences as follows:
 
   &limitCacheSizeBefore.label [textbox for cache size in MB] &limitCacheSizeAfter.label;
 -->
+
 <!ENTITY limitCacheSizeBefore.label      "Bevennañ ar grubuilh da">
 <!ENTITY limitCacheSizeBefore.accesskey  "l">
 <!ENTITY limitCacheSizeAfter.label       "Me egor">
@@ -84,8 +85,13 @@
 <!ENTITY updateTab.label                 "Hizivaat">
 
 <!ENTITY updateApp.label                 "Hizivadurioù evit &brandShortName; :">
-<!ENTITY updateAuto.label                "Staliañ an hizivadurioù ent emgefreek (erbedet : diogelroez gwellaet)">
-<!ENTITY updateAuto.accesskey            "t">
+<!-- Note either updateAuto1 is used or (updateAutoMetro and updateAutoDesktop),
+     so re-using accesss key in updateAuto1 is OK. updateAutoDesktop can be found
+     in preferences.properties -->
+<!ENTITY updateAuto1.label               "Staliañ an hizivadennoù ent emgefreek (erbedet : diogelroez gwellaet)">
+<!ENTITY updateAuto1.accesskey           "h">
+<!ENTITY updateAutoMetro.label           "Hizivaat ent emgefreek evit ar stiloù burev ha Windows 8 eus &brandShortName;">
+<!ENTITY updateAutoMetro.accesskey       "H">
 <!ENTITY updateCheck.label               "Gwiriañ mard ez eus hizivadurioù met leuskel ac'hanon dibab mar bezint staliet">
 <!ENTITY updateCheck.accesskey           "G">
 <!ENTITY updateManual.label              "Na wiriañ biken mard ez eus hizivadurioù (ket erbedet : arvarus evit ho tiogelroez)">
@@ -93,6 +99,8 @@
 
 <!ENTITY updateAutoAddonWarn.label       "Kemenn din mar bez diweredekaet un askouezh din gant an dra-se">
 <!ENTITY updateAutoAddonWarn.accesskey   "e">
+
+<!ENTITY updateAutoMetroWarn.label       "(ar stil Windows 8 eus &brandShortName; ne wir ket keverlec'hded an askouezhioù)">
 
 <!ENTITY updateHistory.label             "Diskouez roll istor an hizivaat">
 <!ENTITY updateHistory.accesskey         "r">
@@ -123,8 +131,6 @@
 <!ENTITY certs.ask.accesskey             "G">
 <!ENTITY viewCerts.label                 "Gwelout an testenioù">
 <!ENTITY viewCerts.accesskey             "w">
-<!ENTITY viewCRLs.label                  "Rolloù dizorniañ">
-<!ENTITY viewCRLs.accesskey              "R">
 <!ENTITY verify2.label                   "Talvoudekadur">
 <!ENTITY verify2.accesskey               "T">
 <!ENTITY viewSecurityDevices.label       "Trobarzhelloù Diogelroez">

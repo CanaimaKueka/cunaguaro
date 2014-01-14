@@ -14,7 +14,6 @@
 #include "nsString.h"
 #include "nsINameSpaceManager.h"
 #include "nsIDOMHTMLInputElement.h"
-#include "nsIDOMHTMLProgressElement.h"
 #include "nsIDOMXULMenuListElement.h"
 #include "nsThemeConstants.h"
 #include "nsIComponentManager.h"
@@ -26,8 +25,11 @@
 #include "nsCSSRendering.h"
 #include "mozilla/dom/Element.h"
 #include "mozilla/dom/HTMLBodyElement.h"
+#include "mozilla/dom/HTMLProgressElement.h"
 #include "nsIDocumentInlines.h"
 #include <algorithm>
+
+using namespace mozilla::dom;
 
 nsNativeTheme::nsNativeTheme()
 : mAnimatedContentTimeout(UINT32_MAX)
@@ -150,14 +152,8 @@ nsNativeTheme::GetProgressValue(nsIFrame* aFrame)
 {
   // When we are using the HTML progress element,
   // we can get the value from the IDL property.
-  if (aFrame) {
-    nsCOMPtr<nsIDOMHTMLProgressElement> progress =
-      do_QueryInterface(aFrame->GetContent());
-    if (progress) {
-      double value;
-      progress->GetValue(&value);
-      return value;
-    }
+  if (aFrame && aFrame->GetContent()->IsHTML(nsGkAtoms::progress)) {
+    return static_cast<HTMLProgressElement*>(aFrame->GetContent())->Value();
   }
 
   return (double)nsNativeTheme::CheckIntAttr(aFrame, nsGkAtoms::value, 0);
@@ -169,14 +165,8 @@ nsNativeTheme::GetProgressMaxValue(nsIFrame* aFrame)
 {
   // When we are using the HTML progress element,
   // we can get the max from the IDL property.
-  if (aFrame) {
-    nsCOMPtr<nsIDOMHTMLProgressElement> progress =
-      do_QueryInterface(aFrame->GetContent());
-    if (progress) {
-      double max;
-      progress->GetMax(&max);
-      return max;
-    }
+  if (aFrame && aFrame->GetContent()->IsHTML(nsGkAtoms::progress)) {
+    return static_cast<HTMLProgressElement*>(aFrame->GetContent())->Max();
   }
 
   return (double)std::max(nsNativeTheme::CheckIntAttr(aFrame, nsGkAtoms::max, 100), 1);
@@ -727,7 +717,7 @@ nsNativeTheme::IsDarkBackground(nsIFrame* aFrame)
   if (bgSC) {
     nscolor bgColor = bgSC->StyleBackground()->mBackgroundColor;
     // Consider the background color dark if the sum of the r, g and b values is
-    // less than 384 in a semi-transparent docement.  This heuristic matches what
+    // less than 384 in a semi-transparent document.  This heuristic matches what
     // WebKit does, and we can improve it later if needed.
     return NS_GET_A(bgColor) > 127 &&
            NS_GET_R(bgColor) + NS_GET_G(bgColor) + NS_GET_B(bgColor) < 384;

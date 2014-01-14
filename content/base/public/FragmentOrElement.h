@@ -12,15 +12,16 @@
 #ifndef FragmentOrElement_h___
 #define FragmentOrElement_h___
 
+#include "mozilla/Attributes.h"
+#include "mozilla/MemoryReporting.h"
 #include "nsAttrAndChildArray.h"          // member
 #include "nsCycleCollectionParticipant.h" // NS_DECL_CYCLE_*
 #include "nsIContent.h"                   // base class
-#include "nsIDOMTouchEvent.h"             // base class (nsITouchEventReceiver)
 #include "nsIDOMXPathNSResolver.h"        // base class
-#include "nsIInlineEventHandlers.h"       // base class
 #include "nsINodeList.h"                  // base class
 #include "nsIWeakReference.h"             // base class
 #include "nsNodeUtils.h"                  // class member nsNodeUtils::CloneNodeImpl
+#include "nsIHTMLCollection.h"
 
 class ContentUnbinder;
 class nsContentList;
@@ -30,7 +31,6 @@ class nsIControllers;
 class nsICSSDeclaration;
 class nsIDocument;
 class nsDOMStringMap;
-class nsIHTMLCollection;
 class nsINodeInfo;
 class nsIURI;
 
@@ -60,15 +60,15 @@ public:
   NS_DECL_NSIDOMNODELIST
 
   // nsINodeList interface
-  virtual int32_t IndexOf(nsIContent* aContent);
-  virtual nsIContent* Item(uint32_t aIndex);
+  virtual int32_t IndexOf(nsIContent* aContent) MOZ_OVERRIDE;
+  virtual nsIContent* Item(uint32_t aIndex) MOZ_OVERRIDE;
 
   void DropReference()
   {
     mNode = nullptr;
   }
 
-  virtual nsINode* GetParentObject()
+  virtual nsINode* GetParentObject() MOZ_OVERRIDE
   {
     return mNode;
   }
@@ -153,10 +153,6 @@ private:
   nsCOMPtr<nsINode> mNode;
 };
 
-// Forward declare to allow being a friend
-class nsTouchEventReceiverTearoff;
-class nsInlineEventHandlersTearoff;
-
 /**
  * A generic base class for DOM elements, implementing many nsIContent,
  * nsIDOMNode and nsIDOMElement methods.
@@ -172,56 +168,56 @@ public:
   FragmentOrElement(already_AddRefed<nsINodeInfo> aNodeInfo);
   virtual ~FragmentOrElement();
 
-  friend class ::nsTouchEventReceiverTearoff;
-  friend class ::nsInlineEventHandlersTearoff;
-
   NS_DECL_CYCLE_COLLECTING_ISUPPORTS
 
   NS_DECL_SIZEOF_EXCLUDING_THIS
 
-  /**
-   * Called during QueryInterface to give the binding manager a chance to
-   * get an interface for this element.
-   */
-  nsresult PostQueryInterface(REFNSIID aIID, void** aInstancePtr);
-
   // nsINode interface methods
-  virtual uint32_t GetChildCount() const;
-  virtual nsIContent *GetChildAt(uint32_t aIndex) const;
-  virtual nsIContent * const * GetChildArray(uint32_t* aChildCount) const;
+  virtual uint32_t GetChildCount() const MOZ_OVERRIDE;
+  virtual nsIContent *GetChildAt(uint32_t aIndex) const MOZ_OVERRIDE;
+  virtual nsIContent * const * GetChildArray(uint32_t* aChildCount) const MOZ_OVERRIDE;
   virtual int32_t IndexOf(const nsINode* aPossibleChild) const MOZ_OVERRIDE;
   virtual nsresult InsertChildAt(nsIContent* aKid, uint32_t aIndex,
-                                 bool aNotify);
-  virtual void RemoveChildAt(uint32_t aIndex, bool aNotify);
-  virtual void GetTextContentInternal(nsAString& aTextContent);
+                                 bool aNotify) MOZ_OVERRIDE;
+  virtual void RemoveChildAt(uint32_t aIndex, bool aNotify) MOZ_OVERRIDE;
+  virtual void GetTextContentInternal(nsAString& aTextContent) MOZ_OVERRIDE;
   virtual void SetTextContentInternal(const nsAString& aTextContent,
-                                      mozilla::ErrorResult& aError);
+                                      mozilla::ErrorResult& aError) MOZ_OVERRIDE;
 
   // nsIContent interface methods
-  virtual already_AddRefed<nsINodeList> GetChildren(uint32_t aFilter);
-  virtual const nsTextFragment *GetText();
-  virtual uint32_t TextLength() const;
+  virtual already_AddRefed<nsINodeList> GetChildren(uint32_t aFilter) MOZ_OVERRIDE;
+  virtual const nsTextFragment *GetText() MOZ_OVERRIDE;
+  virtual uint32_t TextLength() const MOZ_OVERRIDE;
   virtual nsresult SetText(const PRUnichar* aBuffer, uint32_t aLength,
-                           bool aNotify);
+                           bool aNotify) MOZ_OVERRIDE;
   // Need to implement this here too to avoid hiding.
   nsresult SetText(const nsAString& aStr, bool aNotify)
   {
     return SetText(aStr.BeginReading(), aStr.Length(), aNotify);
   }
   virtual nsresult AppendText(const PRUnichar* aBuffer, uint32_t aLength,
-                              bool aNotify);
-  virtual bool TextIsOnlyWhitespace();
-  virtual void AppendTextTo(nsAString& aResult);
-  virtual nsIContent *GetBindingParent() const;
-  virtual bool IsLink(nsIURI** aURI) const;
+                              bool aNotify) MOZ_OVERRIDE;
+  virtual bool TextIsOnlyWhitespace() MOZ_OVERRIDE;
+  virtual void AppendTextTo(nsAString& aResult) MOZ_OVERRIDE;
+  virtual nsIContent *GetBindingParent() const MOZ_OVERRIDE;
+  virtual nsXBLBinding *GetXBLBinding() const MOZ_OVERRIDE;
+  virtual void SetXBLBinding(nsXBLBinding* aBinding,
+                             nsBindingManager* aOldBindingManager = nullptr) MOZ_OVERRIDE;
+  virtual nsIContent *GetXBLInsertionParent() const;
+  virtual void SetXBLInsertionParent(nsIContent* aContent);
+  virtual bool IsLink(nsIURI** aURI) const MOZ_OVERRIDE;
 
-  virtual void DestroyContent();
-  virtual void SaveSubtreeState();
+  virtual void DestroyContent() MOZ_OVERRIDE;
+  virtual void SaveSubtreeState() MOZ_OVERRIDE;
 
-  virtual const nsAttrValue* DoGetClasses() const;
-  NS_IMETHOD WalkContentStyleRules(nsRuleWalker* aRuleWalker);
+  virtual const nsAttrValue* DoGetClasses() const MOZ_OVERRIDE;
+  NS_IMETHOD WalkContentStyleRules(nsRuleWalker* aRuleWalker) MOZ_OVERRIDE;
 
   nsIHTMLCollection* Children();
+  uint32_t ChildElementCount()
+  {
+    return Children()->Length();
+  }
 
 public:
   /**
@@ -239,7 +235,7 @@ public:
    */
   void FireNodeRemovedForChildren();
 
-  virtual bool OwnedOnlyByTheDOMTree()
+  virtual bool OwnedOnlyByTheDOMTree() MOZ_OVERRIDE
   {
     uint32_t rc = mRefCnt.get();
     if (GetParent()) {
@@ -249,12 +245,12 @@ public:
     return rc == 0;
   }
 
-  virtual bool IsPurple()
+  virtual bool IsPurple() MOZ_OVERRIDE
   {
     return mRefCnt.IsPurple();
   }
 
-  virtual void RemovePurple()
+  virtual void RemovePurple() MOZ_OVERRIDE
   {
     mRefCnt.RemovePurple();
   }
@@ -297,7 +293,7 @@ public:
     void Traverse(nsCycleCollectionTraversalCallback &cb, bool aIsXUL);
     void Unlink(bool aIsXUL);
 
-    size_t SizeOfIncludingThis(nsMallocSizeOfFun aMallocSizeOf) const;
+    size_t SizeOfIncludingThis(mozilla::MallocSizeOf aMallocSizeOf) const;
 
     /**
      * The .style attribute (an interface that forwards to the actual
@@ -357,11 +353,21 @@ public:
      * An object implementing the .classList property for this element.
      */
     nsRefPtr<nsDOMTokenList> mClassList;
+
+    /**
+     * XBL binding installed on the element.
+     */
+    nsRefPtr<nsXBLBinding> mXBLBinding;
+
+    /**
+     * XBL binding installed on the lement.
+     */
+    nsCOMPtr<nsIContent> mXBLInsertionParent;
   };
 
 protected:
   // Override from nsINode
-  virtual nsINode::nsSlots* CreateSlots();
+  virtual nsINode::nsSlots* CreateSlots() MOZ_OVERRIDE;
 
   nsDOMSlots *DOMSlots()
   {
@@ -383,63 +389,11 @@ protected:
 } // namespace dom
 } // namespace mozilla
 
-/**
- * Tearoff class to implement nsITouchEventReceiver
- */
-class nsTouchEventReceiverTearoff MOZ_FINAL : public nsITouchEventReceiver
-{
-public:
-  NS_DECL_CYCLE_COLLECTING_ISUPPORTS
-
-  NS_FORWARD_NSITOUCHEVENTRECEIVER(mElement->)
-
-  NS_DECL_CYCLE_COLLECTION_CLASS(nsTouchEventReceiverTearoff)
-
-  nsTouchEventReceiverTearoff(mozilla::dom::FragmentOrElement *aElement) : mElement(aElement)
-  {
-  }
-
-private:
-  nsRefPtr<mozilla::dom::FragmentOrElement> mElement;
-};
-
-/**
- * Tearoff class to implement nsIInlineEventHandlers
- */
-class nsInlineEventHandlersTearoff MOZ_FINAL : public nsIInlineEventHandlers
-{
-public:
-  NS_DECL_CYCLE_COLLECTING_ISUPPORTS
-
-  NS_FORWARD_NSIINLINEEVENTHANDLERS(mElement->)
-
-  NS_DECL_CYCLE_COLLECTION_CLASS(nsInlineEventHandlersTearoff)
-
-  nsInlineEventHandlersTearoff(mozilla::dom::FragmentOrElement *aElement) : mElement(aElement)
-  {
-  }
-
-private:
-  nsRefPtr<mozilla::dom::FragmentOrElement> mElement;
-};
-
 #define NS_ELEMENT_INTERFACE_TABLE_TO_MAP_SEGUE                               \
-    rv = FragmentOrElement::QueryInterface(aIID, aInstancePtr);                \
     if (NS_SUCCEEDED(rv))                                                     \
       return rv;                                                              \
                                                                               \
-    NS_OFFSET_AND_INTERFACE_TABLE_TO_MAP_SEGUE
-
-#define NS_ELEMENT_INTERFACE_MAP_END                                          \
-    {                                                                         \
-      return PostQueryInterface(aIID, aInstancePtr);                          \
-    }                                                                         \
-                                                                              \
-    NS_ADDREF(foundInterface);                                                \
-                                                                              \
-    *aInstancePtr = foundInterface;                                           \
-                                                                              \
-    return NS_OK;                                                             \
-  }
+    rv = FragmentOrElement::QueryInterface(aIID, aInstancePtr);               \
+    NS_INTERFACE_TABLE_TO_MAP_SEGUE
 
 #endif /* FragmentOrElement_h___ */

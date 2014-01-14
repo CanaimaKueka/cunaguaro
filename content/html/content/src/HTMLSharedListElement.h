@@ -5,46 +5,32 @@
 
 #ifndef mozilla_dom_HTMLSharedListElement_h
 #define mozilla_dom_HTMLSharedListElement_h
+#include "mozilla/Attributes.h"
 #include "mozilla/Util.h"
 
 #include "nsIDOMHTMLOListElement.h"
-#include "nsIDOMHTMLDListElement.h"
 #include "nsIDOMHTMLUListElement.h"
 #include "nsGenericHTMLElement.h"
 
 namespace mozilla {
 namespace dom {
 
-class HTMLSharedListElement : public nsGenericHTMLElement,
-                              public nsIDOMHTMLOListElement,
-                              public nsIDOMHTMLDListElement,
-                              public nsIDOMHTMLUListElement
+class HTMLSharedListElement MOZ_FINAL : public nsGenericHTMLElement,
+                                        public nsIDOMHTMLOListElement,
+                                        public nsIDOMHTMLUListElement
 {
 public:
   HTMLSharedListElement(already_AddRefed<nsINodeInfo> aNodeInfo)
     : nsGenericHTMLElement(aNodeInfo)
   {
-    SetIsDOMBinding();
   }
   virtual ~HTMLSharedListElement();
 
   // nsISupports
   NS_DECL_ISUPPORTS_INHERITED
 
-  // nsIDOMNode
-  NS_FORWARD_NSIDOMNODE_TO_NSINODE
-
-  // nsIDOMElement
-  NS_FORWARD_NSIDOMELEMENT_TO_GENERIC
-
-  // nsIDOMHTMLElement
-  NS_FORWARD_NSIDOMHTMLELEMENT_TO_GENERIC
-
   // nsIDOMHTMLOListElement
   NS_DECL_NSIDOMHTMLOLISTELEMENT
-
-  // nsIDOMHTMLDListElement
-  // fully declared by NS_DECL_NSIDOMHTMLOLISTELEMENT
 
   // nsIDOMHTMLUListElement
   // fully declared by NS_DECL_NSIDOMHTMLOLISTELEMENT
@@ -52,15 +38,10 @@ public:
   virtual bool ParseAttribute(int32_t aNamespaceID,
                                 nsIAtom* aAttribute,
                                 const nsAString& aValue,
-                                nsAttrValue& aResult);
-  virtual nsMapRuleToAttributesFunc GetAttributeMappingFunction() const;
-  NS_IMETHOD_(bool) IsAttributeMapped(const nsIAtom* aAttribute) const;
+                                nsAttrValue& aResult) MOZ_OVERRIDE;
+  virtual nsMapRuleToAttributesFunc GetAttributeMappingFunction() const MOZ_OVERRIDE;
+  NS_IMETHOD_(bool) IsAttributeMapped(const nsIAtom* aAttribute) const MOZ_OVERRIDE;
   virtual nsresult Clone(nsINodeInfo *aNodeInfo, nsINode **aResult) const MOZ_OVERRIDE;
-
-  virtual nsIDOMNode* AsDOMNode()
-  {
-    return static_cast<nsIDOMHTMLOListElement*>(this);
-  }
 
   bool Reversed() const
   {

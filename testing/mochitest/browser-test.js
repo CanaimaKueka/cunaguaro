@@ -40,7 +40,7 @@ function testOnLoad() {
                            "chrome,centerscreen,dialog=no,resizable,titlebar,toolbar=no,width=800,height=600", sstring);
   } else {
     // This code allows us to redirect without requiring specialpowers for chrome and a11y tests.
-    function messageHandler(m) {
+    let messageHandler = function(m) {
       messageManager.removeMessageListener("chromeEvent", messageHandler);
       var url = m.json.data;
 
@@ -49,7 +49,7 @@ function testOnLoad() {
       var webNav = content.window.QueryInterface(Components.interfaces.nsIInterfaceRequestor)
                          .getInterface(Components.interfaces.nsIWebNavigation);
       webNav.loadURI(url, null, null, null, null);
-    }
+    };
 
     var listener = 'data:,function doLoad(e) { var data=e.getData("data");removeEventListener("contentEvent", function (e) { doLoad(e); }, false, true);sendAsyncMessage("chromeEvent", {"data":data}); };addEventListener("contentEvent", function (e) { doLoad(e); }, false, true);';
     messageManager.loadFrameScript(listener, true);
@@ -73,16 +73,22 @@ function Tester(aTests, aDumper, aCallback) {
   this._scriptLoader.loadSubScript("chrome://mochikit/content/tests/SimpleTest/SimpleTest.js", simpleTestScope);
   this._scriptLoader.loadSubScript("chrome://mochikit/content/chrome-harness.js", simpleTestScope);
   this.SimpleTest = simpleTestScope.SimpleTest;
+  this.Task = Components.utils.import("resource://gre/modules/Task.jsm", null).Task;
+  this.Promise = Components.utils.import("resource://gre/modules/commonjs/sdk/core/promise.js", null).Promise;
 }
 Tester.prototype = {
   EventUtils: {},
   SimpleTest: {},
+  Task: null,
+  Promise: null,
 
   repeat: 0,
+  runUntilFailure: false,
   checker: null,
   currentTestIndex: -1,
   lastStartTime: null,
   openedWindows: null,
+  lastAssertionCount: 0,
 
   get currentTest() {
     return this.tests[this.currentTestIndex];
@@ -104,7 +110,13 @@ Tester.prototype = {
     //if testOnLoad was not called, then gConfig is not defined
     if (!gConfig)
       gConfig = readConfig();
-    this.repeat = gConfig.repeat;
+
+    if (gConfig.runUntilFailure)
+      this.runUntilFailure = true;
+
+    if (gConfig.repeat)
+      this.repeat = gConfig.repeat;
+
     this.dumper.dump("*** Start BrowserChrome Test Results ***\n");
     Services.console.registerListener(this);
     Services.obs.addObserver(this, "chrome-document-global-created", false);
@@ -169,6 +181,13 @@ Tester.prototype = {
   },
 
   finish: function Tester_finish(aSkipSummary) {
+    var passCount = this.tests.reduce(function(a, f) a + f.passCount, 0);
+    var failCount = this.tests.reduce(function(a, f) a + f.failCount, 0);
+    var todoCount = this.tests.reduce(function(a, f) a + f.todoCount, 0);
+
+    if (failCount > 0 && this.runUntilFailure)
+      this.repeat = 0;
+
     if (this.repeat > 0) {
       --this.repeat;
       this.currentTestIndex = -1;
@@ -182,11 +201,6 @@ Tester.prototype = {
       this.dumper.dump("\nINFO TEST-START | Shutdown\n");
       if (this.tests.length) {
         this.dumper.dump("Browser Chrome Test Summary\n");
-  
-        function sum(a,b) a+b;
-        var passCount = this.tests.map(function (f) f.passCount).reduce(sum);
-        var failCount = this.tests.map(function (f) f.failCount).reduce(sum);
-        var todoCount = this.tests.map(function (f) f.todoCount).reduce(sum);
   
         this.dumper.dump("\tPassed: " + passCount + "\n" +
                          "\tFailed: " + failCount + "\n" +
@@ -294,6 +308,47 @@ Tester.prototype = {
       // behavior of returning the last opened popup.
       document.popupNode = null;
 
+      // Notify a long running test problem if it didn't end up in a timeout.
+      if (this.currentTest.unexpectedTimeouts && !this.currentTest.timedOut) {
+        let msg = "This test exceeded the timeout threshold. It should be " +
+                  "rewritten or split up. If that's not possible, use " +
+                  "requestLongerTimeout(N), but only as a last resort.";
+        this.currentTest.addResult(new testResult(false, msg, "", false));
+      }
+
+      // If we're in a debug build, check assertion counts.  This code
+      // is similar to the code in TestRunner.testUnloaded in
+      // TestRunner.js used for all other types of mochitests.
+      let debugsvc = Cc["@mozilla.org/xpcom/debug;1"].getService(Ci.nsIDebug2);
+      if (debugsvc.isDebugBuild) {
+        let newAssertionCount = debugsvc.assertionCount;
+        let numAsserts = newAssertionCount - this.lastAssertionCount;
+        this.lastAssertionCount = newAssertionCount;
+
+        let max = testScope.__expectedMaxAsserts;
+        let min = testScope.__expectedMinAsserts;
+        if (numAsserts > max) {
+          let msg = "Assertion count " + numAsserts +
+                    " is greater than expected range " +
+                    min + "-" + max + " assertions.";
+          // TEST-UNEXPECTED-FAIL (TEMPORARILY TEST-KNOWN-FAIL)
+          //this.currentTest.addResult(new testResult(false, msg, "", false));
+          this.currentTest.addResult(new testResult(true, msg, "", true));
+        } else if (numAsserts < min) {
+          let msg = "Assertion count " + numAsserts +
+                    " is less than expected range " +
+                    min + "-" + max + " assertions.";
+          // TEST-UNEXPECTED-PASS
+          this.currentTest.addResult(new testResult(false, msg, "", true));
+        } else if (numAsserts > 0) {
+          let msg = "Assertion count " + numAsserts +
+                    " is within expected range " +
+                    min + "-" + max + " assertions.";
+          // TEST-KNOWN-FAIL
+          this.currentTest.addResult(new testResult(true, msg, "", true));
+        }
+      }
+
       // Note the test run time
       let time = Date.now() - this.lastStartTime;
       this.dumper.dump("INFO TEST-END | " + this.currentTest.path + " | finished in " + time + "ms\n");
@@ -381,9 +436,11 @@ Tester.prototype = {
     this.currentTest.scope.EventUtils = this.EventUtils;
     this.currentTest.scope.SimpleTest = this.SimpleTest;
     this.currentTest.scope.gTestPath = this.currentTest.path;
+    this.currentTest.scope.Task = this.Task;
+    this.currentTest.scope.Promise = this.Promise;
 
     // Override SimpleTest methods with ours.
-    ["ok", "is", "isnot", "ise", "todo", "todo_is", "todo_isnot", "info"].forEach(function(m) {
+    ["ok", "is", "isnot", "ise", "todo", "todo_is", "todo_isnot", "info", "expectAssertions"].forEach(function(m) {
       this.SimpleTest[m] = this[m];
     }, this.currentTest.scope);
 
@@ -414,9 +471,34 @@ Tester.prototype = {
 
       // Run the test
       this.lastStartTime = Date.now();
-      if ("generatorTest" in this.currentTest.scope) {
-        if ("test" in this.currentTest.scope)
+      if (this.currentTest.scope.__tasks) {
+        // This test consists of tasks, added via the `add_task()` API.
+        if ("test" in this.currentTest.scope) {
+          throw "Cannot run both a add_task test and a normal test at the same time.";
+        }
+        let testScope = this.currentTest.scope;
+        let currentTest = this.currentTest;
+        this.Task.spawn(function() {
+          let task;
+          while ((task = this.__tasks.shift())) {
+            this.SimpleTest.info("Entering test " + task.name);
+            try {
+              yield task();
+            } catch (ex) {
+              let isExpected = !!this.SimpleTest.isExpectingUncaughtException();
+              let stack = (typeof ex == "object" && "stack" in ex)?ex.stack:null;
+              let name = "Uncaught exception";
+              let result = new testResult(isExpected, name, ex, false, stack);
+              currentTest.addResult(result);
+            }
+            this.SimpleTest.info("Leaving test " + task.name);
+          }
+          this.finish();
+        }.bind(testScope));
+      } else if ("generatorTest" in this.currentTest.scope) {
+        if ("test" in this.currentTest.scope) {
           throw "Cannot run both a generator test and a normal test at the same time.";
+        }
 
         // This test is a generator. It will not finish immediately.
         this.currentTest.scope.waitForExplicitFinish();
@@ -427,7 +509,7 @@ Tester.prototype = {
         this.currentTest.scope.test();
       }
     } catch (ex) {
-      var isExpected = !!this.SimpleTest.isExpectingUncaughtException();
+      let isExpected = !!this.SimpleTest.isExpectingUncaughtException();
       if (!this.SimpleTest.isIgnoringAllUncaughtExceptions()) {
         this.currentTest.addResult(new testResult(isExpected, "Exception thrown", ex, false));
         this.SimpleTest.expectUncaughtException(false);
@@ -444,16 +526,32 @@ Tester.prototype = {
     }
     else {
       var self = this;
-      this.currentTest.scope.__waitTimer = setTimeout(function() {
+      this.currentTest.scope.__waitTimer = setTimeout(function timeoutFn() {
         if (--self.currentTest.scope.__timeoutFactor > 0) {
           // We were asked to wait a bit longer.
           self.currentTest.scope.info(
             "Longer timeout required, waiting longer...  Remaining timeouts: " +
             self.currentTest.scope.__timeoutFactor);
           self.currentTest.scope.__waitTimer =
-            setTimeout(arguments.callee, gTimeoutSeconds * 1000);
+            setTimeout(timeoutFn, gTimeoutSeconds * 1000);
           return;
         }
+
+        // If the test is taking longer than expected, but it's not hanging,
+        // mark the fact, but let the test continue.  At the end of the test,
+        // if it didn't timeout, we will notify the problem through an error.
+        // To figure whether it's an actual hang, compare the time of the last
+        // result or message to half of the timeout time.
+        // Though, to protect against infinite loops, limit the number of times
+        // we allow the test to proceed.
+        const MAX_UNEXPECTED_TIMEOUTS = 10;
+        if (Date.now() - self.currentTest.lastOutputTime < (gTimeoutSeconds / 2) * 1000 &&
+            ++self.currentTest.unexpectedTimeouts <= MAX_UNEXPECTED_TIMEOUTS) {
+            self.currentTest.scope.__waitTimer =
+              setTimeout(timeoutFn, gTimeoutSeconds * 1000);
+          return;
+        }
+
         self.currentTest.addResult(new testResult(false, "Test timed out", "", false));
         self.currentTest.timedOut = true;
         self.currentTest.scope.__waitTimer = null;
@@ -619,6 +717,20 @@ function testScope(aTester, aTest) {
     self.SimpleTest.ignoreAllUncaughtExceptions(aIgnoring);
   };
 
+  this.expectAssertions = function test_expectAssertions(aMin, aMax) {
+    let min = aMin;
+    let max = aMax;
+    if (typeof(max) == "undefined") {
+      max = min;
+    }
+    if (typeof(min) != "number" || typeof(max) != "number" ||
+        min < 0 || max < min) {
+      throw "bad parameter to expectAssertions";
+    }
+    self.__expectedMinAsserts = min;
+    self.__expectedMaxAsserts = max;
+  };
+
   this.finish = function test_finish() {
     self.__done = true;
     if (self.__waitTimer) {
@@ -635,12 +747,60 @@ function testScope(aTester, aTest) {
 testScope.prototype = {
   __done: true,
   __generator: null,
+  __tasks: null,
   __waitTimer: null,
   __cleanupFunctions: [],
   __timeoutFactor: 1,
+  __expectedMinAsserts: 0,
+  __expectedMaxAsserts: 0,
 
   EventUtils: {},
   SimpleTest: {},
+  Task: null,
+  Promise: null,
+
+  /**
+   * Add a test function which is a Task function.
+   *
+   * Task functions are functions fed into Task.jsm's Task.spawn(). They are
+   * generators that emit promises.
+   *
+   * If an exception is thrown, an assertion fails, or if a rejected
+   * promise is yielded, the test function aborts immediately and the test is
+   * reported as a failure. Execution continues with the next test function.
+   *
+   * To trigger premature (but successful) termination of the function, simply
+   * return or throw a Task.Result instance.
+   *
+   * Example usage:
+   *
+   * add_task(function test() {
+   *   let result = yield Promise.resolve(true);
+   *
+   *   ok(result);
+   *
+   *   let secondary = yield someFunctionThatReturnsAPromise(result);
+   *   is(secondary, "expected value");
+   * });
+   *
+   * add_task(function test_early_return() {
+   *   let result = yield somethingThatReturnsAPromise();
+   *
+   *   if (!result) {
+   *     // Test is ended immediately, with success.
+   *     return;
+   *   }
+   *
+   *   is(result, "foo");
+   * });
+   */
+  add_task: function(aFunction) {
+    if (!this.__tasks) {
+      this.waitForExplicitFinish();
+      this.__tasks = [];
+    }
+    this.__tasks.push(aFunction.bind(this));
+  },
 
   destroy: function test_destroy() {
     for (let prop in this)

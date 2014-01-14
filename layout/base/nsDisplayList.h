@@ -18,27 +18,23 @@
 #include "nsIFrame.h"
 #include "nsPoint.h"
 #include "nsRect.h"
-#include "nsISelection.h"
 #include "nsCaret.h"
 #include "plarena.h"
 #include "nsRegion.h"
 #include "FrameLayerBuilder.h"
-#include "nsThemeConstants.h"
 #include "nsLayoutUtils.h"
 #include "nsDisplayListInvalidation.h"
 #include "DisplayListClipState.h"
 
-#include "mozilla/StandardInteger.h"
+#include <stdint.h>
 
 #include <stdlib.h>
 #include <algorithm>
 
-class nsIPresShell;
 class nsIContent;
 class nsRenderingContext;
-class nsDeviceContext;
 class nsDisplayTableItem;
-class nsDisplayItem;
+class nsISelection;
 
 namespace mozilla {
 namespace layers {
@@ -462,11 +458,11 @@ public:
    * Notifies the builder that a particular themed widget exists
    * at the given rectangle within the currently built display list.
    * For certain appearance values (currently only
-   * NS_THEME_MOZ_MAC_UNIFIED_TOOLBAR and NS_THEME_TOOLBAR) this gets
-   * called during every display list construction, for every themed widget of
-   * the right type within the display list, except for themed widgets which
-   * are transformed or have effects applied to them (e.g. CSS opacity or
-   * filters).
+   * NS_THEME_MOZ_MAC_UNIFIED_TOOLBAR, NS_THEME_TOOLBAR and
+   * NS_THEME_WINDOW_TITLEBAR) this gets called during every display list
+   * construction, for every themed widget of the right type within the
+   * display list, except for themed widgets which are transformed or have
+   * effects applied to them (e.g. CSS opacity or filters).
    *
    * @param aWidgetType the -moz-appearance value for the themed widget
    * @param aRect the device-pixel rect relative to the widget's displayRoot
@@ -626,6 +622,14 @@ public:
   void SetContainsPluginItem() { mContainsPluginItem = true; }
   bool ContainsPluginItem() { return mContainsPluginItem; }
 
+  /**
+   * mContainsBlendMode is true if we processed a display item that
+   * has a blend mode attached. We do this so we can insert a 
+   * nsDisplayBlendContainer in the parent stacking context.
+   */
+  void SetContainsBlendMode(bool aContainsBlendMode) { mContainsBlendMode = aContainsBlendMode; }
+  bool ContainsBlendMode() const { return mContainsBlendMode; }
+
   DisplayListClipState& ClipState() { return mClipState; }
 
 private:
@@ -684,6 +688,7 @@ private:
   bool                           mIsInFixedPosition;
   bool                           mIsCompositingCheap;
   bool                           mContainsPluginItem;
+  bool                           mContainsBlendMode;
 };
 
 class nsDisplayItem;
@@ -777,7 +782,7 @@ public:
   struct HitTestState {
     typedef nsTArray<ViewID> ShadowArray;
 
-    HitTestState(ShadowArray* aShadows = NULL)
+    HitTestState(ShadowArray* aShadows = nullptr)
       : mShadows(aShadows) {
     }
 
@@ -938,6 +943,16 @@ public:
   }
 
   /**
+   * For display items types that just draw a background we use this function
+   * to do any invalidation that might be needed if we are asked to sync decode
+   * images.
+   */
+  void AddInvalidRegionForSyncDecodeBackgroundImages(
+    nsDisplayListBuilder* aBuilder,
+    const nsDisplayItemGeometry* aGeometry,
+    nsRegion* aInvalidRegion);
+
+  /**
    * Called when the area rendered by this display item has changed (been
    * invalidated or changed geometry) since the last paint. This includes
    * when the display item was not rendered at all in the last paint.
@@ -992,6 +1007,12 @@ public:
    * active. Requires setting the pref layers.force-active=true.
    */
   static bool ForceActiveLayers();
+
+  /**
+   * Returns the maximum number of layers that should be created
+   * or -1 for no limit. Requires setting the pref layers.max-acitve.
+   */
+  static int32_t MaxActiveLayers();
 
   /**
    * @return LAYER_NONE if BuildLayer will return null. In this case
@@ -1489,8 +1510,7 @@ public:
     PAINT_USE_WIDGET_LAYERS = 0x01,
     PAINT_FLUSH_LAYERS = 0x02,
     PAINT_EXISTING_TRANSACTION = 0x04,
-    PAINT_NO_COMPOSITE = 0x08,
-    PAINT_NO_CLEAR_INVALIDATIONS = 0x10
+    PAINT_NO_COMPOSITE = 0x08
   };
   void PaintRoot(nsDisplayListBuilder* aBuilder, nsRenderingContext* aCtx,
                  uint32_t aFlags) const;
@@ -1672,7 +1692,7 @@ public:
                                                         nsDisplayListBuilder* aBuilder) = 0;
   virtual void ConfigureLayer(ImageLayer* aLayer, const nsIntPoint& aOffset) = 0;
 
-  virtual bool SupportsOptimizingToImage() { return true; }
+  virtual bool SupportsOptimizingToImage() MOZ_OVERRIDE { return true; }
 };
 
 /**
@@ -1725,6 +1745,36 @@ protected:
   const char*   mName;
 #endif
   Type mType;
+};
+
+/**
+ * Generic display item that can contain overflow. Use this in lieu of
+ * nsDisplayGeneric if you have a frame that should use the visual overflow
+ * rect of its frame when drawing items, instead of the frame's bounds.
+ */
+class nsDisplayGenericOverflow : public nsDisplayGeneric {
+  public:
+    nsDisplayGenericOverflow(nsDisplayListBuilder* aBuilder, nsIFrame* aFrame,
+                             PaintCallback aPaint, const char* aName, Type aType)
+      : nsDisplayGeneric(aBuilder, aFrame, aPaint, aName, aType)
+    {
+      MOZ_COUNT_CTOR(nsDisplayGenericOverflow);
+    }
+  #ifdef NS_BUILD_REFCNT_LOGGING
+    virtual ~nsDisplayGenericOverflow() {
+      MOZ_COUNT_DTOR(nsDisplayGenericOverflow);
+    }
+  #endif
+
+    /**
+     * Returns the frame's visual overflow rect instead of the frame's bounds.
+     */
+    virtual nsRect GetBounds(nsDisplayListBuilder* aBuilder,
+                             bool* aSnap) MOZ_OVERRIDE
+    {
+      *aSnap = false;
+      return Frame()->GetVisualOverflowRect() + ToReferenceFrame();
+    }
 };
 
 #if defined(MOZ_REFLOW_PERF_DSP) && defined(MOZ_REFLOW_PERF)
@@ -1857,7 +1907,7 @@ public:
 
   virtual void ComputeInvalidationRegion(nsDisplayListBuilder* aBuilder,
                                          const nsDisplayItemGeometry* aGeometry,
-                                         nsRegion* aInvalidRegion);
+                                         nsRegion* aInvalidRegion) MOZ_OVERRIDE;
 };
 
 /**
@@ -1908,16 +1958,31 @@ public:
 
   virtual nsDisplayItemGeometry* AllocateGeometry(nsDisplayListBuilder* aBuilder) MOZ_OVERRIDE
   {
-    return new nsDisplayItemBoundsGeometry(this, aBuilder);
+    return new nsDisplaySolidColorGeometry(this, aBuilder, mColor);
   }
 
   virtual void ComputeInvalidationRegion(nsDisplayListBuilder* aBuilder,
                                          const nsDisplayItemGeometry* aGeometry,
-                                         nsRegion* aInvalidRegion)
+                                         nsRegion* aInvalidRegion) MOZ_OVERRIDE
   {
-    const nsDisplayItemBoundsGeometry* geometry = static_cast<const nsDisplayItemBoundsGeometry*>(aGeometry);
+    const nsDisplaySolidColorGeometry* geometry =
+      static_cast<const nsDisplaySolidColorGeometry*>(aGeometry);
+    if (mColor != geometry->mColor) {
+      bool dummy;
+      aInvalidRegion->Or(geometry->mBounds, GetBounds(aBuilder, &dummy));
+      return;
+    }
     ComputeInvalidationRegionDifference(aBuilder, geometry, aInvalidRegion);
   }
+
+#ifdef MOZ_DUMP_PAINTING
+  virtual void WriteDebugInfo(FILE *aOutput) MOZ_OVERRIDE
+  {
+    fprintf(aOutput, "(rgba %d,%d,%d,%d)",
+            NS_GET_R(mColor), NS_GET_G(mColor),
+            NS_GET_B(mColor), NS_GET_A(mColor));
+  }
+#endif
 
   NS_DISPLAY_DECL_NAME("SolidColor", TYPE_SOLID_COLOR)
 
@@ -1939,17 +2004,15 @@ public:
    * nsCSSRendering::FindBackground, or null if FindBackground returned false.
    */
   nsDisplayBackgroundImage(nsDisplayListBuilder* aBuilder, nsIFrame* aFrame,
-                           uint32_t aLayer, bool aIsThemed,
+                           uint32_t aLayer,
                            const nsStyleBackground* aBackgroundStyle);
   virtual ~nsDisplayBackgroundImage();
 
   // This will create and append new items for all the layers of the
-  // background. If given, aBackground will be set with the address of the
-  // bottom-most background item.
-  static nsresult AppendBackgroundItemsToTop(nsDisplayListBuilder* aBuilder,
-                                             nsIFrame* aFrame,
-                                             nsDisplayList* aList,
-                                             nsDisplayBackgroundImage** aBackground = nullptr);
+  // background. Returns whether we appended a themed background.
+  static bool AppendBackgroundItemsToTop(nsDisplayListBuilder* aBuilder,
+                                         nsIFrame* aFrame,
+                                         nsDisplayList* aList);
 
   virtual LayerState GetLayerState(nsDisplayListBuilder* aBuilder,
                                    LayerManager* aManager,
@@ -1976,8 +2039,6 @@ public:
   virtual void Paint(nsDisplayListBuilder* aBuilder, nsRenderingContext* aCtx) MOZ_OVERRIDE;
   virtual uint32_t GetPerFrameKey() MOZ_OVERRIDE;
   NS_DISPLAY_DECL_NAME("Background", TYPE_BACKGROUND)
-  // Returns the value of GetUnderlyingFrame()->IsThemed(), but cached
-  bool IsThemed() { return mIsThemed; }
 
   /**
    * Return the background positioning area.
@@ -2011,9 +2072,6 @@ public:
   static nsRegion GetInsideClipRegion(nsDisplayItem* aItem, nsPresContext* aPresContext, uint8_t aClip,
                                       const nsRect& aRect, bool* aSnap);
 
-#ifdef MOZ_DUMP_PAINTING
-  virtual void WriteDebugInfo(FILE *aOutput);
-#endif
 protected:
   typedef class mozilla::layers::ImageContainer ImageContainer;
   typedef class mozilla::layers::ImageLayer ImageLayer;
@@ -2022,7 +2080,7 @@ protected:
   bool IsSingleFixedPositionImage(nsDisplayListBuilder* aBuilder,
                                   const nsRect& aClipRect,
                                   gfxRect* aDestRect);
-  nsRect GetBoundsInternal();
+  nsRect GetBoundsInternal(nsDisplayListBuilder* aBuilder);
 
   void PaintInternal(nsDisplayListBuilder* aBuilder, nsRenderingContext* aCtx,
                      const nsRect& aBounds, nsRect* aClipRect);
@@ -2037,11 +2095,65 @@ protected:
   nsRect mBounds;
   uint32_t mLayer;
 
-  nsITheme::Transparency mThemeTransparency;
-  /* Used to cache mFrame->IsThemed() since it isn't a cheap call */
-  bool mIsThemed;
   /* true if this item represents the bottom-most background layer */
   bool mIsBottommostLayer;
+};
+
+
+/**
+ * A display item to paint the native theme background for a frame.
+ */
+class nsDisplayThemedBackground : public nsDisplayItem {
+public:
+  nsDisplayThemedBackground(nsDisplayListBuilder* aBuilder, nsIFrame* aFrame);
+  virtual ~nsDisplayThemedBackground();
+
+  virtual void HitTest(nsDisplayListBuilder* aBuilder, const nsRect& aRect,
+                       HitTestState* aState, nsTArray<nsIFrame*> *aOutFrames) MOZ_OVERRIDE;
+  virtual nsRegion GetOpaqueRegion(nsDisplayListBuilder* aBuilder,
+                                   bool* aSnap) MOZ_OVERRIDE;
+  virtual bool IsUniform(nsDisplayListBuilder* aBuilder, nscolor* aColor) MOZ_OVERRIDE;
+  /**
+   * GetBounds() returns the background painting area.
+   */
+  virtual nsRect GetBounds(nsDisplayListBuilder* aBuilder, bool* aSnap) MOZ_OVERRIDE;
+  virtual void Paint(nsDisplayListBuilder* aBuilder, nsRenderingContext* aCtx) MOZ_OVERRIDE;
+  NS_DISPLAY_DECL_NAME("ThemedBackground", TYPE_THEMED_BACKGROUND)
+
+  /**
+   * Return the background positioning area.
+   * (GetBounds() returns the background painting area.)
+   * Can be called only when mBackgroundStyle is non-null.
+   */
+  nsRect GetPositioningArea();
+
+  /**
+   * Return whether our frame's document does not have the state
+   * NS_DOCUMENT_STATE_WINDOW_INACTIVE.
+   */
+  bool IsWindowActive();
+
+  virtual nsDisplayItemGeometry* AllocateGeometry(nsDisplayListBuilder* aBuilder) MOZ_OVERRIDE
+  {
+    return new nsDisplayThemedBackgroundGeometry(this, aBuilder);
+  }
+
+  virtual void ComputeInvalidationRegion(nsDisplayListBuilder* aBuilder,
+                                         const nsDisplayItemGeometry* aGeometry,
+                                         nsRegion* aInvalidRegion) MOZ_OVERRIDE;
+
+#ifdef MOZ_DUMP_PAINTING
+  virtual void WriteDebugInfo(FILE *aOutput) MOZ_OVERRIDE;
+#endif
+protected:
+  nsRect GetBoundsInternal();
+
+  void PaintInternal(nsDisplayListBuilder* aBuilder, nsRenderingContext* aCtx,
+                     const nsRect& aBounds, nsRect* aClipRect);
+
+  nsRect mBounds;
+  nsITheme::Transparency mThemeTransparency;
+  uint8_t mAppearance;
 };
 
 class nsDisplayBackgroundColor : public nsDisplayItem
@@ -2076,7 +2188,7 @@ public:
 
   virtual void ComputeInvalidationRegion(nsDisplayListBuilder* aBuilder,
                                          const nsDisplayItemGeometry* aGeometry,
-                                         nsRegion* aInvalidRegion)
+                                         nsRegion* aInvalidRegion) MOZ_OVERRIDE
   {
     const nsDisplayItemBoundsGeometry* geometry = static_cast<const nsDisplayItemBoundsGeometry*>(aGeometry);
     ComputeInvalidationRegionDifference(aBuilder, geometry, aInvalidRegion);
@@ -2084,7 +2196,7 @@ public:
 
   NS_DISPLAY_DECL_NAME("BackgroundColor", TYPE_BACKGROUND_COLOR)
 #ifdef MOZ_DUMP_PAINTING
-  virtual void WriteDebugInfo(FILE *aOutput) {
+  virtual void WriteDebugInfo(FILE *aOutput) MOZ_OVERRIDE {
     fprintf(aOutput, "(rgba %d,%d,%d,%d)", 
             NS_GET_R(mColor), NS_GET_G(mColor),
             NS_GET_B(mColor), NS_GET_A(mColor));
@@ -2122,18 +2234,7 @@ public:
   
   virtual void ComputeInvalidationRegion(nsDisplayListBuilder* aBuilder,
                                          const nsDisplayItemGeometry* aGeometry,
-                                         nsRegion* aInvalidRegion)
-  {
-    const nsDisplayItemGenericGeometry* geometry = static_cast<const nsDisplayItemGenericGeometry*>(aGeometry);
-    bool snap;
-    if (!geometry->mBounds.IsEqualInterior(GetBounds(aBuilder, &snap)) ||
-        !geometry->mBorderRect.IsEqualInterior(GetBorderRect())) {
-      nsRegion oldShadow, newShadow;
-      oldShadow = oldShadow.Sub(geometry->mBounds, geometry->mBorderRect);
-      newShadow = newShadow.Sub(GetBounds(aBuilder, &snap), GetBorderRect());
-      aInvalidRegion->Or(oldShadow, newShadow);
-    }
-  }
+                                         nsRegion* aInvalidRegion);
 
   nsRect GetBoundsInternal();
 
@@ -2170,7 +2271,7 @@ public:
 
   virtual void ComputeInvalidationRegion(nsDisplayListBuilder* aBuilder,
                                          const nsDisplayItemGeometry* aGeometry,
-                                         nsRegion* aInvalidRegion)
+                                         nsRegion* aInvalidRegion) MOZ_OVERRIDE
   {
     const nsDisplayBoxShadowInnerGeometry* geometry = static_cast<const nsDisplayBoxShadowInnerGeometry*>(aGeometry);
     if (!geometry->mPaddingRect.IsEqualInterior(GetPaddingRect())) {
@@ -2286,7 +2387,7 @@ public:
   {
     aFrames->AppendElements(mMergedFrames);
   }
-  virtual bool IsInvalid(nsRect& aRect)
+  virtual bool IsInvalid(nsRect& aRect) MOZ_OVERRIDE
   {
     if (mFrame->IsInvalid(aRect) && aRect.IsEmpty()) {
       return true;
@@ -2419,12 +2520,65 @@ public:
   }
   NS_DISPLAY_DECL_NAME("Opacity", TYPE_OPACITY)
 #ifdef MOZ_DUMP_PAINTING
-  virtual void WriteDebugInfo(FILE *aOutput) {
+  virtual void WriteDebugInfo(FILE *aOutput) MOZ_OVERRIDE {
     fprintf(aOutput, "(opacity %f)", mFrame->StyleDisplay()->mOpacity);
   }
 #endif
 
-  bool CanUseAsyncAnimations(nsDisplayListBuilder* aBuilder);
+  bool CanUseAsyncAnimations(nsDisplayListBuilder* aBuilder) MOZ_OVERRIDE;
+};
+
+class nsDisplayMixBlendMode : public nsDisplayWrapList {
+public:
+  nsDisplayMixBlendMode(nsDisplayListBuilder* aBuilder, nsIFrame* aFrame,
+                        nsDisplayList* aList, uint32_t aFlags = 0);
+#ifdef NS_BUILD_REFCNT_LOGGING
+  virtual ~nsDisplayMixBlendMode();
+#endif
+
+  nsRegion GetOpaqueRegion(nsDisplayListBuilder* aBuilder, bool* aSnap);
+
+  virtual already_AddRefed<Layer> BuildLayer(nsDisplayListBuilder* aBuilder,
+                                             LayerManager* aManager,
+                                             const ContainerParameters& aContainerParameters) MOZ_OVERRIDE;
+  virtual void ComputeInvalidationRegion(nsDisplayListBuilder* aBuilder,
+                                         const nsDisplayItemGeometry* aGeometry,
+                                         nsRegion* aInvalidRegion) MOZ_OVERRIDE
+  {
+    // We don't need to compute an invalidation region since we have LayerTreeInvalidation
+  }
+  virtual LayerState GetLayerState(nsDisplayListBuilder* aBuilder,
+                                   LayerManager* aManager,
+                                   const ContainerParameters& aParameters) MOZ_OVERRIDE
+  {
+    return mozilla::LAYER_INACTIVE;
+  }
+  virtual bool ComputeVisibility(nsDisplayListBuilder* aBuilder,
+                                 nsRegion* aVisibleRegion,
+                                 const nsRect& aAllowVisibleRegionExpansion) MOZ_OVERRIDE;
+  virtual bool TryMerge(nsDisplayListBuilder* aBuilder, nsDisplayItem* aItem) MOZ_OVERRIDE;
+  NS_DISPLAY_DECL_NAME("MixBlendMode", TYPE_MIX_BLEND_MODE)
+};
+
+class nsDisplayBlendContainer : public nsDisplayWrapList {
+public:
+    nsDisplayBlendContainer(nsDisplayListBuilder* aBuilder, nsIFrame* aFrame,
+                          nsDisplayList* aList, uint32_t aFlags = 0);
+#ifdef NS_BUILD_REFCNT_LOGGING
+    virtual ~nsDisplayBlendContainer();
+#endif
+    
+    virtual already_AddRefed<Layer> BuildLayer(nsDisplayListBuilder* aBuilder,
+                                               LayerManager* aManager,
+                                               const ContainerParameters& aContainerParameters) MOZ_OVERRIDE;
+    virtual LayerState GetLayerState(nsDisplayListBuilder* aBuilder,
+                                     LayerManager* aManager,
+                                     const ContainerParameters& aParameters) MOZ_OVERRIDE
+    {
+        return mozilla::LAYER_INACTIVE;
+    }
+    virtual bool TryMerge(nsDisplayListBuilder* aBuilder, nsDisplayItem* aItem) MOZ_OVERRIDE;
+    NS_DISPLAY_DECL_NAME("BlendContainer", TYPE_BLEND_CONTAINER)
 };
 
 /**
@@ -2498,7 +2652,28 @@ public:
   NS_DISPLAY_DECL_NAME("FixedPosition", TYPE_FIXED_POSITION)
 
 protected:
+  void SetFixedPositionLayerData(Layer* const aLayer, nsIFrame* aViewportFrame,
+                                 nsSize aViewportSize, nsPresContext* aPresContext,
+                                 const ContainerParameters& aContainerParameters);
   nsIFrame* mFixedPosFrame;
+};
+
+/**
+ * A display item used to represent sticky position elements. The contents
+ * gets its own layer and creates a stacking context, and the layer will have
+ * position-related metadata set on it.
+ */
+class nsDisplayStickyPosition : public nsDisplayFixedPosition {
+public:
+  nsDisplayStickyPosition(nsDisplayListBuilder* aBuilder, nsIFrame* aFrame,
+                          nsIFrame* aStickyPosFrame, nsDisplayList* aList);
+#ifdef NS_BUILD_REFCNT_LOGGING
+  virtual ~nsDisplayStickyPosition();
+#endif
+
+  virtual already_AddRefed<Layer> BuildLayer(nsDisplayListBuilder* aBuilder,
+                                             LayerManager* aManager,
+                                             const ContainerParameters& aContainerParameters) MOZ_OVERRIDE;
 };
 
 /**
@@ -2568,11 +2743,10 @@ public:
   // number does not include nsDisplayScrollInfoLayers. If this number is not 1
   // after merging, all the nsDisplayScrollLayers should flatten away.
   intptr_t GetScrollLayerCount();
-  intptr_t RemoveScrollLayerCount();
 
   virtual nsIFrame* GetScrolledFrame() { return mScrolledFrame; }
 
-private:
+protected:
   nsIFrame* mScrollFrame;
   nsIFrame* mScrolledFrame;
 };
@@ -2595,9 +2769,7 @@ public:
                            nsIFrame* aScrolledFrame, nsIFrame* aScrollFrame);
   NS_DISPLAY_DECL_NAME("ScrollInfoLayer", TYPE_SCROLL_INFO_LAYER)
 
-#ifdef NS_BUILD_REFCNT_LOGGING
   virtual ~nsDisplayScrollInfoLayer();
-#endif
 
   virtual LayerState GetLayerState(nsDisplayListBuilder* aBuilder,
                                    LayerManager* aManager,
@@ -2850,12 +3022,12 @@ public:
                                     float aAppUnitsPerPixel,
                                     nsRect* aOutRect);
 
-  static gfxPoint3D GetDeltaToMozTransformOrigin(const nsIFrame* aFrame,
-                                                 float aAppUnitsPerPixel,
-                                                 const nsRect* aBoundsOverride);
+  static gfxPoint3D GetDeltaToTransformOrigin(const nsIFrame* aFrame,
+                                              float aAppUnitsPerPixel,
+                                              const nsRect* aBoundsOverride);
 
-  static gfxPoint3D GetDeltaToMozPerspectiveOrigin(const nsIFrame* aFrame,
-                                                   float aAppUnitsPerPixel);
+  static gfxPoint3D GetDeltaToPerspectiveOrigin(const nsIFrame* aFrame,
+                                                float aAppUnitsPerPixel);
 
   /**
    * Returns the bounds of a frame as defined for resolving percentage
@@ -2879,19 +3051,19 @@ public:
                              float aAppUnitsPerPixel,
                              const nsRect* aBoundsOverride);
     FrameTransformProperties(const nsCSSValueList* aTransformList,
-                             const gfxPoint3D& aToMozOrigin,
+                             const gfxPoint3D& aToTransformOrigin,
                              const gfxPoint3D& aToPerspectiveOrigin,
                              nscoord aChildPerspective)
       : mFrame(nullptr)
       , mTransformList(aTransformList)
-      , mToMozOrigin(aToMozOrigin)
+      , mToTransformOrigin(aToTransformOrigin)
       , mToPerspectiveOrigin(aToPerspectiveOrigin)
       , mChildPerspective(aChildPerspective)
     {}
 
     const nsIFrame* mFrame;
     const nsCSSValueList* mTransformList;
-    const gfxPoint3D mToMozOrigin;
+    const gfxPoint3D mToTransformOrigin;
     const gfxPoint3D mToPerspectiveOrigin;
     nscoord mChildPerspective;
   };

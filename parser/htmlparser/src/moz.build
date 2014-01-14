@@ -6,3 +6,25 @@
 
 MODULE = 'htmlparser'
 
+SOURCES += [
+    'CNavDTD.cpp',
+    'CParserContext.cpp',
+    'nsElementTable.cpp',
+    'nsExpatDriver.cpp',
+    'nsHTMLEntities.cpp',
+    'nsHTMLTags.cpp',
+    'nsHTMLTokenizer.cpp',
+    'nsParser.cpp',
+    'nsParserModule.cpp',
+    'nsParserMsgUtils.cpp',
+    'nsParserService.cpp',
+    'nsScanner.cpp',
+    'nsScannerString.cpp',
+]
+
+LIBRARY_NAME = 'htmlpars'
+
+LIBXUL_LIBRARY = True
+
+EXPORT_LIBRARY = True
+

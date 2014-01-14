@@ -26,6 +26,7 @@ function exposeCurrentNetwork(currentNetwork) {
 
 exposeCurrentNetwork.currentNetworkApi = {
   ssid: "r",
+  security: "r",
   capabilities: "r",
   known: "r"
 };
@@ -55,7 +56,8 @@ DOMWifiManager.prototype = {
                                     flags: Ci.nsIClassInfo.DOM_OBJECT}),
 
   QueryInterface: XPCOMUtils.generateQI([Ci.nsIDOMWifiManager,
-                                         Ci.nsIDOMGlobalPropertyInitializer]),
+                                         Ci.nsIDOMGlobalPropertyInitializer,
+                                         Ci.nsISupportsWeakReference]),
 
   // nsIDOMGlobalPropertyInitializer implementation
   init: function(aWindow) {
@@ -85,13 +87,15 @@ DOMWifiManager.prototype = {
                       "WifiManager:forget:Return:OK", "WifiManager:forget:Return:NO",
                       "WifiManager:wps:Return:OK", "WifiManager:wps:Return:NO",
                       "WifiManager:setPowerSavingMode:Return:OK", "WifiManager:setPowerSavingMode:Return:NO",
+                      "WifiManager:setHttpProxy:Return:OK", "WifiManager:setHttpProxy:Return:NO",
+                      "WifiManager:setStaticIpMode:Return:OK", "WifiManager:setStaticIpMode:Return:NO",
                       "WifiManager:wifiDown", "WifiManager:wifiUp",
                       "WifiManager:onconnecting", "WifiManager:onassociate",
                       "WifiManager:onconnect", "WifiManager:ondisconnect",
                       "WifiManager:onwpstimeout", "WifiManager:onwpsfail",
                       "WifiManager:onwpsoverlap", "WifiManager:connectionInfoUpdate",
                       "WifiManager:onconnectingfailed"];
-    this.initHelper(aWindow, messages);
+    this.initDOMRequestHelper(aWindow, messages);
     this._mm = Cc["@mozilla.org/childprocessmessagemanager;1"].getService(Ci.nsISyncMessageSender);
 
     var state = this._mm.sendSyncMessage("WifiManager:getState")[0];
@@ -187,6 +191,26 @@ DOMWifiManager.prototype = {
         break;
 
       case "WifiManager:setPowerSavingMode:Return:NO":
+        request = this.takeRequest(msg.rid);
+        Services.DOMRequest.fireError(request, msg.data);
+        break;
+
+      case "WifiManager:setHttpProxy:Return:OK":
+        request = this.takeRequest(msg.rid);
+        Services.DOMRequest.fireSuccess(request, exposeReadOnly(msg.data));
+        break;
+
+      case "WifiManager:setHttpProxy:Return:NO":
+        request = this.takeRequest(msg.rid);
+        Services.DOMRequest.fireError(request, msg.data);
+        break;
+
+      case "WifiManager:setStaticIpMode:Return:OK":
+        request = this.takeRequest(msg.rid);
+        Services.DOMRequest.fireSuccess(request, exposeReadOnly(msg.data));
+        break;
+
+      case "WifiManager:setStaticIpMode:Return:NO":
         request = this.takeRequest(msg.rid);
         Services.DOMRequest.fireError(request, msg.data);
         break;
@@ -344,6 +368,22 @@ DOMWifiManager.prototype = {
       throw new Components.Exception("Denied", Cr.NS_ERROR_FAILURE);
     var request = this.createRequest();
     this._sendMessageForRequest("WifiManager:setPowerSavingMode", enabled, request);
+    return request;
+  },
+
+  setHttpProxy: function nsIDOMWifiManager_setHttpProxy(network, info) {
+    if (!this._hasPrivileges)
+      throw new Components.Exception("Denied", Cr.NS_ERROR_FAILURE);
+    var request = this.createRequest();
+    this._sendMessageForRequest("WifiManager:setHttpProxy", {network:network, info:info}, request);
+    return request;
+  },
+
+  setStaticIpMode: function nsIDOMWifiManager_setStaticIpMode(network, info) {
+    if (!this._hasPrivileges)
+      throw new Components.Exception("Denied", Cr.NS_ERROR_FAILURE);
+    var request = this.createRequest();
+    this._sendMessageForRequest("WifiManager:setStaticIpMode", {network: network,info: info}, request);
     return request;
   },
 

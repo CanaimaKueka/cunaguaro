@@ -7,7 +7,9 @@
 #include "mozilla/dom/DOMTransactionBinding.h"
 
 #include "nsDOMClassInfoID.h"
+#include "nsDOMEvent.h"
 #include "nsIClassInfo.h"
+#include "nsIDOMDocument.h"
 #include "nsIXPCScriptable.h"
 #include "nsIVariant.h"
 #include "nsVariant.h"
@@ -16,6 +18,7 @@
 #include "nsEventDispatcher.h"
 #include "nsContentUtils.h"
 #include "jsapi.h"
+#include "nsIDocument.h"
 
 #include "mozilla/Preferences.h"
 #include "mozilla/ErrorResult.h"
@@ -361,7 +364,7 @@ nsresult
 UndoContentAppend::RedoTransaction()
 {
   for (int32_t i = 0; i < mChildren.Count(); i++) {
-    if (!mChildren[i]->GetParent()) {
+    if (!mChildren[i]->GetParentNode()) {
       mContent->AppendChildTo(mChildren[i], true);
     }
   }
@@ -373,7 +376,7 @@ nsresult
 UndoContentAppend::UndoTransaction()
 {
   for (int32_t i = mChildren.Count() - 1; i >= 0; i--) {
-    if (mChildren[i]->GetParent() == mContent) {
+    if (mChildren[i]->GetParentNode() == mContent) {
       ErrorResult error;
       mContent->RemoveChild(*mChildren[i], error);
     }
@@ -428,12 +431,12 @@ UndoContentInsert::RedoTransaction()
   }
 
   // Check if node already has parent.
-  if (mChild->GetParent()) {
+  if (mChild->GetParentNode()) {
     return NS_OK;
   }
 
   // Check to see if next sibling has same parent.
-  if (mNextNode && mNextNode->GetParent() != mContent) {
+  if (mNextNode && mNextNode->GetParentNode() != mContent) {
     return NS_OK;
   }
 
@@ -450,12 +453,12 @@ UndoContentInsert::UndoTransaction()
   }
 
   // Check if the parent is the same.
-  if (mChild->GetParent() != mContent) {
+  if (mChild->GetParentNode() != mContent) {
     return NS_OK;
   }
 
   // Check of the parent of the next node is the same.
-  if (mNextNode && mNextNode->GetParent() != mContent) {
+  if (mNextNode && mNextNode->GetParentNode() != mContent) {
     return NS_OK;
   }
 
@@ -521,12 +524,12 @@ UndoContentRemove::UndoTransaction()
   }
 
   // Check if child has a parent.
-  if (mChild->GetParent()) {
+  if (mChild->GetParentNode()) {
     return NS_OK;
   }
 
   // Make sure next sibling is still under same parent.
-  if (mNextNode && mNextNode->GetParent() != mContent) {
+  if (mNextNode && mNextNode->GetParentNode() != mContent) {
     return NS_OK;
   }
 
@@ -543,12 +546,12 @@ UndoContentRemove::RedoTransaction()
   }
 
   // Check that the parent has not changed.
-  if (mChild->GetParent() != mContent) {
+  if (mChild->GetParentNode() != mContent) {
     return NS_OK;
   }
 
   // Check that the next node still has the same parent.
-  if (mNextNode && mNextNode->GetParent() != mContent) {
+  if (mNextNode && mNextNode->GetParentNode() != mContent) {
     return NS_OK;
   }
 
@@ -598,17 +601,17 @@ NS_IMPL_ISUPPORTS1(UndoMutationObserver, nsIMutationObserver)
 bool
 UndoMutationObserver::IsManagerForMutation(nsIContent* aContent)
 {
-  nsCOMPtr<nsIContent> content = aContent;
+  nsCOMPtr<nsINode> currentNode = aContent;
   nsRefPtr<UndoManager> undoManager;
 
   // Get the UndoManager of nearest ancestor with an UndoManager.
-  while (content && !undoManager) {
-    nsCOMPtr<Element> htmlElem = do_QueryInterface(content);
+  while (currentNode && !undoManager) {
+    nsCOMPtr<Element> htmlElem = do_QueryInterface(currentNode);
     if (htmlElem) {
       undoManager = htmlElem->GetUndoManager();
     }
 
-    content = content->GetParent();
+    currentNode = currentNode->GetParentNode();
   }
 
   if (!undoManager) {
@@ -617,6 +620,9 @@ UndoMutationObserver::IsManagerForMutation(nsIContent* aContent)
     nsIDocument* doc = aContent->OwnerDoc();
     NS_ENSURE_TRUE(doc, false);
     undoManager = doc->GetUndoManager();
+    // The document will not have an undoManager if the
+    // documentElement is removed.
+    NS_ENSURE_TRUE(undoManager, false);
   }
 
   // Check if the nsITransactionManager is the same for both the
@@ -1136,23 +1142,9 @@ UndoManager::DispatchTransactionEvent(JSContext* aCx, const nsAString& aType,
     return;
   }
 
-  nsIDocument* ownerDoc = mHostNode->OwnerDoc();
-  if (!ownerDoc) {
-    aRv.Throw(NS_ERROR_UNEXPECTED);
-    return;
-  }
-
-  nsCOMPtr<nsIDOMDocument> domDoc = do_QueryInterface(ownerDoc);
-  if (!domDoc) {
-    aRv.Throw(NS_ERROR_UNEXPECTED);
-    return;
-  }
-
-  nsCOMPtr<nsIDOMEvent> event;
-  nsresult rv = domDoc->CreateEvent(NS_LITERAL_STRING("domtransaction"),
-                                    getter_AddRefs(event));
-  if (NS_FAILED(rv)) {
-    aRv.Throw(rv);
+  nsRefPtr<nsDOMEvent> event = mHostNode->OwnerDoc()->CreateEvent(
+    NS_LITERAL_STRING("domtransaction"), aRv);
+  if (aRv.Failed()) {
     return;
   }
 
@@ -1163,14 +1155,15 @@ UndoManager::DispatchTransactionEvent(JSContext* aCx, const nsAString& aType,
   nsCOMArray<nsIVariant> keepAlive;
   nsTArray<nsIVariant*> transactionItems;
   for (uint32_t i = 0; i < items.Length(); i++) {
-    JS::Value txVal = JS::ObjectValue(*items[i]->Callback());
+    JS::Rooted<JS::Value> txVal(aCx, JS::ObjectValue(*items[i]->Callback()));
     if (!JS_WrapValue(aCx, &txVal)) {
       aRv.Throw(NS_ERROR_OUT_OF_MEMORY);
       return;
     }
     nsCOMPtr<nsIVariant> txVariant;
-    rv = nsContentUtils::XPConnect()->JSToVariant(aCx, txVal,
-                                                  getter_AddRefs(txVariant));
+    nsresult rv =
+      nsContentUtils::XPConnect()->JSToVariant(aCx, txVal,
+                                               getter_AddRefs(txVariant));
     if (NS_SUCCEEDED(rv)) {
       keepAlive.AppendObject(txVariant);
       transactionItems.AppendElement(txVariant.get());

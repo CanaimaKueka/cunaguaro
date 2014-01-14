@@ -10,7 +10,6 @@
  * liability, trademark and document use rules apply.
  */
 
-interface SVGAnimatedString;
 interface SVGViewSpec;
 
 interface SVGSVGElement : SVGGraphicsElement {
@@ -43,22 +42,22 @@ interface SVGSVGElement : SVGGraphicsElement {
   // NodeList getEnclosureList(SVGRect rect, SVGElement referenceElement);
   // boolean checkIntersection(SVGElement element, SVGRect rect);
   // boolean checkEnclosure(SVGElement element, SVGRect rect);
-  // void deselectAll();
-  [Creator]
+  void deselectAll();
+  [NewObject]
   SVGNumber createSVGNumber();
-  [Creator]
+  [NewObject]
   SVGLength createSVGLength();
-  [Creator]
+  [NewObject]
   SVGAngle createSVGAngle();
-  [Creator]
+  [NewObject]
   SVGPoint createSVGPoint();
-  [Creator]
+  [NewObject]
   SVGMatrix createSVGMatrix();
-  [Creator]
+  [NewObject]
   SVGRect createSVGRect();
-  [Creator]
+  [NewObject]
   SVGTransform createSVGTransform();
-  [Creator]
+  [NewObject]
   SVGTransform createSVGTransformFromMatrix(SVGMatrix matrix);
   [Throws]
   Element? getElementById(DOMString elementId);

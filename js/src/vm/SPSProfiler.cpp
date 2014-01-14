@@ -4,20 +4,15 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#include "vm/SPSProfiler.h"
+
 #include "mozilla/DebugOnly.h"
 
 #include "jsnum.h"
 #include "jsscript.h"
 
-#include "methodjit/MethodJIT.h"
-#include "methodjit/Compiler.h"
-
-#include "vm/SPSProfiler.h"
+#include "jit/BaselineJIT.h"
 #include "vm/StringBuffer.h"
-
-#include "ion/BaselineJIT.h"
-
-#include "jsscriptinlines.h"
 
 using namespace js;
 
@@ -25,13 +20,13 @@ using mozilla::DebugOnly;
 
 SPSProfiler::SPSProfiler(JSRuntime *rt)
   : rt(rt),
-    stack_(NULL),
-    size_(NULL),
+    stack_(nullptr),
+    size_(nullptr),
     max_(0),
     slowAssertions(false),
     enabled_(false)
 {
-    JS_ASSERT(rt != NULL);
+    JS_ASSERT(rt != nullptr);
 }
 
 SPSProfiler::~SPSProfiler()
@@ -40,12 +35,6 @@ SPSProfiler::~SPSProfiler()
         for (ProfileStringMap::Enum e(strings); !e.empty(); e.popFront())
             js_free(const_cast<char *>(e.front().value));
     }
-#ifdef JS_METHODJIT
-    if (jminfo.initialized()) {
-        for (JITInfoMap::Enum e(jminfo); !e.empty(); e.popFront())
-            js_delete(e.front().value);
-    }
-#endif
 }
 
 void
@@ -76,7 +65,7 @@ SPSProfiler::enable(bool enabled)
      * jitcode for scripts with active frames on the stack.  These scripts need to have
      * their profiler state toggled so they behave properly.
      */
-    ion::ToggleBaselineSPS(rt, enabled);
+    jit::ToggleBaselineSPS(rt, enabled);
 #endif
 }
 
@@ -89,11 +78,11 @@ SPSProfiler::profileString(JSContext *cx, JSScript *script, JSFunction *maybeFun
     if (s)
         return s->value;
     const char *str = allocProfileString(cx, script, maybeFun);
-    if (str == NULL)
-        return NULL;
+    if (str == nullptr)
+        return nullptr;
     if (!strings.add(s, script, str)) {
         js_free(const_cast<char *>(str));
-        return NULL;
+        return nullptr;
     }
     return str;
 }
@@ -121,12 +110,12 @@ bool
 SPSProfiler::enter(JSContext *cx, JSScript *script, JSFunction *maybeFun)
 {
     const char *str = profileString(cx, script, maybeFun);
-    if (str == NULL)
+    if (str == nullptr)
         return false;
 
     JS_ASSERT_IF(*size_ > 0 && *size_ - 1 < max_ && stack_[*size_ - 1].js(),
-                 stack_[*size_ - 1].pc() != NULL);
-    push(str, NULL, script, script->code);
+                 stack_[*size_ - 1].pc() != nullptr);
+    push(str, nullptr, script, script->code);
     return true;
 }
 
@@ -140,7 +129,7 @@ SPSProfiler::exit(JSContext *cx, JSScript *script, JSFunction *maybeFun)
     if (*size_ < max_) {
         const char *str = profileString(cx, script, maybeFun);
         /* Can't fail lookup because we should already be in the set */
-        JS_ASSERT(str != NULL);
+        JS_ASSERT(str != nullptr);
 
         // Bug 822041
         if (!stack_[*size_].js()) {
@@ -157,8 +146,8 @@ SPSProfiler::exit(JSContext *cx, JSScript *script, JSFunction *maybeFun)
         JS_ASSERT(stack_[*size_].js());
         JS_ASSERT(stack_[*size_].script() == script);
         JS_ASSERT(strcmp((const char*) stack_[*size_].label(), str) == 0);
-        stack_[*size_].setLabel(NULL);
-        stack_[*size_].setPC(NULL);
+        stack_[*size_].setLabel(nullptr);
+        stack_[*size_].setPC(nullptr);
     }
 #endif
 }
@@ -175,7 +164,7 @@ SPSProfiler::enterNative(const char *string, void *sp)
     if (current < max_) {
         stack[current].setLabel(string);
         stack[current].setStackAddress(sp);
-        stack[current].setScript(NULL);
+        stack[current].setScript(nullptr);
         stack[current].setLine(0);
     }
     *size = current + 1;
@@ -216,223 +205,43 @@ SPSProfiler::pop()
 const char*
 SPSProfiler::allocProfileString(JSContext *cx, JSScript *script, JSFunction *maybeFun)
 {
-    DebugOnly<uint64_t> gcBefore = cx->runtime->gcNumber;
+    // Note: this profiler string is regexp-matched by
+    // browser/devtools/profiler/cleopatra/js/parserWorker.js.
+    DebugOnly<uint64_t> gcBefore = cx->runtime()->gcNumber;
     StringBuffer buf(cx);
-    bool hasAtom = maybeFun != NULL && maybeFun->displayAtom() != NULL;
+    bool hasAtom = maybeFun != nullptr && maybeFun->displayAtom() != nullptr;
     if (hasAtom) {
         if (!buf.append(maybeFun->displayAtom()))
-            return NULL;
+            return nullptr;
         if (!buf.append(" ("))
-            return NULL;
+            return nullptr;
     }
     if (script->filename()) {
         if (!buf.appendInflated(script->filename(), strlen(script->filename())))
-            return NULL;
+            return nullptr;
     } else if (!buf.append("<unknown>")) {
-        return NULL;
+        return nullptr;
     }
     if (!buf.append(":"))
-        return NULL;
+        return nullptr;
     if (!NumberValueToStringBuffer(cx, NumberValue(script->lineno), buf))
-        return NULL;
+        return nullptr;
     if (hasAtom && !buf.append(")"))
-        return NULL;
+        return nullptr;
 
     size_t len = buf.length();
     char *cstr = js_pod_malloc<char>(len + 1);
-    if (cstr == NULL)
-        return NULL;
+    if (cstr == nullptr)
+        return nullptr;
 
     const jschar *ptr = buf.begin();
     for (size_t i = 0; i < len; i++)
         cstr[i] = ptr[i];
     cstr[len] = 0;
 
-    JS_ASSERT(gcBefore == cx->runtime->gcNumber);
+    JS_ASSERT(gcBefore == cx->runtime()->gcNumber);
     return cstr;
 }
-
-#ifdef JS_METHODJIT
-typedef SPSProfiler::JMChunkInfo JMChunkInfo;
-
-JMChunkInfo::JMChunkInfo(mjit::JSActiveFrame *frame,
-                         mjit::PCLengthEntry *pcLengths,
-                         mjit::JITChunk *chunk)
-  : mainStart(frame->mainCodeStart),
-    mainEnd(frame->mainCodeEnd),
-    stubStart(frame->stubCodeStart),
-    stubEnd(frame->stubCodeEnd),
-    pcLengths(pcLengths),
-    chunk(chunk)
-{}
-
-jsbytecode*
-SPSProfiler::ipToPC(JSScript *script, size_t ip)
-{
-    if (!jminfo.initialized())
-        return NULL;
-
-    JITInfoMap::Ptr ptr = jminfo.lookup(script);
-    if (!ptr)
-        return NULL;
-    JMScriptInfo *info = ptr->value;
-
-    /* First check if this ip is in any of the ICs compiled for the script */
-    for (unsigned i = 0; i < info->ics.length(); i++) {
-        ICInfo &ic = info->ics[i];
-        if (ic.base <= ip && ip < ic.base + ic.size)
-            return ic.pc;
-    }
-
-    /* Otherwise if it's not in any of the chunks, then we can't find it */
-    for (unsigned i = 0; i < info->chunks.length(); i++) {
-        jsbytecode *pc = info->chunks[i].convert(script, ip);
-        if (pc != NULL)
-            return pc;
-    }
-
-    return NULL;
-}
-
-jsbytecode*
-JMChunkInfo::convert(JSScript *script, size_t ip)
-{
-    if (mainStart <= ip && ip < mainEnd) {
-        size_t offset = 0;
-        uint32_t i;
-        for (i = 0; i < script->length - 1; i++) {
-            offset += (uint32_t) pcLengths[i].inlineLength;
-            if (mainStart + offset > ip)
-                break;
-        }
-        return &script->code[i];
-    } else if (stubStart <= ip && ip < stubEnd) {
-        size_t offset = 0;
-        uint32_t i;
-        for (i = 0; i < script->length - 1; i++) {
-            offset += (uint32_t) pcLengths[i].stubLength;
-            if (stubStart + offset > ip)
-                break;
-        }
-        return &script->code[i];
-    }
-
-    return NULL;
-}
-
-bool
-SPSProfiler::registerMJITCode(mjit::JITChunk *chunk,
-                              mjit::JSActiveFrame *outerFrame,
-                              mjit::JSActiveFrame **inlineFrames)
-{
-    if (!jminfo.initialized() && !jminfo.init(100))
-        return false;
-
-    JS_ASSERT(chunk->pcLengths != NULL);
-
-    JMChunkInfo *info = registerScript(outerFrame, chunk->pcLengths, chunk);
-    if (!info)
-        return false;
-
-    /*
-     * The pcLengths array has entries for both the outerFrame's script and also
-     * all of the inlineFrames' scripts. The layout is something like:
-     *
-     *    [ outerFrame info ] [ inline frame 1 ] [ inline frame 2 ] ...
-     *
-     * This local pcLengths pointer tracks the position of each inline frame's
-     * pcLengths array. Each section of the array has length script->length for
-     * the corresponding script for that frame.
-     */
-    mjit::PCLengthEntry *pcLengths = chunk->pcLengths + outerFrame->script->length;
-    for (unsigned i = 0; i < chunk->nInlineFrames; i++) {
-        JMChunkInfo *child = registerScript(inlineFrames[i], pcLengths, chunk);
-        if (!child)
-            return false;
-        /*
-         * When JM tells us about new code, each inline ActiveFrame only has the
-         * start/end listed relative to the start of the main instruction
-         * streams. This is corrected here so the addresses listed on the
-         * JMChunkInfo structure are absolute and can be tested directly.
-         */
-        child->mainStart += info->mainStart;
-        child->mainEnd   += info->mainStart;
-        child->stubStart += info->stubStart;
-        child->stubEnd   += info->stubStart;
-
-        pcLengths += inlineFrames[i]->script->length;
-    }
-
-    return true;
-}
-
-JMChunkInfo*
-SPSProfiler::registerScript(mjit::JSActiveFrame *frame,
-                            mjit::PCLengthEntry *entries,
-                            mjit::JITChunk *chunk)
-{
-    /*
-     * An inlined script could possibly be compiled elsewhere as not having been
-     * inlined, so each JSScript* must be associated with a list of chunks
-     * instead of just one. Also, our script may already be in the map.
-     */
-    JITInfoMap::AddPtr ptr = jminfo.lookupForAdd(frame->script);
-    JMScriptInfo *info;
-    if (ptr) {
-        info = ptr->value;
-        JS_ASSERT(info->chunks.length() > 0);
-    } else {
-        info = rt->new_<JMScriptInfo>();
-        if (info == NULL || !jminfo.add(ptr, frame->script, info))
-            return NULL;
-    }
-    if (!info->chunks.append(JMChunkInfo(frame, entries, chunk)))
-        return NULL;
-    return info->chunks.end() - 1;
-}
-
-bool
-SPSProfiler::registerICCode(mjit::JITChunk *chunk,
-                            JSScript *script, jsbytecode *pc,
-                            void *base, size_t size)
-{
-    JS_ASSERT(jminfo.initialized());
-    JITInfoMap::Ptr ptr = jminfo.lookup(script);
-    JS_ASSERT(ptr);
-    return ptr->value->ics.append(ICInfo(base, size, pc));
-}
-
-void
-SPSProfiler::discardMJITCode(mjit::JITScript *jscr,
-                             mjit::JITChunk *chunk, void* address)
-{
-    if (!jminfo.initialized())
-        return;
-
-    unregisterScript(jscr->script, chunk);
-    for (unsigned i = 0; i < chunk->nInlineFrames; i++)
-        unregisterScript(chunk->inlineFrames()[i].fun->nonLazyScript(), chunk);
-}
-
-void
-SPSProfiler::unregisterScript(JSScript *script, mjit::JITChunk *chunk)
-{
-    JITInfoMap::Ptr ptr = jminfo.lookup(script);
-    if (!ptr)
-        return;
-    JMScriptInfo *info = ptr->value;
-    for (unsigned i = 0; i < info->chunks.length(); i++) {
-        if (info->chunks[i].chunk == chunk) {
-            info->chunks.erase(&info->chunks[i]);
-            break;
-        }
-    }
-    if (info->chunks.length() == 0) {
-        jminfo.remove(ptr);
-        js_delete(info);
-    }
-}
-#endif
 
 SPSEntryMarker::SPSEntryMarker(JSRuntime *rt
                                MOZ_GUARD_OBJECT_NOTIFIER_PARAM_IN_IMPL)
@@ -440,30 +249,49 @@ SPSEntryMarker::SPSEntryMarker(JSRuntime *rt
 {
     MOZ_GUARD_OBJECT_NOTIFIER_INIT;
     if (!profiler->enabled()) {
-        profiler = NULL;
+        profiler = nullptr;
         return;
     }
     size_before = *profiler->size_;
-    profiler->push("js::RunScript", this, NULL, NULL);
+    profiler->push("js::RunScript", this, nullptr, nullptr);
 }
 
 SPSEntryMarker::~SPSEntryMarker()
 {
-    if (profiler != NULL) {
+    if (profiler != nullptr) {
         profiler->pop();
         JS_ASSERT(size_before == *profiler->size_);
     }
 }
 
 JS_FRIEND_API(jsbytecode*)
-ProfileEntry::pc() volatile {
+ProfileEntry::pc() volatile
+{
     JS_ASSERT_IF(idx != NullPCIndex, idx >= 0 && uint32_t(idx) < script()->length);
-    return idx == NullPCIndex ? NULL : script()->code + idx;
+    return idx == NullPCIndex ? nullptr : script()->code + idx;
 }
 
 JS_FRIEND_API(void)
-ProfileEntry::setPC(jsbytecode *pc) volatile {
-    JS_ASSERT_IF(pc != NULL, script()->code <= pc &&
-                             pc < script()->code + script()->length);
-    idx = pc == NULL ? NullPCIndex : pc - script()->code;
+ProfileEntry::setPC(jsbytecode *pc) volatile
+{
+    JS_ASSERT_IF(pc != nullptr, script()->code <= pc && pc < script()->code + script()->length);
+    idx = pc == nullptr ? NullPCIndex : pc - script()->code;
+}
+
+JS_FRIEND_API(void)
+js::SetRuntimeProfilingStack(JSRuntime *rt, ProfileEntry *stack, uint32_t *size, uint32_t max)
+{
+    rt->spsProfiler.setProfilingStack(stack, size, max);
+}
+
+JS_FRIEND_API(void)
+js::EnableRuntimeProfilingStack(JSRuntime *rt, bool enabled)
+{
+    rt->spsProfiler.enable(enabled);
+}
+
+JS_FRIEND_API(jsbytecode*)
+js::ProfilingGetPC(JSRuntime *rt, JSScript *script, void *ip)
+{
+    return rt->spsProfiler.ipToPC(script, size_t(ip));
 }

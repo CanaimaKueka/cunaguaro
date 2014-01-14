@@ -7,7 +7,11 @@
 #define MOZILLA_MEDIASEGMENT_H_
 
 #include "nsTArray.h"
+#ifdef MOZILLA_INTERNAL_API
+#include "mozilla/TimeStamp.h"
+#endif
 #include <algorithm>
+#include "Latency.h"
 
 namespace mozilla {
 
@@ -101,6 +105,10 @@ public:
    */
   virtual void AppendNullData(TrackTicks aDuration) = 0;
   /**
+   * Replace contents with disabled data of the same duration
+   */
+  virtual void ReplaceWithDisabled() = 0;
+  /**
    * Remove all contents, setting duration to 0.
    */
   virtual void Clear() = 0;
@@ -176,6 +184,9 @@ public:
     } else {
       mChunks.InsertElementAt(0)->SetNull(aDuration);
     }
+#ifdef MOZILLA_INTERNAL_API
+    mChunks[0].mTimeStamp = mozilla::TimeStamp::Now();
+#endif
     mDuration += aDuration;
   }
   virtual void AppendNullData(TrackTicks aDuration)
@@ -189,6 +200,15 @@ public:
       mChunks.AppendElement()->SetNull(aDuration);
     }
     mDuration += aDuration;
+  }
+  virtual void ReplaceWithDisabled()
+  {
+    if (GetType() != AUDIO) {
+      MOZ_CRASH("Disabling unknown segment type");
+    }
+    TrackTicks duration = GetDuration();
+    Clear();
+    AppendNullData(duration);
   }
   virtual void Clear()
   {
@@ -208,6 +228,17 @@ public:
     MediaSegmentBase<C, Chunk>& mSegment;
     uint32_t mIndex;
   };
+
+  void RemoveLeading(TrackTicks aDuration)
+  {
+    RemoveLeading(aDuration, 0);
+  }
+
+#ifdef MOZILLA_INTERNAL_API
+  void GetStartTime(TimeStamp &aTime) {
+    aTime = mChunks[0].mTimeStamp;
+  }
+#endif
 
 protected:
   MediaSegmentBase(Type aType) : MediaSegment(aType) {}
@@ -305,6 +336,9 @@ protected:
   }
 
   nsTArray<Chunk> mChunks;
+#ifdef MOZILLA_INTERNAL_API
+  mozilla::TimeStamp mTimeStamp;
+#endif
 };
 
 }

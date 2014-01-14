@@ -3,15 +3,9 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-
-#include "nsCOMPtr.h"
-#include "nsFrame.h"
-#include "nsPresContext.h"
-#include "nsStyleContext.h"
-#include "nsStyleConsts.h"
-#include "nsRenderingContext.h"
-
 #include "nsMathMLmrootFrame.h"
+#include "nsPresContext.h"
+#include "nsRenderingContext.h"
 #include <algorithm>
 
 //
@@ -271,7 +265,7 @@ nsMathMLmrootFrame::Reflow(nsPresContext*          aPresContext,
                    NS_STRETCH_DIRECTION_VERTICAL, 
                    contSize, radicalSize,
                    NS_STRETCH_LARGER,
-                   NS_MATHML_IS_RTL(mPresentationData.flags));
+                   StyleVisibility()->mDirection);
   // radicalSize have changed at this point, and should match with
   // the bounding metrics of the char
   mSqrChar.GetBoundingMetrics(bmSqr);

@@ -9,6 +9,8 @@
  */
 
 #include "nsNodeInfoManager.h"
+
+#include "mozilla/DebugOnly.h"
 #include "nsNodeInfo.h"
 #include "nsCOMPtr.h"
 #include "nsString.h"
@@ -86,7 +88,7 @@ nsNodeInfoManager::NodeInfoInnerKeyCompare(const void *key1, const void *key2)
 
 
 static void* PR_CALLBACK
-AllocTable(void* pool, PRSize size)
+AllocTable(void* pool, size_t size)
 {
   return malloc(size);
 }
@@ -104,7 +106,7 @@ AllocEntry(void* pool, const void* key)
 }
 
 static void PR_CALLBACK
-FreeEntry(void* pool, PLHashEntry* he, PRUintn flag)
+FreeEntry(void* pool, PLHashEntry* he, unsigned flag)
 {
   if (flag == HT_FREE_ENTRY) {
     free(he);
@@ -158,6 +160,8 @@ nsNodeInfoManager::~nsNodeInfoManager()
 
   nsLayoutStatics::Release();
 }
+
+NS_IMPL_CYCLE_COLLECTION_CLASS(nsNodeInfoManager)
 
 NS_IMPL_CYCLE_COLLECTION_UNLINK_0(nsNodeInfoManager)
 NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN(nsNodeInfoManager)
@@ -250,8 +254,8 @@ nsNodeInfoManager::GetNodeInfo(nsIAtom *aName, nsIAtom *aPrefix,
   nsRefPtr<nsNodeInfo> newNodeInfo =
     new nsNodeInfo(aName, aPrefix, aNamespaceID, aNodeType, aExtraName, this);
 
-  PLHashEntry *he;
-  he = PL_HashTableAdd(mNodeInfoHash, &newNodeInfo->mInner, newNodeInfo);
+  DebugOnly<PLHashEntry*> he =
+    PL_HashTableAdd(mNodeInfoHash, &newNodeInfo->mInner, newNodeInfo);
   MOZ_ASSERT(he, "PL_HashTableAdd() failed");
 
   // Have to do the swap thing, because already_AddRefed<nsNodeInfo>

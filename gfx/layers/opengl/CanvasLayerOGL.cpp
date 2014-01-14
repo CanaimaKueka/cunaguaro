@@ -3,25 +3,28 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include "ipc/AutoOpenSurface.h"
-#include "mozilla/layers/PLayerTransaction.h"
-#include "mozilla/layers/ShadowLayers.h"
-
-#include "gfxSharedImageSurface.h"
-
 #include "CanvasLayerOGL.h"
-
-#include "gfxImageSurface.h"
-#include "gfxContext.h"
-#include "GLContextProvider.h"
-#include "gfxPlatform.h"
-#include "SharedSurfaceGL.h"
-#include "SharedSurfaceEGL.h"
-#include "SurfaceStream.h"
-#include "gfxColor.h"
+#include "GLContext.h"                  // for GLContext
+#include "GLScreenBuffer.h"             // for GLScreenBuffer
+#include "SharedSurface.h"              // for SharedSurface
+#include "SharedSurfaceGL.h"            // for SharedSurface_Basic, etc
+#include "SurfaceStream.h"              // for SurfaceStream, etc
+#include "SurfaceTypes.h"               // for SharedSurfaceType, etc
+#include "gfx3DMatrix.h"                // for gfx3DMatrix
+#include "gfxImageSurface.h"            // for gfxImageSurface
+#include "gfxPlatform.h"                // for gfxPlatform
+#include "mozilla/Assertions.h"         // for MOZ_ASSERT, etc
+#include "mozilla/gfx/Types.h"          // for SurfaceFormat, etc
+#include "nsDebug.h"                    // for NS_ABORT_IF_FALSE, etc
+#include "nsPoint.h"                    // for nsIntPoint
+#include "nsRect.h"                     // for nsIntRect
+#include "nsRegion.h"                   // for nsIntRegion
+#include "nsSize.h"                     // for nsIntSize
+#include "LayerManagerOGL.h"            // for LayerOGL::GLContext, etc
 
 #ifdef XP_MACOSX
 #include "mozilla/gfx/MacIOSurface.h"
+#include "SharedSurfaceIO.h"
 #endif
 
 #ifdef XP_WIN
@@ -34,6 +37,7 @@
 #endif
 
 #ifdef GL_PROVIDER_GLX
+#include "GLXLibrary.h"                 // for GLXLibrary, sDefGLXLib
 #include "gfxXlibSurface.h"
 #endif
 
@@ -41,6 +45,27 @@ using namespace mozilla;
 using namespace mozilla::layers;
 using namespace mozilla::gl;
 using namespace mozilla::gfx;
+
+CanvasLayerOGL::CanvasLayerOGL(LayerManagerOGL *aManager)
+  : CanvasLayer(aManager, nullptr)
+  , LayerOGL(aManager)
+  , mLayerProgram(RGBALayerProgramType)
+  , mTexture(0)
+  , mTextureTarget(LOCAL_GL_TEXTURE_2D)
+  , mDelayedUpdates(false)
+  , mIsGLAlphaPremult(false)
+  , mUploadTexture(0)
+#if defined(GL_PROVIDER_GLX)
+  , mPixmap(0)
+#endif
+{
+  mImplData = static_cast<LayerOGL*>(this);
+  mForceReadback = Preferences::GetBool("webgl.force-layers-readback", false);
+}
+
+CanvasLayerOGL::~CanvasLayerOGL() {
+  Destroy();
+}
 
 static void
 MakeTextureIfNeeded(GLContext* gl, GLuint& aTexture)
@@ -80,9 +105,7 @@ MakeIOSurfaceTexture(void* aCGIOSurfaceContext, mozilla::gl::GLContext* aGL)
   RefPtr<MacIOSurface> ioSurface = MacIOSurface::IOSurfaceContextGetSurface((CGContextRef)aCGIOSurfaceContext);
   void *nativeCtx = aGL->GetNativeData(GLContext::NativeGLContext);
 
-  ioSurface->CGLTexImageIOSurface2D(nativeCtx,
-                                    LOCAL_GL_RGBA, LOCAL_GL_BGRA,
-                                    LOCAL_GL_UNSIGNED_INT_8_8_8_8_REV, 0);
+  ioSurface->CGLTexImageIOSurface2D(nativeCtx);
 
   aGL->fBindTexture(LOCAL_GL_TEXTURE_RECTANGLE_ARB, 0);
 
@@ -127,15 +150,11 @@ CanvasLayerOGL::Initialize(const Data& aData)
     mCanvasSurface = aData.mSurface;
     mNeedsYFlip = false;
 #if defined(GL_PROVIDER_GLX)
-    if (aData.mSurface->GetType() == gfxASurface::SurfaceTypeXlib) {
+    if (aData.mSurface->GetType() == gfxSurfaceTypeXlib) {
         gfxXlibSurface *xsurf = static_cast<gfxXlibSurface*>(aData.mSurface);
         mPixmap = xsurf->GetGLXPixmap();
         if (mPixmap) {
-            if (aData.mSurface->GetContentType() == gfxASurface::CONTENT_COLOR_ALPHA) {
-                mLayerProgram = gl::RGBALayerProgramType;
-            } else {
-                mLayerProgram = gl::RGBXLayerProgramType;
-            }
+            mLayerProgram = ShaderProgramFromContentType(aData.mSurface->GetContentType());
             MakeTextureIfNeeded(gl(), mUploadTexture);
         }
     }
@@ -222,9 +241,17 @@ CanvasLayerOGL::UpdateSurface()
           mTexture = textureSurf->Texture();
           break;
         }
+#ifdef XP_MACOSX
+        case SharedSurfaceType::IOSurface: {
+          SharedSurface_IOSurface *ioSurf = SharedSurface_IOSurface::Cast(surf);
+          mTexture = ioSurf->Texture();
+          mTextureTarget = ioSurf->TextureTarget();
+          mLayerProgram = ioSurf->HasAlpha() ? RGBARectLayerProgramType : RGBXRectLayerProgramType;
+          break;
+        }
+#endif
         default:
-          MOZ_NOT_REACHED("Unacceptable SharedSurface type.");
-          return;
+          MOZ_CRASH("Unacceptable SharedSurface type.");
       }
     } else {
       nothingToShow = true;
@@ -237,7 +264,7 @@ CanvasLayerOGL::UpdateSurface()
                                         gfx::NATIVE_SURFACE_CGCONTEXT_ACCELERATED),
                                         gl());
         mTextureTarget = LOCAL_GL_TEXTURE_RECTANGLE_ARB;
-        mLayerProgram = gl::RGBARectLayerProgramType;
+        mLayerProgram = RGBARectLayerProgramType;
       }
       mDrawTarget->Flush();
       return;
@@ -245,17 +272,18 @@ CanvasLayerOGL::UpdateSurface()
 #endif
     updatedSurface = mCanvasSurface;
   } else {
-    MOZ_NOT_REACHED("Unhandled canvas layer type.");
-    return;
+    MOZ_CRASH("Unhandled canvas layer type.");
   }
 
   if (updatedSurface) {
     mOGLManager->MakeCurrent();
-    mLayerProgram = gl()->UploadSurfaceToTexture(updatedSurface,
-                                                 mBounds,
-                                                 mUploadTexture,
-                                                 true,//false,
-                                                 nsIntPoint(0, 0));
+    gfx::SurfaceFormat format =
+      gl()->UploadSurfaceToTexture(updatedSurface,
+                                   mBounds,
+                                   mUploadTexture,
+                                   true,//false,
+                                   nsIntPoint(0, 0));
+    mLayerProgram = ShaderProgramFromSurfaceFormat(format);
     mTexture = mUploadTexture;
 
     if (temporarySurface)
@@ -296,12 +324,13 @@ CanvasLayerOGL::RenderLayer(int aPreviousDestination,
     
     drawRect.IntersectRect(drawRect, GetEffectiveVisibleRegion().GetBounds());
 
-    mLayerProgram =
+    gfx::SurfaceFormat format =
       gl()->UploadSurfaceToTexture(mCanvasSurface,
                                    nsIntRect(0, 0, drawRect.width, drawRect.height),
                                    mUploadTexture,
                                    true,
                                    drawRect.TopLeft());
+    mLayerProgram = ShaderProgramFromSurfaceFormat(format);
     mTexture = mUploadTexture;
   }
 
@@ -318,12 +347,14 @@ CanvasLayerOGL::RenderLayer(int aPreviousDestination,
   gl()->ApplyFilterToBoundTexture(mFilter);
 
   program->Activate();
-  if (mLayerProgram == gl::RGBARectLayerProgramType) {
+  if (mLayerProgram == RGBARectLayerProgramType ||
+      mLayerProgram == RGBXRectLayerProgramType) {
     // This is used by IOSurface that use 0,0...w,h coordinate rather then 0,0..1,1.
-    program->SetTexCoordMultiplier(mDrawTarget->GetSize().width, mDrawTarget->GetSize().height);
+    program->SetTexCoordMultiplier(mBounds.width, mBounds.height);
   }
   program->SetLayerQuadRect(drawRect);
   program->SetLayerTransform(GetEffectiveTransform());
+  program->SetTextureTransform(gfx3DMatrix());
   program->SetLayerOpacity(GetEffectiveOpacity());
   program->SetRenderOffset(aOffset);
   program->SetTextureUnit(0);
@@ -350,4 +381,21 @@ CanvasLayerOGL::CleanupResources()
     gl()->fDeleteTextures(1, &mUploadTexture);
     mUploadTexture = 0;
   }
+}
+
+gfxImageSurface*
+CanvasLayerOGL::GetTempSurface(const gfxIntSize& aSize,
+                               const gfxImageFormat aFormat)
+{
+  if (!mCachedTempSurface ||
+      aSize.width != mCachedSize.width ||
+      aSize.height != mCachedSize.height ||
+      aFormat != mCachedFormat)
+  {
+    mCachedTempSurface = new gfxImageSurface(aSize, aFormat);
+    mCachedSize = aSize;
+    mCachedFormat = aFormat;
+  }
+
+  return mCachedTempSurface;
 }

@@ -132,7 +132,6 @@ public class CrashReporter extends Activity
             getSharedPreferences(GeckoApp.PREFS_NAME, 0);
         SharedPreferences.Editor editor = prefs.edit();
         editor.putBoolean(GeckoApp.PREFS_WAS_STOPPED, true);
-        editor.putBoolean(GeckoApp.PREFS_CRASHED, true);
         editor.commit();
 
         final CheckBox allowContactCheckBox = (CheckBox) findViewById(R.id.allow_contact);
@@ -283,7 +282,7 @@ public class CrashReporter extends Activity
             Process proc = Runtime.getRuntime().exec(new String[] {
                 "logcat", "-v", "threadtime", "-t", "200", "-d", "*:D"
             });
-            StringBuffer sb = new StringBuffer();
+            StringBuilder sb = new StringBuilder();
             br = new BufferedReader(new InputStreamReader(proc.getInputStream()));
             for (String s = br.readLine(); s != null; s = br.readLine()) {
                 sb.append(s).append('\n');
@@ -334,7 +333,7 @@ public class CrashReporter extends Activity
 
             // Add some extra information to notes so its displayed by
             // crash-stats.mozilla.org. Remove this when bug 607942 is fixed.
-            StringBuffer sb = new StringBuffer();
+            StringBuilder sb = new StringBuilder();
             sb.append(extras.containsKey(NOTES_KEY) ? extras.get(NOTES_KEY) + "\n" : "");
             if (AppConstants.MOZ_MIN_CPU_VERSION < 7) {
                 sb.append("nothumb Build\n");
@@ -413,6 +412,7 @@ public class CrashReporter extends Activity
             Intent intent = new Intent(action);
             intent.setClassName(AppConstants.ANDROID_PACKAGE_NAME,
                                 AppConstants.BROWSER_INTENT_CLASS);
+            intent.putExtra("didRestart", true);
             Log.i(LOGTAG, intent.toString());
             startActivity(intent);
         } catch (Exception e) {

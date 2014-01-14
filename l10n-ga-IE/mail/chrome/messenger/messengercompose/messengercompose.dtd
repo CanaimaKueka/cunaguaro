@@ -50,6 +50,8 @@
 <!ENTITY sendLaterCmd.accesskey "l">
 <!ENTITY printSetupCmd.label "Socrú Leathanaigh…">
 <!ENTITY printSetupCmd.accesskey "L">
+<!ENTITY printPreviewCmd.label "Réamhamharc Priontála">
+<!ENTITY printPreviewCmd.accesskey "R">
 <!ENTITY printCmd.label "Priontáil…">
 <!ENTITY printCmd.key "P">
 <!ENTITY printCmd.accesskey "P">
@@ -87,6 +89,7 @@
 <!ENTITY findCmd.label "Aimsigh agus Ionadaigh…">
 <!ENTITY findCmd.key "F">
 <!ENTITY findCmd.accesskey "A">
+<!ENTITY findReplaceCmd.key "H">
 <!ENTITY findAgainCmd.label "Aimsigh Arís">
 <!ENTITY findAgainCmd.key "G">
 <!ENTITY findAgainCmd.accesskey "m">

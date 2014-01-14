@@ -78,7 +78,12 @@ const BrowserElementIsPreloaded = true;
   Cc["@mozilla.org/contentsecuritypolicy;1"].createInstance(Ci["nsIContentSecurityPolicy"]);
 
   /* Applications Specific Helper */
-  Cc["@mozilla.org/settingsManager;1"].getService(Ci["nsIDOMSettingsManager"]);
+  try {
+    // May throw if we don't have the settings permission
+    navigator.mozSettings;
+  } catch(e) {
+  }
+
   try {
     if (Services.prefs.getBoolPref("dom.sysmsg.enabled")) {
       Cc["@mozilla.org/system-message-manager;1"].getService(Ci["nsIDOMNavigatorSystemMessages"]);
@@ -86,9 +91,10 @@ const BrowserElementIsPreloaded = true;
   } catch(e) {
   }
 
-  // This is a produc-specific file that's sometimes unavailable.
+  // Those are produc-specific files that's sometimes unavailable.
   try {
     Services.scriptloader.loadSubScript("chrome://browser/content/forms.js", global);
+    Services.scriptloader.loadSubScript("chrome://browser/content/ErrorPage.js", global);
   } catch (e) {
   }
   Services.scriptloader.loadSubScript("chrome://global/content/BrowserElementPanning.js", global);

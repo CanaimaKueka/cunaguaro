@@ -6,13 +6,15 @@
 #ifndef MOZILLA_GFX_COMPOSITOR_H
 #define MOZILLA_GFX_COMPOSITOR_H
 
-#include "mozilla/gfx/Rect.h"
-#include "mozilla/gfx/Matrix.h"
-#include "gfxMatrix.h"
-#include "Layers.h"
-#include "mozilla/layers/TextureHost.h"
-#include "mozilla/RefPtr.h"
-
+#include "Units.h"                      // for ScreenPoint
+#include "mozilla/Assertions.h"         // for MOZ_ASSERT, etc
+#include "mozilla/RefPtr.h"             // for TemporaryRef, RefCounted
+#include "mozilla/gfx/Point.h"          // for IntSize, Point
+#include "mozilla/gfx/Rect.h"           // for Rect, IntRect
+#include "mozilla/gfx/Types.h"          // for Float
+#include "mozilla/layers/CompositorTypes.h"  // for DiagnosticTypes, etc
+#include "mozilla/layers/LayersTypes.h"  // for LayersBackend
+#include "nsTraceRefcnt.h"              // for MOZ_COUNT_CTOR, etc
 
 /**
  * Different elements of a web pages are rendered into separate "layers" before
@@ -94,16 +96,19 @@
  * under gfx/layers/. To add a new backend, implement at least the following
  * interfaces:
  * - Compositor (ex. CompositorOGL)
- * - TextureHost (ex. TextureImageTextureHost)
+ * - TextureHost (ex. SharedTextureHostOGL)
  * Depending on the type of data that needs to be serialized, you may need to
  * add specific TextureClient implementations.
  */
 
-class gfxContext;
 class nsIWidget;
+struct gfxMatrix;
+struct nsIntSize;
+class nsIntRegion;
 
 namespace mozilla {
 namespace gfx {
+class Matrix4x4;
 class DrawTarget;
 }
 
@@ -113,6 +118,9 @@ struct Effect;
 struct EffectChain;
 class Image;
 class ISurfaceAllocator;
+class NewTextureSource;
+class DataTextureSource;
+class CompositingRenderTarget;
 
 enum SurfaceInitMode
 {
@@ -170,7 +178,7 @@ class Compositor : public RefCounted<Compositor>
 public:
   Compositor()
     : mCompositorID(0)
-    , mDrawColoredBorders(false)
+    , mDiagnosticTypes(DIAGNOSTIC_NONE)
   {
     MOZ_COUNT_CTOR(Compositor);
   }
@@ -179,8 +187,18 @@ public:
     MOZ_COUNT_DTOR(Compositor);
   }
 
+  virtual TemporaryRef<DataTextureSource> CreateDataTextureSource(TextureFlags aFlags = 0) = 0;
   virtual bool Initialize() = 0;
   virtual void Destroy() = 0;
+
+  /**
+   * Return true if the effect type is supported.
+   *
+   * By default Compositor implementations should support all effects but in
+   * some rare cases it is not possible to support an effect efficiently.
+   * This is the case for BasicCompositor with EffectYCbCr.
+   */
+  virtual bool SupportsEffect(EffectTypes aEffect) { return true; }
 
   /**
    * Request a texture host identifier that may be used for creating textures
@@ -192,7 +210,7 @@ public:
   /**
    * Properties of the compositor.
    */
-  virtual bool CanUseCanvasLayerForSize(const gfxIntSize& aSize) = 0;
+  virtual bool CanUseCanvasLayerForSize(const gfx::IntSize& aSize) = 0;
   virtual int32_t GetMaxTextureSize() const = 0;
 
   /**
@@ -202,7 +220,7 @@ public:
    * If this method is not used, or we pass in nullptr, we target the compositor's
    * usual swap chain and render to the screen.
    */
-  virtual void SetTargetContext(gfxContext* aTarget) = 0;
+  virtual void SetTargetContext(gfx::DrawTarget* aTarget) = 0;
 
   typedef uint32_t MakeCurrentFlags;
   static const MakeCurrentFlags ForceMakeCurrent = 0x1;
@@ -214,7 +232,7 @@ public:
    * Clients of the compositor should call this at the start of the compositing
    * process, it might be required by texture uploads etc.
    *
-   * If aFlags == CURRENT_FORCE then we will (re-)set our context on the
+   * If aFlags == ForceMakeCurrent then we will (re-)set our context on the
    * underlying API even if it is already the current context.
    */
   virtual void MakeCurrent(MakeCurrentFlags aFlags = 0) = 0;
@@ -257,7 +275,7 @@ public:
    * Declare an offset to use when rendering layers. This will be ignored when
    * rendering to a target instead of the screen.
    */
-  virtual void SetScreenRenderOffset(const gfx::Point& aOffset) = 0;
+  virtual void SetScreenRenderOffset(const ScreenPoint& aOffset) = 0;
 
   /**
    * Tell the compositor to actually draw a quad. What to do draw and how it is
@@ -323,17 +341,19 @@ public:
    */
   virtual bool SupportsPartialTextureUpdate() = 0;
 
-  void EnableColoredBorders()
+  void SetDiagnosticTypes(DiagnosticTypes aDiagnostics)
   {
-    mDrawColoredBorders = true;
-  }
-  void DisableColoredBorders()
-  {
-    mDrawColoredBorders = false;
+    mDiagnosticTypes = aDiagnostics;
   }
 
-  void DrawDiagnostics(const gfx::Color& color,
+  void DrawDiagnostics(DiagnosticFlags aFlags,
                        const gfx::Rect& visibleRect,
+                       const gfx::Rect& aClipRect,
+                       const gfx::Matrix4x4& transform,
+                       const gfx::Point& aOffset);
+
+  void DrawDiagnostics(DiagnosticFlags aFlags,
+                       const nsIntRegion& visibleRegion,
                        const gfx::Rect& aClipRect,
                        const gfx::Matrix4x4& transform,
                        const gfx::Point& aOffset);
@@ -386,18 +406,48 @@ public:
   virtual nsIWidget* GetWidget() const { return nullptr; }
   virtual const nsIntSize& GetWidgetSize() = 0;
 
+  // Call before and after any rendering not done by this compositor but which
+  // might affect the compositor's internal state or the state of any APIs it
+  // uses. For example, internal GL state.
+  virtual void SaveState() {}
+  virtual void RestoreState() {}
+
+  /**
+   * Debug-build assertion that can be called to ensure code is running on the
+   * compositor thread.
+   */
+  static void AssertOnCompositorThread();
+
   /**
    * We enforce that there can only be one Compositor backend type off the main
    * thread at the same time. The backend type in use can be checked with this
    * static method. We need this for creating texture clients/hosts etc. when we
    * don't have a reference to a Compositor.
+   *
+   * This can only be used from the compositor thread!
    */
   static LayersBackend GetBackend();
 
 protected:
+  void DrawDiagnosticsInternal(DiagnosticFlags aFlags,
+                               const gfx::Rect& aVisibleRect,
+                               const gfx::Rect& aClipRect,
+                               const gfx::Matrix4x4& transform,
+                               const gfx::Point& aOffset);
+
+  bool ShouldDrawDiagnostics(DiagnosticFlags);
+
   uint32_t mCompositorID;
   static LayersBackend sBackend;
-  bool mDrawColoredBorders;
+  DiagnosticTypes mDiagnosticTypes;
+
+  /**
+   * We keep track of the total number of pixels filled as we composite the
+   * current frame. This value is an approximation and is not accurate,
+   * especially in the presence of transforms.
+   */
+  size_t mPixelsPerFrame;
+  size_t mPixelsFilled;
 };
 
 } // namespace layers

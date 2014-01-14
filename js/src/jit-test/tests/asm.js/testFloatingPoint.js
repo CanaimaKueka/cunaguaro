@@ -90,6 +90,10 @@ var f = asmLink(asmCompile(USE_ASM + "function f(i,j) { i=i|0;j=j|0; return +(((
 assertEq(f(1,0), 0);
 assertEq(f(-Math.pow(2,31),-1), 0);
 
+var {f,g} = asmLink(asmCompile(USE_ASM + "function f() { return 3.5 } function g(d) { d=+d; return +(d+3.5) } return {f:f,g:g}"));
+assertEq(f(), 3.5);
+assertEq(g(1), 1+3.5);
+
 var buf = new ArrayBuffer(4096);
 var f64 = new Float64Array(buf);
 var i32 = new Int32Array(buf);
@@ -111,7 +115,7 @@ var g = asmLink(asmCompile('glob', 'imp', 'b', USE_ASM + HEAP_IMPORTS + 'var ffi
 var h = asmLink(asmCompile('glob', 'imp', 'b', USE_ASM + HEAP_IMPORTS + 'function g() { return +(+f64[0] < 0.0 ? -+f64[0] : +f64[0]) } return g'), this, null, buf)
 
 function ffi1() { return 2.6 }
-assertEq(asmLink(asmCompile('glob', 'imp', USE_ASM + "var ffi1=imp.ffi1; function g() { var i=0,j=0.0; i=~~ffi1(); j=+ffi1(); return +(+(i|0)+j) } return g"), null, {ffi1:ffi1})(), 2+2.6);
+assertEq(asmLink(asmCompile('glob', 'imp', USE_ASM + "var ffi1=imp.ffi1; function g() { var i=0,j=0.0; i=ffi1()|0; j=+ffi1(); return +(+(i|0)+j) } return g"), null, {ffi1:ffi1})(), 2+2.6);
 
 // that sounds dangerous!
 var a = [0,1,0xffff0000,0x7fff0000,0xfff80000,0x7ff80000,0xfffc0000,0x7ffc0000,0xffffffff,0x0000ffff,0x00008fff7];

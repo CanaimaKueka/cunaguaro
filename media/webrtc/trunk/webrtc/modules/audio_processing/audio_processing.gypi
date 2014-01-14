@@ -16,8 +16,7 @@
         'aec_debug_dump%': 0,
       },
       'dependencies': [
-        '<(webrtc_root)/common_audio/common_audio.gyp:signal_processing',
-        '<(webrtc_root)/common_audio/common_audio.gyp:vad',
+        '<(webrtc_root)/common_audio/common_audio.gyp:common_audio',
         '<(webrtc_root)/system_wrappers/source/system_wrappers.gyp:system_wrappers',
       ],
       'include_dirs': [
@@ -41,6 +40,7 @@
         'aec/echo_cancellation_internal.h',
         'aec/aec_core.h',
         'aec/aec_core.c',
+        'aec/aec_core_internal.h',
         'aec/aec_rdft.h',
         'aec/aec_rdft.c',
         'aec/aec_resampler.h',
@@ -122,6 +122,8 @@
           'dependencies': ['audio_processing_neon',],
         }],
       ],
+      # TODO(jschuh): Bug 1348: fix size_t to int truncations.
+      'msvs_disabled_warnings': [ 4267, ],
     },
   ],
   'conditions': [
@@ -165,18 +167,17 @@
         'type': 'static_library',
         'includes': ['../../build/arm_neon.gypi',],
         'dependencies': [
-          '<(webrtc_root)/common_audio/common_audio.gyp:signal_processing',
+          '<(webrtc_root)/common_audio/common_audio.gyp:common_audio',
         ],
         'sources': [
           'aecm/aecm_core_neon.c',
           'ns/nsx_core_neon.c',
         ],
         'conditions': [
-          ['OS=="android"', {
+          ['OS=="android" or OS=="ios"', {
             'dependencies': [
               'audio_processing_offsets',
             ],
-            # TODO(kma): port this block from Android into other build systems.
 	    #
 	    # We disable the ASM source, because our gyp->Makefile translator
 	    # does not support the build steps to get the asm offsets.
@@ -193,7 +194,7 @@
         ],
       }],
       'conditions': [
-        ['OS=="android"', {
+        ['OS=="android" or OS=="ios"', {
           'targets': [{
             'target_name': 'audio_processing_offsets',
             'type': 'none',

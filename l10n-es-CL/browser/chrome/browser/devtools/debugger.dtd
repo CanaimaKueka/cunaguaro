@@ -2,15 +2,18 @@
    - License, v. 2.0. If a copy of the MPL was not distributed with this
    - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
 
-<!ENTITY debuggerMenu.label2 "Depurador">
-<!ENTITY debuggerMenu.accesskey "D">
-<!ENTITY remoteDebuggerMenu.label "Depurador remoto">
-<!ENTITY chromeDebuggerMenu.label "Depurador de navegador+">
-<!ENTITY debuggerMenu.commandkey "S">
 <!ENTITY debuggerUI.closeButton.tooltip "Cerrar">
 <!ENTITY debuggerUI.panesButton.tooltip "">
+<!ENTITY debuggerUI.blackBoxMessage.label "Esta fuente tiene una caja negra: sus puntos de quiebre están desactivados, y saltar avanzará a través de ella.">
+<!ENTITY debuggerUI.blackBoxMessage.unBlackBoxButton "Quitar marca negra a esta fuente">
 <!ENTITY debuggerUI.optsButton.tooltip "Opciones del depurador">
+<!ENTITY debuggerUI.sources.blackBoxTooltip "Cambiar marca negra">
+
+<!ENTITY debuggerUI.sources.prettyPrint "Embellecer origen">
+
 <!ENTITY debuggerUI.pauseExceptions "Pausar en excepciones">
+<!ENTITY debuggerUI.ignoreCaughtExceptions     "Ignorar excepciones atrapadas">
+<!ENTITY debuggerUI.ignoreCaughtExceptions.key "C">
 <!ENTITY debuggerUI.pauseExceptions.key "E">
 <!ENTITY debuggerUI.showPanesOnInit "Mostrar paneles al iniciar">
 <!ENTITY debuggerUI.showPanesOnInit.key "S">
@@ -23,7 +26,8 @@
 <!ENTITY debuggerUI.showOriginalSource      "Mostrar fuentes originales">
 <!ENTITY debuggerUI.showOriginalSource.key  "O">
 
-<!ENTITY debuggerUI.searchPanelTitle "Operadores">
+<!ENTITY debuggerUI.searchPanelOperators    "Operadores:">
+
 <!ENTITY debuggerUI.searchFile "">
 <!ENTITY debuggerUI.searchFile.key "P">
 <!ENTITY debuggerUI.searchFile.altkey   "O">
@@ -33,8 +37,8 @@
 <!ENTITY debuggerUI.searchFunction.key  "D">
 <!ENTITY debuggerUI.searchToken "Buscar">
 <!ENTITY debuggerUI.searchToken.key "F">
-<!ENTITY debuggerUI.searchLine "Ir a línea…">
-<!ENTITY debuggerUI.searchLine.key "J">
+<!ENTITY debuggerUI.searchGoToLine      "Ir a la línea…">
+<!ENTITY debuggerUI.searchGoToLine.key  "L">
 <!ENTITY debuggerUI.searchVariable "Filtrar variables">
 <!ENTITY debuggerUI.searchVariable.key "V">
 <!ENTITY debuggerUI.focusVariables      "Centrar árbol de variables">
@@ -44,13 +48,19 @@
 <!ENTITY debuggerUI.seMenuBreak.key "B">
 <!ENTITY debuggerUI.seMenuCondBreak "Agregar punto de quiebre condicional">
 <!ENTITY debuggerUI.seMenuCondBreak.key "B">
+<!ENTITY debuggerUI.tabs.variables      "Variables">
+<!ENTITY debuggerUI.tabs.events         "Eventos">
 <!ENTITY debuggerUI.seMenuAddWatch      "Selección de expresión de observación">
 <!ENTITY debuggerUI.seMenuAddWatch.key  "E">
 <!ENTITY debuggerUI.addWatch            "Agregar expresión de observación">
 <!ENTITY debuggerUI.addWatch.key        "E">
 <!ENTITY debuggerUI.removeAllWatch      "Eliminar todas las expresiones de observación">
 <!ENTITY debuggerUI.removeAllWatch.key  "E">
-<!ENTITY debuggerUI.stepping.resume "VK_F6">
-<!ENTITY debuggerUI.stepping.stepOver "VK_F7">
-<!ENTITY debuggerUI.stepping.stepIn "VK_F8">
-<!ENTITY debuggerUI.stepping.stepOut "VK_F8">
+<!ENTITY debuggerUI.stepping.resume1    "VK_F8">
+<!ENTITY debuggerUI.stepping.resume2    "VK_SLASH">
+<!ENTITY debuggerUI.stepping.stepOver1  "VK_F10">
+<!ENTITY debuggerUI.stepping.stepOver2  "VK_QUOTE">
+<!ENTITY debuggerUI.stepping.stepIn1    "VK_F11">
+<!ENTITY debuggerUI.stepping.stepIn2    "VK_SEMICOLON">
+<!ENTITY debuggerUI.stepping.stepOut1   "VK_F11">
+<!ENTITY debuggerUI.stepping.stepOut2   "VK_SEMICOLON">

@@ -8,20 +8,20 @@
  *  be found in the AUTHORS file in the root of the source tree.
  */
 
-#include "shared_data.h"
+#include "webrtc/voice_engine/shared_data.h"
 
-#include "audio_processing.h"
-#include "critical_section_wrapper.h"
-#include "channel.h"
-#include "output_mixer.h"
-#include "trace.h"
-#include "transmit_mixer.h"
+#include "webrtc/modules/audio_processing/include/audio_processing.h"
+#include "webrtc/system_wrappers/interface/critical_section_wrapper.h"
+#include "webrtc/system_wrappers/interface/trace.h"
+#include "webrtc/voice_engine/channel.h"
+#include "webrtc/voice_engine/output_mixer.h"
+#include "webrtc/voice_engine/transmit_mixer.h"
 
 namespace webrtc {
 
 namespace voe {
 
-static WebRtc_Word32 _gInstanceCounter = 0;
+static int32_t _gInstanceCounter = 0;
 
 SharedData::SharedData() :
     _instanceId(++_gInstanceCounter),
@@ -29,13 +29,12 @@ SharedData::SharedData() :
     _channelManager(_gInstanceCounter),
     _engineStatistics(_gInstanceCounter),
     _audioDevicePtr(NULL),
-    _audioProcessingModulePtr(NULL),
+    audioproc_(NULL),
     _moduleProcessThreadPtr(ProcessThread::CreateProcessThread()),
     _externalRecording(false),
     _externalPlayout(false)
 {
     Trace::CreateTrace();
-    Trace::SetLevelFilter(WEBRTC_VOICE_ENGINE_DEFAULT_TRACE_FILTER);
     if (OutputMixer::Create(_outputMixerPtr, _gInstanceCounter) == 0)
     {
         _outputMixerPtr->SetEngineInformation(_engineStatistics);
@@ -56,7 +55,6 @@ SharedData::~SharedData()
     if (_audioDevicePtr) {
         _audioDevicePtr->Release();
     }
-    AudioProcessing::Destroy(_audioProcessingModulePtr);
     delete _apiCritPtr;
     ProcessThread::DestroyProcessThread(_moduleProcessThreadPtr);
     Trace::ReturnTrace();
@@ -72,22 +70,22 @@ void SharedData::set_audio_device(AudioDeviceModule* audio_device)
     _audioDevicePtr = audio_device;
 }
 
-void SharedData::set_audio_processing(AudioProcessing* audio_processing) {
-    if (_audioProcessingModulePtr)
-      AudioProcessing::Destroy(_audioProcessingModulePtr);
-    _audioProcessingModulePtr = audio_processing;
+void SharedData::set_audio_processing(AudioProcessing* audioproc) {
+  audioproc_.reset(audioproc);
+  _transmitMixerPtr->SetAudioProcessingModule(audioproc);
+  _outputMixerPtr->SetAudioProcessingModule(audioproc);
 }
 
-WebRtc_UWord16 SharedData::NumOfSendingChannels()
+uint16_t SharedData::NumOfSendingChannels()
 {
-    WebRtc_Word32 numOfChannels = _channelManager.NumOfChannels();
+    int32_t numOfChannels = _channelManager.NumOfChannels();
     if (numOfChannels <= 0)
     {
         return 0;
     }
 
-    WebRtc_UWord16 nChannelsSending(0);
-    WebRtc_Word32* channelsArray = new WebRtc_Word32[numOfChannels];
+    uint16_t nChannelsSending(0);
+    int32_t* channelsArray = new int32_t[numOfChannels];
 
     _channelManager.GetChannelIds(channelsArray, numOfChannels);
     for (int i = 0; i < numOfChannels; i++)
@@ -106,16 +104,16 @@ WebRtc_UWord16 SharedData::NumOfSendingChannels()
     return nChannelsSending;
 }
 
-void SharedData::SetLastError(const WebRtc_Word32 error) const {
+void SharedData::SetLastError(int32_t error) const {
   _engineStatistics.SetLastError(error);
 }
 
-void SharedData::SetLastError(const WebRtc_Word32 error,
-                              const TraceLevel level) const {
+void SharedData::SetLastError(int32_t error,
+                              TraceLevel level) const {
   _engineStatistics.SetLastError(error, level);
 }
 
-void SharedData::SetLastError(const WebRtc_Word32 error, const TraceLevel level,
+void SharedData::SetLastError(int32_t error, TraceLevel level,
                               const char* msg) const {
   _engineStatistics.SetLastError(error, level, msg);
 }

@@ -66,6 +66,8 @@ NS_INTERFACE_MAP_BEGIN_CYCLE_COLLECTION(nsContentSink)
   NS_INTERFACE_MAP_ENTRY_AMBIGUOUS(nsISupports, nsIDocumentObserver)
 NS_INTERFACE_MAP_END
 
+NS_IMPL_CYCLE_COLLECTION_CLASS(nsContentSink)
+
 NS_IMPL_CYCLE_COLLECTION_UNLINK_BEGIN(nsContentSink)
   if (tmp->mDocument) {
     tmp->mDocument->RemoveObserver(tmp);
@@ -308,7 +310,7 @@ nsContentSink::ProcessHeaderData(nsIAtom* aHeader, const nsAString& aValue,
     NS_ENSURE_TRUE(codebaseURI, rv);
 
     nsCOMPtr<nsIPrompt> prompt;
-    nsCOMPtr<nsIDOMWindow> window = do_QueryInterface(mDocument->GetScriptGlobalObject());
+    nsCOMPtr<nsIDOMWindow> window = do_QueryInterface(mDocument->GetWindow());
     if (window) {
       window->GetPrompter(getter_AddRefs(prompt));
     }
@@ -1059,8 +1061,11 @@ nsContentSink::ProcessOfflineManifest(const nsAString& aManifestSpec)
       action = CACHE_SELECTION_RESELECT_WITHOUT_MANIFEST;
     }
     else {
-      // Only continue if the document has permission to use offline APIs.
-      if (!nsContentUtils::OfflineAppAllowed(mDocument->NodePrincipal())) {
+      // Only continue if the document has permission to use offline APIs or
+      // when preferences indicate to permit it automatically.
+      if (!nsContentUtils::OfflineAppAllowed(mDocument->NodePrincipal()) &&
+          !nsContentUtils::MaybeAllowOfflineAppByDefault(mDocument->NodePrincipal()) &&
+          !nsContentUtils::OfflineAppAllowed(mDocument->NodePrincipal())) {
         return;
       }
 
@@ -1215,20 +1220,6 @@ nsContentSink::Notify(nsITimer *timer)
     return NS_OK;
   }
   
-#ifdef MOZ_DEBUG
-  {
-    PRTime now = PR_Now();
-
-    int64_t interval = GetNotificationInterval();
-    delay = int32_t(now - mLastNotificationTime - interval) / PR_USEC_PER_MSEC;
-
-    mBackoffCount--;
-    SINK_TRACE(gContentSinkLogModuleInfo, SINK_TRACE_REFLOW,
-               ("nsContentSink::Notify: reflow on a timer: %d milliseconds "
-                "late, backoff count: %d", delay, mBackoffCount));
-  }
-#endif
-
   if (WaitForPendingSheets()) {
     mDeferredFlushTags = true;
   } else {
@@ -1257,10 +1248,9 @@ nsContentSink::IsTimeToNotify()
   }
 
   PRTime now = PR_Now();
-  int64_t interval, diff;
 
-  LL_I2L(interval, GetNotificationInterval());
-  diff = now - mLastNotificationTime;
+  int64_t interval = GetNotificationInterval();
+  int64_t diff = now - mLastNotificationTime;
 
   if (diff > interval) {
     mBackoffCount--;
@@ -1501,7 +1491,7 @@ nsContentSink::IsScriptExecutingImpl()
 nsresult
 nsContentSink::WillParseImpl(void)
 {
-  if (mRunsToCompletion) {
+  if (mRunsToCompletion || !mDocument) {
     return NS_OK;
   }
 

@@ -30,10 +30,10 @@ that this is a lightweight and reversible action that keeps your tab where you
 can reach it easily. -->
 <!ENTITY  pinTab.label                       "Apéndi féuggio">
 <!ENTITY  pinTab.accesskey                   "p">
-
+<!ENTITY chromeDebuggerMenu.accesskey "e">
 <!ENTITY  unpinTab.label                     "Tîa zu féuggio">
 <!ENTITY  unpinTab.accesskey                 "T">
-
+<!ENTITY identity.help.tooltip 				"Cómme aseguâse se a conesción a 'n scîto a l'é segûa">
 <!ENTITY  moveToGroup.label                  "Méscia into Mùggio">
 <!ENTITY  moveToGroup.accesskey              "M">
 <!ENTITY  moveToNewGroup.label               "Nêuvo grùppo">
@@ -65,10 +65,12 @@ can reach it easily. -->
 <!ENTITY printCmd.label "Stànpa…">
 <!ENTITY printCmd.accesskey "p">
 <!ENTITY printCmd.commandkey "p">
-
+<!ENTITY devToolboxMenuItem.keycode "I">
+<!ENTITY devToolboxMenuItem.keytext "I">
 <!ENTITY goOfflineCmd.label "Lòua fêua lìnia">
 <!ENTITY goOfflineCmd.accesskey "L">
-
+<!ENTITY devToolsCmd.keycode "VK_F12">
+<!ENTITY devToolsCmd.keytext "F12">
 <!ENTITY menubarCmd.label "Bâra do Menû">
 <!ENTITY menubarCmd.accesskey "M">
 <!ENTITY navbarCmd.label "Bâra de Navegaçión">
@@ -78,7 +80,8 @@ can reach it easily. -->
 <!ENTITY bookmarksToolbarItem.label "Ògétti da Bâra di Segnalìbbri">
 <!ENTITY addonBarCmd.label "Bâra di conponénti azónti">
 <!ENTITY addonBarCmd.accesskey "a">
-
+<!ENTITY devAppMgrMenu.label "Gestô de app">
+<!ENTITY devAppMgrMenu.accesskey "G">
 <!ENTITY pageSourceCmd.label "Sorgénte da Pàgina">
 <!ENTITY pageSourceCmd.accesskey "o">
 <!ENTITY pageSourceCmd.commandkey "u">
@@ -101,7 +104,7 @@ can reach it easily. -->
 
 <!ENTITY closeWindow.label "Særa o barcón">
 <!ENTITY closeWindow.accesskey "S">
-
+<!ENTITY pluginNotification.width "28em">
 <!ENTITY bookmarksMenu.label "Segnalìbbri">
 <!ENTITY bookmarksMenu.accesskey "b">
 <!ENTITY bookmarkThisPageCmd.label "Azónzi quésta pàgina a-i segnalìbbri">
@@ -112,6 +115,7 @@ can reach it easily. -->
 <!ENTITY showAllBookmarks2.label "Fànni védde tùtti i segnalìbbri">
 <!ENTITY unsortedBookmarksCmd.label "Âtri segnalìbbri">
 <!ENTITY bookmarksToolbarChevron.tooltip "Fànni védde ciù segnalìbbri">
+<!ENTITY social.marklinkMenu.label "Sàrva colegaménto inte…">
 
 <!ENTITY backCmd.label                "Inderê">
 <!ENTITY backCmd.accesskey            "I">
@@ -174,8 +178,6 @@ can reach it easily. -->
 
 <!ENTITY keywordfield.label           "Azónzi 'na paròlla ciâve pe quésta riçèrca…">
 <!ENTITY keywordfield.accesskey       "A">
-<!ENTITY search.label                 "Riçèrca in sciô web">
-<!ENTITY search.accesskey             "s">
 <!ENTITY downloads.label              "Descaregaménti">
 <!ENTITY downloads.tooltip            "Fànni védde l'avansaménto di descaregaménti">
 <!ENTITY downloads.accesskey          "D">
@@ -184,13 +186,12 @@ can reach it easily. -->
 <!ENTITY addons.label                 "Conponénti azónti">
 <!ENTITY addons.accesskey             "a">
 <!ENTITY addons.commandkey            "A">
-
 <!ENTITY webDeveloperMenu.label       "Svilupatô Web">
 <!ENTITY webDeveloperMenu.accesskey   "W">
-
+<!ENTITY viewImageDescCmd.label "Fànni védde descriçión">
+<!ENTITY viewImageDescCmd.accesskey "d">
 <!ENTITY errorConsoleCmd.label        "Console di Eroî">
 <!ENTITY errorConsoleCmd.accesskey    "C">
-<!ENTITY errorConsoleCmd.commandkey   "j">
 
 <!ENTITY inspectContextMenu.label     "Ispeçionn-a eleménto">
 <!ENTITY inspectContextMenu.accesskey "Q">
@@ -273,14 +274,13 @@ can reach it easily. -->
 <!ENTITY historyUndoWindowMenu.label "Barcoìn seræ urtimaménte">
 <!ENTITY historyRestoreLastSession.label "Repìggia a vêgia sesción">
 
-<!ENTITY historyHomeCmd.label "Pàgina iniçiâ">
 <!ENTITY showAllHistoryCmd2.label "Fànni védde tùtta a stöia">
 <!ENTITY showAllHistoryCmd.commandkey "H">
 
 <!ENTITY hidePluginCmd.label "Ascóndi sto plugin">
 <!ENTITY hidePluginCmd.accesskey "n">
 
-
+<!ENTITY identity.permissions "Permìssi">
 <!ENTITY appMenuEdit.label "Càngia">
 <!ENTITY appMenuCustomize.label "Personalizza">
 <!ENTITY appMenuToolbarLayout.label "Aparénsa da bâra…">
@@ -588,12 +588,10 @@ just addresses the organization to follow, e.g. "This site is run by " -->
 <!ENTITY exitFullScreenCmd.accesskey "h">
 <!ENTITY fullscreenAllowButton.label "Sci">
 <!ENTITY fullscreenExitButton.label "No">
-<!ENTITY fullscreenApproval.value "Vànni a tùtto schèrmo?">
-<!ENTITY fullscreenExitHint.value "Sciàcca ESC pe sciortî dò-u mòddo a tùtto schèrmo">
 <!ENTITY leaveDOMFullScreen.label "Sciòrti da a tùtto schèrmo">
 <!ENTITY leaveDOMFullScreen.accesskey "h">
 
-
+<!ENTITY fullscreenExitHint2.value "Sciàcca ESC in qualónque moménto pe sciortî">
 
 <!ENTITY responsiveDesignTool.label "Vìsta flescìbile">
 <!ENTITY responsiveDesignTool.accesskey "s">
@@ -671,6 +669,22 @@ just addresses the organization to follow, e.g. "This site is run by " -->
 <!ENTITY social.closeNotificationItem.label "Òua no">
 <!ENTITY social.learnMore.label "Âtre informaçioìn…">
 <!ENTITY social.learnMore.accesskey "U">
-<!ENTITY social.markpage.accesskey "m">
-<!ENTITY social.marklink.accesskey "m">
-
+<!ENTITY browserConsoleCmd.accesskey "o">
+<!ENTITY browserConsoleCmd.commandkey "j">
+<!ENTITY chromeDebuggerMenu.label "Debugger do navegatô">
+<!ENTITY closeTabsToTheEnd.accesskey "d">
+<!ENTITY closeTabsToTheEnd.label "Særa i féuggi a drîta">
+<!ENTITY pluginActivateAlways.label "Permétti e aregòrda">
+<!ENTITY pluginActivateNow.label "Permétti òua">
+<!ENTITY pluginBlockNow.label "Blòcca o plugin">
+<!ENTITY pluginNotification.showAll.accesskey "V">
+<!ENTITY pluginNotification.showAll.label "Véddi tùtti">
+<!ENTITY social.markpageMenu.label "Sàrva pàgina inte…">
+<!ENTITY social.marklinkMenu.accesskey "S">
+<!ENTITY social.markpageMenu.accesskey "a">
+<!ENTITY social.markpageMenu.label "Sàrva pàgina inte…">
+<!ENTITY tabCrashed.checkSendReport "Segnâla sto blòcco a &vendorShortName; in mòddo che o problêma se pòssa risòlve.">
+<!ENTITY tabCrashed.header "O féuggio o s'é seròu">
+<!ENTITY tabCrashed.message "Ahime mi! Che inbaràsso. No l'é stæto poscìbile mostrâ a pàgina web perché o scîto o no rispónde.">
+<!ENTITY tabCrashed.tryAgain "Prêuva tórna">
+<!ENTITY undoCloseTabs.label "Àrvi tórna féuggi seræ">

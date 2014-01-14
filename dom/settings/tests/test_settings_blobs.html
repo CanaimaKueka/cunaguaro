@@ -21,9 +21,8 @@ https://bugzilla.mozilla.org/show_bug.cgi?id=821630
 
 "use strict";
 
-if (!SpecialPowers.getBoolPref("dom.mozSettings.enabled")) {
+if (SpecialPowers.isMainProcess()) {
   SpecialPowers.Cu.import("resource://gre/modules/SettingsChangeNotifier.jsm");
-  SpecialPowers.setBoolPref("dom.mozSettings.enabled", true);
 }
 
 SpecialPowers.addPermission("settings-read", true, document);
@@ -42,8 +41,6 @@ function onFailure() {
     }
   }
 }
-
-function tests() {
 
 let mozSettings = window.navigator.mozSettings;
 let req;
@@ -67,11 +64,12 @@ let steps = [
     req.onerror = onFailure("Deleting database");
   },
   function() {
-    mozSettings.addObserver("test1", function(e) {
+    function obs(e) {
       checkBlob(e.settingValue);
-      mozSettings.removeObserver("test1", this);
+      mozSettings.removeObserver("test1", obs);
       next();
-    });
+    }
+    mozSettings.addObserver("test1", obs);
     next();
   },
   function() {
@@ -147,21 +145,8 @@ function next() {
   }
 }
 
-function permissionTest() {
-  if (gSettingsEnabled) {
-    next();
-  } else {
-    is(mozSettings, null, "mozSettings is null when not enabled.");
-    SimpleTest.finish();
-  }
-}
-
-permissionTest();
-}
-
-let gSettingsEnabled = SpecialPowers.getBoolPref("dom.mozSettings.enabled");
-addLoadEvent(tests);
 SimpleTest.waitForExplicitFinish();
+addLoadEvent(next);
 </script>
 </pre>
 </body>

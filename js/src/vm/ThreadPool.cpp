@@ -4,15 +4,15 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include "jscntxt.h"
-#include "jslock.h"
-
-#include "vm/Monitor.h"
 #include "vm/ThreadPool.h"
 
+#include "jslock.h"
 #ifdef JS_THREADSAFE
-#  include "prthread.h"
+# include "prthread.h"
 #endif
+
+#include "vm/Monitor.h"
+#include "vm/Runtime.h"
 
 using namespace js;
 
@@ -24,7 +24,7 @@ using namespace js;
 // Once the worker's state is set to |TERMINATING|, the worker will
 // exit as soon as its queue is empty.
 
-const size_t WORKER_THREAD_STACK_SIZE = 1*1024*1024;
+static const size_t WORKER_THREAD_STACK_SIZE = 1*1024*1024;
 
 class js::ThreadPoolWorker : public Monitor
 {
@@ -186,9 +186,11 @@ ThreadPoolWorker::terminate()
 // them down when requested.
 
 ThreadPool::ThreadPool(JSRuntime *rt)
-  : runtime_(rt),
-    numWorkers_(0), // updated during init()
-    nextId_(0)
+  :
+#if defined(JS_THREADSAFE) || defined(DEBUG)
+    runtime_(rt),
+#endif
+    numWorkers_(0) // updated during init()
 {
 }
 
@@ -208,7 +210,7 @@ ThreadPool::init()
 
 # ifdef DEBUG
     if (char *jsthreads = getenv("JS_THREADPOOL_SIZE"))
-        numWorkers_ = strtol(jsthreads, NULL, 10);
+        numWorkers_ = strtol(jsthreads, nullptr, 10);
 # endif
 #endif
 
@@ -284,24 +286,9 @@ ThreadPool::terminateWorkers()
 }
 
 bool
-ThreadPool::submitOne(JSContext *cx, TaskExecutor *executor)
-{
-    JS_ASSERT(numWorkers() > 0);
-
-    runtime_->assertValidThread();
-
-    if (!lazyStartWorkers(cx))
-        return false;
-
-    // Find next worker in round-robin fashion.
-    size_t id = JS_ATOMIC_INCREMENT(&nextId_) % numWorkers();
-    return workers_[id]->submit(executor);
-}
-
-bool
 ThreadPool::submitAll(JSContext *cx, TaskExecutor *executor)
 {
-    runtime_->assertValidThread();
+    JS_ASSERT(CurrentThreadCanAccessRuntime(runtime_));
 
     if (!lazyStartWorkers(cx))
         return false;

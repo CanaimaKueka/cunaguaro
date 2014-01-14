@@ -1,14 +1,16 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
+/* -*- Mode: C++; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 4 -*-
+ * vim: set ts=8 sts=4 et sw=4 tw=99:
+ * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include "tests.h"
+#include "jsapi-tests/tests.h"
 
 JSPrincipals system_principals = {
     1
 };
 
-JSClass global_class = {
+const JSClass global_class = {
     "global",
     JSCLASS_IS_GLOBAL | JSCLASS_GLOBAL_FLAGS,
     JS_PropertyStub,
@@ -20,20 +22,20 @@ JSClass global_class = {
     JS_ConvertStub
 };
 
-JSObject *trusted_glob = NULL;
-JSObject *trusted_fun = NULL;
+JSObject *trusted_glob = nullptr;
+JSObject *trusted_fun = nullptr;
 
-JSBool
+bool
 CallTrusted(JSContext *cx, unsigned argc, jsval *vp)
 {
     if (!JS_SaveFrameChain(cx))
-        return JS_FALSE;
+        return false;
 
-    JSBool ok = JS_FALSE;
+    bool ok = false;
     {
         JSAutoCompartment ac(cx, trusted_glob);
-        ok = JS_CallFunctionValue(cx, NULL, JS::ObjectValue(*trusted_fun),
-                                  0, NULL, vp);
+        ok = JS_CallFunctionValue(cx, nullptr, JS::ObjectValue(*trusted_fun),
+                                  0, nullptr, vp);
     }
     JS_RestoreFrameChain(cx);
     return ok;
@@ -43,12 +45,10 @@ BEGIN_TEST(testChromeBuffer)
 {
     JS_SetTrustedPrincipals(rt, &system_principals);
 
-    trusted_glob = JS_NewGlobalObject(cx, &global_class, &system_principals);
+    trusted_glob = JS_NewGlobalObject(cx, &global_class, &system_principals, JS::FireOnNewGlobalHook);
     CHECK(trusted_glob);
 
     if (!JS_AddNamedObjectRoot(cx, &trusted_glob, "trusted-global"))
-        return false;
-    if (!JS_AddNamedObjectRoot(cx, &trusted_fun, "trusted-function"))
         return false;
 
     JSFunction *fun;
@@ -68,22 +68,28 @@ BEGIN_TEST(testChromeBuffer)
                                                         "trusted", 1, &paramName, bytes, strlen(bytes),
                                                         "", 0));
             trusted_fun = JS_GetFunctionObject(fun);
+            if (!JS_AddNamedObjectRoot(cx, &trusted_fun, "trusted-function"))
+                return false;
         }
 
         JS::RootedValue v(cx, JS::ObjectValue(*trusted_fun));
-        CHECK(JS_WrapValue(cx, v.address()));
+        CHECK(JS_WrapValue(cx, &v));
 
         const char *paramName = "trusted";
         const char *bytes = "try {                                      "
-                            "  return untrusted(trusted);               "
+                            "    return untrusted(trusted);             "
                             "} catch (e) {                              "
-                            "  return trusted(100);                     "
+                            "    try {                                  "
+                            "        return trusted(100);               "
+                            "    } catch(e) {                           "
+                            "        return -1;                         "
+                            "    }                                      "
                             "}                                          ";
         CHECK(fun = JS_CompileFunction(cx, global, "untrusted", 1, &paramName,
                                        bytes, strlen(bytes), "", 0));
 
         JS::RootedValue rval(cx);
-        CHECK(JS_CallFunction(cx, NULL, fun, 1, v.address(), rval.address()));
+        CHECK(JS_CallFunction(cx, nullptr, fun, 1, v.address(), rval.address()));
         CHECK(JSVAL_TO_INT(rval) == 100);
     }
 
@@ -108,7 +114,7 @@ BEGIN_TEST(testChromeBuffer)
         }
 
         JS::RootedValue v(cx, JS::ObjectValue(*trusted_fun));
-        CHECK(JS_WrapValue(cx, v.address()));
+        CHECK(JS_WrapValue(cx, &v));
 
         const char *paramName = "trusted";
         const char *bytes = "try {                                      "
@@ -120,8 +126,8 @@ BEGIN_TEST(testChromeBuffer)
                                        bytes, strlen(bytes), "", 0));
 
         JS::RootedValue rval(cx);
-        CHECK(JS_CallFunction(cx, NULL, fun, 1, v.address(), rval.address()));
-        JSBool match;
+        CHECK(JS_CallFunction(cx, nullptr, fun, 1, v.address(), rval.address()));
+        bool match;
         CHECK(JS_StringEqualsAscii(cx, JSVAL_TO_STRING(rval), "From trusted: InternalError: too much recursion", &match));
         CHECK(match);
     }
@@ -136,8 +142,8 @@ BEGIN_TEST(testChromeBuffer)
             const char *bytes = "return 42";
             JS::HandleObject global = JS::HandleObject::fromMarkedLocation(&trusted_glob);
             CHECK(fun = JS_CompileFunctionForPrincipals(cx, global, &system_principals,
-                                                        "trusted", 0, NULL, bytes, strlen(bytes),
-                                                        "", 0));
+                                                        "trusted", 0, nullptr,
+                                                        bytes, strlen(bytes), "", 0));
             trusted_fun = JS_GetFunctionObject(fun);
         }
 
@@ -155,7 +161,7 @@ BEGIN_TEST(testChromeBuffer)
 
         JS::RootedValue arg(cx, JS::ObjectValue(*callTrusted));
         JS::RootedValue rval(cx);
-        CHECK(JS_CallFunction(cx, NULL, fun, 1, arg.address(), rval.address()));
+        CHECK(JS_CallFunction(cx, nullptr, fun, 1, arg.address(), rval.address()));
         CHECK(JSVAL_TO_INT(rval) == 42);
     }
 

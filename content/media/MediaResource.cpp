@@ -7,6 +7,7 @@
 #include "mozilla/DebugOnly.h"
 
 #include "MediaResource.h"
+#include "RtspMediaResource.h"
 
 #include "mozilla/Mutex.h"
 #include "nsDebug.h"
@@ -18,7 +19,6 @@
 #include "nsIHttpChannel.h"
 #include "nsISeekableStream.h"
 #include "nsIInputStream.h"
-#include "nsIOutputStream.h"
 #include "nsIRequestObserver.h"
 #include "nsIStreamListener.h"
 #include "nsIScriptSecurityManager.h"
@@ -26,7 +26,6 @@
 #include "mozilla/dom/HTMLMediaElement.h"
 #include "nsError.h"
 #include "nsICachingChannel.h"
-#include "nsURILoader.h"
 #include "nsIAsyncVerifyRedirectCallback.h"
 #include "nsContentUtils.h"
 #include "nsHostObjectProtocolHandler.h"
@@ -56,7 +55,7 @@ ChannelMediaResource::ChannelMediaResource(MediaDecoder* aDecoder,
   : BaseMediaResource(aDecoder, aChannel, aURI, aContentType),
     mOffset(0), mSuspendCount(0),
     mReopenOnError(false), mIgnoreClose(false),
-    mCacheStream(this),
+    mCacheStream(MOZ_THIS_IN_INITIALIZER_LIST()),
     mLock("ChannelMediaResource.mLock"),
     mIgnoreResume(false),
     mSeekingForMetadata(false),
@@ -205,6 +204,16 @@ ChannelMediaResource::OnStartRequest(nsIRequest* aRequest)
     hc->GetResponseHeader(NS_LITERAL_CSTRING("Accept-Ranges"),
                           ranges);
     bool acceptsRanges = ranges.EqualsLiteral("bytes");
+    // True if this channel will not return an unbounded amount of data
+    bool dataIsBounded = false;
+
+    int64_t contentLength = -1;
+    hc->GetContentLength(&contentLength);
+    if (contentLength >= 0 && responseStatus == HTTP_OK_CODE) {
+      // "OK" status means Content-Length is for the whole resource.
+      // Since that's bounded, we know we have a finite-length resource.
+      dataIsBounded = true;
+    }
 
     if (mOffset == 0) {
       // Look for duration headers from known Ogg content systems.
@@ -225,20 +234,21 @@ ChannelMediaResource::OnStartRequest(nsIRequest* aRequest)
         rv = hc->GetResponseHeader(NS_LITERAL_CSTRING("X-Content-Duration"), durationText);
       }
 
-      // If there is no Content-Duration header, or if the value for this header
-      // is not valid, set the media as being infinite.
+      // If there is a Content-Duration header with a valid value, record
+      // the duration.
       if (NS_SUCCEEDED(rv)) {
         double duration = durationText.ToDouble(&ec);
         if (ec == NS_OK && duration >= 0) {
           mDecoder->SetDuration(duration);
-        } else {
-          mDecoder->SetInfinite(true);
+          // We know the resource must be bounded.
+          dataIsBounded = true;
         }
-      } else {
-        mDecoder->SetInfinite(true);
       }
     }
 
+    // Assume Range requests have a bounded upper limit unless the
+    // Content-Range header tells us otherwise.
+    bool boundedSeekLimit = true;
     // Check response code for byte-range requests (seeking, chunk requests).
     if (!mByteRange.IsNull() && (responseStatus == HTTP_PARTIAL_RESPONSE_CODE)) {
       // Parse Content-Range header.
@@ -267,10 +277,10 @@ ChannelMediaResource::OnStartRequest(nsIRequest* aRequest)
       // Notify media cache about the length and start offset of data received.
       // Note: If aRangeTotal == -1, then the total bytes is unknown at this stage.
       //       For now, tell the decoder that the stream is infinite.
-      if (rangeTotal != -1) {
-        mCacheStream.NotifyDataLength(rangeTotal);
+      if (rangeTotal == -1) {
+        boundedSeekLimit = false;
       } else {
-        mDecoder->SetInfinite(true);
+        mCacheStream.NotifyDataLength(rangeTotal);
       }
       mCacheStream.NotifyDataStarted(rangeStart);
 
@@ -290,13 +300,8 @@ ChannelMediaResource::OnStartRequest(nsIRequest* aRequest)
     } else if (mOffset == 0 &&
                (responseStatus == HTTP_OK_CODE ||
                 responseStatus == HTTP_PARTIAL_RESPONSE_CODE)) {
-      // We weren't seeking and got a valid response status,
-      // set the length of the content.
-      int64_t cl = -1;
-      hc->GetContentLength(&cl);
-
-      if (cl >= 0) {
-        mCacheStream.NotifyDataLength(cl);
+      if (contentLength >= 0) {
+        mCacheStream.NotifyDataLength(contentLength);
       }
     }
     // XXX we probably should examine the Content-Range header in case
@@ -307,10 +312,13 @@ ChannelMediaResource::OnStartRequest(nsIRequest* aRequest)
     // support seeking.
     seekable =
       responseStatus == HTTP_PARTIAL_RESPONSE_CODE || acceptsRanges;
-
-    if (seekable) {
-      mDecoder->SetInfinite(false);
+    if (seekable && boundedSeekLimit) {
+      // If range requests are supported, and we did not see an unbounded
+      // upper range limit, we assume the resource is bounded.
+      dataIsBounded = true;
     }
+
+    mDecoder->SetInfinite(!dataIsBounded);
   }
   mDecoder->SetTransportSeekable(seekable);
   mCacheStream.SetTransportSeekable(seekable);
@@ -607,6 +615,20 @@ nsresult ChannelMediaResource::OpenChannel(nsIStreamListener** aStreamListener)
     *aStreamListener = nullptr;
   }
 
+  if (mByteRange.IsNull()) {
+    // We're not making a byte range request, so set the content length,
+    // if it's available as an HTTP header. This ensures that MediaResource
+    // wrapping objects for platform libraries that expect to know
+    // the length of a resource can get it before OnStartRequest() fires.
+    nsCOMPtr<nsIHttpChannel> hc = do_QueryInterface(mChannel);
+    if (hc) {
+      int64_t cl = -1;
+      if (NS_SUCCEEDED(hc->GetContentLength(&cl)) && cl != -1) {
+        mCacheStream.NotifyDataLength(cl);
+      }
+    }
+  }
+
   mListener = new Listener(this);
   NS_ENSURE_TRUE(mListener, NS_ERROR_OUT_OF_MEMORY);
 
@@ -782,7 +804,26 @@ nsresult ChannelMediaResource::Read(char* aBuffer,
 {
   NS_ASSERTION(!NS_IsMainThread(), "Don't call on main thread");
 
-  return mCacheStream.Read(aBuffer, aCount, aBytes);
+  int64_t offset = mCacheStream.Tell();
+  nsresult rv = mCacheStream.Read(aBuffer, aCount, aBytes);
+  if (NS_SUCCEEDED(rv)) {
+    DispatchBytesConsumed(*aBytes, offset);
+  }
+  return rv;
+}
+
+nsresult ChannelMediaResource::ReadAt(int64_t aOffset,
+                                      char* aBuffer,
+                                      uint32_t aCount,
+                                      uint32_t* aBytes)
+{
+  NS_ASSERTION(!NS_IsMainThread(), "Don't call on main thread");
+
+  nsresult rv = mCacheStream.ReadAt(aOffset, aBuffer, aCount, aBytes);
+  if (NS_SUCCEEDED(rv)) {
+    DispatchBytesConsumed(*aBytes, aOffset);
+  }
+  return rv;
 }
 
 nsresult ChannelMediaResource::Seek(int32_t aWhence, int64_t aOffset)
@@ -1293,6 +1334,8 @@ public:
   virtual void     SetReadMode(MediaCacheStream::ReadMode aMode) {}
   virtual void     SetPlaybackRate(uint32_t aBytesPerSecond) {}
   virtual nsresult Read(char* aBuffer, uint32_t aCount, uint32_t* aBytes);
+  virtual nsresult ReadAt(int64_t aOffset, char* aBuffer,
+                          uint32_t aCount, uint32_t* aBytes);
   virtual nsresult Seek(int32_t aWhence, int64_t aOffset);
   virtual void     StartSeekingForMetadata() {};
   virtual void     EndSeekingForMetadata() {};
@@ -1333,6 +1376,13 @@ public:
 
   nsresult GetCachedRanges(nsTArray<MediaByteRange>& aRanges);
 
+protected:
+  // These Unsafe variants of Read and Seek perform their operations
+  // without acquiring mLock. The caller must obtain the lock before
+  // calling. The implmentation of Read, Seek and ReadAt obtains the
+  // lock before calling these Unsafe variants to read or seek.
+  nsresult UnsafeRead(char* aBuffer, uint32_t aCount, uint32_t* aBytes);
+  nsresult UnsafeSeek(int32_t aWhence, int64_t aOffset);
 private:
   // Ensures mSize is initialized, if it can be.
   // mLock must be held when this is called, and mInput must be non-null.
@@ -1557,10 +1607,41 @@ nsresult FileMediaResource::ReadFromCache(char* aBuffer, int64_t aOffset, uint32
 
 nsresult FileMediaResource::Read(char* aBuffer, uint32_t aCount, uint32_t* aBytes)
 {
-  MutexAutoLock lock(mLock);
+  nsresult rv;
+  int64_t offset = 0;
+  {
+    MutexAutoLock lock(mLock);
+    mSeekable->Tell(&offset);
+    rv = UnsafeRead(aBuffer, aCount, aBytes);
+  }
+  if (NS_SUCCEEDED(rv)) {
+    DispatchBytesConsumed(*aBytes, offset);
+  }
+  return rv;
+}
 
+nsresult FileMediaResource::UnsafeRead(char* aBuffer, uint32_t aCount, uint32_t* aBytes)
+{
   EnsureSizeInitialized();
   return mInput->Read(aBuffer, aCount, aBytes);
+}
+
+nsresult FileMediaResource::ReadAt(int64_t aOffset, char* aBuffer,
+                                   uint32_t aCount, uint32_t* aBytes)
+{
+  NS_ASSERTION(!NS_IsMainThread(), "Don't call on main thread");
+
+  nsresult rv;
+  {
+    MutexAutoLock lock(mLock);
+    rv = UnsafeSeek(nsISeekableStream::NS_SEEK_SET, aOffset);
+    if (NS_FAILED(rv)) return rv;
+    rv = UnsafeRead(aBuffer, aCount, aBytes);
+  }
+  if (NS_SUCCEEDED(rv)) {
+    DispatchBytesConsumed(*aBytes, aOffset);
+  }
+  return rv;
 }
 
 nsresult FileMediaResource::Seek(int32_t aWhence, int64_t aOffset)
@@ -1568,6 +1649,13 @@ nsresult FileMediaResource::Seek(int32_t aWhence, int64_t aOffset)
   NS_ASSERTION(!NS_IsMainThread(), "Don't call on main thread");
 
   MutexAutoLock lock(mLock);
+  return UnsafeSeek(aWhence, aOffset);
+}
+
+nsresult FileMediaResource::UnsafeSeek(int32_t aWhence, int64_t aOffset)
+{
+  NS_ASSERTION(!NS_IsMainThread(), "Don't call on main thread");
+
   if (!mSeekable)
     return NS_ERROR_FAILURE;
   EnsureSizeInitialized();
@@ -1608,6 +1696,8 @@ MediaResource::Create(MediaDecoder* aDecoder, nsIChannel* aChannel)
   nsRefPtr<MediaResource> resource;
   if (fc || IsBlobURI(uri)) {
     resource = new FileMediaResource(aDecoder, aChannel, uri, contentType);
+  } else if (IsRtspURI(uri)) {
+    resource = new RtspMediaResource(aDecoder, aChannel, uri, contentType);
   } else {
     resource = new ChannelMediaResource(aDecoder, aChannel, uri, contentType);
   }
@@ -1669,6 +1759,42 @@ void BaseMediaResource::ModifyLoadFlags(nsLoadFlags aFlags)
     rv = loadGroup->AddRequest(mChannel, nullptr);
     NS_ASSERTION(NS_SUCCEEDED(rv), "AddRequest() failed!");
   }
+}
+
+class DispatchBytesConsumedEvent : public nsRunnable {
+public:
+  DispatchBytesConsumedEvent(MediaDecoder* aDecoder,
+                             int64_t aNumBytes,
+                             int64_t aOffset)
+    : mDecoder(aDecoder),
+      mNumBytes(aNumBytes),
+      mOffset(aOffset)
+  {
+    MOZ_COUNT_CTOR(DispatchBytesConsumedEvent);
+  }
+
+  ~DispatchBytesConsumedEvent()
+  {
+    MOZ_COUNT_DTOR(DispatchBytesConsumedEvent);
+  }
+
+  NS_IMETHOD Run() {
+    mDecoder->NotifyBytesConsumed(mNumBytes, mOffset);
+    // Drop ref to decoder on main thread, just in case this reference
+    // ends up being the last owning reference somehow.
+    mDecoder = nullptr;
+    return NS_OK;
+  }
+
+  RefPtr<MediaDecoder> mDecoder;
+  int64_t mNumBytes;
+  int64_t mOffset;
+};
+
+void BaseMediaResource::DispatchBytesConsumed(int64_t aNumBytes, int64_t aOffset)
+{
+  RefPtr<nsIRunnable> event(new DispatchBytesConsumedEvent(mDecoder, aNumBytes, aOffset));
+  NS_DispatchToMainThread(event, NS_DISPATCH_NORMAL);
 }
 
 } // namespace mozilla

@@ -15,10 +15,10 @@ class nsDOMBeforeUnloadEvent : public nsDOMEvent,
 {
 public:
   nsDOMBeforeUnloadEvent(mozilla::dom::EventTarget* aOwner,
-                         nsPresContext* aPresContext, nsEvent* aEvent)
+                         nsPresContext* aPresContext,
+                         mozilla::WidgetEvent* aEvent)
   : nsDOMEvent(aOwner, aPresContext, aEvent)
   {
-    SetIsDOMBinding();
   }
 
   virtual JSObject* WrapObject(JSContext* aCx,

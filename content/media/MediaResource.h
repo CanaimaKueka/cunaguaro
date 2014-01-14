@@ -7,17 +7,19 @@
 #define MediaResource_h_
 
 #include "mozilla/Mutex.h"
-#include "mozilla/XPCOM.h"
+#ifdef MOZ_DASH
 #include "mozilla/ReentrantMonitor.h"
+#endif
 #include "nsIChannel.h"
-#include "nsIHttpChannel.h"
-#include "nsIPrincipal.h"
 #include "nsIURI.h"
+#include "nsIStreamingProtocolController.h"
 #include "nsIStreamListener.h"
 #include "nsIChannelEventSink.h"
 #include "nsIInterfaceRequestor.h"
 #include "MediaCache.h"
 #include "mozilla/Attributes.h"
+#include "mozilla/TimeStamp.h"
+#include "nsThreadUtils.h"
 
 // For HTTP seeking, if number of bytes needing to be
 // seeked forward is less than this value then a read is
@@ -30,6 +32,9 @@ static const uint32_t HTTP_REQUESTED_RANGE_NOT_SATISFIABLE_CODE = 416;
 // rate can be reliably calculated. 57 Segments at IW=3 allows slow start to
 // reach a CWND of 30 (See bug 831998)
 static const int64_t RELIABLE_DATA_THRESHOLD = 57 * 1460;
+
+class nsIHttpChannel;
+class nsIPrincipal;
 
 namespace mozilla {
 
@@ -55,7 +60,10 @@ public:
   MediaChannelStatistics(MediaChannelStatistics * aCopyFrom)
   {
     MOZ_ASSERT(aCopyFrom);
-    *this = *aCopyFrom;
+    mAccumulatedBytes = aCopyFrom->mAccumulatedBytes;
+    mAccumulatedTime = aCopyFrom->mAccumulatedTime;
+    mLastStartTime = aCopyFrom->mLastStartTime;
+    mIsStarted = aCopyFrom->mIsStarted;
   }
 
   NS_INLINE_DECL_THREADSAFE_REFCOUNTING(MediaChannelStatistics)
@@ -175,6 +183,7 @@ inline MediaByteRange::MediaByteRange(TimestampedMediaByteRange& aByteRange)
   NS_ASSERTION(mStart < mEnd, "Range should end after start!");
 }
 
+class RtspMediaResource;
 
 /**
  * Provides a thread-safe, seek/read interface to resources
@@ -189,7 +198,8 @@ inline MediaByteRange::MediaByteRange(TimestampedMediaByteRange& aByteRange)
  * Decoder they are called on the Decode thread for example. You must
  * ensure that no threads are calling these methods once Close is called.
  *
- * Instances of this class are explicitly managed. 'delete' it when done.
+ * Instances of this class are reference counted. Use nsRefPtr for
+ * managing the lifetime of instances of this class.
  *
  * The generic implementation of this class is ChannelMediaResource, which can
  * handle any URI for which Necko supports AsyncOpen.
@@ -247,6 +257,12 @@ public:
   // available bytes is less than aCount. Always check *aBytes after
   // read, and call again if necessary.
   virtual nsresult Read(char* aBuffer, uint32_t aCount, uint32_t* aBytes) = 0;
+  // Read up to aCount bytes from the stream. The read starts at
+  // aOffset in the stream, seeking to that location initially if
+  // it is not the current stream offset. The remaining arguments,
+  // results and requirements are the same as per the Read method.
+  virtual nsresult ReadAt(int64_t aOffset, char* aBuffer,
+                          uint32_t aCount, uint32_t* aBytes) = 0;
   // Seek to the given bytes offset in the stream. aWhence can be
   // one of:
   //   NS_SEEK_SET
@@ -377,6 +393,18 @@ public:
   // nsIChannel when the MediaResource is created. Safe to call from
   // any thread.
   virtual const nsCString& GetContentType() const = 0;
+
+  // Get the RtspMediaResource pointer if this MediaResource really is a
+  // RtspMediaResource. For calling Rtsp specific functions.
+  virtual RtspMediaResource* GetRtspPointer() {
+    return nullptr;
+  }
+
+  // Return true if the stream is a live stream
+  virtual bool IsRealTime() {
+    return false;
+  }
+
 protected:
   virtual ~MediaResource() {};
 };
@@ -414,6 +442,10 @@ protected:
   // load group, the request is removed from the group, the flags are set, and
   // then the request is added back to the load group.
   void ModifyLoadFlags(nsLoadFlags aFlags);
+
+  // Dispatches an event to call MediaDecoder::NotifyBytesConsumed(aNumBytes, aOffset)
+  // on the main thread. This is called automatically after every read.
+  void DispatchBytesConsumed(int64_t aNumBytes, int64_t aOffset);
 
   // This is not an nsCOMPointer to prevent a circular reference
   // between the decoder to the media stream object. The stream never
@@ -518,6 +550,8 @@ public:
   virtual void     SetReadMode(MediaCacheStream::ReadMode aMode);
   virtual void     SetPlaybackRate(uint32_t aBytesPerSecond);
   virtual nsresult Read(char* aBuffer, uint32_t aCount, uint32_t* aBytes);
+  virtual nsresult ReadAt(int64_t offset, char* aBuffer,
+                          uint32_t aCount, uint32_t* aBytes);
   virtual nsresult Seek(int32_t aWhence, int64_t aOffset);
   virtual void     StartSeekingForMetadata();
   virtual void     EndSeekingForMetadata();

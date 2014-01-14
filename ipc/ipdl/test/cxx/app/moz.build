@@ -8,3 +8,8 @@ MODULE = 'ipdlunittest'
 
 PROGRAM = 'ipdlunittest'
 
+SOURCES += [
+    'TestIPDL.cpp',
+]
+include('/ipc/chromium/chromium-config.mozbuild')
+

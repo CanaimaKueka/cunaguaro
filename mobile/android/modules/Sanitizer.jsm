@@ -5,17 +5,19 @@
 
 let Cc = Components.classes;
 let Ci = Components.interfaces;
+let Cu = Components.utils;
 
-Components.utils.import("resource://gre/modules/Services.jsm");
+Cu.import("resource://gre/modules/Services.jsm");
+Cu.import("resource://gre/modules/XPCOMUtils.jsm");
+Cu.import("resource://gre/modules/LoadContextInfo.jsm");
+Cu.import("resource://gre/modules/FormHistory.jsm");
 
 function dump(a) {
-  Cc["@mozilla.org/consoleservice;1"].getService(Ci.nsIConsoleService).logStringMessage(a);
+  Services.console.logStringMessage(a);
 }
 
 function sendMessageToJava(aMessage) {
-  return Cc["@mozilla.org/android/bridge;1"]
-           .getService(Ci.nsIAndroidBridge)
-           .handleGeckoMessage(JSON.stringify(aMessage));
+  return Services.androidBridge.handleGeckoMessage(JSON.stringify(aMessage));
 }
 
 this.EXPORTED_SYMBOLS = ["Sanitizer"];
@@ -49,17 +51,25 @@ function Sanitizer() {}
 Sanitizer.prototype = {
   clearItem: function (aItemName)
   {
-    if (this.items[aItemName].canClear)
-      this.items[aItemName].clear();
+    let item = this.items[aItemName];
+    let canClear = item.canClear;
+    if (typeof canClear == "function") {
+      canClear(function clearCallback(aCanClear) {
+        if (aCanClear)
+          item.clear();
+      });
+    } else if (canClear) {
+      item.clear();
+    }
   },
 
   items: {
     cache: {
       clear: function ()
       {
-        var cacheService = Cc["@mozilla.org/network/cache-service;1"].getService(Ci.nsICacheService);
+        var cache = Cc["@mozilla.org/netwerk/cache-storage-service;1"].getService(Ci.nsICacheStorageService);
         try {
-          cacheService.evictEntries(Ci.nsICache.STORE_ANYWHERE);
+          cache.clear();
         } catch(er) {}
 
         let imageCache = Cc["@mozilla.org/image/tools;1"].getService(Ci.imgITools)
@@ -79,12 +89,6 @@ Sanitizer.prototype = {
       clear: function ()
       {
         Services.cookies.removeAll();
-
-        // clear any network geolocation provider sessions
-        try {
-          var branch = Services.prefs.getBranch("geo.wifi.access_token.");
-          branch.deleteBranch("");
-        } catch (e) {dump(e);}
       },
 
       get canClear()
@@ -107,7 +111,7 @@ Sanitizer.prototype = {
         // Clear "Never remember passwords for this site", which is not handled by
         // the permission manager
         var hosts = Services.logins.getAllDisabledHosts({})
-        for each (var host in hosts) {
+        for (var host of hosts) {
           Services.logins.setLoginSavingEnabled(host, true);
         }
       },
@@ -121,9 +125,10 @@ Sanitizer.prototype = {
     offlineApps: {
       clear: function ()
       {
-        var cacheService = Cc["@mozilla.org/network/cache-service;1"].getService(Ci.nsICacheService);
+        var cacheService = Cc["@mozilla.org/netwerk/cache-storage-service;1"].getService(Ci.nsICacheStorageService);
+        var appCacheStorage = cacheService.appCacheStorage(LoadContextInfo.default, null);
         try {
-          cacheService.evictEntries(Ci.nsICache.STORE_OFFLINE);
+          appCacheStorage.asyncEvictStorage(null);
         } catch(er) {}
       },
 
@@ -171,14 +176,18 @@ Sanitizer.prototype = {
           }
         }
 
-        var formHistory = Cc["@mozilla.org/satchel/form-history;1"].getService(Ci.nsIFormHistory2);
-        formHistory.removeAllEntries();
+        FormHistory.update({ op: "remove" });
       },
 
-      get canClear()
+      canClear: function (aCallback)
       {
-        var formHistory = Cc["@mozilla.org/satchel/form-history;1"].getService(Ci.nsIFormHistory2);
-        return formHistory.hasEntries;
+        let count = 0;
+        let countDone = {
+          handleResult: function(aResult) { count = aResult; },
+          handleError: function(aError) { Cu.reportError(aError); },
+          handleCompletion: function(aReason) { aCallback(aReason == 0 && count > 0); }
+        };
+        FormHistory.count({}, countDone);
       }
     },
 

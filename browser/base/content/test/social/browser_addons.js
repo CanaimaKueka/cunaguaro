@@ -13,14 +13,15 @@ let manifest = { // builtin provider
   origin: "https://example.com",
   sidebarURL: "https://example.com/browser/browser/base/content/test/social/social_sidebar.html",
   workerURL: "https://example.com/browser/browser/base/content/test/social/social_worker.js",
-  iconURL: "https://example.com/browser/browser/base/content/test/moz.png"
+  iconURL: "https://example.com/browser/browser/base/content/test/general/moz.png"
 };
 let manifest2 = { // used for testing install
   name: "provider 2",
   origin: "https://test1.example.com",
   sidebarURL: "https://test1.example.com/browser/browser/base/content/test/social/social_sidebar.html",
   workerURL: "https://test1.example.com/browser/browser/base/content/test/social/social_worker.js",
-  iconURL: "https://test1.example.com/browser/browser/base/content/test/moz.png"
+  iconURL: "https://test1.example.com/browser/browser/base/content/test/general/moz.png",
+  version: 1
 };
 
 function test() {
@@ -48,6 +49,15 @@ function test() {
 function installListener(next, aManifest) {
   let expectEvent = "onInstalling";
   let prefname = getManifestPrefname(aManifest);
+  // wait for the actual removal to call next
+  SocialService.registerProviderListener(function providerListener(topic, origin, providers) {
+    if (topic == "provider-disabled") {
+      SocialService.unregisterProviderListener(providerListener);
+      is(origin, aManifest.origin, "provider disabled");
+      executeSoon(next);
+    }
+  });
+
   return {
     onInstalling: function(addon) {
       is(expectEvent, "onInstalling", "install started");
@@ -73,7 +83,6 @@ function installListener(next, aManifest) {
       is(addon.manifest.origin, aManifest.origin, "provider uninstalled");
       ok(!Services.prefs.prefHasUserValue(prefname), "manifest is not in user-prefs");
       AddonManager.removeAddonListener(this);
-      next();
     }
   };
 }
@@ -87,9 +96,8 @@ var tests = {
         is(expectEvent, "onEnabled", "provider onEnabled");
         ok(!addon.userDisabled, "provider enabled");
         executeSoon(function() {
-          // restore previous state
           expectEvent = "onDisabling";
-          addon.userDisabled = !addon.userDisabled;
+          addon.userDisabled = true;
         });
       },
       onEnabling: function(addon) {
@@ -99,14 +107,10 @@ var tests = {
       onDisabled: function(addon) {
         is(expectEvent, "onDisabled", "provider onDisabled");
         ok(addon.userDisabled, "provider disabled");
-        executeSoon(function() {
-          // restore previous state
-          AddonManager.removeAddonListener(listener);
-          addon.userDisabled = !addon.userDisabled;
-          // clear the provider user-level pref
-          Services.prefs.clearUserPref(prefname);
-          next();
-        });
+        AddonManager.removeAddonListener(listener);
+        // clear the provider user-level pref
+        Services.prefs.clearUserPref(prefname);
+        executeSoon(next);
       },
       onDisabling: function(addon) {
         is(expectEvent, "onDisabling", "provider onDisabling");
@@ -121,10 +125,12 @@ var tests = {
     ok(Services.prefs.prefHasUserValue(prefname), "manifest is in user-prefs");
     AddonManager.getAddonsByTypes([ADDON_TYPE_SERVICE], function(addons) {
       for (let addon of addons) {
-        expectEvent = addon.userDisabled ? "onEnabling" : "onDisabling";
-        addon.userDisabled = !addon.userDisabled;
-        // only test with one addon
-        return;
+        if (addon.userDisabled) {
+          expectEvent = "onEnabling";
+          addon.userDisabled = false;
+          // only test with one addon
+          return;
+        }
       }
       ok(false, "no addons toggled");
       next();
@@ -272,6 +278,50 @@ var tests = {
         SocialService.addBuiltinProvider(addonManifest.origin, function(provider) {
           Social.uninstallProvider(addonManifest.origin);
           gBrowser.removeTab(tab);
+        });
+      });
+    });
+  },
+  testUpgradeProviderFromWorker: function(next) {
+    // add the provider, change the pref, add it again. The provider at that
+    // point should be upgraded
+    let activationURL = manifest2.origin + "/browser/browser/base/content/test/social/social_activate.html"
+    addTab(activationURL, function(tab) {
+      let doc = tab.linkedBrowser.contentDocument;
+      let installFrom = doc.nodePrincipal.origin;
+      Services.prefs.setCharPref("social.whitelist", installFrom);
+      Social.installProvider(doc, manifest2, function(addonManifest) {
+        SocialService.addBuiltinProvider(addonManifest.origin, function(provider) {
+          is(provider.manifest.version, 1, "manifest version is 1");
+          Social.enabled = true;
+
+          // watch for the provider-update and test the new version
+          SocialService.registerProviderListener(function providerListener(topic, origin, providers) {
+            if (topic != "provider-update")
+              return;
+            is(origin, addonManifest.origin, "provider updated")
+            SocialService.unregisterProviderListener(providerListener);
+            Services.prefs.clearUserPref("social.whitelist");
+            let provider = Social._getProviderFromOrigin(origin);
+            is(provider.manifest.version, 2, "manifest version is 2");
+            Social.uninstallProvider(origin, function() {
+              gBrowser.removeTab(tab);
+              next();
+            });
+          });
+
+          let port = provider.getWorkerPort();
+          port.onmessage = function (e) {
+            let topic = e.data.topic;
+            switch (topic) {
+              case "got-sidebar-message":
+                ok(true, "got the sidebar message from provider 1");
+                port.postMessage({topic: "worker.update", data: true});
+                break;
+            }
+          };
+          port.postMessage({topic: "test-init"});
+
         });
       });
     });

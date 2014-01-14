@@ -9,15 +9,13 @@
 <!ENTITY fullscreenButton.enterfullscreenlabel "Schermo intero">
 <!ENTITY fullscreenButton.exitfullscreenlabel "Esci da schermo intero">
 <!ENTITY stats.media "Media">
-<!ENTITY stats.size "Dimensione">
+<!ENTITY stats.size "Dimensioni">
 <!ENTITY stats.activity "Attività">
 <!ENTITY stats.activityPaused "In pausa">
 <!ENTITY stats.activityPlaying "In esecuzione">
 <!ENTITY stats.activityEnded "Terminato">
 <!ENTITY stats.activitySeeking "(ricerca in corso)">
 <!ENTITY stats.volume "Volume">
-<!ENTITY stats.channels "Canali">
-<!ENTITY stats.sampleRate "Freq. campionamento">
 <!ENTITY stats.framesParsed "Frame analizzati">
 <!ENTITY stats.framesDecoded "Frame decodificati">
 <!ENTITY stats.framesPresented "Frame presentati">

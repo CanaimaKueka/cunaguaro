@@ -27,18 +27,16 @@
 #include "nsIDOMXPathNSResolver.h"
 #include "nsPresContext.h"
 #include "nsDOMClassInfoID.h" // DOMCI_DATA
-#include "nsIInlineEventHandlers.h"
 #include "mozilla/CORSMode.h"
 #include "mozilla/Attributes.h"
-#include "nsContentUtils.h"
 #include "nsIScrollableFrame.h"
 #include "mozilla/dom/Attr.h"
 #include "nsISMILAttr.h"
-#include "nsClientRect.h"
-#include "nsEvent.h"
+#include "mozilla/dom/DOMRect.h"
 #include "nsAttrValue.h"
+#include "mozilla/EventForwards.h"
 #include "mozilla/dom/BindingDeclarations.h"
-#include "nsIHTMLCollection.h"
+#include "Units.h"
 
 class nsIDOMEventListener;
 class nsIFrame;
@@ -52,8 +50,6 @@ class nsEventListenerManager;
 class nsIScrollableFrame;
 class nsAttrValueOrString;
 class ContentUnbinder;
-class nsClientRect;
-class nsClientRectList;
 class nsContentList;
 class nsDOMTokenList;
 struct nsRect;
@@ -104,16 +100,21 @@ enum {
 
 #undef ELEMENT_FLAG_BIT
 
+// Make sure we have space for our bits
+ASSERT_NODE_FLAGS_SPACE(ELEMENT_TYPE_SPECIFIC_BITS_OFFSET);
+
 namespace mozilla {
 namespace dom {
 
 class Link;
 class UndoManager;
+class DOMRect;
+class DOMRectList;
 
 // IID for the dom::Element interface
 #define NS_ELEMENT_IID \
-{ 0xcae9f7e7, 0x6163, 0x47b5, \
- { 0xa1, 0x63, 0x30, 0xc8, 0x1d, 0x2d, 0x79, 0x39 } }
+{ 0xec962aa7, 0x53ee, 0x46ff, \
+  { 0x90, 0x34, 0x68, 0xea, 0x79, 0x9d, 0x7d, 0xf7 } }
 
 class Element : public FragmentOrElement
 {
@@ -130,6 +131,8 @@ public:
 #endif // MOZILLA_INTERNAL_API
 
   NS_DECLARE_STATIC_IID_ACCESSOR(NS_ELEMENT_IID)
+
+  NS_IMETHOD QueryInterface(REFNSIID aIID, void** aInstancePtr);
 
   /**
    * Method to get the full state of this element.  See nsEventStates.h for
@@ -334,6 +337,8 @@ public:
             (HasValidDir() || IsHTML(nsGkAtoms::bdi)));
   }
 
+  Directionality GetComputedDirectionality() const;
+
 protected:
   /**
    * Method to get the _intrinsic_ content state of this element.  This is the
@@ -396,14 +401,27 @@ private:
     NotifyStateChange(aStates);
   }
 public:
-  virtual void UpdateEditableState(bool aNotify);
+  virtual void UpdateEditableState(bool aNotify) MOZ_OVERRIDE;
 
   virtual nsresult BindToTree(nsIDocument* aDocument, nsIContent* aParent,
                               nsIContent* aBindingParent,
-                              bool aCompileEventHandlers);
+                              bool aCompileEventHandlers) MOZ_OVERRIDE;
   virtual void UnbindFromTree(bool aDeep = true,
-                              bool aNullParent = true);
-  virtual already_AddRefed<nsINodeInfo> GetExistingAttrNameFromQName(const nsAString& aStr) const;
+                              bool aNullParent = true) MOZ_OVERRIDE;
+
+  /**
+   * Normalizes an attribute name and returns it as a nodeinfo if an attribute
+   * with that name exists. This method is intended for character case
+   * conversion if the content object is case insensitive (e.g. HTML). Returns
+   * the nodeinfo of the attribute with the specified name if one exists or
+   * null otherwise.
+   *
+   * @param aStr the unparsed attribute string
+   * @return the node info. May be nullptr.
+   */
+  already_AddRefed<nsINodeInfo>
+  GetExistingAttrNameFromQName(const nsAString& aStr) const;
+
   nsresult SetAttr(int32_t aNameSpaceID, nsIAtom* aName,
                    const nsAString& aValue, bool aNotify)
   {
@@ -439,7 +457,7 @@ public:
                               uint8_t* aModType, bool* aHasListeners);
 
   virtual nsresult SetAttr(int32_t aNameSpaceID, nsIAtom* aName, nsIAtom* aPrefix,
-                           const nsAString& aValue, bool aNotify);
+                           const nsAString& aValue, bool aNotify) MOZ_OVERRIDE;
   nsresult SetParsedAttr(int32_t aNameSpaceID, nsIAtom* aName, nsIAtom* aPrefix,
                          nsAttrValue& aParsedValue, bool aNotify);
   // GetAttr is not inlined on purpose, to keep down codesize from all
@@ -457,19 +475,19 @@ public:
   virtual int32_t FindAttrValueIn(int32_t aNameSpaceID,
                                   nsIAtom* aName,
                                   AttrValuesArray* aValues,
-                                  nsCaseTreatment aCaseSensitive) const;
+                                  nsCaseTreatment aCaseSensitive) const MOZ_OVERRIDE;
   virtual nsresult UnsetAttr(int32_t aNameSpaceID, nsIAtom* aAttribute,
-                             bool aNotify);
-  virtual const nsAttrName* GetAttrNameAt(uint32_t aIndex) const;
-  virtual uint32_t GetAttrCount() const;
-  virtual bool IsNodeOfType(uint32_t aFlags) const;
+                             bool aNotify) MOZ_OVERRIDE;
+  virtual const nsAttrName* GetAttrNameAt(uint32_t aIndex) const MOZ_OVERRIDE;
+  virtual uint32_t GetAttrCount() const MOZ_OVERRIDE;
+  virtual bool IsNodeOfType(uint32_t aFlags) const MOZ_OVERRIDE;
 
 #ifdef DEBUG
-  virtual void List(FILE* out = stdout, int32_t aIndent = 0) const
+  virtual void List(FILE* out = stdout, int32_t aIndent = 0) const MOZ_OVERRIDE
   {
     List(out, aIndent, EmptyCString());
   }
-  virtual void DumpContent(FILE* out, int32_t aIndent, bool aDumpAll) const;
+  virtual void DumpContent(FILE* out, int32_t aIndent, bool aDumpAll) const MOZ_OVERRIDE;
   void List(FILE* out, int32_t aIndent, const nsCString& aPrefix) const;
   void ListAttributes(FILE* out) const;
 #endif
@@ -596,36 +614,6 @@ public:
                            ErrorResult& aError);
   already_AddRefed<nsIHTMLCollection>
     GetElementsByClassName(const nsAString& aClassNames);
-  Element* GetFirstElementChild() const;
-  Element* GetLastElementChild() const;
-  Element* GetPreviousElementSibling() const
-  {
-    nsIContent* previousSibling = GetPreviousSibling();
-    while (previousSibling) {
-      if (previousSibling->IsElement()) {
-        return previousSibling->AsElement();
-      }
-      previousSibling = previousSibling->GetPreviousSibling();
-    }
-
-    return nullptr;
-  }
-  Element* GetNextElementSibling() const
-  {
-    nsIContent* nextSibling = GetNextSibling();
-    while (nextSibling) {
-      if (nextSibling->IsElement()) {
-        return nextSibling->AsElement();
-      }
-      nextSibling = nextSibling->GetNextSibling();
-    }
-
-    return nullptr;
-  }
-  uint32_t ChildElementCount()
-  {
-    return Children()->Length();
-  }
   bool MozMatchesSelector(const nsAString& aSelector,
                           ErrorResult& aError);
   void SetCapture(bool aRetargetToElement)
@@ -645,10 +633,7 @@ public:
     }
   }
   void MozRequestFullScreen();
-  void MozRequestPointerLock()
-  {
-    OwnerDoc()->RequestPointerLock(this);
-  }
+  inline void MozRequestPointerLock();
   Attr* GetAttributeNode(const nsAString& aName);
   already_AddRefed<Attr> SetAttributeNode(Attr& aNewAttr,
                                           ErrorResult& aError);
@@ -659,8 +644,8 @@ public:
   already_AddRefed<Attr> SetAttributeNodeNS(Attr& aNewAttr,
                                             ErrorResult& aError);
 
-  already_AddRefed<nsClientRectList> GetClientRects();
-  already_AddRefed<nsClientRect> GetBoundingClientRect();
+  already_AddRefed<DOMRectList> GetClientRects();
+  already_AddRefed<DOMRect> GetBoundingClientRect();
   void ScrollIntoView(bool aTop);
   int32_t ScrollTop()
   {
@@ -671,8 +656,8 @@ public:
   {
     nsIScrollableFrame* sf = GetScrollFrame();
     if (sf) {
-      sf->ScrollToCSSPixels(nsIntPoint(sf->GetScrollPositionCSSPixels().x,
-                                       aScrollTop));
+      sf->ScrollToCSSPixels(CSSIntPoint(sf->GetScrollPositionCSSPixels().x,
+                                        aScrollTop));
     }
   }
   int32_t ScrollLeft()
@@ -684,10 +669,15 @@ public:
   {
     nsIScrollableFrame* sf = GetScrollFrame();
     if (sf) {
-      sf->ScrollToCSSPixels(nsIntPoint(aScrollLeft,
-                                       sf->GetScrollPositionCSSPixels().y));
+      sf->ScrollToCSSPixels(CSSIntPoint(aScrollLeft,
+                                        sf->GetScrollPositionCSSPixels().y));
     }
   }
+  /* Scrolls without flushing the layout.
+   * aDx is the x offset, aDy the y offset in CSS pixels.
+   * Returns true if we actually scrolled.
+   */
+  bool ScrollByNoFlush(int32_t aDx, int32_t aDy);
   int32_t ScrollWidth();
   int32_t ScrollHeight();
   int32_t ClientTop()
@@ -735,9 +725,9 @@ public:
   {
   }
 
-  virtual void GetInnerHTML(nsAString& aInnerHTML, ErrorResult& aError);
+  NS_IMETHOD GetInnerHTML(nsAString& aInnerHTML);
   virtual void SetInnerHTML(const nsAString& aInnerHTML, ErrorResult& aError);
-  void GetOuterHTML(nsAString& aOuterHTML, ErrorResult& aError);
+  void GetOuterHTML(nsAString& aOuterHTML);
   void SetOuterHTML(const nsAString& aOuterHTML, ErrorResult& aError);
   void InsertAdjacentHTML(const nsAString& aPosition, const nsAString& aText,
                           ErrorResult& aError);
@@ -773,10 +763,10 @@ public:
    *                    will be respected.
    */
   static nsresult DispatchClickEvent(nsPresContext* aPresContext,
-                                     nsInputEvent* aSourceEvent,
+                                     WidgetInputEvent* aSourceEvent,
                                      nsIContent* aTarget,
                                      bool aFullDispatch,
-                                     const widget::EventFlags* aFlags,
+                                     const EventFlags* aFlags,
                                      nsEventStatus* aStatus);
 
   /**
@@ -788,7 +778,7 @@ public:
    */
   using nsIContent::DispatchEvent;
   static nsresult DispatchEvent(nsPresContext* aPresContext,
-                                nsEvent* aEvent,
+                                WidgetEvent* aEvent,
                                 nsIContent* aTarget,
                                 bool aFullDispatch,
                                 nsEventStatus* aStatus);
@@ -917,6 +907,22 @@ public:
    * @param aValue   Boolean value of attribute.
    */
   NS_HIDDEN_(nsresult) SetBoolAttr(nsIAtom* aAttr, bool aValue);
+
+  /**
+   * Retrieve the ratio of font-size-inflated text font size to computed font
+   * size for this element. This will query the element for its primary frame,
+   * and then use this to get font size inflation information about the frame.
+   *
+   * @returns The font size inflation ratio (inflated font size to uninflated
+   *          font size) for the primary frame of this element. Returns 1.0
+   *          by default if font size inflation is not enabled. Returns -1
+   *          if the element does not have a primary frame.
+   *
+   * @note The font size inflation ratio that is returned is actually the
+   *       font size inflation data for the element's _primary frame_, not the
+   *       element itself, but for most purposes, this should be sufficient.
+   */
+  float FontSizeInflation();
 
 protected:
   /*
@@ -1051,14 +1057,6 @@ protected:
    */
   virtual const nsAttrName* InternalGetExistingAttrNameFromQName(const nsAString& aStr) const;
 
-  /**
-   * Retrieve the rectangle for the offsetX properties, which
-   * are coordinates relative to the returned element.
-   *
-   * @param aRect offset rectangle
-   */
-  virtual Element* GetOffsetRect(nsRect& aRect);
-
   nsIFrame* GetStyledFrame();
 
   virtual Element* GetNameSpaceElement()
@@ -1069,37 +1067,14 @@ protected:
   Attr* GetAttributeNodeNSInternal(const nsAString& aNamespaceURI,
                                    const nsAString& aLocalName);
 
-  void RegisterFreezableElement() {
-    OwnerDoc()->RegisterFreezableElement(this);
-  }
-  void UnregisterFreezableElement() {
-    OwnerDoc()->UnregisterFreezableElement(this);
-  }
+  inline void RegisterFreezableElement();
+  inline void UnregisterFreezableElement();
 
   /**
    * Add/remove this element to the documents id cache
    */
-  void AddToIdTable(nsIAtom* aId) {
-    NS_ASSERTION(HasID(), "Node doesn't have an ID?");
-    nsIDocument* doc = GetCurrentDoc();
-    if (doc && (!IsInAnonymousSubtree() || doc->IsXUL())) {
-      doc->AddToIdTable(this, aId);
-    }
-  }
-  void RemoveFromIdTable() {
-    if (HasID()) {
-      nsIDocument* doc = GetCurrentDoc();
-      if (doc) {
-        nsIAtom* id = DoGetID();
-        // id can be null during mutation events evilness. Also, XUL elements
-        // loose their proto attributes during cc-unlink, so this can happen
-        // during cc-unlink too.
-        if (id) {
-          doc->RemoveFromIdTable(this, DoGetID());
-        }
-      }
-    }
-  }
+  inline void AddToIdTable(nsIAtom* aId);
+  inline void RemoveFromIdTable();
 
   /**
    * Functions to carry out event default actions for links of all types
@@ -1146,9 +1121,10 @@ private:
    */
   nsRect GetClientAreaRect();
 
-  nsIScrollableFrame* GetScrollFrame(nsIFrame **aStyledFrame = nullptr);
+  nsIScrollableFrame* GetScrollFrame(nsIFrame **aStyledFrame = nullptr,
+                                     bool aFlushLayout = true);
 
-  nsresult GetMarkup(bool aIncludeSelf, nsAString& aMarkup);
+  void GetMarkup(bool aIncludeSelf, nsAString& aMarkup);
 
   // Data members
   nsEventStates mState;
@@ -1260,14 +1236,6 @@ _elementName::Clone(nsINodeInfo *aNodeInfo, nsINode **aResult) const        \
                                                                             \
   return rv;                                                                \
 }
-
-#define DOMCI_NODE_DATA(_interface, _class)                             \
-  DOMCI_DATA(_interface, _class)                                        \
-  nsXPCClassInfo* _class::GetClassInfo()                                \
-  {                                                                     \
-    return static_cast<nsXPCClassInfo*>(                                \
-      NS_GetDOMClassInfoInstance(eDOMClassInfo_##_interface##_id));     \
-  }
 
 /**
  * A macro to implement the getter and setter for a given string
@@ -1497,6 +1465,8 @@ NS_IMETHOD MozRemove() MOZ_FINAL                                              \
   nsINode::Remove();                                                          \
   return NS_OK;                                                               \
 }                                                                             \
+using nsINode::GetOnmouseenter;                                               \
+using nsINode::SetOnmouseenter;                                               \
 NS_IMETHOD GetOnmouseenter(JSContext* cx, JS::Value* aOnmouseenter) MOZ_FINAL \
 {                                                                             \
   return Element::GetOnmouseenter(cx, aOnmouseenter);                         \
@@ -1506,6 +1476,8 @@ NS_IMETHOD SetOnmouseenter(JSContext* cx,                                     \
 {                                                                             \
   return Element::SetOnmouseenter(cx, aOnmouseenter);                         \
 }                                                                             \
+using nsINode::GetOnmouseleave;                                               \
+using nsINode::SetOnmouseleave;                                               \
 NS_IMETHOD GetOnmouseleave(JSContext* cx, JS::Value* aOnmouseleave) MOZ_FINAL \
 {                                                                             \
   return Element::GetOnmouseleave(cx, aOnmouseleave);                         \
@@ -1611,6 +1583,18 @@ NS_IMETHOD MozRequestPointerLock(void) MOZ_FINAL                              \
 {                                                                             \
   Element::MozRequestPointerLock();                                           \
   return NS_OK;                                                               \
+}                                                                             \
+using nsINode::QuerySelector;                                                 \
+NS_IMETHOD QuerySelector(const nsAString& aSelector,                          \
+                         nsIDOMElement **aReturn) MOZ_FINAL                   \
+{                                                                             \
+  return nsINode::QuerySelector(aSelector, aReturn);                          \
+}                                                                             \
+using nsINode::QuerySelectorAll;                                              \
+NS_IMETHOD QuerySelectorAll(const nsAString& aSelector,                       \
+                            nsIDOMNodeList **aReturn) MOZ_FINAL               \
+{                                                                             \
+  return nsINode::QuerySelectorAll(aSelector, aReturn);                       \
 }
 
 #endif // mozilla_dom_Element_h__

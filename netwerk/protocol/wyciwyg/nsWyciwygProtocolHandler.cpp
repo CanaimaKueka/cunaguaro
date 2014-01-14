@@ -7,8 +7,6 @@
 #include "nsWyciwyg.h"
 #include "nsWyciwygChannel.h"
 #include "nsWyciwygProtocolHandler.h"
-#include "nsIURL.h"
-#include "nsIComponentManager.h"
 #include "nsNetCID.h"
 #include "nsServiceManagerUtils.h"
 #include "plstr.h"
@@ -32,12 +30,12 @@ nsWyciwygProtocolHandler::nsWyciwygProtocolHandler()
     gWyciwygLog = PR_NewLogModule("nsWyciwygChannel");
 #endif
 
-  LOG(("Creating nsWyciwygProtocolHandler [this=%x].\n", this));
+  LOG(("Creating nsWyciwygProtocolHandler [this=%p].\n", this));
 }
 
 nsWyciwygProtocolHandler::~nsWyciwygProtocolHandler() 
 {
-  LOG(("Deleting nsWyciwygProtocolHandler [this=%x]\n", this));
+  LOG(("Deleting nsWyciwygProtocolHandler [this=%p]\n", this));
 }
 
 nsresult

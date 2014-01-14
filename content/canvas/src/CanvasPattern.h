@@ -5,14 +5,13 @@
 #ifndef mozilla_dom_CanvasPattern_h
 #define mozilla_dom_CanvasPattern_h
 
+#include "mozilla/Attributes.h"
 #include "mozilla/dom/CanvasRenderingContext2DBinding.h"
 #include "mozilla/dom/CanvasRenderingContext2D.h"
 #include "mozilla/RefPtr.h"
 #include "nsISupports.h"
 #include "nsWrapperCache.h"
 
-#define NS_CANVASPATTERNAZURE_PRIVATE_IID \
-    {0xc9bacc25, 0x28da, 0x421e, {0x9a, 0x4b, 0xbb, 0xd6, 0x93, 0x05, 0x12, 0xbc}}
 class nsIPrincipal;
 
 namespace mozilla {
@@ -22,13 +21,11 @@ class SourceSurface;
 
 namespace dom {
 
-class CanvasPattern MOZ_FINAL : public nsISupports,
-                                public nsWrapperCache
+class CanvasPattern MOZ_FINAL : public nsWrapperCache
 {
 public:
-  NS_DECLARE_STATIC_IID_ACCESSOR(NS_CANVASPATTERNAZURE_PRIVATE_IID)
-  NS_DECL_CYCLE_COLLECTING_ISUPPORTS
-  NS_DECL_CYCLE_COLLECTION_SCRIPT_HOLDER_CLASS(CanvasPattern)
+  NS_INLINE_DECL_CYCLE_COLLECTING_NATIVE_REFCOUNTING(CanvasPattern)
+  NS_DECL_CYCLE_COLLECTION_SCRIPT_HOLDER_NATIVE_CLASS(CanvasPattern)
 
   enum RepeatMode
   {
@@ -54,7 +51,7 @@ public:
     SetIsDOMBinding();
   }
 
-  JSObject* WrapObject(JSContext* aCx, JS::Handle<JSObject*> aScope)
+  JSObject* WrapObject(JSContext* aCx, JS::Handle<JSObject*> aScope) MOZ_OVERRIDE
   {
     return CanvasPatternBinding::Wrap(aCx, aScope, this);
   }

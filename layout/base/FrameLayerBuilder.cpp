@@ -12,9 +12,6 @@
 #include "nsLayoutUtils.h"
 #include "Layers.h"
 #include "BasicLayers.h"
-#include "nsSubDocumentFrame.h"
-#include "nsCSSRendering.h"
-#include "nsCSSFrameConstructor.h"
 #include "gfxUtils.h"
 #include "nsRenderingContext.h"
 #include "MaskLayerImageCache.h"
@@ -22,20 +19,14 @@
 #include "nsPrintfCString.h"
 #include "LayerTreeInvalidation.h"
 #include "nsSVGIntegrationUtils.h"
+#include "ImageContainer.h"
 
-#include "mozilla/Preferences.h"
 #include "GeckoProfiler.h"
 #include "mozilla/gfx/Tools.h"
+#include "mozilla/gfx/2D.h"
+#include "mozilla/Preferences.h"
 
-#include "nsAnimationManager.h"
-#include "nsTransitionManager.h"
 #include <algorithm>
-
-#ifdef DEBUG
-#include <stdio.h>
-//#define DEBUG_INVALIDATIONS
-//#define DEBUG_DISPLAY_ITEM_DATA
-#endif
 
 using namespace mozilla::layers;
 using namespace mozilla::gfx;
@@ -133,7 +124,7 @@ FrameLayerBuilder::DisplayItemData::UpdateContents(Layer* aLayer, LayerState aSt
   }
 }
 
-static nsIFrame* sDestroyedFrame = NULL;
+static nsIFrame* sDestroyedFrame = nullptr;
 FrameLayerBuilder::DisplayItemData::~DisplayItemData()
 {
   for (uint32_t i = 0; i < mFrameList.Length(); i++) {
@@ -181,7 +172,6 @@ public:
     , mInvalidateAllLayers(false)
   {
     MOZ_COUNT_CTOR(LayerManagerData);
-    mDisplayItems.Init();
   }
   ~LayerManagerData() {
     MOZ_COUNT_DTOR(LayerManagerData);
@@ -259,7 +249,6 @@ public:
     // will work.
     mSnappingEnabled = aManager->IsSnappingEffectiveTransforms() &&
       !mParameters.AllowResidualTranslation();
-    mRecycledMaskImageLayers.Init();
     CollectOldLayers();
   }
 
@@ -668,7 +657,8 @@ struct MaskLayerUserData : public LayerUserData
     return mRoundedClipRects == aOther.mRoundedClipRects &&
            mScaleX == aOther.mScaleX &&
            mScaleY == aOther.mScaleY &&
-           mOffset == aOther.mOffset;
+           mOffset == aOther.mOffset &&
+           mAppUnitsPerDevPixel == aOther.mAppUnitsPerDevPixel;
   }
 
   nsRefPtr<const MaskLayerImageCache::MaskLayerImageKey> mImageKey;
@@ -679,6 +669,7 @@ struct MaskLayerUserData : public LayerUserData
   float mScaleX, mScaleY;
   // The ContainerParameters offset which is applied to the mask's transform.
   nsIntPoint mOffset;
+  int32_t mAppUnitsPerDevPixel;
 };
 
 /**
@@ -822,10 +813,12 @@ InvalidatePostTransformRegion(ThebesLayer* aLayer, const nsIntRegion& aRegion,
   nsIntRegion rgn = aRegion;
   rgn.MoveBy(-aTranslation);
   aLayer->InvalidateRegion(rgn);
-#ifdef DEBUG_INVALIDATIONS
-  nsAutoCString str;
-  AppendToString(str, rgn);
-  printf("Invalidating layer %p: %s\n", aLayer, str.get());
+#ifdef MOZ_DUMP_PAINTING
+  if (nsLayoutUtils::InvalidationDebuggingIsEnabled()) {
+    nsAutoCString str;
+    AppendToString(str, rgn);
+    printf("Invalidating layer %p: %s\n", aLayer, str.get());
+  }
 #endif
 }
 
@@ -918,7 +911,7 @@ FrameLayerBuilder::RemoveFrameFromLayerManager(nsIFrame* aFrame,
 
   arrayCopy.Clear();
   delete array;
-  sDestroyedFrame = NULL;
+  sDestroyedFrame = nullptr;
 }
 
 void
@@ -980,8 +973,10 @@ FrameLayerBuilder::ProcessRemovedDisplayItems(nsRefPtrHashKey<DisplayItemData>* 
 
     ThebesLayer* t = data->mLayer->AsThebesLayer();
     if (t) {
-#ifdef DEBUG_INVALIDATIONS
-      printf("Invalidating unused display item (%i) belonging to frame %p from layer %p\n", data->mDisplayItemKey, data->mFrameList[0], t);
+#ifdef MOZ_DUMP_PAINTING
+      if (nsLayoutUtils::InvalidationDebuggingIsEnabled()) {
+        printf("Invalidating unused display item (%i) belonging to frame %p from layer %p\n", data->mDisplayItemKey, data->mFrameList[0], t);
+      }
 #endif
       InvalidatePostTransformRegion(t,
                                     data->mGeometry->ComputeInvalidationRegion(),
@@ -1227,7 +1222,7 @@ ContainerState::CreateOrRecycleMaskImageLayerFor(Layer* aLayer)
     if (!result)
       return nullptr;
     result->SetUserData(&gMaskLayerUserData, new MaskLayerUserData());
-    result->SetForceSingleTile(true);
+    result->SetDisallowBigImage(true);
   }
   
   return result.forget();
@@ -1273,8 +1268,10 @@ ResetScrollPositionForLayerPixelAlignment(const nsIFrame* aActiveScrolledRoot)
 static void
 InvalidateEntireThebesLayer(ThebesLayer* aLayer, const nsIFrame* aActiveScrolledRoot)
 {
-#ifdef DEBUG_INVALIDATIONS
-  printf("Invalidating entire layer %p\n", aLayer);
+#ifdef MOZ_DUMP_PAINTING
+  if (nsLayoutUtils::InvalidationDebuggingIsEnabled()) {
+    printf("Invalidating entire layer %p\n", aLayer);
+  }
 #endif
   nsIntRect invalidate = aLayer->GetValidRegion().GetBounds();
   aLayer->InvalidateRegion(invalidate);
@@ -1321,14 +1318,18 @@ ContainerState::CreateOrRecycleThebesLayer(const nsIFrame* aActiveScrolledRoot,
 #endif
     }
     if (!data->mRegionToInvalidate.IsEmpty()) {
-#ifdef DEBUG_INVALIDATIONS
-      printf("Invalidating deleted frame content from layer %p\n", layer.get());
+#ifdef MOZ_DUMP_PAINTING
+      if (nsLayoutUtils::InvalidationDebuggingIsEnabled()) {
+        printf("Invalidating deleted frame content from layer %p\n", layer.get());
+      }
 #endif
       layer->InvalidateRegion(data->mRegionToInvalidate);
-#ifdef DEBUG_INVALIDATIONS
-      nsAutoCString str;
-      AppendToString(str, data->mRegionToInvalidate);
-      printf("Invalidating layer %p: %s\n", layer.get(), str.get());
+#ifdef MOZ_DUMP_PAINTING
+      if (nsLayoutUtils::InvalidationDebuggingIsEnabled()) {
+        nsAutoCString str;
+        AppendToString(str, data->mRegionToInvalidate);
+        printf("Invalidating layer %p: %s\n", layer.get(), str.get());
+      }
 #endif
       data->mRegionToInvalidate.SetEmpty();
     }
@@ -1570,15 +1571,9 @@ ContainerState::PopThebesLayerData()
       colorLayer->SetBaseTransform(data->mLayer->GetBaseTransform());
       colorLayer->SetPostScale(data->mLayer->GetPostXScale(), data->mLayer->GetPostYScale());
 
-      // Clip colorLayer to its visible region, since ColorLayers are
-      // allowed to paint outside the visible region. Here we rely on the
-      // fact that uniform display items fill rectangles; obviously the
-      // area to fill must contain the visible region, and because it's
-      // a rectangle, it must therefore contain the visible region's GetBounds.
-      // Note that the visible region is already clipped appropriately.
       nsIntRect visibleRect = data->mVisibleRegion.GetBounds();
-      visibleRect.MoveBy(mParameters.mOffset);
-      colorLayer->SetClipRect(&visibleRect);
+      visibleRect.MoveBy(-GetTranslationForThebesLayer(data->mLayer));
+      colorLayer->SetBounds(visibleRect);
 
       layer = colorLayer;
     }
@@ -1943,11 +1938,12 @@ PaintInactiveLayer(nsDisplayListBuilder* aBuilder,
   nsRefPtr<gfxASurface> surf;
   if (gfxUtils::sDumpPainting) {
     surf = gfxPlatform::GetPlatform()->CreateOffscreenSurface(itemVisibleRect.Size(),
-                                                              gfxASurface::CONTENT_COLOR_ALPHA);
+                                                              GFX_CONTENT_COLOR_ALPHA);
     surf->SetDeviceOffset(-itemVisibleRect.TopLeft());
     context = new gfxContext(surf);
   }
 #endif
+  basic->BeginTransaction();
   basic->SetTarget(context);
 
   if (aItem->GetType() == nsDisplayItem::TYPE_SVG_EFFECTS) {
@@ -2038,6 +2034,9 @@ ContainerState::ProcessDisplayItems(const nsDisplayList& aList,
     topLeft = lastActiveScrolledRoot->GetOffsetToCrossDoc(mContainerReferenceFrame);
   }
 
+  int32_t maxLayers = nsDisplayItem::MaxActiveLayers();
+  int layerCount = 0;
+
   for (nsDisplayItem* item = aList.GetBottom(); item; item = item->GetAbove()) {
     NS_ASSERTION(mAppUnitsPerDevPixel == AppUnitsPerDevPixel(item),
       "items in a container layer should all have the same app units per dev pixel");
@@ -2080,12 +2079,18 @@ ContainerState::ProcessDisplayItems(const nsDisplayList& aList,
       }
     }
 
+    if (maxLayers != -1 && layerCount >= maxLayers) {
+      forceInactive = true;
+    }
+
     // Assign the item to a layer
     if (layerState == LAYER_ACTIVE_FORCE ||
         (layerState == LAYER_INACTIVE && !mManager->IsWidgetLayerManager()) ||
         (!forceInactive &&
          (layerState == LAYER_ACTIVE_EMPTY ||
           layerState == LAYER_ACTIVE))) {
+
+      layerCount++;
 
       // LAYER_ACTIVE_EMPTY means the layer is created just for its metadata.
       // We should never see an empty layer with any visible content!
@@ -2138,12 +2143,7 @@ ContainerState::ProcessDisplayItems(const nsDisplayList& aList,
                                mParameters.mYScale);
       }
 
-      // If a transform layer is marked as fixed then the shadow transform gets
-      // overwritten by CompositorParent when doing scroll compensation on
-      // fixed layers. This means we need to make sure transform layers are not
-      // marked as fixed.
-      ownLayer->SetIsFixedPosition(
-        isFixed && item->GetType() != nsDisplayItem::TYPE_TRANSFORM);
+      ownLayer->SetIsFixedPosition(isFixed);
 
       // Update that layer's clip and visible rects.
       NS_ASSERTION(ownLayer->Manager() == mManager, "Wrong manager");
@@ -2230,8 +2230,8 @@ ContainerState::InvalidateForLayerChange(nsDisplayItem* aItem,
 {
   NS_ASSERTION(aItem->GetPerFrameKey(),
                "Display items that render using Thebes must have a key");
-  nsDisplayItemGeometry *oldGeometry = NULL;
-  DisplayItemClip* oldClip = NULL;
+  nsDisplayItemGeometry *oldGeometry = nullptr;
+  DisplayItemClip* oldClip = nullptr;
   nsAutoTArray<nsIFrame*,4> changedFrames;
   bool isInvalid = false;
   Layer* oldLayer = mLayerBuilder->GetOldLayerFor(aItem, &oldGeometry, &oldClip, &changedFrames, &isInvalid);
@@ -2243,8 +2243,10 @@ ContainerState::InvalidateForLayerChange(nsDisplayItem* aItem,
       // Note that whenever the layer's scale changes, we invalidate the whole thing,
       // so it doesn't matter whether we are using the old scale at last paint
       // or a new scale here
-#ifdef DEBUG_INVALIDATIONS
-      printf("Display item type %s(%p) changed layers %p to %p!\n", aItem->Name(), aItem->Frame(), t, aNewLayer);
+#ifdef MOZ_DUMP_PAINTING
+      if (nsLayoutUtils::InvalidationDebuggingIsEnabled()) {
+        printf("Display item type %s(%p) changed layers %p to %p!\n", aItem->Name(), aItem->Frame(), t, aNewLayer);
+      }
 #endif
       InvalidatePostTransformRegion(t,
           oldGeometry->ComputeInvalidationRegion(),
@@ -2284,16 +2286,20 @@ ContainerState::InvalidateForLayerChange(nsDisplayItem* aItem,
     // This item is being added for the first time, invalidate its entire area.
     //TODO: We call GetGeometry again in AddThebesDisplayItem, we should reuse this.
     combined = aClip.ApplyNonRoundedIntersection(aGeometry->ComputeInvalidationRegion());
-#ifdef DEBUG_INVALIDATIONS
-    printf("Display item type %s(%p) added to layer %p!\n", aItem->Name(), aItem->Frame(), aNewLayer);
+#ifdef MOZ_DUMP_PAINTING
+    if (nsLayoutUtils::InvalidationDebuggingIsEnabled()) {
+      printf("Display item type %s(%p) added to layer %p!\n", aItem->Name(), aItem->Frame(), aNewLayer);
+    }
 #endif
   } else if (isInvalid || (aItem->IsInvalid(invalid) && invalid.IsEmpty())) {
     // Either layout marked item as needing repainting, invalidate the entire old and new areas.
     combined = oldClip->ApplyNonRoundedIntersection(oldGeometry->ComputeInvalidationRegion());
     combined.MoveBy(shift);
     combined.Or(combined, aClip.ApplyNonRoundedIntersection(aGeometry->ComputeInvalidationRegion()));
-#ifdef DEBUG_INVALIDATIONS
-    printf("Display item type %s(%p) (in layer %p) belongs to an invalidated frame!\n", aItem->Name(), aItem->Frame(), aNewLayer);
+#ifdef MOZ_DUMP_PAINTING
+    if (nsLayoutUtils::InvalidationDebuggingIsEnabled()) {
+      printf("Display item type %s(%p) (in layer %p) belongs to an invalidated frame!\n", aItem->Name(), aItem->Frame(), aNewLayer);
+    }
 #endif
   } else {
     // Let the display item check for geometry changes and decide what needs to be
@@ -2316,9 +2322,11 @@ ContainerState::InvalidateForLayerChange(nsDisplayItem* aItem,
     if (aClip.ComputeRegionInClips(oldClip, shift, &clip)) {
       combined.And(combined, clip);
     }
-#ifdef DEBUG_INVALIDATIONS
-    if (!combined.IsEmpty()) {
-      printf("Display item type %s(%p) (in layer %p) changed geometry!\n", aItem->Name(), aItem->Frame(), aNewLayer);
+#ifdef MOZ_DUMP_PAINTING
+    if (nsLayoutUtils::InvalidationDebuggingIsEnabled()) {
+      if (!combined.IsEmpty()) {
+        printf("Display item type %s(%p) (in layer %p) changed geometry!\n", aItem->Name(), aItem->Frame(), aNewLayer);
+      }
     }
 #endif
   }
@@ -2341,7 +2349,7 @@ FrameLayerBuilder::AddThebesDisplayItem(ThebesLayer* aLayer,
 {
   ThebesDisplayItemLayerUserData* thebesData =
     static_cast<ThebesDisplayItemLayerUserData*>(aLayer->GetUserData(&gThebesDisplayItemLayerUserData));
-  nsRefPtr<LayerManager> tempManager;
+  nsRefPtr<BasicLayerManager> tempManager;
   nsIntRect intClip;
   bool hasClip = false;
   if (aLayerState != LAYER_NONE) {
@@ -2411,6 +2419,7 @@ FrameLayerBuilder::AddThebesDisplayItem(ThebesLayer* aLayer,
 
       tempManager->SetRoot(layer);
       layerBuilder->WillEndTransaction();
+      tempManager->AbortTransaction();
 
       nsIntPoint offset = GetLastPaintOffset(aLayer) - GetTranslationForThebesLayer(aLayer);
       props->MoveBy(-offset);
@@ -2421,8 +2430,10 @@ FrameLayerBuilder::AddThebesDisplayItem(ThebesLayer* aLayer,
                                                                         invalid.GetBounds());
       }
       if (!invalid.IsEmpty()) {
-#ifdef DEBUG_INVALIDATIONS
-        printf("Inactive LayerManager(%p) for display item %s(%p) has an invalid region - invalidating layer %p\n", tempManager.get(), aItem->Name(), aItem->Frame(), aLayer);
+#ifdef MOZ_DUMP_PAINTING
+        if (nsLayoutUtils::InvalidationDebuggingIsEnabled()) {
+          printf("Inactive LayerManager(%p) for display item %s(%p) has an invalid region - invalidating layer %p\n", tempManager.get(), aItem->Name(), aItem->Frame(), aLayer);
+        }
 #endif
         if (hasClip) {
           invalid.And(invalid, intClip);
@@ -2498,13 +2509,7 @@ FrameLayerBuilder::StoreDataForFrame(nsIFrame* aFrame,
 FrameLayerBuilder::ClippedDisplayItem::~ClippedDisplayItem()
 {
   if (mInactiveLayerManager) {
-    // We always start a transaction during layer construction for all inactive
-    // layers, but we don't necessarily call EndTransaction during painting.
-    // If the transaaction is still open, end it to avoid assertions.
     BasicLayerManager* basic = static_cast<BasicLayerManager*>(mInactiveLayerManager.get());
-    if (basic->InTransaction()) {
-      basic->EndTransaction(nullptr, nullptr);
-    }
     basic->SetUserData(&gLayerManagerLayerBuilder, nullptr);
   }
 }
@@ -2515,7 +2520,7 @@ FrameLayerBuilder::AddLayerDisplayItem(Layer* aLayer,
                                        const DisplayItemClip& aClip,
                                        LayerState aLayerState,
                                        const nsPoint& aTopLeft,
-                                       LayerManager* aManager,
+                                       BasicLayerManager* aManager,
                                        nsAutoPtr<nsDisplayItemGeometry> aGeometry)
 {
   if (aLayer->Manager() != mRetainingManager)
@@ -2655,7 +2660,7 @@ ChooseScaleAndSetTransform(FrameLayerBuilder* aLayerBuilder,
   }
   gfxMatrix transform2d;
   if (aContainerFrame &&
-      aState == LAYER_INACTIVE &&
+      (aState == LAYER_INACTIVE || aState == LAYER_SVG_EFFECTS) &&
       (!aTransform || (aTransform->Is2D(&transform2d) &&
                        !transform2d.HasNonTranslation()))) {
     // When we have an inactive ContainerLayer, translate the container by the offset to the
@@ -2668,8 +2673,8 @@ ChooseScaleAndSetTransform(FrameLayerBuilder* aLayerBuilder,
     nsPoint appUnitOffset = aDisplayListBuilder->ToReferenceFrame(aContainerFrame);
     nscoord appUnitsPerDevPixel = aContainerFrame->PresContext()->AppUnitsPerDevPixel();
     offset = nsIntPoint(
-        int32_t(NSAppUnitsToDoublePixels(appUnitOffset.x, appUnitsPerDevPixel)*aIncomingScale.mXScale),
-        int32_t(NSAppUnitsToDoublePixels(appUnitOffset.y, appUnitsPerDevPixel)*aIncomingScale.mYScale));
+        NS_lround(NSAppUnitsToDoublePixels(appUnitOffset.x, appUnitsPerDevPixel)*aIncomingScale.mXScale),
+        NS_lround(NSAppUnitsToDoublePixels(appUnitOffset.y, appUnitsPerDevPixel)*aIncomingScale.mYScale));
   }
   transform = transform * gfx3DMatrix::Translation(offset.x + aIncomingScale.mOffset.x, offset.y + aIncomingScale.mOffset.y, 0);
 
@@ -2940,15 +2945,10 @@ FrameLayerBuilder::BuildContainerLayerFor(nsDisplayListBuilder* aBuilder,
       flags = Layer::CONTENT_OPAQUE;
     }
   }
-
-  if (aContainerFrame->GetStateBits() & NS_FRAME_SVG_LAYOUT) {
-    flags |= Layer::CONTENT_DISABLE_TRANSFORM_SNAPPING;
-  }
-
   containerLayer->SetContentFlags(flags);
 
   mContainerLayerGeneration = oldGeneration;
-  containerLayer->SetUserData(&gNotifySubDocInvalidationData, nullptr);
+  nsPresContext::ClearNotifySubDocInvalidationData(containerLayer);
 
   return containerLayer.forget();
 }
@@ -3094,7 +3094,7 @@ static void DebugPaintItem(nsRenderingContext* aDest, nsDisplayItem *aItem, nsDi
 
   nsRefPtr<gfxASurface> surf =
     gfxPlatform::GetPlatform()->CreateOffscreenSurface(gfxIntSize(bounds.width, bounds.height),
-                                                       gfxASurface::CONTENT_COLOR_ALPHA);
+                                                       GFX_CONTENT_COLOR_ALPHA);
   surf->SetDeviceOffset(-bounds.TopLeft());
   nsRefPtr<gfxContext> context = new gfxContext(surf);
   nsRefPtr<nsRenderingContext> ctx = new nsRenderingContext();
@@ -3110,6 +3110,177 @@ static void DebugPaintItem(nsRenderingContext* aDest, nsDisplayItem *aItem, nsDi
   aDest->ThebesContext()->Fill();
 }
 #endif
+
+/* static */ void
+FrameLayerBuilder::RecomputeVisibilityForItems(nsTArray<ClippedDisplayItem>& aItems,
+                                               nsDisplayListBuilder *aBuilder,
+                                               const nsIntRegion& aRegionToDraw,
+                                               const nsIntPoint& aOffset,
+                                               int32_t aAppUnitsPerDevPixel,
+                                               float aXScale,
+                                               float aYScale)
+{
+  uint32_t i;
+  // Update visible regions. We need perform visibility analysis again
+  // because we may be asked to draw into part of a ThebesLayer that
+  // isn't actually visible in the window (e.g., because a ThebesLayer
+  // expanded its visible region to a rectangle internally), in which
+  // case the mVisibleRect stored in the display item may be wrong.
+  nsRegion visible = aRegionToDraw.ToAppUnits(aAppUnitsPerDevPixel);
+  visible.MoveBy(NSIntPixelsToAppUnits(aOffset.x, aAppUnitsPerDevPixel),
+                 NSIntPixelsToAppUnits(aOffset.y, aAppUnitsPerDevPixel));
+  visible.ScaleInverseRoundOut(aXScale, aYScale);
+
+  for (i = aItems.Length(); i > 0; --i) {
+    ClippedDisplayItem* cdi = &aItems[i - 1];
+    const DisplayItemClip& clip = cdi->mItem->GetClip();
+
+    NS_ASSERTION(AppUnitsPerDevPixel(cdi->mItem) == aAppUnitsPerDevPixel,
+                 "a thebes layer should contain items only at the same zoom");
+
+    NS_ABORT_IF_FALSE(clip.HasClip() ||
+                      clip.GetRoundedRectCount() == 0,
+                      "If we have rounded rects, we must have a clip rect");
+
+    if (!clip.IsRectAffectedByClip(visible.GetBounds())) {
+      cdi->mItem->RecomputeVisibility(aBuilder, &visible);
+      continue;
+    }
+
+    // Do a little dance to account for the fact that we're clipping
+    // to cdi->mClipRect
+    nsRegion clipped;
+    clipped.And(visible, clip.NonRoundedIntersection());
+    nsRegion finalClipped = clipped;
+    cdi->mItem->RecomputeVisibility(aBuilder, &finalClipped);
+    // If we have rounded clip rects, don't subtract from the visible
+    // region since we aren't displaying everything inside the rect.
+    if (clip.GetRoundedRectCount() == 0) {
+      nsRegion removed;
+      removed.Sub(clipped, finalClipped);
+      nsRegion newVisible;
+      newVisible.Sub(visible, removed);
+      // Don't let the visible region get too complex.
+      if (newVisible.GetNumRects() <= 15) {
+        visible = newVisible;
+      }
+    }
+  }
+}
+
+void
+FrameLayerBuilder::PaintItems(nsTArray<ClippedDisplayItem>& aItems,
+                              const nsIntRect& aRect,
+                              gfxContext *aContext,
+                              nsRenderingContext *aRC,
+                              nsDisplayListBuilder* aBuilder,
+                              nsPresContext* aPresContext,
+                              const nsIntPoint& aOffset,
+                              float aXScale, float aYScale,
+                              int32_t aCommonClipCount)
+{
+  int32_t appUnitsPerDevPixel = aPresContext->AppUnitsPerDevPixel();
+  nsRect boundRect = aRect.ToAppUnits(appUnitsPerDevPixel);
+  boundRect.MoveBy(NSIntPixelsToAppUnits(aOffset.x, appUnitsPerDevPixel),
+                 NSIntPixelsToAppUnits(aOffset.y, appUnitsPerDevPixel));
+  boundRect.ScaleInverseRoundOut(aXScale, aYScale);
+
+  DisplayItemClip currentClip;
+  bool currentClipIsSetInContext = false;
+  DisplayItemClip tmpClip;
+
+  for (uint32_t i = 0; i < aItems.Length(); ++i) {
+    ClippedDisplayItem* cdi = &aItems[i];
+
+    nsRect paintRect = cdi->mItem->GetVisibleRect().Intersect(boundRect);
+    if (paintRect.IsEmpty())
+      continue;
+
+    // If the new desired clip state is different from the current state,
+    // update the clip.
+    const DisplayItemClip* clip = &cdi->mItem->GetClip();
+    if (clip->GetRoundedRectCount() > 0 &&
+        !clip->IsRectClippedByRoundedCorner(cdi->mItem->GetVisibleRect())) {
+      tmpClip = *clip;
+      tmpClip.RemoveRoundedCorners();
+      clip = &tmpClip;
+    }
+    if (currentClipIsSetInContext != clip->HasClip() ||
+        (clip->HasClip() && *clip != currentClip)) {
+      if (currentClipIsSetInContext) {
+        aContext->Restore();
+      }
+      currentClipIsSetInContext = clip->HasClip();
+      if (currentClipIsSetInContext) {
+        currentClip = *clip;
+        aContext->Save();
+        NS_ASSERTION(aCommonClipCount < 100,
+          "Maybe you really do have more than a hundred clipping rounded rects, or maybe something has gone wrong.");
+        currentClip.ApplyTo(aContext, aPresContext, aCommonClipCount);
+        aContext->NewPath();
+      }
+    }
+
+    if (cdi->mInactiveLayerManager) {
+      PaintInactiveLayer(aBuilder, cdi->mInactiveLayerManager, cdi->mItem, aContext, aRC);
+    } else {
+      nsIFrame* frame = cdi->mItem->Frame();
+      frame->AddStateBits(NS_FRAME_PAINTED_THEBES);
+#ifdef MOZ_DUMP_PAINTING
+
+      if (gfxUtils::sDumpPainting) {
+        DebugPaintItem(aRC, cdi->mItem, aBuilder);
+      } else {
+#else
+      {
+#endif
+        cdi->mItem->Paint(aBuilder, aRC);
+      }
+    }
+
+    if (CheckDOMModified())
+      break;
+  }
+
+  if (currentClipIsSetInContext) {
+    aContext->Restore();
+  }
+}
+
+/**
+ * Returns true if it is preferred to draw the list of display
+ * items separately for each rect in the visible region rather
+ * than clipping to a complex region.
+ */
+static bool ShouldDrawRectsSeparately(gfxContext* aContext, DrawRegionClip aClip)
+{
+  static bool sPaintRectsSeparately;
+  static bool sPaintRectsSeparatelyPrefCached = false;
+  if (!sPaintRectsSeparatelyPrefCached) {
+    mozilla::Preferences::AddBoolVarCache(&sPaintRectsSeparately, "layout.paint_rects_separately", false);
+    sPaintRectsSeparatelyPrefCached = true;
+  }
+
+  if (!sPaintRectsSeparately ||
+      aContext->IsCairo() ||
+      aClip == CLIP_NONE) {
+    return false;
+  }
+
+  DrawTarget *dt = aContext->GetDrawTarget();
+  return dt->GetType() == BACKEND_DIRECT2D;
+}
+
+static void DrawForcedBackgroundColor(gfxContext* aContext, Layer* aLayer, nscolor aBackgroundColor)
+{
+  if (NS_GET_A(aBackgroundColor) > 0) {
+    nsIntRect r = aLayer->GetVisibleRegion().GetBounds();
+    aContext->NewPath();
+    aContext->Rectangle(gfxRect(r.x, r.y, r.width, r.height));
+    aContext->SetColor(gfxRGBA(aBackgroundColor));
+    aContext->Fill();
+  }
+}
 
 /*
  * A note on residual transforms:
@@ -3143,6 +3314,7 @@ static void DebugPaintItem(nsRenderingContext* aDest, nsDisplayItem *aItem, nsDi
 FrameLayerBuilder::DrawThebesLayer(ThebesLayer* aLayer,
                                    gfxContext* aContext,
                                    const nsIntRegion& aRegionToDraw,
+                                   DrawRegionClip aClip,
                                    const nsIntRegion& aRegionToInvalidate,
                                    void* aCallbackData)
 {
@@ -3157,165 +3329,80 @@ FrameLayerBuilder::DrawThebesLayer(ThebesLayer* aLayer,
   if (layerBuilder->CheckDOMModified())
     return;
 
-  nsTArray<ClippedDisplayItem> items;
-  uint32_t commonClipCount;
-  nsIFrame* containerLayerFrame;
-  {
-    ThebesLayerItemsEntry* entry = layerBuilder->mThebesLayerItems.GetEntry(aLayer);
-    NS_ASSERTION(entry, "We shouldn't be drawing into a layer with no items!");
-    items.SwapElements(entry->mItems);
-    commonClipCount = entry->mCommonClipCount;
-    containerLayerFrame = entry->mContainerLayerFrame;
-    // Later after this point, due to calls to DidEndTransaction
-    // for temporary layer managers, mThebesLayerItems can change,
-    // so 'entry' could become invalid.
-  }
-
-  if (!containerLayerFrame) {
+  ThebesLayerItemsEntry* entry = layerBuilder->mThebesLayerItems.GetEntry(aLayer);
+  NS_ASSERTION(entry, "We shouldn't be drawing into a layer with no items!");
+  if (!entry->mContainerLayerFrame) {
     return;
   }
+
 
   ThebesDisplayItemLayerUserData* userData =
     static_cast<ThebesDisplayItemLayerUserData*>
       (aLayer->GetUserData(&gThebesDisplayItemLayerUserData));
   NS_ASSERTION(userData, "where did our user data go?");
-  if (NS_GET_A(userData->mForcedBackgroundColor) > 0) {
-    nsIntRect r = aLayer->GetVisibleRegion().GetBounds();
-    aContext->NewPath();
-    aContext->Rectangle(gfxRect(r.x, r.y, r.width, r.height));
-    aContext->SetColor(gfxRGBA(userData->mForcedBackgroundColor));
-    aContext->Fill();
+
+  bool shouldDrawRectsSeparately = ShouldDrawRectsSeparately(aContext, aClip);
+
+  if (!shouldDrawRectsSeparately) {
+    if (aClip == CLIP_DRAW_SNAPPED) {
+      gfxUtils::ClipToRegionSnapped(aContext, aRegionToDraw);
+    } else if (aClip == CLIP_DRAW) {
+      gfxUtils::ClipToRegion(aContext, aRegionToDraw);
+    }
+
+    DrawForcedBackgroundColor(aContext, aLayer, userData->mForcedBackgroundColor);
   }
 
   // make the origin of the context coincide with the origin of the
   // ThebesLayer
   gfxContextMatrixAutoSaveRestore saveMatrix(aContext);
   nsIntPoint offset = GetTranslationForThebesLayer(aLayer);
-  // Apply the residual transform if it has been enabled, to ensure that
-  // snapping when we draw into aContext exactly matches the ideal transform.
-  // See above for why this is OK.
-  aContext->Translate(aLayer->GetResidualTranslation() - gfxPoint(offset.x, offset.y));
-  aContext->Scale(userData->mXScale, userData->mYScale);
 
-  nsPresContext* presContext = containerLayerFrame->PresContext();
+  nsPresContext* presContext = entry->mContainerLayerFrame->PresContext();
   int32_t appUnitsPerDevPixel = presContext->AppUnitsPerDevPixel();
 
-  uint32_t i;
-  // Update visible regions. We need perform visibility analysis again
-  // because we may be asked to draw into part of a ThebesLayer that
-  // isn't actually visible in the window (e.g., because a ThebesLayer
-  // expanded its visible region to a rectangle internally), in which
-  // case the mVisibleRect stored in the display item may be wrong.
-  nsRegion visible = aRegionToDraw.ToAppUnits(appUnitsPerDevPixel);
-  visible.MoveBy(NSIntPixelsToAppUnits(offset.x, appUnitsPerDevPixel),
-                 NSIntPixelsToAppUnits(offset.y, appUnitsPerDevPixel));
-  visible.ScaleInverseRoundOut(userData->mXScale, userData->mYScale);
-
-  for (i = items.Length(); i > 0; --i) {
-    ClippedDisplayItem* cdi = &items[i - 1];
-    const DisplayItemClip& clip = cdi->mItem->GetClip();
-
-    NS_ASSERTION(AppUnitsPerDevPixel(cdi->mItem) == appUnitsPerDevPixel,
-                 "a thebes layer should contain items only at the same zoom");
-
-    NS_ABORT_IF_FALSE(clip.HasClip() ||
-                      clip.GetRoundedRectCount() == 0,
-                      "If we have rounded rects, we must have a clip rect");
-
-    if (!clip.IsRectAffectedByClip(visible.GetBounds())) {
-      cdi->mItem->RecomputeVisibility(builder, &visible);
-      continue;
-    }
-
-    // Do a little dance to account for the fact that we're clipping
-    // to cdi->mClipRect
-    nsRegion clipped;
-    clipped.And(visible, clip.NonRoundedIntersection());
-    nsRegion finalClipped = clipped;
-    cdi->mItem->RecomputeVisibility(builder, &finalClipped);
-    // If we have rounded clip rects, don't subtract from the visible
-    // region since we aren't displaying everything inside the rect.
-    if (clip.GetRoundedRectCount() == 0) {
-      nsRegion removed;
-      removed.Sub(clipped, finalClipped);
-      nsRegion newVisible;
-      newVisible.Sub(visible, removed);
-      // Don't let the visible region get too complex.
-      if (newVisible.GetNumRects() <= 15) {
-        visible = newVisible;
-      }
-    }
-  }
+  RecomputeVisibilityForItems(entry->mItems, builder, aRegionToDraw,
+                              offset, appUnitsPerDevPixel,
+                              userData->mXScale, userData->mYScale);
 
   nsRefPtr<nsRenderingContext> rc = new nsRenderingContext();
   rc->Init(presContext->DeviceContext(), aContext);
 
-  DisplayItemClip currentClip;
-  bool currentClipIsSetInContext = false;
-  DisplayItemClip tmpClip;
+  if (shouldDrawRectsSeparately) {
+    nsIntRegionRectIterator it(aRegionToDraw);
+    while (const nsIntRect* iterRect = it.Next()) {
+      gfxContextAutoSaveRestore save(aContext);
+      aContext->NewPath();
+      aContext->Rectangle(*iterRect, aClip == CLIP_DRAW_SNAPPED);
+      aContext->Clip();
 
-  for (i = 0; i < items.Length(); ++i) {
-    ClippedDisplayItem* cdi = &items[i];
+      DrawForcedBackgroundColor(aContext, aLayer, userData->mForcedBackgroundColor);
 
-    if (cdi->mItem->GetVisibleRect().IsEmpty())
-      continue;
+      // Apply the residual transform if it has been enabled, to ensure that
+      // snapping when we draw into aContext exactly matches the ideal transform.
+      // See above for why this is OK.
+      aContext->Translate(aLayer->GetResidualTranslation() - gfxPoint(offset.x, offset.y));
+      aContext->Scale(userData->mXScale, userData->mYScale);
 
-    // If the new desired clip state is different from the current state,
-    // update the clip.
-    const DisplayItemClip* clip = &cdi->mItem->GetClip();
-    if (clip->GetRoundedRectCount() > 0 &&
-        !clip->IsRectClippedByRoundedCorner(cdi->mItem->GetVisibleRect())) {
-      tmpClip = *clip;
-      tmpClip.RemoveRoundedCorners();
-      clip = &tmpClip;
+      layerBuilder->PaintItems(entry->mItems, *iterRect, aContext, rc,
+                               builder, presContext,
+                               offset, userData->mXScale, userData->mYScale,
+                               entry->mCommonClipCount);
     }
-    if (currentClipIsSetInContext != clip->HasClip() ||
-        (clip->HasClip() && *clip != currentClip)) {
-      if (currentClipIsSetInContext) {
-        aContext->Restore();
-      }
-      currentClipIsSetInContext = clip->HasClip();
-      if (currentClipIsSetInContext) {
-        currentClip = *clip;
-        aContext->Save();
-        NS_ASSERTION(commonClipCount < 100,
-          "Maybe you really do have more than a hundred clipping rounded rects, or maybe something has gone wrong.");
-        currentClip.ApplyTo(aContext, presContext, commonClipCount);
-      }
-    }
+  } else {
+    // Apply the residual transform if it has been enabled, to ensure that
+    // snapping when we draw into aContext exactly matches the ideal transform.
+    // See above for why this is OK.
+    aContext->Translate(aLayer->GetResidualTranslation() - gfxPoint(offset.x, offset.y));
+    aContext->Scale(userData->mXScale, userData->mYScale);
 
-    if (cdi->mInactiveLayerManager) {
-      PaintInactiveLayer(builder, cdi->mInactiveLayerManager, cdi->mItem, aContext, rc);
-    } else {
-      nsIFrame* frame = cdi->mItem->Frame();
-      frame->AddStateBits(NS_FRAME_PAINTED_THEBES);
-#ifdef MOZ_DUMP_PAINTING
-
-      if (gfxUtils::sDumpPainting) {
-        DebugPaintItem(rc, cdi->mItem, builder);
-      } else {
-#else
-      {
-#endif
-        cdi->mItem->Paint(builder, rc);
-      }
-    }
-
-    if (layerBuilder->CheckDOMModified())
-      break;
+    layerBuilder->PaintItems(entry->mItems, aRegionToDraw.GetBounds(), aContext, rc,
+                             builder, presContext,
+                             offset, userData->mXScale, userData->mYScale,
+                             entry->mCommonClipCount);
   }
 
-  {
-    ThebesLayerItemsEntry* entry =
-      layerBuilder->mThebesLayerItems.GetEntry(aLayer);
-    items.SwapElements(entry->mItems);
-  }
-
-  if (currentClipIsSetInContext) {
-    aContext->Restore();
-  }
-
-  if (presContext->RefreshDriver()->GetPaintFlashing()) {
+  if (presContext->GetPaintFlashing()) {
     FlashPaint(aContext);
   }
 
@@ -3402,6 +3489,7 @@ ContainerState::SetupMaskLayer(Layer *aLayer, const DisplayItemClip& aClip,
   newData.mScaleX = mParameters.mXScale;
   newData.mScaleY = mParameters.mYScale;
   newData.mOffset = mParameters.mOffset;
+  newData.mAppUnitsPerDevPixel = mContainerFrame->PresContext()->AppUnitsPerDevPixel();
 
   if (*userData == newData) {
     aLayer->SetMaskLayer(maskLayer);
@@ -3410,8 +3498,8 @@ ContainerState::SetupMaskLayer(Layer *aLayer, const DisplayItemClip& aClip,
   }
 
   // calculate a more precise bounding rect
-  const int32_t A2D = mContainerFrame->PresContext()->AppUnitsPerDevPixel();
-  gfxRect boundingRect = CalculateBounds(newData.mRoundedClipRects, A2D);
+  gfxRect boundingRect = CalculateBounds(newData.mRoundedClipRects,
+                                         newData.mAppUnitsPerDevPixel);
   boundingRect.Scale(mParameters.mXScale, mParameters.mYScale);
 
   uint32_t maxSize = mManager->GetMaxTextureSize();
@@ -3467,7 +3555,10 @@ ContainerState::SetupMaskLayer(Layer *aLayer, const DisplayItemClip& aClip,
 
     // paint the clipping rects with alpha to create the mask
     context->SetColor(gfxRGBA(1, 1, 1, 1));
-    aClip.DrawRoundedRectsTo(context, A2D, 0, aRoundedRectClipCount);
+    aClip.DrawRoundedRectsTo(context,
+                             newData.mAppUnitsPerDevPixel,
+                             0,
+                             aRoundedRectClipCount);
 
     // build the image and container
     container = aLayer->Manager()->CreateImageContainer();

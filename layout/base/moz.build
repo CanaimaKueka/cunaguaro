@@ -10,12 +10,15 @@ XPIDL_SOURCES += [
     'nsIStyleSheetService.idl',
 ]
 
-if not CONFIG['MOZ_XUL']:
-    XPIDL_SOURCES += [
-        'nsIBoxObject.idl',
+if CONFIG['IBMBIDI']:
+    SOURCES += [
+        'nsBidi.cpp',
+        'nsBidiPresUtils.cpp',
     ]
-    EXPORTS    += [
-        'nsPIBoxObject.h',
+
+if CONFIG['MOZ_DEBUG']:
+    SOURCES += [
+        'nsAutoLayoutPhase.cpp',
     ]
 
 XPIDL_MODULE = 'layout_base'
@@ -27,14 +30,13 @@ EXPORTS += [
     'DisplayListClipState.h',
     'FrameLayerBuilder.h',
     'FramePropertyTable.h',
-    'StackArena.h',
     'nsArenaMemoryStats.h',
     'nsBidi.h',
     'nsBidiPresUtils.h',
-    'nsCSSFrameConstructor.h',
     'nsCaret.h',
     'nsChangeHint.h',
     'nsCompatibility.h',
+    'nsCSSFrameConstructor.h',
     'nsDisplayItemTypes.h',
     'nsDisplayItemTypesList.h',
     'nsDisplayList.h',
@@ -54,10 +56,57 @@ EXPORTS += [
     'nsPresState.h',
     'nsRefreshDriver.h',
     'nsStyleChangeList.h',
-    'nsStyleConsts.h',
+    'ScrollbarStyles.h',
+    'StackArena.h',
+    'Units.h',
 ]
 
 EXPORTS.mozilla += [
     'PaintTracker.h',
 ]
+
+SOURCES += [
+    'DisplayItemClip.cpp',
+    'DisplayListClipState.cpp',
+    'FrameLayerBuilder.cpp',
+    'FramePropertyTable.cpp',
+    'MaskLayerImageCache.cpp',
+    'nsCaret.cpp',
+    'nsCounterManager.cpp',
+    'nsCSSColorUtils.cpp',
+    'nsCSSFrameConstructor.cpp',
+    'nsCSSRendering.cpp',
+    'nsCSSRenderingBorders.cpp',
+    'nsDisplayList.cpp',
+    'nsDisplayListInvalidation.cpp',
+    'nsDocumentViewer.cpp',
+    'nsFrameManager.cpp',
+    'nsFrameTraversal.cpp',
+    'nsGenConList.cpp',
+    'nsLayoutDebugger.cpp',
+    'nsLayoutHistoryState.cpp',
+    'nsLayoutUtils.cpp',
+    'nsPresArena.cpp',
+    'nsPresContext.cpp',
+    'nsPresShell.cpp',
+    'nsQuoteList.cpp',
+    'nsRefreshDriver.cpp',
+    'nsStyleChangeList.cpp',
+    'nsStyleSheetService.cpp',
+    'PaintTracker.cpp',
+    'PositionedEventTargeting.cpp',
+    'RestyleManager.cpp',
+    'RestyleTracker.cpp',
+    'StackArena.cpp',
+]
+
+FAIL_ON_WARNINGS = True
+
+LIBXUL_LIBRARY = True
+
+MSVC_ENABLE_PGO = True
+
+LIBRARY_NAME = 'gkbase_s'
+
+include('/ipc/chromium/chromium-config.mozbuild')
 

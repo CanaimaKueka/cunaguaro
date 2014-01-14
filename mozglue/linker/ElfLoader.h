@@ -11,6 +11,7 @@
 #include "mozilla/RefPtr.h"
 #include "Zip.h"
 #include "Elfxx.h"
+#include "Mappable.h"
 
 /**
  * dlfcn.h replacement functions
@@ -30,10 +31,6 @@ extern "C" {
   } Dl_info;
 #endif
   int __wrap_dladdr(void *addr, Dl_info *info);
-
-  sighandler_t __wrap_signal(int signum, sighandler_t handler);
-  int __wrap_sigaction(int signum, const struct sigaction *act,
-                       struct sigaction *oldact);
 
   struct dl_phdr_info {
     Elf::Addr dlpi_addr;
@@ -57,6 +54,9 @@ __dl_mmap(void *handle, void *addr, size_t length, off_t offset);
 MFBT_API void
 __dl_munmap(void *handle, void *addr, size_t length);
 
+MFBT_API bool
+IsSignalHandlingBroken();
+
 }
 
 /**
@@ -68,24 +68,23 @@ __dl_munmap(void *handle, void *addr, size_t length);
 class LibHandle;
 
 namespace mozilla {
+namespace detail {
 
-template <> inline void RefCounted<LibHandle>::Release();
+template <> inline void RefCounted<LibHandle, AtomicRefCount>::Release() const;
 
-template <> inline RefCounted<LibHandle>::~RefCounted()
+template <> inline RefCounted<LibHandle, AtomicRefCount>::~RefCounted()
 {
   MOZ_ASSERT(refCnt == 0x7fffdead);
 }
 
+} /* namespace detail */
 } /* namespace mozilla */
-
-/* Forward declaration */
-class Mappable;
 
 /**
  * Abstract class for loaded libraries. Libraries may be loaded through the
  * system linker or this linker, both cases will be derived from this class.
  */
-class LibHandle: public mozilla::RefCounted<LibHandle>
+class LibHandle: public mozilla::AtomicRefCounted<LibHandle>
 {
 public:
   /**
@@ -136,7 +135,7 @@ public:
   void AddDirectRef()
   {
     ++directRefCnt;
-    mozilla::RefCounted<LibHandle>::AddRef();
+    mozilla::AtomicRefCounted<LibHandle>::AddRef();
   }
 
   /**
@@ -147,10 +146,11 @@ public:
   {
     bool ret = false;
     if (directRefCnt) {
-      MOZ_ASSERT(directRefCnt <= mozilla::RefCounted<LibHandle>::refCount());
+      MOZ_ASSERT(directRefCnt <=
+                 mozilla::AtomicRefCounted<LibHandle>::refCount());
       if (--directRefCnt)
         ret = true;
-      mozilla::RefCounted<LibHandle>::Release();
+      mozilla::AtomicRefCounted<LibHandle>::Release();
     }
     return ret;
   }
@@ -201,7 +201,7 @@ private:
   char *path;
 
   /* Mappable object keeping the result of GetMappable() */
-  mutable Mappable *mappable;
+  mutable mozilla::RefPtr<Mappable> mappable;
 };
 
 /**
@@ -213,8 +213,9 @@ private:
  * would mean too many Releases from within the destructor.
  */
 namespace mozilla {
+namespace detail {
 
-template <> inline void RefCounted<LibHandle>::Release() {
+template <> inline void RefCounted<LibHandle, AtomicRefCount>::Release() const {
 #ifdef DEBUG
   if (refCnt > 0x7fff0000)
     MOZ_ASSERT(refCnt > 0x7fffdead);
@@ -227,11 +228,12 @@ template <> inline void RefCounted<LibHandle>::Release() {
 #else
       refCnt = 1;
 #endif
-      delete static_cast<LibHandle*>(this);
+      delete static_cast<const LibHandle*>(this);
     }
   }
 }
 
+} /* namespace detail */
 } /* namespace mozilla */
 
 /**
@@ -287,19 +289,25 @@ private:
  * The ElfLoader registers its own SIGSEGV handler to handle segmentation
  * faults within the address space of the loaded libraries. It however
  * allows a handler to be set for faults in other places, and redispatches
- * to the handler set through signal() or sigaction(). We assume no system
- * library loaded with system dlopen is going to call signal or sigaction
- * for SIGSEGV.
+ * to the handler set through signal() or sigaction().
  */
 class SEGVHandler
 {
+public:
+  bool hasRegisteredHandler() {
+    return registeredHandler;
+  }
+
+  bool isSignalHandlingBroken() {
+    return signalHandlingBroken;
+  }
+
 protected:
   SEGVHandler();
   ~SEGVHandler();
 
 private:
-  friend sighandler_t __wrap_signal(int signum, sighandler_t handler);
-  friend int __wrap_sigaction(int signum, const struct sigaction *act,
+  static int __wrap_sigaction(int signum, const struct sigaction *act,
                               struct sigaction *oldact);
 
   /**
@@ -311,6 +319,11 @@ private:
    * ElfLoader SIGSEGV handler.
    */
   static void handler(int signum, siginfo_t *info, void *context);
+
+  /**
+   * Temporary test handler.
+   */
+  static void test_handler(int signum, siginfo_t *info, void *context);
 
   /**
    * Size of the alternative stack. The printf family requires more than 8KB
@@ -328,6 +341,10 @@ private:
    * not set or not big enough.
    */
   MappedPtr stackPtr;
+
+  bool registeredHandler;
+  bool signalHandlingBroken;
+  bool signalHandlingSlow;
 };
 
 /**
@@ -544,7 +561,7 @@ private:
       {
         if (other.item == NULL)
           return item ? true : false;
-        MOZ_NOT_REACHED("DebuggerHelper::iterator::operator< called with something else than DebuggerHelper::end()");
+        MOZ_CRASH("DebuggerHelper::iterator::operator< called with something else than DebuggerHelper::end()");
       }
     protected:
       friend class DebuggerHelper;

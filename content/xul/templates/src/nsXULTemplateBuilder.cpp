@@ -67,6 +67,8 @@
 #include "nsXULTemplateQueryProcessorXML.h"
 #include "nsXULTemplateQueryProcessorStorage.h"
 #include "nsContentUtils.h"
+#include "ChildIterator.h"
+#include "nsCxPusher.h"
 
 using namespace mozilla::dom;
 using namespace mozilla;
@@ -169,9 +171,6 @@ nsXULTemplateBuilder::InitGlobals()
         gXULTemplateLog = PR_NewLogModule("nsXULTemplateBuilder");
 #endif
 
-    if (!mMatchMap.IsInitialized())
-        mMatchMap.Init();
-
     return NS_OK;
 }
 
@@ -232,6 +231,8 @@ TraverseMatchList(nsISupports* aKey, nsTemplateMatch* aMatch, void* aContext)
     return PL_DHASH_NEXT;
 }
 
+NS_IMPL_CYCLE_COLLECTION_CLASS(nsXULTemplateBuilder)
+
 NS_IMPL_CYCLE_COLLECTION_UNLINK_BEGIN(nsXULTemplateBuilder)
     NS_IMPL_CYCLE_COLLECTION_UNLINK(mDataSource)
     NS_IMPL_CYCLE_COLLECTION_UNLINK(mDB)
@@ -240,9 +241,7 @@ NS_IMPL_CYCLE_COLLECTION_UNLINK_BEGIN(nsXULTemplateBuilder)
     NS_IMPL_CYCLE_COLLECTION_UNLINK(mRootResult)
     NS_IMPL_CYCLE_COLLECTION_UNLINK(mListeners)
     NS_IMPL_CYCLE_COLLECTION_UNLINK(mQueryProcessor)
-    if (tmp->mMatchMap.IsInitialized()) {
-      tmp->mMatchMap.Enumerate(DestroyMatchList, nullptr);
-    }
+    tmp->mMatchMap.Enumerate(DestroyMatchList, nullptr);
     for (uint32_t i = 0; i < tmp->mQuerySets.Length(); ++i) {
         nsTemplateQuerySet* qs = tmp->mQuerySets[i];
         delete qs;
@@ -262,8 +261,7 @@ NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN(nsXULTemplateBuilder)
     NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mRootResult)
     NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mListeners)
     NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mQueryProcessor)
-    if (tmp->mMatchMap.IsInitialized())
-        tmp->mMatchMap.EnumerateRead(TraverseMatchList, &cb);
+    tmp->mMatchMap.EnumerateRead(TraverseMatchList, &cb);
     {
       uint32_t i, count = tmp->mQuerySets.Length();
       for (i = 0; i < count; ++i) {
@@ -1370,7 +1368,8 @@ nsXULTemplateBuilder::InitHTMLTemplateRoot()
     if (! doc)
         return NS_ERROR_UNEXPECTED;
 
-    nsIScriptGlobalObject *global = doc->GetScriptGlobalObject();
+    nsCOMPtr<nsIScriptGlobalObject> global =
+      do_QueryInterface(doc->GetWindow());
     if (! global)
         return NS_ERROR_UNEXPECTED;
 
@@ -1384,12 +1383,9 @@ nsXULTemplateBuilder::InitHTMLTemplateRoot()
         return NS_ERROR_UNEXPECTED;
 
     JS::Rooted<JSObject*> scope(jscontext, global->GetGlobalJSObject());
-
-    JSAutoRequest ar(jscontext);
-
     JS::Rooted<JS::Value> v(jscontext);
     nsCOMPtr<nsIXPConnectJSObjectHolder> wrapper;
-    rv = nsContentUtils::WrapNative(jscontext, scope, mRoot, mRoot, v.address(),
+    rv = nsContentUtils::WrapNative(jscontext, scope, mRoot, mRoot, &v,
                                     getter_AddRefs(wrapper));
     NS_ENSURE_SUCCESS(rv, rv);
 
@@ -1397,14 +1393,14 @@ nsXULTemplateBuilder::InitHTMLTemplateRoot()
 
     if (mDB) {
         // database
-        JS::Value jsdatabase;
+        JS::Rooted<JS::Value> jsdatabase(jscontext);
         rv = nsContentUtils::WrapNative(jscontext, scope, mDB,
                                         &NS_GET_IID(nsIRDFCompositeDataSource),
                                         &jsdatabase, getter_AddRefs(wrapper));
         NS_ENSURE_SUCCESS(rv, rv);
 
         bool ok;
-        ok = JS_SetProperty(jscontext, jselement, "database", &jsdatabase);
+        ok = JS_SetProperty(jscontext, jselement, "database", jsdatabase);
         NS_ASSERTION(ok, "unable to set database property");
         if (! ok)
             return NS_ERROR_FAILURE;
@@ -1412,7 +1408,7 @@ nsXULTemplateBuilder::InitHTMLTemplateRoot()
 
     {
         // builder
-        JS::Value jsbuilder;
+        JS::Rooted<JS::Value> jsbuilder(jscontext);
         nsCOMPtr<nsIXPConnectJSObjectHolder> wrapper;
         rv = nsContentUtils::WrapNative(jscontext, jselement,
                                         static_cast<nsIXULTemplateBuilder*>(this),
@@ -1421,7 +1417,7 @@ nsXULTemplateBuilder::InitHTMLTemplateRoot()
         NS_ENSURE_SUCCESS(rv, rv);
 
         bool ok;
-        ok = JS_SetProperty(jscontext, jselement, "builder", &jsbuilder);
+        ok = JS_SetProperty(jscontext, jselement, "builder", jsbuilder);
         if (! ok)
             return NS_ERROR_FAILURE;
     }
@@ -1655,47 +1651,28 @@ nsXULTemplateBuilder::GetTemplateRoot(nsIContent** aResult)
         }
     }
 
-#if 1 // XXX hack to workaround bug with XBL insertion/removal?
-    {
-        // If root node has no template attribute, then look for a child
-        // node which is a template tag
-        for (nsIContent* child = mRoot->GetFirstChild();
-             child;
-             child = child->GetNextSibling()) {
+    // If root node has no template attribute, then look for a child
+    // node which is a template tag.
+    for (nsIContent* child = mRoot->GetFirstChild();
+         child;
+         child = child->GetNextSibling()) {
 
-            if (IsTemplateElement(child)) {
-                NS_ADDREF(*aResult = child);
-                return NS_OK;
-            }
+        if (IsTemplateElement(child)) {
+            NS_ADDREF(*aResult = child);
+            return NS_OK;
         }
     }
-#endif
 
-    // If we couldn't find a real child, look through the anonymous
-    // kids, too.
-    nsCOMPtr<nsIDocument> doc = mRoot->GetDocument();
-    if (! doc)
-        return NS_OK;
-
-    nsCOMPtr<nsIDOMNodeList> kids;
-    doc->BindingManager()->GetXBLChildNodesFor(mRoot, getter_AddRefs(kids));
-
-    if (kids) {
-        uint32_t length;
-        kids->GetLength(&length);
-
-        for (uint32_t i = 0; i < length; ++i) {
-            nsCOMPtr<nsIDOMNode> node;
-            kids->Item(i, getter_AddRefs(node));
-            if (! node)
-                continue;
-
-            nsCOMPtr<nsIContent> child = do_QueryInterface(node);
-
-            if (IsTemplateElement(child)) {
-                NS_ADDREF(*aResult = child.get());
-                return NS_OK;
-            }
+    // Look through the anonymous children as well. Although FlattenedChildIterator
+    // will find a template element that has been placed in an insertion point, many
+    // bindings do not have a specific insertion point for the template element, which
+    // would cause it to not be part of the flattened content tree. The check above to
+    // check the explicit children as well handles this case.
+    FlattenedChildIterator iter(mRoot);
+    for (nsIContent* child = iter.GetNextChild(); child; child = iter.GetNextChild()) {
+        if (IsTemplateElement(child)) {
+            NS_ADDREF(*aResult = child);
+            return NS_OK;
         }
     }
 

@@ -1,39 +1,6 @@
-<!-- ***** BEGIN LICENSE BLOCK *****
-   - Version: MPL 1.1/GPL 2.0/LGPL 2.1
-   -
-   - The contents of this file are subject to the Mozilla Public License Version
-   - 1.1 (the "License"); you may not use this file except in compliance with
-   - the License. You may obtain a copy of the License at
-   - http://www.mozilla.org/MPL/
-   -
-   - Software distributed under the License is distributed on an "AS IS" basis,
-   - WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
-   - for the specific language governing rights and limitations under the
-   - License.
-   -
-   - The Original Code is mozilla.org code.
-   -
-   - The Initial Developer of the Original Code is
-   - Netscape Communications Corp.
-   - Portions created by the Initial Developer are Copyright (C) 2001
-   - the Initial Developer. All Rights Reserved.
-   -
-   - Contributor(s):
-   -   Terry Hayes <thayes@netscape.com>
-   -
-   - Alternatively, the contents of this file may be used under the terms of
-   - either the GNU General Public License Version 2 or later (the "GPL"), or
-   - the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
-   - in which case the provisions of the GPL or the LGPL are applicable instead
-   - of those above. If you wish to allow use of your version of this file only
-   - under the terms of either the GPL or the LGPL, and not to allow others to
-   - use your version of this file under the terms of the MPL, indicate your
-   - decision by deleting the provisions above and replace them with the notice
-   - and other provisions required by the GPL or the LGPL. If you do not delete
-   - the provisions above, a recipient may use your version of this file under
-   - the terms of any one of the MPL, the GPL or the LGPL.
-   -
-   - ***** END LICENSE BLOCK ***** -->
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
 <!--
 # Translator(s):
 #
@@ -75,24 +42,23 @@
 
 <!-- Downloading a cert -->
 <!ENTITY downloadCert.title "Zladënk certifikatów">
-<!ENTITY downloadCert.message1 "Zażądano dôwaniô wiarë nowémù Òrganowi Certifikacji (CA).">
-<!ENTITY downloadCert.trustSSL "Wierzë nemù CA przë identifikacji Internetowëch stron.">
+<!ENTITY downloadCert.message1 "Zażądano dôwaniô wiarë nowémù Òrganowi Certifikacje (CA).">
+<!ENTITY downloadCert.trustSSL "Wierzë nemù CA przë identifikacje Internetowëch stron.">
 <!ENTITY downloadCert.trustEmail "Wierzë nemù CA do rozszlachòwaniô e-mailowëch brëkòwników.">
 <!ENTITY downloadCert.trustObjSign "Wierzë nemù CA do rozszlachòwaniô programistów softwôra.">
 <!ENTITY downloadCert.message3 "Nim dôsz wiarë nemù CA, przezdrzë jegò certifikat, pòlitikã bezpiekù i procedurë (Żlë są dô).">
 <!ENTITY downloadCert.viewCert.label "Wëzdrzatk">
 <!ENTITY downloadCert.viewPolicy.label "Wskôzë">
-<!ENTITY downloadCert.viewCert.text "Sprôwdzë certifikat Òrganu Certifikacji">
-<!ENTITY downloadCert.viewPolicy.text "Sprôwdzë pòlitikã i procedurë Òrganu Certifikacji">
+<!ENTITY downloadCert.viewCert.text "Sprôwdzë certifikat Òrganu Certifikacje">
+<!ENTITY downloadCert.viewPolicy.text "Sprôwdzë pòlitikã i procedurë Òrganu Certifikacje">
 
 <!-- Certificate Exists in database -->
-<!ENTITY caCertExists.title "Certifikat ju je">
-<!ENTITY caCertExists.message "Certifikat ju je.">
+
 
 <!-- Strings for the SSL client auth ask dialog -->
-<!ENTITY clientAuthAsk.title "Żądanié identifikacji brëkòwnika">
-<!ENTITY clientAuthAsk.message1 "Na strona żądô identifikacji przez certifikat:">
-<!ENTITY clientAuthAsk.message2 "Wëbierzë certifikat dlô pòcwierdzeniô identifikacji:">
+<!ENTITY clientAuthAsk.title "Żądanié identifikacje brëkòwnika">
+<!ENTITY clientAuthAsk.message1 "Na strona żądô identifikacje przez certifikat:">
+<!ENTITY clientAuthAsk.message2 "Wëbierzë certifikat dlô pòcwierdzeniô identifikacje:">
 <!ENTITY clientAuthAsk.message3 "Detale wëbrónégò certifikatu:">
 
 <!-- Strings for the cert picker dialog -->
@@ -113,14 +79,11 @@
 <!ENTITY chooseToken.message1 "Proszã wëbierzë token.">
 
 <!ENTITY escrowWarn.title "Kòpiô klucza szifrowania">
-<!ENTITY escrowWarn.message1 "Wôżné: Òrgan werifikacji chce zazychrowac twòj priwatny klucz szifrowaniô.">
-<!ENTITY escrowWarn.benefit1 "Żlë stracysz przistãp do swòjich priwatnëch kluczë, bãdzész mógł je dobëc nazôt òd òrganu werifikacji.">
-<!ENTITY escrowWarn.message2 "Twòj priwatny klucz bãdze zazychrowóny przez òrgan werifikacji mógłbë bëc ùzëti do òtemkniãcô twòjich zaszifrowónëch e-mailów, czë dokùmeńtów, bez twòjégò zezwoleniô.">
+<!ENTITY escrowWarn.message1 "Wôżné: Òrgan werifikacje chce zazychrowac twòj priwatny klucz szifrowaniô.">
+<!ENTITY escrowWarn.benefit1 "Żlë stracysz przistãp do swòjich priwatnëch kluczë, bãdzész mógł je dobëc nazôt òd òrganu werifikacje.">
+<!ENTITY escrowWarn.message2 "Twòj priwatny klucz bãdze zazychrowóny przez òrgan werifikacje mógłbë bëc ùzëti do òtemkniãcô twòjich zaszifrowónëch e-mailów, czë dokùmeńtów, bez twòjégò zezwoleniô.">
 <!ENTITY examineCert.label "Wëskrzëni certifikat">
 <!ENTITY examineCert.accesskey "W">
-
-<!ENTITY serverCrlNextupdate.message "Sparłãczë sã proszã z twòjim sprôwnikã systemù pò pòmòc
-">
 
 <!-- Strings for the CreateCertInfo dialog  -->
 <!ENTITY createCertInfo.title "Ùsôdzë priwatny klucz">
@@ -133,8 +96,8 @@
 <!ENTITY formSigning.confirmPassword "Pòcwierdzë przez pòdpis przë ùżëcym certifikata i pòdanim przédny parolë:">
 
 <!-- Strings for protectedAuth dialog -->
-<!ENTITY protectedAuth.title "Zabezpieczony token autorizacji">
-<!ENTITY protectedAuth.msg "Autentizëje sã proszã do tokenu. Metoda autentizacji zanôlégô òd ôrtu tokenu.">
+<!ENTITY protectedAuth.title "Zabezpieczony token aùtorizacje">
+<!ENTITY protectedAuth.msg "Autentizëje sã proszã do tokenu. Metoda autentizacje zanôlégô òd ôrtu tokenu.">
 <!ENTITY protectedAuth.tokenName.label "Token:">
 
 <!ENTITY certErrorDlg.title "Felënk bezpiecznégò sparłãczeniô">

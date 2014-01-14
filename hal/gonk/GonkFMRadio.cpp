@@ -203,7 +203,7 @@ runTavaruaRadio(void *)
   if (!sRadioEnabled) {
     NS_DispatchToMainThread(new RadioUpdate(hal::FM_RADIO_OPERATION_ENABLE,
                                             hal::FM_RADIO_OPERATION_STATUS_FAIL));
-    return NULL;
+    return nullptr;
   }
 
   uint8_t buf[128];
@@ -223,11 +223,19 @@ runTavaruaRadio(void *)
     for (unsigned int i = 0; i < buffer.bytesused; i++) {
       switch (buf[i]) {
       case TAVARUA_EVT_RADIO_READY:
-        NS_DispatchToMainThread(new RadioUpdate(hal::FM_RADIO_OPERATION_ENABLE,
-                                                hal::FM_RADIO_OPERATION_STATUS_SUCCESS));
+        // The driver sends RADIO_READY both when we turn the radio on and when we turn 
+        // the radio off.
+        if (sRadioEnabled) {
+          NS_DispatchToMainThread(new RadioUpdate(hal::FM_RADIO_OPERATION_ENABLE,
+                                                  hal::FM_RADIO_OPERATION_STATUS_SUCCESS));
+        }
         break;
       case TAVARUA_EVT_SEEK_COMPLETE:
         NS_DispatchToMainThread(new RadioUpdate(hal::FM_RADIO_OPERATION_SEEK,
+                                                hal::FM_RADIO_OPERATION_STATUS_SUCCESS));
+        break;
+      case TAVARUA_EVT_TUNE_SUCC:
+        NS_DispatchToMainThread(new RadioUpdate(hal::FM_RADIO_OPERATION_TUNE,
                                                 hal::FM_RADIO_OPERATION_STATUS_SUCCESS));
         break;
       default:
@@ -236,7 +244,7 @@ runTavaruaRadio(void *)
     }
   }
 
-  return NULL;
+  return nullptr;
 }
 
 /* This runs on the main thread but most of the
@@ -278,7 +286,7 @@ EnableFMRadio(const hal::FMRadioSettings& aInfo)
 
   // Tavarua specific start
   sTavaruaVersion = cap.version;
-  pthread_create(&sRadioThread, NULL, runTavaruaRadio, NULL);
+  pthread_create(&sRadioThread, nullptr, runTavaruaRadio, nullptr);
   // Tavarua specific end
 }
 
@@ -297,7 +305,7 @@ DisableFMRadio()
   }
   // Tavarua specific end
 
-  pthread_join(sRadioThread, NULL);
+  pthread_join(sRadioThread, nullptr);
 
   close(sRadioFD);
 

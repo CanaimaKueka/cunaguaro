@@ -29,15 +29,9 @@ InsertElementTxn::InsertElementTxn()
 {
 }
 
-NS_IMPL_CYCLE_COLLECTION_UNLINK_BEGIN_INHERITED(InsertElementTxn, EditTxn)
-  NS_IMPL_CYCLE_COLLECTION_UNLINK(mNode)
-  NS_IMPL_CYCLE_COLLECTION_UNLINK(mParent)
-NS_IMPL_CYCLE_COLLECTION_UNLINK_END
-
-NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN_INHERITED(InsertElementTxn, EditTxn)
-  NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mNode)
-  NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mParent)
-NS_IMPL_CYCLE_COLLECTION_TRAVERSE_END
+NS_IMPL_CYCLE_COLLECTION_INHERITED_2(InsertElementTxn, EditTxn,
+                                     mNode,
+                                     mParent)
 
 NS_IMPL_ADDREF_INHERITED(InsertElementTxn, EditTxn)
 NS_IMPL_RELEASE_INHERITED(InsertElementTxn, EditTxn)
@@ -68,8 +62,7 @@ NS_IMETHODIMP InsertElementTxn::DoTransaction(void)
   { 
     nsCOMPtr<nsIContent>nodeAsContent = do_QueryInterface(mNode);
     nsCOMPtr<nsIContent>parentAsContent = do_QueryInterface(mParent);
-    nsString namestr;
-    mNode->GetNodeName(namestr);
+    nsString namestr = mNode->NodeName();
     char* nodename = ToNewCString(namestr);
     printf("%p Do Insert Element of %p <%s> into parent %p at offset %d\n", 
            static_cast<void*>(this),

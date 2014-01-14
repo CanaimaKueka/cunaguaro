@@ -34,7 +34,7 @@ bool gShutdown = false;
 class TransactionThreadPoolListener : public nsIThreadPoolListener
 {
 public:
-  NS_DECL_ISUPPORTS
+  NS_DECL_THREADSAFE_ISUPPORTS
   NS_DECL_NSITHREADPOOLLISTENER
 
 private:
@@ -51,7 +51,7 @@ BEGIN_INDEXEDDB_NAMESPACE
 class FinishTransactionRunnable MOZ_FINAL : public nsIRunnable
 {
 public:
-  NS_DECL_ISUPPORTS
+  NS_DECL_THREADSAFE_ISUPPORTS
   NS_DECL_NSIRUNNABLE
 
   inline FinishTransactionRunnable(IDBTransaction* aTransaction,
@@ -121,8 +121,6 @@ nsresult
 TransactionThreadPool::Init()
 {
   NS_ASSERTION(NS_IsMainThread(), "Wrong thread!");
-
-  mTransactionsInProgress.Init();
 
   nsresult rv;
   mThreadPool = do_CreateInstance(NS_THREADPOOL_CONTRACTID, &rv);
@@ -448,7 +446,8 @@ TransactionThreadPool::AbortTransactionsForDatabase(IDBDatabase* aDatabase)
     // This can fail, for example if the transaction is in the process of
     // being comitted. That is expected and fine, so we ignore any returned
     // errors.
-    transactions[index]->Abort();
+    ErrorResult rv;
+    transactions[index]->Abort(rv);
   }
 }
 
@@ -566,8 +565,7 @@ TransactionThreadPool::TransactionQueue::Finish(nsIRunnable* aFinishRunnable)
   mMonitor.Notify();
 }
 
-NS_IMPL_THREADSAFE_ISUPPORTS1(TransactionThreadPool::TransactionQueue,
-                              nsIRunnable)
+NS_IMPL_ISUPPORTS1(TransactionThreadPool::TransactionQueue, nsIRunnable)
 
 NS_IMETHODIMP
 TransactionThreadPool::TransactionQueue::Run()
@@ -639,7 +637,7 @@ FinishTransactionRunnable::FinishTransactionRunnable(
   mFinishRunnable.swap(aFinishRunnable);
 }
 
-NS_IMPL_THREADSAFE_ISUPPORTS1(FinishTransactionRunnable, nsIRunnable)
+NS_IMPL_ISUPPORTS1(FinishTransactionRunnable, nsIRunnable)
 
 NS_IMETHODIMP
 FinishTransactionRunnable::Run()
@@ -665,14 +663,14 @@ FinishTransactionRunnable::Run()
 
 #ifdef MOZ_ENABLE_PROFILER_SPS
 
-NS_IMPL_THREADSAFE_ISUPPORTS1(TransactionThreadPoolListener,
-                              nsIThreadPoolListener)
+NS_IMPL_ISUPPORTS1(TransactionThreadPoolListener, nsIThreadPoolListener)
 
 NS_IMETHODIMP
 TransactionThreadPoolListener::OnThreadCreated()
 {
   MOZ_ASSERT(!NS_IsMainThread());
-  profiler_register_thread("IndexedDB Transaction");
+  char aLocal;
+  profiler_register_thread("IndexedDB Transaction", &aLocal);
   return NS_OK;
 }
 

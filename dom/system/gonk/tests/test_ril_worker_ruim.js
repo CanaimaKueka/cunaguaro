@@ -48,6 +48,8 @@ add_test(function test_is_ruim_service_available() {
 
   test_table([0x0, 0x0, 0x0, 0x0, 0x03], "SPN", true);
   test_table([0x0, 0x0, 0x0, 0x03, 0x0], "SPN", false);
+  test_table([0x0, 0x0C, 0x0, 0x0, 0x0], "ENHANCED_PHONEBOOK", true);
+  test_table([0x0, 0x0,  0x0, 0x0, 0x0], "ENHANCED_PHONEBOOK", false);
 
   run_next_test();
 });
@@ -80,7 +82,7 @@ add_test(function test_read_cdmahome() {
     let cdmaHome = [0xc1, 0x34, 0xff, 0xff, 0x00];
 
     // Write data size
-    buf.writeUint32(cdmaHome.length * 2);
+    buf.writeInt32(cdmaHome.length * 2);
 
     // Write cdma home file.
     for (let i = 0; i < cdmaHome.length; i++) {
@@ -126,7 +128,7 @@ add_test(function test_read_cdmaspn() {
   function testReadSpn(file, expectedSpn, expectedDisplayCondition) {
     io.loadTransparentEF = function fakeLoadTransparentEF(options)  {
       // Write data size
-      buf.writeUint32(file.length * 2);
+      buf.writeInt32(file.length * 2);
 
       // Write file.
       for (let i = 0; i < file.length; i++) {
@@ -143,7 +145,7 @@ add_test(function test_read_cdmaspn() {
 
     worker.RuimRecordHelper.readSPN();
     do_check_eq(worker.RIL.iccInfo.spn, expectedSpn);
-    do_check_eq(worker.RIL.iccInfoPrivate.SPN.spnDisplayCondition,
+    do_check_eq(worker.RIL.iccInfoPrivate.spnDisplayCondition,
                 expectedDisplayCondition);
   }
 
@@ -156,7 +158,7 @@ add_test(function test_read_cdmaspn() {
               String.fromCharCode(0x592a) +
               String.fromCharCode(0x96fb) +
               String.fromCharCode(0x4fe1),
-              true);
+              0x1);
 
   // Test when there's no tailing 0xff in spn string.
   testReadSpn([0x01, 0x04, 0x06, 0x4e, 0x9e, 0x59, 0x2a, 0x96,
@@ -165,7 +167,7 @@ add_test(function test_read_cdmaspn() {
               String.fromCharCode(0x592a) +
               String.fromCharCode(0x96fb) +
               String.fromCharCode(0x4fe1),
-              true);
+              0x1);
 
   run_next_test();
 });
@@ -199,16 +201,14 @@ add_test(function test_cdma_spn_display_condition() {
                                 currentSystemId, currentNetworkId,
                                 expectUpdateDisplayCondition,
                                 expectIsDisplaySPNRequired) {
-    RIL.iccInfoPrivate.SPN = {
-      spnDisplayCondition: ruimDisplayCondition
-    };
+    RIL.iccInfoPrivate.spnDisplayCondition = ruimDisplayCondition;
     RIL.cdmaHome = {
       systemId: homeSystemIds,
       networkId: homeNetworkIds
     };
-    RIL.cdmaSubscription = {
-      systemId: currentSystemId,
-      networkId: currentNetworkId
+    RIL.voiceRegistrationState.cell = {
+      cdmaSystemId: currentSystemId,
+      cdmaNetworkId: currentNetworkId
     };
 
     do_check_eq(ICCUtilsHelper.updateDisplayCondition(), expectUpdateDisplayCondition);
@@ -217,16 +217,16 @@ add_test(function test_cdma_spn_display_condition() {
   };
 
   // SPN is not required when ruimDisplayCondition is false.
-  testDisplayCondition(false, [123], [345], 123, 345, true, false);
+  testDisplayCondition(0x0, [123], [345], 123, 345, true, false);
 
   // System id and network id are all match.
-  testDisplayCondition(true, [123], [345], 123, 345, true, true);
+  testDisplayCondition(0x1, [123], [345], 123, 345, true, true);
 
   // Network is 65535, we should only need to match system id.
-  testDisplayCondition(true, [123], [65535], 123, 345, false, true);
+  testDisplayCondition(0x1, [123], [65535], 123, 345, false, true);
 
   // Not match.
-  testDisplayCondition(true, [123], [456], 123, 345, true, false);
+  testDisplayCondition(0x1, [123], [456], 123, 345, true, false);
 
   run_next_test();
 });

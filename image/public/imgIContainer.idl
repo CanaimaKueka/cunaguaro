@@ -11,7 +11,7 @@
 #include "gfxContext.h"
 #include "gfxMatrix.h"
 #include "gfxRect.h"
-#include "gfxPattern.h"
+#include "GraphicsFilter.h"
 #include "gfxASurface.h"
 #include "nsRect.h"
 #include "nsSize.h"
@@ -31,6 +31,12 @@ class TimeStamp;
 class SVGImageContext;
 }
 
+namespace mozilla {
+namespace image {
+class Orientation;
+}
+}
+
 %}
 
 [ptr] native gfxImageSurface(gfxImageSurface);
@@ -39,13 +45,14 @@ native gfxImageFormat(gfxASurface::gfxImageFormat);
 [ptr] native gfxContext(gfxContext);
 [ref] native gfxMatrix(gfxMatrix);
 [ref] native gfxRect(gfxRect);
-native gfxGraphicsFilter(gfxPattern::GraphicsFilter);
+native gfxGraphicsFilter(GraphicsFilter);
 [ref] native nsIntRect(nsIntRect);
 [ref] native nsIntSize(nsIntSize);
 native nsSize(nsSize);
 [ptr] native nsIFrame(nsIFrame);
 [ptr] native ImageContainer(mozilla::layers::ImageContainer);
 [ptr] native LayerManager(mozilla::layers::LayerManager);
+native Orientation(mozilla::image::Orientation);
 [ref] native TimeStamp(mozilla::TimeStamp);
 [ptr] native SVGImageContext(mozilla::SVGImageContext);
 
@@ -57,7 +64,7 @@ native nsSize(nsSize);
  *
  * Internally, imgIContainer also manages animation of images.
  */
-[scriptable, builtinclass, uuid(e385f907-9a59-419b-8e15-e2a96d8ce044)]
+[scriptable, builtinclass, uuid(73340b79-e3ae-4f02-97d0-822db78017e5)]
 interface imgIContainer : nsISupports
 {
   /**
@@ -232,6 +239,14 @@ interface imgIContainer : nsISupports
    */
   [noscript] void startDecoding();
 
+  /*
+   * Returns true if no more decoding can be performed on this image. Images
+   * with errors return true since they cannot be decoded any further. Note that
+   * because decoded images may be discarded, isDecoded() may return false even
+   * if it has returned true in the past.
+   */
+  [noscript, notxpcom, nostdcall] bool isDecoded();
+
   /**
     * Increments the lock count on the image. An image will not be discarded
     * as long as the lock count is nonzero. Note that it is still possible for
@@ -293,4 +308,33 @@ interface imgIContainer : nsISupports
    * @param aWhichFrame Frame specifier of the FRAME_* variety.
    */
   [notxpcom] float getFrameIndex(in uint32_t aWhichFrame);
+
+  /*
+   * Returns the inherent orientation of the image, as described in the image's
+   * metadata (e.g. EXIF).
+   */
+  [notxpcom] Orientation getOrientation();
+
+  /*
+   * Returns the delay, in ms, between the first and second frame. If this
+   * returns 0, there is no delay between first and second frame (i.e., this
+   * image could render differently whenever it draws).
+   *
+   * If this image is not animated, or not known to be animated (see attribute
+   * animated), returns -1.
+   */
+  [notxpcom] int32_t getFirstFrameDelay();
+
+  /*
+   * If this is an animated image that hasn't started animating already, this
+   * sets the animation's start time to the indicated time.
+   *
+   * This has no effect if the image isn't animated or it has started animating
+   * already; it also has no effect if the image format doesn't care about
+   * animation start time.
+   *
+   * In all cases, animation does not actually begin until startAnimation(),
+   * resetAnimation(), or requestRefresh() is called for the first time.
+   */
+  [notxpcom] void setAnimationStartTime([const] in TimeStamp aTime);
 };

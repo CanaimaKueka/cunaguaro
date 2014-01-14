@@ -71,6 +71,11 @@ public class WebAppImpl extends GeckoApp {
         try {
             mOrigin = new URL(origin);
         } catch (java.net.MalformedURLException ex) {
+            // If we can't parse the this is an app protocol, just settle for not having an origin
+            if (!origin.startsWith("app://")) {
+                return;
+            }
+
             // If that failed fall back to the origin stored in the shortcut
             Log.i(LOGTAG, "Webapp is not registered with allocator");
             try {
@@ -147,9 +152,9 @@ public class WebAppImpl extends GeckoApp {
     }
 
     @Override
-    protected int getSessionRestoreState(Bundle savedInstanceState) {
+    protected boolean getSessionRestoreState(Bundle savedInstanceState) {
         // for now webapps never restore your session
-        return RESTORE_NONE;
+        return false;
     }
 
     @Override
@@ -158,17 +163,30 @@ public class WebAppImpl extends GeckoApp {
             case SELECTED:
             case LOCATION_CHANGE:
                 if (Tabs.getInstance().isSelectedTab(tab)) {
-                    try {
-                        String title = tab.getURL();
-                        URL page = new URL(title);
-                        mTitlebarText.setText(page.getProtocol() + "://" + page.getHost());
+                    final String urlString = tab.getURL();
+                    final URL url;
 
-                        if (mOrigin != null && mOrigin.getHost().equals(page.getHost()))
-                            mTitlebar.setVisibility(View.GONE);
-                        else
-                            mTitlebar.setVisibility(View.VISIBLE);
+                    try {
+                        url = new URL(urlString);
                     } catch (java.net.MalformedURLException ex) {
-                        Log.e(LOGTAG, "Unable to parse url: ", ex);
+                        mTitlebarText.setText(urlString);
+
+                        // If we can't parse the url, and its an app protocol hide
+                        // the titlebar and return, otherwise show the titlebar
+                        // and the full url
+                        if (!urlString.startsWith("app://")) {
+                            mTitlebar.setVisibility(View.VISIBLE);
+                        } else {
+                            mTitlebar.setVisibility(View.GONE);
+                        }
+                        return;
+                    }
+
+                    if (mOrigin != null && mOrigin.getHost().equals(url.getHost())) {
+                        mTitlebar.setVisibility(View.GONE);
+                    } else {
+                        mTitlebarText.setText(url.getProtocol() + "://" + url.getHost());
+                        mTitlebar.setVisibility(View.VISIBLE);
                     }
                 }
                 break;
@@ -199,11 +217,5 @@ public class WebAppImpl extends GeckoApp {
                 break;
         }
         super.onTabChanged(tab, msg, data);
-    }
-
-    @Override
-    protected void connectGeckoLayerClient() {
-        super.connectGeckoLayerClient();
-        getLayerView().setOverScrollMode(View.OVER_SCROLL_NEVER);
     }
 };

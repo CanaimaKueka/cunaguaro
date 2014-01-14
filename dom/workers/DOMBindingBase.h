@@ -10,6 +10,7 @@
 
 #include "nsISupportsImpl.h"
 #include "nsWrapperCache.h"
+#include "nsWrapperCacheInlines.h"
 
 BEGIN_WORKERS_NAMESPACE
 
@@ -49,8 +50,9 @@ public:
   void
   TraceJSObject(JSTracer* aTrc, const char* aName)
   {
-      if (GetJSObject())
-          TraceJSObjectFromBits(aTrc, aName);
+    if (GetJSObject()) {
+      TraceWrapperJSObject(aTrc, aName);
+    }
   }
 
 #ifdef DEBUG
@@ -63,15 +65,13 @@ public:
   JSObject*
   GetJSObject() const
   {
-    // Reach in and grab the bits directly.
-    return GetJSObjectFromBits();
+    return GetWrapperJSObject();
   }
 
   void
   SetJSObject(JSObject* aObject)
   {
-    // Set the bits directly.
-    SetWrapperBits(aObject);
+    SetWrapperJSObject(aObject);
   }
 #endif
 };

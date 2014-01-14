@@ -32,7 +32,6 @@
 #include "gfxUtils.h"
 #include "SVGContentUtils.h"
 #include <algorithm>
-#include "nsContentUtils.h"
 #include "mozilla/dom/SVGAnimatedLength.h"
 #include "mozilla/dom/SVGComponentTransferFunctionElement.h"
 #include "mozilla/dom/SVGFEDistantLightElement.h"
@@ -51,7 +50,6 @@
 using namespace mozilla;
 using namespace mozilla::dom;
 
-static const unsigned short SVG_FECOMPONENTTRANSFER_TYPE_UNKNOWN  = 0;
 static const unsigned short SVG_FECOMPONENTTRANSFER_TYPE_IDENTITY = 1;
 static const unsigned short SVG_FECOMPONENTTRANSFER_TYPE_TABLE    = 2;
 static const unsigned short SVG_FECOMPONENTTRANSFER_TYPE_DISCRETE = 3;
@@ -157,9 +155,9 @@ nsSVGFE::SetupScalingFilter(nsSVGFilterInstance *aInstance,
                                  nsIntRect(nsIntPoint(), scaledSize));
 
   result.mSource = new gfxImageSurface(scaledSize,
-                                       gfxASurface::ImageFormatARGB32);
+                                       gfxImageFormatARGB32);
   result.mTarget = new gfxImageSurface(scaledSize,
-                                       gfxASurface::ImageFormatARGB32);
+                                       gfxImageFormatARGB32);
   if (!result.mSource || result.mSource->CairoStatus() ||
       !result.mTarget || result.mTarget->CairoStatus()) {
     result.mSource = nullptr;
@@ -273,7 +271,7 @@ nsSVGFE::Height()
   return mLengthAttributes[ATTR_HEIGHT].ToDOMAnimatedLength(this);
 }
 
-already_AddRefed<nsIDOMSVGAnimatedString>
+already_AddRefed<SVGAnimatedString>
 nsSVGFE::Result()
 {
   return GetResultImageName().ToDOMAnimatedString(this);
@@ -387,7 +385,7 @@ SVGComponentTransferFunctionElement::AttributeAffectsRendering(int32_t aNameSpac
 
 //----------------------------------------------------------------------
 
-already_AddRefed<nsIDOMSVGAnimatedEnumeration>
+already_AddRefed<SVGAnimatedEnumeration>
 SVGComponentTransferFunctionElement::Type()
 {
   return mEnumAttributes[TYPE].ToDOMAnimatedEnum(this);
@@ -400,31 +398,31 @@ SVGComponentTransferFunctionElement::TableValues()
     &mNumberListAttributes[TABLEVALUES], this, TABLEVALUES);
 }
 
-already_AddRefed<nsIDOMSVGAnimatedNumber>
+already_AddRefed<SVGAnimatedNumber>
 SVGComponentTransferFunctionElement::Slope()
 {
   return mNumberAttributes[SLOPE].ToDOMAnimatedNumber(this);
 }
 
-already_AddRefed<nsIDOMSVGAnimatedNumber>
+already_AddRefed<SVGAnimatedNumber>
 SVGComponentTransferFunctionElement::Intercept()
 {
   return mNumberAttributes[INTERCEPT].ToDOMAnimatedNumber(this);
 }
 
-already_AddRefed<nsIDOMSVGAnimatedNumber>
+already_AddRefed<SVGAnimatedNumber>
 SVGComponentTransferFunctionElement::Amplitude()
 {
   return mNumberAttributes[AMPLITUDE].ToDOMAnimatedNumber(this);
 }
 
-already_AddRefed<nsIDOMSVGAnimatedNumber>
+already_AddRefed<SVGAnimatedNumber>
 SVGComponentTransferFunctionElement::Exponent()
 {
   return mNumberAttributes[EXPONENT].ToDOMAnimatedNumber(this);
 }
 
-already_AddRefed<nsIDOMSVGAnimatedNumber>
+already_AddRefed<SVGAnimatedNumber>
 SVGComponentTransferFunctionElement::Offset()
 {
   return mNumberAttributes[OFFSET].ToDOMAnimatedNumber(this);

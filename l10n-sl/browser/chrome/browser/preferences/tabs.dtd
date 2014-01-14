@@ -11,9 +11,6 @@
 <!ENTITY warnOpenManyTabs.label "Opozori me, ko lahko odpiranje veliko zavihkov naenkrat upočasni &brandShortName;">
 <!ENTITY warnOpenManyTabs.accesskey "u">
 
-<!ENTITY showTabBar.label "Vedno prikaži vrstico z zavihki">
-<!ENTITY showTabBar.accesskey "v">
-
 <!ENTITY restoreTabsOnDemand.label        "Ne nalagaj zavihkov, dokler niso izbrani">
 <!ENTITY restoreTabsOnDemand.accesskey    "d">
 
@@ -22,3 +19,4 @@
 
 <!ENTITY showTabsInTaskbar.label          "Prikaži predoglede zavihkov v opravilni vrstici Windows">
 <!ENTITY showTabsInTaskbar.accesskey      "k">
+<!ENTITY tabsGroup.label          "Zavihki">

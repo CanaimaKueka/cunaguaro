@@ -4,23 +4,19 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include "mozilla/Util.h"
-
-#include "jsapi.h"
-#include "jsprvtd.h"
-#include "jsalloc.h"
-
-// For js::gc::AutoSuppressGC
-#include "jsgc.h"
-#include "jsobjinlines.h"
-#include "jsgcinlines.h"
-
-#include "js/Vector.h"
+#ifndef jsapi_tests_tests_h
+#define jsapi_tests_tests_h
 
 #include <errno.h>
-#include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+
+#include "jsalloc.h"
+#include "jscntxt.h"
+#include "jsgc.h"
+
+#include "js/Vector.h"
 
 /* Note: Aborts on OOM. */
 class JSAPITestString {
@@ -63,7 +59,8 @@ class JSAPITest
     JSAPITestString msgs;
     JSCompartment *oldCompartment;
 
-    JSAPITest() : rt(NULL), cx(NULL), global(NULL), knownFail(false), oldCompartment(NULL) {
+    JSAPITest() : rt(nullptr), cx(nullptr), global(nullptr),
+                  knownFail(false), oldCompartment(nullptr) {
         next = list;
         list = this;
     }
@@ -75,17 +72,18 @@ class JSAPITest
     virtual void uninit() {
         if (oldCompartment) {
             JS_LeaveCompartment(cx, oldCompartment);
-            oldCompartment = NULL;
+            oldCompartment = nullptr;
         }
         if (cx) {
             JS_RemoveObjectRoot(cx, &global);
+            JS_LeaveCompartment(cx, nullptr);
             JS_EndRequest(cx);
             JS_DestroyContext(cx);
-            cx = NULL;
+            cx = nullptr;
         }
         if (rt) {
             destroyRuntime();
-            rt = NULL;
+            rt = nullptr;
         }
     }
 
@@ -186,7 +184,7 @@ class JSAPITest
     bool checkSame(jsval actualArg, jsval expectedArg,
                    const char *actualExpr, const char *expectedExpr,
                    const char *filename, int lineno) {
-        JSBool same;
+        bool same;
         JS::RootedValue actual(cx, actualArg), expected(cx, expectedArg);
         return (JS_SameValue(cx, actual, expected, &same) && same) ||
                fail(JSAPITestString("CHECK_SAME failed: expected JS_SameValue(cx, ") +
@@ -210,7 +208,7 @@ class JSAPITest
         if (JS_IsExceptionPending(cx)) {
             js::gc::AutoSuppressGC gcoff(cx);
             JS::RootedValue v(cx);
-            JS_GetPendingException(cx, v.address());
+            JS_GetPendingException(cx, &v);
             JS_ClearPendingException(cx);
             JSString *s = JS_ValueToString(cx, v);
             if (s) {
@@ -226,8 +224,8 @@ class JSAPITest
 
     JSAPITestString messages() const { return msgs; }
 
-    static JSClass * basicGlobalClass() {
-        static JSClass c = {
+    static const JSClass * basicGlobalClass() {
+        static const JSClass c = {
             "global", JSCLASS_GLOBAL_FLAGS,
             JS_PropertyStub, JS_DeletePropertyStub, JS_PropertyStub, JS_StrictPropertyStub,
             JS_EnumerateStub, JS_ResolveStub, JS_ConvertStub
@@ -236,17 +234,17 @@ class JSAPITest
     }
 
   protected:
-    static JSBool
+    static bool
     print(JSContext *cx, unsigned argc, jsval *vp)
     {
         jsval *argv = JS_ARGV(cx, vp);
         for (unsigned i = 0; i < argc; i++) {
             JSString *str = JS_ValueToString(cx, argv[i]);
             if (!str)
-                return JS_FALSE;
+                return false;
             char *bytes = JS_EncodeString(cx, str);
             if (!bytes)
-                return JS_FALSE;
+                return false;
             printf("%s%s", i ? " " : "", bytes);
             JS_free(cx, bytes);
         }
@@ -254,16 +252,13 @@ class JSAPITest
         putchar('\n');
         fflush(stdout);
         JS_SET_RVAL(cx, vp, JSVAL_VOID);
-        return JS_TRUE;
+        return true;
     }
 
     bool definePrint();
 
-    virtual JSRuntime * createRuntime() {
-        JSRuntime *rt = JS_NewRuntime(8L * 1024 * 1024, JS_USE_HELPER_THREADS);
-        if (!rt)
-            return NULL;
-
+    static void setNativeStackQuota(JSRuntime *rt)
+    {
         const size_t MAX_STACK_SIZE =
 /* Assume we can't use more than 5e5 bytes of C stack by default. */
 #if (defined(DEBUG) && defined(__SUNPRO_CC))  || defined(JS_CPU_SPARC)
@@ -278,6 +273,13 @@ class JSAPITest
         ;
 
         JS_SetNativeStackQuota(rt, MAX_STACK_SIZE);
+    }
+
+    virtual JSRuntime * createRuntime() {
+        JSRuntime *rt = JS_NewRuntime(8L * 1024 * 1024, JS_USE_HELPER_THREADS);
+        if (!rt)
+            return nullptr;
+        setNativeStackQuota(rt);
         return rt;
     }
 
@@ -297,18 +299,17 @@ class JSAPITest
     virtual JSContext * createContext() {
         JSContext *cx = JS_NewContext(rt, 8192);
         if (!cx)
-            return NULL;
-        JS_SetOptions(cx, JSOPTION_VAROBJFIX);
-        JS_SetVersion(cx, JSVERSION_LATEST);
+            return nullptr;
+        JS::ContextOptionsRef(cx).setVarObjFix(true);
         JS_SetErrorReporter(cx, &reportError);
         return cx;
     }
 
-    virtual JSClass * getGlobalClass() {
+    virtual const JSClass * getGlobalClass() {
         return basicGlobalClass();
     }
 
-    virtual JSObject * createGlobal(JSPrincipals *principals = NULL);
+    virtual JSObject * createGlobal(JSPrincipals *principals = nullptr);
 };
 
 #define BEGIN_TEST(testname)                                            \
@@ -384,7 +385,7 @@ class TempFile {
                     name, strerror(errno));
             exit(1);
         }
-        stream = NULL;
+        stream = nullptr;
     }
 
     /* Delete the temporary file. */
@@ -394,6 +395,8 @@ class TempFile {
                     name, strerror(errno));
             exit(1);
         }
-        name = NULL;
+        name = nullptr;
     }
 };
+
+#endif /* jsapi_tests_tests_h */

@@ -5,3 +5,11 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 PROGRAM = 'CommandExecuteHandler'
+
+SOURCES += [
+    'CEHHelper.cpp',
+    'CommandExecuteHandler.cpp',
+]
+
+# We want this exe in dist/bin
+DIST_SUBDIR = ''

@@ -7,14 +7,17 @@
 #ifndef mozilla_dom_HTMLVideoElement_h
 #define mozilla_dom_HTMLVideoElement_h
 
+#include "mozilla/Attributes.h"
 #include "nsIDOMHTMLVideoElement.h"
 #include "mozilla/dom/HTMLMediaElement.h"
 
 namespace mozilla {
 namespace dom {
 
-class HTMLVideoElement : public HTMLMediaElement,
-                         public nsIDOMHTMLVideoElement
+class VideoPlaybackQuality;
+
+class HTMLVideoElement MOZ_FINAL : public HTMLMediaElement,
+                                   public nsIDOMHTMLVideoElement
 {
 public:
   HTMLVideoElement(already_AddRefed<nsINodeInfo> aNodeInfo);
@@ -24,15 +27,6 @@ public:
 
   // nsISupports
   NS_DECL_ISUPPORTS_INHERITED
-
-  // nsIDOMNode
-  NS_FORWARD_NSIDOMNODE_TO_NSINODE
-
-  // nsIDOMElement
-  NS_FORWARD_NSIDOMELEMENT_TO_GENERIC
-
-  // nsIDOMHTMLElement
-  NS_FORWARD_NSIDOMHTMLELEMENT_TO_GENERIC
 
   // nsIDOMHTMLMediaElement
   using HTMLMediaElement::GetPaused;
@@ -45,18 +39,19 @@ public:
                                 nsIAtom* aAttribute,
                                 const nsAString& aValue,
                                 nsAttrValue& aResult);
-  NS_IMETHOD_(bool) IsAttributeMapped(const nsIAtom* aAttribute) const;
-  virtual nsMapRuleToAttributesFunc GetAttributeMappingFunction() const;
+  NS_IMETHOD_(bool) IsAttributeMapped(const nsIAtom* aAttribute) const MOZ_OVERRIDE;
 
-  virtual nsresult Clone(nsINodeInfo *aNodeInfo, nsINode **aResult) const;
+  static void Init();
+
+  virtual nsMapRuleToAttributesFunc GetAttributeMappingFunction() const MOZ_OVERRIDE;
+
+  virtual nsresult Clone(nsINodeInfo *aNodeInfo, nsINode **aResult) const MOZ_OVERRIDE;
 
   // Set size with the current video frame's height and width.
   // If there is no video frame, returns NS_ERROR_FAILURE.
   nsresult GetVideoSize(nsIntSize* size);
 
   virtual nsresult SetAcceptHeader(nsIHttpChannel* aChannel);
-
-  virtual nsIDOMNode* AsDOMNode() { return this; }
 
   // WebIDL
 
@@ -109,6 +104,8 @@ public:
   bool MozHasAudio() const;
 
   void NotifyOwnerDocumentActivityChanged() MOZ_OVERRIDE;
+
+  already_AddRefed<VideoPlaybackQuality> GetVideoPlaybackQuality();
 
 protected:
   virtual JSObject* WrapNode(JSContext* aCx,

@@ -44,12 +44,12 @@ GetHWNDFromDocShell(nsIDocShell *aShell) {
   nsCOMPtr<nsIBaseWindow> baseWindow(do_QueryInterface(reinterpret_cast<nsISupports*>(aShell)));
 
   if (!baseWindow)
-    return NULL;
+    return nullptr;
 
   nsCOMPtr<nsIWidget> widget;
   baseWindow->GetMainWidget(getter_AddRefs(widget));
 
-  return widget ? (HWND)widget->GetNativeData(NS_NATIVE_WINDOW) : NULL;
+  return widget ? (HWND)widget->GetNativeData(NS_NATIVE_WINDOW) : nullptr;
 }
 
 HWND
@@ -58,7 +58,7 @@ GetHWNDFromDOMWindow(nsIDOMWindow *dw) {
 
   nsCOMPtr<nsPIDOMWindow> window = do_QueryInterface(dw);
   if (!window) 
-    return NULL;
+    return nullptr;
 
   return GetHWNDFromDocShell(window->GetDocShell());
 }
@@ -201,16 +201,16 @@ namespace widget {
 ///////////////////////////////////////////////////////////////////////////////
 // nsIWinTaskbar
 
-NS_IMPL_THREADSAFE_ISUPPORTS1(WinTaskbar, nsIWinTaskbar)
+NS_IMPL_ISUPPORTS1(WinTaskbar, nsIWinTaskbar)
 
 bool
 WinTaskbar::Initialize() {
   if (mTaskbar)
     return true;
 
-  ::CoInitialize(NULL);
+  ::CoInitialize(nullptr);
   HRESULT hr = ::CoCreateInstance(CLSID_TaskbarList,
-                                  NULL,
+                                  nullptr,
                                   CLSCTX_INPROC_SERVER,
                                   IID_ITaskbarList4,
                                   (void**)&mTaskbar);
@@ -289,7 +289,7 @@ WinTaskbar::GetAppUserModelID(nsAString & aDefaultGroupId) {
   regKey.AppendLiteral("\\TaskBarIDs");
 
   WCHAR path[MAX_PATH];
-  if (GetModuleFileNameW(NULL, path, MAX_PATH)) {
+  if (GetModuleFileNameW(nullptr, path, MAX_PATH)) {
     PRUnichar* slash = wcsrchr(path, '\\');
     if (!slash)
       return false;

@@ -10,9 +10,9 @@
 #include "gfxASurface.h"
 #include "gfxContext.h"
 #include "gfxXlibSurface.h"
-#include "nsRect.h"
 
 class QRect;
+struct nsIntRect;
 
 /**
  * This class lets us take code that draws into an Xlib surface drawable and lets us
@@ -20,7 +20,7 @@ class QRect;
  * override NativeDraw, and then call Draw(). The drawing will be subjected
  * to all Thebes transformations, clipping etc.
  */
-class THEBES_API gfxQtNativeRenderer {
+class gfxQtNativeRenderer {
 public:
     /**
      * Perform the native drawing.

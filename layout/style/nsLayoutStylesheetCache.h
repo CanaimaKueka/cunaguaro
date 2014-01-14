@@ -1,4 +1,5 @@
 /* -*- Mode: C++; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+/* vim: set ts=8 sts=2 et sw=2 tw=80: */
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
@@ -9,9 +10,11 @@
 #include "nsIObserver.h"
 #include "nsAutoPtr.h"
 #include "mozilla/Attributes.h"
+#include "mozilla/MemoryReporting.h"
 
-class nsIFile;
 class nsCSSStyleSheet;
+class nsIFile;
+class nsIMemoryReporter;
 class nsIURI;
 
 namespace mozilla {
@@ -19,8 +22,6 @@ namespace css {
 class Loader;
 }
 }
-
-class nsIMemoryReporter;
 
 class nsLayoutStylesheetCache MOZ_FINAL
  : public nsIObserver
@@ -38,7 +39,7 @@ class nsLayoutStylesheetCache MOZ_FINAL
 
   static void Shutdown();
 
-  static size_t SizeOfIncludingThis(nsMallocSizeOfFun aMallocSizeOf);
+  static size_t SizeOfIncludingThis(mozilla::MallocSizeOf aMallocSizeOf);
 
 private:
   nsLayoutStylesheetCache();
@@ -50,7 +51,7 @@ private:
   static void LoadSheet(nsIURI* aURI, nsRefPtr<nsCSSStyleSheet> &aSheet,
                         bool aEnableUnsafeRules);
 
-  size_t SizeOfIncludingThisHelper(nsMallocSizeOfFun aMallocSizeOf) const;
+  size_t SizeOfIncludingThisHelper(mozilla::MallocSizeOf aMallocSizeOf) const;
 
   static nsLayoutStylesheetCache* gStyleCache;
   static mozilla::css::Loader* gCSSLoader;
@@ -62,7 +63,7 @@ private:
   nsRefPtr<nsCSSStyleSheet> mQuirkSheet;
   nsRefPtr<nsCSSStyleSheet> mFullScreenOverrideSheet;
 
-  nsIMemoryReporter* mReporter;
+  nsCOMPtr<nsIMemoryReporter> mReporter;
 };
 
 #endif

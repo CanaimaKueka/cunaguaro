@@ -13,6 +13,7 @@
 #include "nsIComponentRegistrar.h"
 #include "nsIServiceManager.h"
 #include "nsIFile.h"
+#include "mozilla/MemoryReporting.h"
 #include "mozilla/Module.h"
 #include "mozilla/ModuleLoader.h"
 #include "mozilla/Mutex.h"
@@ -37,8 +38,8 @@
 #include "mozilla/Attributes.h"
 
 struct nsFactoryEntry;
-class nsIServiceManager;
 class nsIMemoryReporter;
+class nsIServiceManager;
 struct PRThread;
 
 #define NS_COMPONENTMANAGER_CID                      \
@@ -125,7 +126,7 @@ class nsComponentManagerImpl MOZ_FINAL
     , public nsIInterfaceRequestor
 {
 public:
-    NS_DECL_ISUPPORTS
+    NS_DECL_THREADSAFE_ISUPPORTS
     NS_DECL_NSIINTERFACEREQUESTOR
     NS_DECL_NSICOMPONENTMANAGER
     NS_DECL_NSICOMPONENTREGISTRAR
@@ -210,9 +211,9 @@ public:
         { }
 
         KnownModule(mozilla::FileLocation &aFile)
-            : mModule(NULL)
+            : mModule(nullptr)
             , mFile(aFile)
-            , mLoader(NULL)
+            , mLoader(nullptr)
             , mLoaded(false)
             , mFailed(false)
         { }
@@ -311,12 +312,12 @@ public:
 
     nsTArray<PendingServiceInfo> mPendingServices;
 
-    size_t SizeOfIncludingThis(nsMallocSizeOfFun aMallocSizeOf);
+    size_t SizeOfIncludingThis(mozilla::MallocSizeOf aMallocSizeOf);
 
 private:
     ~nsComponentManagerImpl();
 
-    nsIMemoryReporter* mReporter;
+    nsCOMPtr<nsIMemoryReporter> mReporter;
 };
 
 
@@ -336,7 +337,7 @@ struct nsFactoryEntry
 
     already_AddRefed<nsIFactory> GetFactory();
 
-    size_t SizeOfIncludingThis(nsMallocSizeOfFun aMallocSizeOf);
+    size_t SizeOfIncludingThis(mozilla::MallocSizeOf aMallocSizeOf);
 
     const mozilla::Module::CIDEntry* mCIDEntry;
     nsComponentManagerImpl::KnownModule* mModule;

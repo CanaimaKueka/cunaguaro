@@ -37,6 +37,7 @@
 #include "platform_api.h"
 #include "peer_connection_types.h"
 #include "prlog.h"
+#include "prprf.h"
 #include "sessionHash.h"
 
 extern void update_kpmlconfig(int kpmlVal);
@@ -57,6 +58,8 @@ fsmdef_dcb_t *fsmdef_dcbs;
 
 static const char *fsmdef_state_names[] = {
     "IDLE",
+
+    /* SIP states */
     "COLLECTING_INFO",
     "CALL_SENT",
     "OUTGOING_PROCEEDING",
@@ -71,7 +74,15 @@ static const char *fsmdef_state_names[] = {
     "HOLD_PENDING",
     "HOLDING",
     "RESUME_PENDING",
-    "PRESERVED"
+    "PRESERVED",
+
+    /* WebRTC States */
+    "STABLE",
+    "HAVE_LOCAL_OFFER",
+    "HAVE_REMOTE_OFFER",
+    "HAVE_REMOTE_PRANSWER",
+    "HAVE_LOCAL_PRANSWER",
+    "CLOSED"
 };
 
 
@@ -83,6 +94,8 @@ static sm_rcs_t fsmdef_ev_setpeerconnection(sm_event_t *event);
 static sm_rcs_t fsmdef_ev_addstream(sm_event_t *event);
 static sm_rcs_t fsmdef_ev_removestream(sm_event_t *event);
 static sm_rcs_t fsmdef_ev_addcandidate(sm_event_t *event);
+static sm_rcs_t fsmdef_ev_foundcandidate(sm_event_t *event);
+
 static sm_rcs_t fsmdef_ev_default(sm_event_t *event);
 static sm_rcs_t fsmdef_ev_default_feature_ack(sm_event_t *event);
 static sm_rcs_t fsmdef_ev_idle_setup(sm_event_t *event);
@@ -184,14 +197,15 @@ static sm_function_t fsmdef_function_table[FSMDEF_S_MAX][CC_MSG_MAX] =
     /* CC_MSG_DIALSTRING       */ fsmdef_ev_idle_dialstring,  // new outgoing
     /* CC_MSG_MWI              */ fsmdef_ev_default,
     /* CC_MSG_SESSION_AUDIT    */ fsmdef_ev_session_audit,
-    /* CC_MSG_CREATEOFFER      */ fsmdef_ev_createoffer,
-    /* CC_MSG_CREATEANSWER     */ fsmdef_ev_createanswer,
-    /* CC_MSG_SETLOCALDESC     */ fsmdef_ev_setlocaldesc,
-    /* CC_MSG_SETREMOTEDESC    */ fsmdef_ev_setremotedesc,
+    /* CC_MSG_CREATEOFFER      */ fsmdef_ev_default,
+    /* CC_MSG_CREATEANSWER     */ fsmdef_ev_default,
+    /* CC_MSG_SETLOCALDESC     */ fsmdef_ev_default,
+    /* CC_MSG_SETREMOTEDESC    */ fsmdef_ev_default,
     /* CC_MSG_SETPEERCONNECTION */fsmdef_ev_setpeerconnection,
-    /* CC_MSG_ADDSTREAM        */ fsmdef_ev_addstream,
-    /* CC_MSG_REMOVESTREAM     */ fsmdef_ev_removestream,
-    /* CC_MSG_ADDCANDIDATE     */ fsmdef_ev_addcandidate
+    /* CC_MSG_ADDSTREAM        */ fsmdef_ev_default,
+    /* CC_MSG_REMOVESTREAM     */ fsmdef_ev_default,
+    /* CC_MSG_ADDCANDIDATE     */ fsmdef_ev_default,
+    /* CC_MSG_FOUNDCANDIDATE   */ fsmdef_ev_default
     },
 
 /* FSMDEF_S_COLLECT_INFO ---------------------------------------------------- */
@@ -214,14 +228,15 @@ static sm_function_t fsmdef_function_table[FSMDEF_S_MAX][CC_MSG_MAX] =
     /* CC_MSG_DIALSTRING       */ fsmdef_ev_dialstring,
     /* CC_MSG_MWI              */ fsmdef_ev_default,
     /* CC_MSG_SESSION_AUDIT    */ fsmdef_ev_session_audit,
-    /* CC_MSG_CREATEOFFER      */ fsmdef_ev_createoffer,
-    /* CC_MSG_CREATEANSWER     */ fsmdef_ev_createanswer,
-    /* CC_MSG_SETLOCALDESC     */ fsmdef_ev_setlocaldesc,
-    /* CC_MSG_SETREMOTEDESC    */ fsmdef_ev_setremotedesc,
-    /* CC_MSG_SETPEERCONNECTION */fsmdef_ev_setpeerconnection,
-    /* CC_MSG_ADDSTREAM        */ fsmdef_ev_addstream,
-    /* CC_MSG_REMOVESTREAM     */ fsmdef_ev_removestream,
-    /* CC_MSG_ADDCANDIDATE     */ fsmdef_ev_addcandidate
+    /* CC_MSG_CREATEOFFER      */ fsmdef_ev_default,
+    /* CC_MSG_CREATEANSWER     */ fsmdef_ev_default,
+    /* CC_MSG_SETLOCALDESC     */ fsmdef_ev_default,
+    /* CC_MSG_SETREMOTEDESC    */ fsmdef_ev_default,
+    /* CC_MSG_SETPEERCONNECTION */fsmdef_ev_default,
+    /* CC_MSG_ADDSTREAM        */ fsmdef_ev_default,
+    /* CC_MSG_REMOVESTREAM     */ fsmdef_ev_default,
+    /* CC_MSG_ADDCANDIDATE     */ fsmdef_ev_default,
+    /* CC_MSG_FOUNDCANDIDATE   */ fsmdef_ev_default
     },
 
 /* FSMDEF_S_CALL_SENT ------------------------------------------------------- */
@@ -244,14 +259,15 @@ static sm_function_t fsmdef_function_table[FSMDEF_S_MAX][CC_MSG_MAX] =
     /* CC_MSG_DIALSTRING       */ fsmdef_ev_default,
     /* CC_MSG_MWI              */ fsmdef_ev_default,
     /* CC_MSG_SESSION_AUDIT    */ fsmdef_ev_session_audit,
-    /* CC_MSG_CREATEOFFER      */ fsmdef_ev_createoffer,
-    /* CC_MSG_CREATEANSWER     */ fsmdef_ev_createanswer,
-    /* CC_MSG_SETLOCALDESC     */ fsmdef_ev_setlocaldesc,
-    /* CC_MSG_SETREMOTEDESC    */ fsmdef_ev_setremotedesc,
-    /* CC_MSG_SETPEERCONNECTION */fsmdef_ev_setpeerconnection,
-    /* CC_MSG_ADDSTREAM        */ fsmdef_ev_addstream,
-    /* CC_MSG_REMOVESTREAM     */ fsmdef_ev_removestream,
-    /* CC_MSG_ADDCANDIDATE     */ fsmdef_ev_addcandidate
+    /* CC_MSG_CREATEOFFER      */ fsmdef_ev_default,
+    /* CC_MSG_CREATEANSWER     */ fsmdef_ev_default,
+    /* CC_MSG_SETLOCALDESC     */ fsmdef_ev_default,
+    /* CC_MSG_SETREMOTEDESC    */ fsmdef_ev_default,
+    /* CC_MSG_SETPEERCONNECTION */fsmdef_ev_default,
+    /* CC_MSG_ADDSTREAM        */ fsmdef_ev_default,
+    /* CC_MSG_REMOVESTREAM     */ fsmdef_ev_default,
+    /* CC_MSG_ADDCANDIDATE     */ fsmdef_ev_default,
+    /* CC_MSG_FOUNDCANDIDATE   */ fsmdef_ev_default
     },
 
 /* FSMDEF_S_OUTGOING_PROCEEDING --------------------------------------------- */
@@ -274,14 +290,15 @@ static sm_function_t fsmdef_function_table[FSMDEF_S_MAX][CC_MSG_MAX] =
     /* CC_MSG_DIALSTRING       */ fsmdef_ev_default,
     /* CC_MSG_MWI              */ fsmdef_ev_default,
     /* CC_MSG_SESSION_AUDIT    */ fsmdef_ev_session_audit,
-    /* CC_MSG_CREATEOFFER      */ fsmdef_ev_createoffer,
-    /* CC_MSG_CREATEANSWER     */ fsmdef_ev_createanswer,
-    /* CC_MSG_SETLOCALDESC     */ fsmdef_ev_setlocaldesc,
-    /* CC_MSG_SETREMOTEDESC    */ fsmdef_ev_setremotedesc,
-    /* CC_MSG_SETPEERCONNECTION */fsmdef_ev_setpeerconnection,
-    /* CC_MSG_ADDSTREAM        */ fsmdef_ev_addstream,
-    /* CC_MSG_REMOVESTREAM     */ fsmdef_ev_removestream,
-    /* CC_MSG_ADDCANDIDATE     */ fsmdef_ev_addcandidate
+    /* CC_MSG_CREATEOFFER      */ fsmdef_ev_default,
+    /* CC_MSG_CREATEANSWER     */ fsmdef_ev_default,
+    /* CC_MSG_SETLOCALDESC     */ fsmdef_ev_default,
+    /* CC_MSG_SETREMOTEDESC    */ fsmdef_ev_default,
+    /* CC_MSG_SETPEERCONNECTION */fsmdef_ev_default,
+    /* CC_MSG_ADDSTREAM        */ fsmdef_ev_default,
+    /* CC_MSG_REMOVESTREAM     */ fsmdef_ev_default,
+    /* CC_MSG_ADDCANDIDATE     */ fsmdef_ev_default,
+    /* CC_MSG_FOUNDCANDIDATE   */ fsmdef_ev_default
     },
 
 /* FSMDEF_S_KPML_COLLECT_INFO ----------------------------------------------- */
@@ -304,14 +321,15 @@ static sm_function_t fsmdef_function_table[FSMDEF_S_MAX][CC_MSG_MAX] =
     /* CC_MSG_DIALSTRING       */ fsmdef_ev_default,
     /* CC_MSG_MWI              */ fsmdef_ev_default,
     /* CC_MSG_SESSION_AUDIT    */ fsmdef_ev_session_audit,
-    /* CC_MSG_CREATEOFFER      */ fsmdef_ev_createoffer,
-    /* CC_MSG_CREATEANSWER     */ fsmdef_ev_createanswer,
-    /* CC_MSG_SETLOCALDESC     */ fsmdef_ev_setlocaldesc,
-    /* CC_MSG_SETREMOTEDESC    */ fsmdef_ev_setremotedesc,
-    /* CC_MSG_SETPEERCONNECTION */fsmdef_ev_setpeerconnection,
-    /* CC_MSG_ADDSTREAM        */ fsmdef_ev_addstream,
-    /* CC_MSG_REMOVESTREAM     */ fsmdef_ev_removestream,
-    /* CC_MSG_ADDCANDIDATE     */ fsmdef_ev_addcandidate
+    /* CC_MSG_CREATEOFFER      */ fsmdef_ev_default,
+    /* CC_MSG_CREATEANSWER     */ fsmdef_ev_default,
+    /* CC_MSG_SETLOCALDESC     */ fsmdef_ev_default,
+    /* CC_MSG_SETREMOTEDESC    */ fsmdef_ev_default,
+    /* CC_MSG_SETPEERCONNECTION */fsmdef_ev_default,
+    /* CC_MSG_ADDSTREAM        */ fsmdef_ev_default,
+    /* CC_MSG_REMOVESTREAM     */ fsmdef_ev_default,
+    /* CC_MSG_ADDCANDIDATE     */ fsmdef_ev_default,
+    /* CC_MSG_FOUNDCANDIDATE   */ fsmdef_ev_default
     },
 
 /* FSMDEF_S_OUTGOING_ALERTING ----------------------------------------------- */
@@ -334,14 +352,15 @@ static sm_function_t fsmdef_function_table[FSMDEF_S_MAX][CC_MSG_MAX] =
     /* CC_MSG_DIALSTRING       */ fsmdef_ev_default,
     /* CC_MSG_MWI              */ fsmdef_ev_default,
     /* CC_MSG_SESSION_AUDIT    */ fsmdef_ev_session_audit,
-    /* CC_MSG_CREATEOFFER      */ fsmdef_ev_createoffer,
-    /* CC_MSG_CREATEANSWER     */ fsmdef_ev_createanswer,
-    /* CC_MSG_SETLOCALDESC     */ fsmdef_ev_setlocaldesc,
-    /* CC_MSG_SETREMOTEDESC    */ fsmdef_ev_setremotedesc,
-    /* CC_MSG_SETPEERCONNECTION */fsmdef_ev_setpeerconnection,
-    /* CC_MSG_ADDSTREAM        */ fsmdef_ev_addstream,
-    /* CC_MSG_REMOVESTREAM     */ fsmdef_ev_removestream,
-    /* CC_MSG_ADDCANDIDATE     */ fsmdef_ev_addcandidate
+    /* CC_MSG_CREATEOFFER      */ fsmdef_ev_default,
+    /* CC_MSG_CREATEANSWER     */ fsmdef_ev_default,
+    /* CC_MSG_SETLOCALDESC     */ fsmdef_ev_default,
+    /* CC_MSG_SETREMOTEDESC    */ fsmdef_ev_default,
+    /* CC_MSG_SETPEERCONNECTION */fsmdef_ev_default,
+    /* CC_MSG_ADDSTREAM        */ fsmdef_ev_default,
+    /* CC_MSG_REMOVESTREAM     */ fsmdef_ev_default,
+    /* CC_MSG_ADDCANDIDATE     */ fsmdef_ev_default,
+    /* CC_MSG_FOUNDCANDIDATE   */ fsmdef_ev_default
     },
 
 /* FSMDEF_S_INCOMING_ALERTING ----------------------------------------------- */
@@ -364,14 +383,15 @@ static sm_function_t fsmdef_function_table[FSMDEF_S_MAX][CC_MSG_MAX] =
     /* CC_MSG_DIALSTRING       */ fsmdef_ev_default,
     /* CC_MSG_MWI              */ fsmdef_ev_default,
     /* CC_MSG_SESSION_AUDIT    */ fsmdef_ev_session_audit,
-    /* CC_MSG_CREATEOFFER      */ fsmdef_ev_createoffer,
-    /* CC_MSG_CREATEANSWER     */ fsmdef_ev_createanswer,
-    /* CC_MSG_SETLOCALDESC     */ fsmdef_ev_setlocaldesc,
-    /* CC_MSG_SETREMOTEDESC    */ fsmdef_ev_setremotedesc,
-    /* CC_MSG_SETPEERCONNECTION */fsmdef_ev_setpeerconnection,
-    /* CC_MSG_ADDSTREAM        */ fsmdef_ev_addstream,
-    /* CC_MSG_REMOVESTREAM     */ fsmdef_ev_removestream,
-    /* CC_MSG_ADDCANDIDATE     */ fsmdef_ev_addcandidate
+    /* CC_MSG_CREATEOFFER      */ fsmdef_ev_default,
+    /* CC_MSG_CREATEANSWER     */ fsmdef_ev_default,
+    /* CC_MSG_SETLOCALDESC     */ fsmdef_ev_default,
+    /* CC_MSG_SETREMOTEDESC    */ fsmdef_ev_default,
+    /* CC_MSG_SETPEERCONNECTION */fsmdef_ev_default,
+    /* CC_MSG_ADDSTREAM        */ fsmdef_ev_default,
+    /* CC_MSG_REMOVESTREAM     */ fsmdef_ev_default,
+    /* CC_MSG_ADDCANDIDATE     */ fsmdef_ev_default,
+    /* CC_MSG_FOUNDCANDIDATE   */ fsmdef_ev_default
     },
 
 /* FSMDEF_S_CONNECTING ------------------------------------------------------ */
@@ -394,14 +414,15 @@ static sm_function_t fsmdef_function_table[FSMDEF_S_MAX][CC_MSG_MAX] =
     /* CC_MSG_DIALSTRING       */ fsmdef_ev_default,
     /* CC_MSG_MWI              */ fsmdef_ev_default,
     /* CC_MSG_SESSION_AUDIT    */ fsmdef_ev_session_audit,
-    /* CC_MSG_CREATEOFFER      */ fsmdef_ev_createoffer,
-    /* CC_MSG_CREATEANSWER     */ fsmdef_ev_createanswer,
-    /* CC_MSG_SETLOCALDESC     */ fsmdef_ev_setlocaldesc,
-    /* CC_MSG_SETREMOTEDESC    */ fsmdef_ev_setremotedesc,
-    /* CC_MSG_SETPEERCONNECTION */fsmdef_ev_setpeerconnection,
-    /* CC_MSG_ADDSTREAM        */ fsmdef_ev_addstream,
-    /* CC_MSG_REMOVESTREAM     */ fsmdef_ev_removestream,
-    /* CC_MSG_ADDCANDIDATE     */ fsmdef_ev_addcandidate
+    /* CC_MSG_CREATEOFFER      */ fsmdef_ev_default,
+    /* CC_MSG_CREATEANSWER     */ fsmdef_ev_default,
+    /* CC_MSG_SETLOCALDESC     */ fsmdef_ev_default,
+    /* CC_MSG_SETREMOTEDESC    */ fsmdef_ev_default,
+    /* CC_MSG_SETPEERCONNECTION */fsmdef_ev_default,
+    /* CC_MSG_ADDSTREAM        */ fsmdef_ev_default,
+    /* CC_MSG_REMOVESTREAM     */ fsmdef_ev_default,
+    /* CC_MSG_ADDCANDIDATE     */ fsmdef_ev_default,
+    /* CC_MSG_FOUNDCANDIDATE   */ fsmdef_ev_default
     },
 
 /* FSMDEF_S_JOINING --------------------------------------------------------- */
@@ -424,14 +445,15 @@ static sm_function_t fsmdef_function_table[FSMDEF_S_MAX][CC_MSG_MAX] =
     /* CC_MSG_DIALSTRING       */ fsmdef_ev_default,
     /* CC_MSG_MWI              */ fsmdef_ev_default,
     /* CC_MSG_SESSION_AUDIT    */ fsmdef_ev_session_audit,
-    /* CC_MSG_CREATEOFFER      */ fsmdef_ev_createoffer,
-    /* CC_MSG_CREATEANSWER     */ fsmdef_ev_createanswer,
-    /* CC_MSG_SETLOCALDESC     */ fsmdef_ev_setlocaldesc,
-    /* CC_MSG_SETREMOTEDESC    */ fsmdef_ev_setremotedesc,
-    /* CC_MSG_SETPEERCONNECTION */fsmdef_ev_setpeerconnection,
-    /* CC_MSG_ADDSTREAM        */ fsmdef_ev_addstream,
-    /* CC_MSG_REMOVESTREAM     */ fsmdef_ev_removestream,
-    /* CC_MSG_ADDCANDIDATE     */ fsmdef_ev_addcandidate
+    /* CC_MSG_CREATEOFFER      */ fsmdef_ev_default,
+    /* CC_MSG_CREATEANSWER     */ fsmdef_ev_default,
+    /* CC_MSG_SETLOCALDESC     */ fsmdef_ev_default,
+    /* CC_MSG_SETREMOTEDESC    */ fsmdef_ev_default,
+    /* CC_MSG_SETPEERCONNECTION */fsmdef_ev_default,
+    /* CC_MSG_ADDSTREAM        */ fsmdef_ev_default,
+    /* CC_MSG_REMOVESTREAM     */ fsmdef_ev_default,
+    /* CC_MSG_ADDCANDIDATE     */ fsmdef_ev_default,
+    /* CC_MSG_FOUNDCANDIDATE   */ fsmdef_ev_default
     },
 
 /* FSMDEF_S_CONNECTED ------------------------------------------------------- */
@@ -454,14 +476,15 @@ static sm_function_t fsmdef_function_table[FSMDEF_S_MAX][CC_MSG_MAX] =
     /* CC_MSG_DIALSTRING       */ fsmdef_ev_default,
     /* CC_MSG_MWI              */ fsmdef_ev_default,
     /* CC_MSG_SESSION_AUDIT    */ fsmdef_ev_session_audit,
-    /* CC_MSG_CREATEOFFER      */ fsmdef_ev_createoffer,
-    /* CC_MSG_CREATEANSWER     */ fsmdef_ev_createanswer,
-    /* CC_MSG_SETLOCALDESC     */ fsmdef_ev_setlocaldesc,
-    /* CC_MSG_SETREMOTEDESC    */ fsmdef_ev_setremotedesc,
-    /* CC_MSG_SETPEERCONNECTION */fsmdef_ev_setpeerconnection,
-    /* CC_MSG_ADDSTREAM        */ fsmdef_ev_addstream,
-    /* CC_MSG_REMOVESTREAM     */ fsmdef_ev_removestream,
-    /* CC_MSG_ADDCANDIDATE     */ fsmdef_ev_addcandidate
+    /* CC_MSG_CREATEOFFER      */ fsmdef_ev_default,
+    /* CC_MSG_CREATEANSWER     */ fsmdef_ev_default,
+    /* CC_MSG_SETLOCALDESC     */ fsmdef_ev_default,
+    /* CC_MSG_SETREMOTEDESC    */ fsmdef_ev_default,
+    /* CC_MSG_SETPEERCONNECTION */fsmdef_ev_default,
+    /* CC_MSG_ADDSTREAM        */ fsmdef_ev_default,
+    /* CC_MSG_REMOVESTREAM     */ fsmdef_ev_default,
+    /* CC_MSG_ADDCANDIDATE     */ fsmdef_ev_default,
+    /* CC_MSG_FOUNDCANDIDATE   */ fsmdef_ev_default
     },
 
 /* FSMDEF_S_CONNECTED_MEDIA_PEND  ------------------------------------------- */
@@ -484,14 +507,15 @@ static sm_function_t fsmdef_function_table[FSMDEF_S_MAX][CC_MSG_MAX] =
     /* CC_MSG_DIALSTRING       */ fsmdef_ev_default,
     /* CC_MSG_MWI              */ fsmdef_ev_default,
     /* CC_MSG_SESSION_AUDIT    */ fsmdef_ev_session_audit,
-    /* CC_MSG_CREATEOFFER      */ fsmdef_ev_createoffer,
-    /* CC_MSG_CREATEANSWER     */ fsmdef_ev_createanswer,
-    /* CC_MSG_SETLOCALDESC     */ fsmdef_ev_setlocaldesc,
-    /* CC_MSG_SETREMOTEDESC    */ fsmdef_ev_setremotedesc,
-    /* CC_MSG_SETPEERCONNECTION */fsmdef_ev_setpeerconnection,
-    /* CC_MSG_ADDSTREAM        */ fsmdef_ev_addstream,
-    /* CC_MSG_REMOVESTREAM     */ fsmdef_ev_removestream,
-    /* CC_MSG_ADDCANDIDATE     */ fsmdef_ev_addcandidate
+    /* CC_MSG_CREATEOFFER      */ fsmdef_ev_default,
+    /* CC_MSG_CREATEANSWER     */ fsmdef_ev_default,
+    /* CC_MSG_SETLOCALDESC     */ fsmdef_ev_default,
+    /* CC_MSG_SETREMOTEDESC    */ fsmdef_ev_default,
+    /* CC_MSG_SETPEERCONNECTION */fsmdef_ev_default,
+    /* CC_MSG_ADDSTREAM        */ fsmdef_ev_default,
+    /* CC_MSG_REMOVESTREAM     */ fsmdef_ev_default,
+    /* CC_MSG_ADDCANDIDATE     */ fsmdef_ev_default,
+    /* CC_MSG_FOUNDCANDIDATE   */ fsmdef_ev_default
     },
 
 /* FSMDEF_S_RELEASING ------------------------------------------------------- */
@@ -514,14 +538,15 @@ static sm_function_t fsmdef_function_table[FSMDEF_S_MAX][CC_MSG_MAX] =
     /* CC_MSG_DIALSTRING       */ fsmdef_ev_default,
     /* CC_MSG_MWI              */ fsmdef_ev_default,
     /* CC_MSG_SESSION_AUDIT    */ fsmdef_ev_session_audit,
-    /* CC_MSG_CREATEOFFER      */ fsmdef_ev_createoffer,
-    /* CC_MSG_CREATEANSWER     */ fsmdef_ev_createanswer,
-    /* CC_MSG_SETLOCALDESC     */ fsmdef_ev_setlocaldesc,
-    /* CC_MSG_SETREMOTEDESC    */ fsmdef_ev_setremotedesc,
-    /* CC_MSG_SETPEERCONNECTION */fsmdef_ev_setpeerconnection,
-    /* CC_MSG_ADDSTREAM        */ fsmdef_ev_addstream,
-    /* CC_MSG_REMOVESTREAM     */ fsmdef_ev_removestream,
-    /* CC_MSG_ADDCANDIDATE     */ fsmdef_ev_addcandidate
+    /* CC_MSG_CREATEOFFER      */ fsmdef_ev_default,
+    /* CC_MSG_CREATEANSWER     */ fsmdef_ev_default,
+    /* CC_MSG_SETLOCALDESC     */ fsmdef_ev_default,
+    /* CC_MSG_SETREMOTEDESC    */ fsmdef_ev_default,
+    /* CC_MSG_SETPEERCONNECTION */fsmdef_ev_default,
+    /* CC_MSG_ADDSTREAM        */ fsmdef_ev_default,
+    /* CC_MSG_REMOVESTREAM     */ fsmdef_ev_default,
+    /* CC_MSG_ADDCANDIDATE     */ fsmdef_ev_default,
+    /* CC_MSG_FOUNDCANDIDATE   */ fsmdef_ev_default
     },
 
 /* FSMDEF_S_HOLD_PENDING ---------------------------------------------------- */
@@ -544,14 +569,15 @@ static sm_function_t fsmdef_function_table[FSMDEF_S_MAX][CC_MSG_MAX] =
     /* CC_MSG_DIALSTRING       */ fsmdef_ev_default,
     /* CC_MSG_MWI              */ fsmdef_ev_default,
     /* CC_MSG_SESSION_AUDIT    */ fsmdef_ev_session_audit,
-    /* CC_MSG_CREATEOFFER      */ fsmdef_ev_createoffer,
-    /* CC_MSG_CREATEANSWER     */ fsmdef_ev_createanswer,
-    /* CC_MSG_SETLOCALDESC     */ fsmdef_ev_setlocaldesc,
-    /* CC_MSG_SETREMOTEDESC    */ fsmdef_ev_setremotedesc,
-    /* CC_MSG_SETPEERCONNECTION */fsmdef_ev_setpeerconnection,
-    /* CC_MSG_ADDSTREAM        */ fsmdef_ev_addstream,
-    /* CC_MSG_REMOVESTREAM     */ fsmdef_ev_removestream,
-    /* CC_MSG_ADDCANDIDATE     */ fsmdef_ev_addcandidate
+    /* CC_MSG_CREATEOFFER      */ fsmdef_ev_default,
+    /* CC_MSG_CREATEANSWER     */ fsmdef_ev_default,
+    /* CC_MSG_SETLOCALDESC     */ fsmdef_ev_default,
+    /* CC_MSG_SETREMOTEDESC    */ fsmdef_ev_default,
+    /* CC_MSG_SETPEERCONNECTION */fsmdef_ev_default,
+    /* CC_MSG_ADDSTREAM        */ fsmdef_ev_default,
+    /* CC_MSG_REMOVESTREAM     */ fsmdef_ev_default,
+    /* CC_MSG_ADDCANDIDATE     */ fsmdef_ev_default,
+    /* CC_MSG_FOUNDCANDIDATE   */ fsmdef_ev_default
     },
 
 /* FSMDEF_S_HOLDING --------------------------------------------------------- */
@@ -574,14 +600,15 @@ static sm_function_t fsmdef_function_table[FSMDEF_S_MAX][CC_MSG_MAX] =
     /* CC_MSG_DIALSTRING       */ fsmdef_ev_default,
     /* CC_MSG_MWI              */ fsmdef_ev_default,
     /* CC_MSG_SESSION_AUDIT    */ fsmdef_ev_session_audit,
-    /* CC_MSG_CREATEOFFER      */ fsmdef_ev_createoffer,
-    /* CC_MSG_CREATEANSWER     */ fsmdef_ev_createanswer,
-    /* CC_MSG_SETLOCALDESC     */ fsmdef_ev_setlocaldesc,
-    /* CC_MSG_SETREMOTEDESC    */ fsmdef_ev_setremotedesc,
-    /* CC_MSG_SETPEERCONNECTION */fsmdef_ev_setpeerconnection,
-    /* CC_MSG_ADDSTREAM        */ fsmdef_ev_addstream,
-    /* CC_MSG_REMOVESTREAM     */ fsmdef_ev_removestream,
-    /* CC_MSG_ADDCANDIDATE     */ fsmdef_ev_addcandidate
+    /* CC_MSG_CREATEOFFER      */ fsmdef_ev_default,
+    /* CC_MSG_CREATEANSWER     */ fsmdef_ev_default,
+    /* CC_MSG_SETLOCALDESC     */ fsmdef_ev_default,
+    /* CC_MSG_SETREMOTEDESC    */ fsmdef_ev_default,
+    /* CC_MSG_SETPEERCONNECTION */fsmdef_ev_default,
+    /* CC_MSG_ADDSTREAM        */ fsmdef_ev_default,
+    /* CC_MSG_REMOVESTREAM     */ fsmdef_ev_default,
+    /* CC_MSG_ADDCANDIDATE     */ fsmdef_ev_default,
+    /* CC_MSG_FOUNDCANDIDATE   */ fsmdef_ev_default
     },
 
 /* FSMDEF_S_RESUME_PENDING -------------------------------------------------- */
@@ -604,14 +631,15 @@ static sm_function_t fsmdef_function_table[FSMDEF_S_MAX][CC_MSG_MAX] =
     /* CC_MSG_DIALSTRING       */ fsmdef_ev_default,
     /* CC_MSG_MWI              */ fsmdef_ev_default,
     /* CC_MSG_SESSION_AUDIT    */ fsmdef_ev_session_audit,
-    /* CC_MSG_CREATEOFFER      */ fsmdef_ev_createoffer,
-    /* CC_MSG_CREATEANSWER     */ fsmdef_ev_createanswer,
-    /* CC_MSG_SETLOCALDESC     */ fsmdef_ev_setlocaldesc,
-    /* CC_MSG_SETREMOTEDESC    */ fsmdef_ev_setremotedesc,
-    /* CC_MSG_SETPEERCONNECTION */fsmdef_ev_setpeerconnection,
-    /* CC_MSG_ADDSTREAM        */ fsmdef_ev_addstream,
-    /* CC_MSG_REMOVESTREAM     */ fsmdef_ev_removestream,
-    /* CC_MSG_ADDCANDIDATE     */ fsmdef_ev_addcandidate
+    /* CC_MSG_CREATEOFFER      */ fsmdef_ev_default,
+    /* CC_MSG_CREATEANSWER     */ fsmdef_ev_default,
+    /* CC_MSG_SETLOCALDESC     */ fsmdef_ev_default,
+    /* CC_MSG_SETREMOTEDESC    */ fsmdef_ev_default,
+    /* CC_MSG_SETPEERCONNECTION */fsmdef_ev_default,
+    /* CC_MSG_ADDSTREAM        */ fsmdef_ev_default,
+    /* CC_MSG_REMOVESTREAM     */ fsmdef_ev_default,
+    /* CC_MSG_ADDCANDIDATE     */ fsmdef_ev_default,
+    /* CC_MSG_FOUNDCANDIDATE   */ fsmdef_ev_default
     },
 
 /* FSMDEF_S_PRESERVED  ------------------------------------------------------ */
@@ -634,14 +662,203 @@ static sm_function_t fsmdef_function_table[FSMDEF_S_MAX][CC_MSG_MAX] =
     /* CC_MSG_DIALSTRING       */ fsmdef_ev_default,
     /* CC_MSG_MWI              */ fsmdef_ev_default,
     /* CC_MSG_SESSION_AUDIT    */ fsmdef_ev_session_audit,
+    /* CC_MSG_CREATEOFFER      */ fsmdef_ev_default,
+    /* CC_MSG_CREATEANSWER     */ fsmdef_ev_default,
+    /* CC_MSG_SETLOCALDESC     */ fsmdef_ev_default,
+    /* CC_MSG_SETREMOTEDESC    */ fsmdef_ev_default,
+    /* CC_MSG_SETPEERCONNECTION */fsmdef_ev_default,
+    /* CC_MSG_ADDSTREAM        */ fsmdef_ev_default,
+    /* CC_MSG_REMOVESTREAM     */ fsmdef_ev_default,
+    /* CC_MSG_ADDCANDIDATE     */ fsmdef_ev_default,
+    /* CC_MSG_FOUNDCANDIDATE   */ fsmdef_ev_default
+    },
+
+
+/* FSMDEF_S_STABLE  --------------------------------------------------------- */
+    {
+    /* CC_MSG_SETUP            */ fsmdef_ev_default,
+    /* CC_MSG_SETUP_ACK        */ fsmdef_ev_default,
+    /* CC_MSG_PROCEEDING       */ fsmdef_ev_default,
+    /* CC_MSG_ALERTING         */ fsmdef_ev_default,
+    /* CC_MSG_CONNECTED        */ fsmdef_ev_default,
+    /* CC_MSG_CONNECTED_ACK    */ fsmdef_ev_default,
+    /* CC_MSG_RELEASE          */ fsmdef_ev_default,
+    /* CC_MSG_RELEASE_COMPLETE */ fsmdef_ev_default,
+    /* CC_MSG_FEATURE          */ fsmdef_ev_default,
+    /* CC_MSG_FEATURE_ACK      */ fsmdef_ev_default,
+    /* CC_MSG_OFFHOOK          */ fsmdef_ev_default,
+    /* CC_MSG_ONHOOK           */ fsmdef_ev_onhook,
+    /* CC_MSG_LINE             */ fsmdef_ev_default,
+    /* CC_MSG_DIGIT_BEGIN      */ fsmdef_ev_default,
+    /* CC_MSG_DIGIT_END        */ fsmdef_ev_default,
+    /* CC_MSG_DIALSTRING       */ fsmdef_ev_default,
+    /* CC_MSG_MWI              */ fsmdef_ev_default,
+    /* CC_MSG_SESSION_AUDIT    */ fsmdef_ev_default,
     /* CC_MSG_CREATEOFFER      */ fsmdef_ev_createoffer,
     /* CC_MSG_CREATEANSWER     */ fsmdef_ev_createanswer,
     /* CC_MSG_SETLOCALDESC     */ fsmdef_ev_setlocaldesc,
     /* CC_MSG_SETREMOTEDESC    */ fsmdef_ev_setremotedesc,
-    /* CC_MSG_SETPEERCONNECTION */fsmdef_ev_setpeerconnection,
+    /* CC_MSG_SETPEERCONNECTION */fsmdef_ev_default,
     /* CC_MSG_ADDSTREAM        */ fsmdef_ev_addstream,
     /* CC_MSG_REMOVESTREAM     */ fsmdef_ev_removestream,
-    /* CC_MSG_ADDCANDIDATE     */ fsmdef_ev_addcandidate
+    /* CC_MSG_ADDCANDIDATE     */ fsmdef_ev_addcandidate,
+    /* CC_MSG_FOUNDCANDIDATE   */ fsmdef_ev_foundcandidate
+    },
+
+/* FSMDEF_S_HAVE_LOCAL_OFFER  ----------------------------------------------- */
+    {
+    /* CC_MSG_SETUP            */ fsmdef_ev_default,
+    /* CC_MSG_SETUP_ACK        */ fsmdef_ev_default,
+    /* CC_MSG_PROCEEDING       */ fsmdef_ev_default,
+    /* CC_MSG_ALERTING         */ fsmdef_ev_default,
+    /* CC_MSG_CONNECTED        */ fsmdef_ev_default,
+    /* CC_MSG_CONNECTED_ACK    */ fsmdef_ev_default,
+    /* CC_MSG_RELEASE          */ fsmdef_ev_default,
+    /* CC_MSG_RELEASE_COMPLETE */ fsmdef_ev_default,
+    /* CC_MSG_FEATURE          */ fsmdef_ev_default,
+    /* CC_MSG_FEATURE_ACK      */ fsmdef_ev_default,
+    /* CC_MSG_OFFHOOK          */ fsmdef_ev_default,
+    /* CC_MSG_ONHOOK           */ fsmdef_ev_onhook,
+    /* CC_MSG_LINE             */ fsmdef_ev_default,
+    /* CC_MSG_DIGIT_BEGIN      */ fsmdef_ev_default,
+    /* CC_MSG_DIGIT_END        */ fsmdef_ev_default,
+    /* CC_MSG_DIALSTRING       */ fsmdef_ev_default,
+    /* CC_MSG_MWI              */ fsmdef_ev_default,
+    /* CC_MSG_SESSION_AUDIT    */ fsmdef_ev_default,
+    /* CC_MSG_CREATEOFFER      */ fsmdef_ev_createoffer,
+    /* CC_MSG_CREATEANSWER     */ fsmdef_ev_createanswer,
+    /* CC_MSG_SETLOCALDESC     */ fsmdef_ev_setlocaldesc,
+    /* CC_MSG_SETREMOTEDESC    */ fsmdef_ev_setremotedesc,
+    /* CC_MSG_SETPEERCONNECTION */fsmdef_ev_default,
+    /* CC_MSG_ADDSTREAM        */ fsmdef_ev_default,
+    /* CC_MSG_REMOVESTREAM     */ fsmdef_ev_default,
+    /* CC_MSG_ADDCANDIDATE     */ fsmdef_ev_default, /* Reject lame-duck
+                                                       candidates */
+    /* CC_MSG_FOUNDCANDIDATE   */ fsmdef_ev_foundcandidate
+    },
+
+/* FSMDEF_S_HAVE_REMOTE_OFFER  ---------------------------------------------- */
+    {
+    /* CC_MSG_SETUP            */ fsmdef_ev_default,
+    /* CC_MSG_SETUP_ACK        */ fsmdef_ev_default,
+    /* CC_MSG_PROCEEDING       */ fsmdef_ev_default,
+    /* CC_MSG_ALERTING         */ fsmdef_ev_default,
+    /* CC_MSG_CONNECTED        */ fsmdef_ev_default,
+    /* CC_MSG_CONNECTED_ACK    */ fsmdef_ev_default,
+    /* CC_MSG_RELEASE          */ fsmdef_ev_default,
+    /* CC_MSG_RELEASE_COMPLETE */ fsmdef_ev_default,
+    /* CC_MSG_FEATURE          */ fsmdef_ev_default,
+    /* CC_MSG_FEATURE_ACK      */ fsmdef_ev_default,
+    /* CC_MSG_OFFHOOK          */ fsmdef_ev_default,
+    /* CC_MSG_ONHOOK           */ fsmdef_ev_onhook,
+    /* CC_MSG_LINE             */ fsmdef_ev_default,
+    /* CC_MSG_DIGIT_BEGIN      */ fsmdef_ev_default,
+    /* CC_MSG_DIGIT_END        */ fsmdef_ev_default,
+    /* CC_MSG_DIALSTRING       */ fsmdef_ev_default,
+    /* CC_MSG_MWI              */ fsmdef_ev_default,
+    /* CC_MSG_SESSION_AUDIT    */ fsmdef_ev_default,
+    /* CC_MSG_CREATEOFFER      */ fsmdef_ev_createoffer,
+    /* CC_MSG_CREATEANSWER     */ fsmdef_ev_createanswer,
+    /* CC_MSG_SETLOCALDESC     */ fsmdef_ev_setlocaldesc,
+    /* CC_MSG_SETREMOTEDESC    */ fsmdef_ev_setremotedesc,
+    /* CC_MSG_SETPEERCONNECTION */fsmdef_ev_default,
+    /* CC_MSG_ADDSTREAM        */ fsmdef_ev_addstream,
+    /* CC_MSG_REMOVESTREAM     */ fsmdef_ev_removestream,
+    /* CC_MSG_ADDCANDIDATE     */ fsmdef_ev_addcandidate,
+    /* CC_MSG_FOUNDCANDIDATE   */ fsmdef_ev_default
+    },
+
+/* FSMDEF_S_HAVE_LOCAL_PRANSWER  -------------------------------------------- */
+    {
+    /* CC_MSG_SETUP            */ fsmdef_ev_default,
+    /* CC_MSG_SETUP_ACK        */ fsmdef_ev_default,
+    /* CC_MSG_PROCEEDING       */ fsmdef_ev_default,
+    /* CC_MSG_ALERTING         */ fsmdef_ev_default,
+    /* CC_MSG_CONNECTED        */ fsmdef_ev_default,
+    /* CC_MSG_CONNECTED_ACK    */ fsmdef_ev_default,
+    /* CC_MSG_RELEASE          */ fsmdef_ev_default,
+    /* CC_MSG_RELEASE_COMPLETE */ fsmdef_ev_default,
+    /* CC_MSG_FEATURE          */ fsmdef_ev_default,
+    /* CC_MSG_FEATURE_ACK      */ fsmdef_ev_default,
+    /* CC_MSG_OFFHOOK          */ fsmdef_ev_default,
+    /* CC_MSG_ONHOOK           */ fsmdef_ev_onhook,
+    /* CC_MSG_LINE             */ fsmdef_ev_default,
+    /* CC_MSG_DIGIT_BEGIN      */ fsmdef_ev_default,
+    /* CC_MSG_DIGIT_END        */ fsmdef_ev_default,
+    /* CC_MSG_DIALSTRING       */ fsmdef_ev_default,
+    /* CC_MSG_MWI              */ fsmdef_ev_default,
+    /* CC_MSG_SESSION_AUDIT    */ fsmdef_ev_default,
+    /* CC_MSG_CREATEOFFER      */ fsmdef_ev_createoffer,
+    /* CC_MSG_CREATEANSWER     */ fsmdef_ev_createanswer,
+    /* CC_MSG_SETLOCALDESC     */ fsmdef_ev_setlocaldesc,
+    /* CC_MSG_SETREMOTEDESC    */ fsmdef_ev_default, /* Should not happen */
+    /* CC_MSG_SETPEERCONNECTION */fsmdef_ev_default,
+    /* CC_MSG_ADDSTREAM        */ fsmdef_ev_default,
+    /* CC_MSG_REMOVESTREAM     */ fsmdef_ev_default,
+    /* CC_MSG_ADDCANDIDATE     */ fsmdef_ev_addcandidate,
+    /* CC_MSG_FOUNDCANDIDATE   */ fsmdef_ev_foundcandidate
+    },
+
+/* FSMDEF_S_HAVE_REMOTE_PRANSWER  ------------------------------------------- */
+    {
+    /* CC_MSG_SETUP            */ fsmdef_ev_default,
+    /* CC_MSG_SETUP_ACK        */ fsmdef_ev_default,
+    /* CC_MSG_PROCEEDING       */ fsmdef_ev_default,
+    /* CC_MSG_ALERTING         */ fsmdef_ev_default,
+    /* CC_MSG_CONNECTED        */ fsmdef_ev_default,
+    /* CC_MSG_CONNECTED_ACK    */ fsmdef_ev_default,
+    /* CC_MSG_RELEASE          */ fsmdef_ev_default,
+    /* CC_MSG_RELEASE_COMPLETE */ fsmdef_ev_default,
+    /* CC_MSG_FEATURE          */ fsmdef_ev_default,
+    /* CC_MSG_FEATURE_ACK      */ fsmdef_ev_default,
+    /* CC_MSG_OFFHOOK          */ fsmdef_ev_default,
+    /* CC_MSG_ONHOOK           */ fsmdef_ev_onhook,
+    /* CC_MSG_LINE             */ fsmdef_ev_default,
+    /* CC_MSG_DIGIT_BEGIN      */ fsmdef_ev_default,
+    /* CC_MSG_DIGIT_END        */ fsmdef_ev_default,
+    /* CC_MSG_DIALSTRING       */ fsmdef_ev_default,
+    /* CC_MSG_MWI              */ fsmdef_ev_default,
+    /* CC_MSG_SESSION_AUDIT    */ fsmdef_ev_default,
+    /* CC_MSG_CREATEOFFER      */ fsmdef_ev_createoffer,
+    /* CC_MSG_CREATEANSWER     */ fsmdef_ev_createanswer,
+    /* CC_MSG_SETLOCALDESC     */ fsmdef_ev_default, /* Should not happen */
+    /* CC_MSG_SETREMOTEDESC    */ fsmdef_ev_setremotedesc,
+    /* CC_MSG_SETPEERCONNECTION */fsmdef_ev_default,
+    /* CC_MSG_ADDSTREAM        */ fsmdef_ev_default,
+    /* CC_MSG_REMOVESTREAM     */ fsmdef_ev_default,
+    /* CC_MSG_ADDCANDIDATE     */ fsmdef_ev_addcandidate,
+    /* CC_MSG_FOUNDCANDIDATE   */ fsmdef_ev_foundcandidate
+    },
+
+/* FSMDEF_S_CLOSED  --------------------------------------------------------- */
+    {
+    /* CC_MSG_SETUP            */ fsmdef_ev_default,
+    /* CC_MSG_SETUP_ACK        */ fsmdef_ev_default,
+    /* CC_MSG_PROCEEDING       */ fsmdef_ev_default,
+    /* CC_MSG_ALERTING         */ fsmdef_ev_default,
+    /* CC_MSG_CONNECTED        */ fsmdef_ev_default,
+    /* CC_MSG_CONNECTED_ACK    */ fsmdef_ev_default,
+    /* CC_MSG_RELEASE          */ fsmdef_ev_default,
+    /* CC_MSG_RELEASE_COMPLETE */ fsmdef_ev_default,
+    /* CC_MSG_FEATURE          */ fsmdef_ev_default,
+    /* CC_MSG_FEATURE_ACK      */ fsmdef_ev_default,
+    /* CC_MSG_OFFHOOK          */ fsmdef_ev_default,
+    /* CC_MSG_ONHOOK           */ fsmdef_ev_onhook,
+    /* CC_MSG_LINE             */ fsmdef_ev_default,
+    /* CC_MSG_DIGIT_BEGIN      */ fsmdef_ev_default,
+    /* CC_MSG_DIGIT_END        */ fsmdef_ev_default,
+    /* CC_MSG_DIALSTRING       */ fsmdef_ev_default,
+    /* CC_MSG_MWI              */ fsmdef_ev_default,
+    /* CC_MSG_SESSION_AUDIT    */ fsmdef_ev_default,
+    /* CC_MSG_CREATEOFFER      */ fsmdef_ev_default,
+    /* CC_MSG_CREATEANSWER     */ fsmdef_ev_default,
+    /* CC_MSG_SETLOCALDESC     */ fsmdef_ev_default,
+    /* CC_MSG_SETREMOTEDESC    */ fsmdef_ev_default,
+    /* CC_MSG_SETPEERCONNECTION */fsmdef_ev_default,
+    /* CC_MSG_ADDSTREAM        */ fsmdef_ev_default,
+    /* CC_MSG_REMOVESTREAM     */ fsmdef_ev_default,
+    /* CC_MSG_ADDCANDIDATE     */ fsmdef_ev_default,
+    /* CC_MSG_FOUNDCANDIDATE   */ fsmdef_ev_default
     }
 };
 
@@ -890,17 +1107,9 @@ fsmdef_set_per_media_local_hold_sdp (fsmdef_dcb_t *dcb)
  */
 void
 fsmdef_free_constraints(cc_media_constraints_t *constraints) {
-    int i;
-
     if (!constraints) {
        return;
     }
-
-    for (i = 0; i < constraints->constraint_count; i++) {
-        cpr_free(constraints->constraints[i]->name);
-        cpr_free(constraints->constraints[i]->value);
-    }
-    cpr_free(constraints->constraints);
     cpr_free(constraints);
 }
 
@@ -1109,6 +1318,8 @@ fsmdef_init_dcb (fsmdef_dcb_t *dcb, callid_t call_id,
 
     dcb->digest_alg[0] = '\0';
     dcb->digest[0] = '\0';
+
+    sll_lite_init(&dcb->candidate_list);
 }
 
 
@@ -1157,6 +1368,9 @@ fsmdef_free_dcb (fsmdef_dcb_t *dcb)
 
     /* clean media list */
     gsmsdp_clean_media_list(dcb);
+
+    /* clean candidate list */
+    gsmsdp_clean_candidate_list(dcb);
 
     gsmsdp_free(dcb);
 
@@ -1761,6 +1975,7 @@ fsmdef_release (fsm_fcb_t *fcb, cc_causes_t cause, boolean send_release)
     cc_kfact_t      kfactor;
     fsmdef_media_t *media;
     char tmp_str[STATUS_LINE_MAX_LEN];
+    int             sdpmode = 0;
 
     if (!dcb) {
       /* Already been released */
@@ -1845,7 +2060,10 @@ fsmdef_release (fsm_fcb_t *fcb, cc_causes_t cause, boolean send_release)
                                     dcb->line, cause, &kfactor);
         }
 
-        fsm_change_state(fcb, __LINE__, FSMDEF_S_IDLE);
+        config_get_value(CFGID_SDPMODE, &sdpmode, sizeof(sdpmode));
+        fsm_change_state(fcb, __LINE__,
+                         sdpmode ? FSMDEF_S_CLOSED : FSMDEF_S_IDLE);
+
         fsmdef_free_dcb(dcb);
         fsm_release(fcb, __LINE__, cause);
         /*
@@ -2201,13 +2419,87 @@ fsmdef_set_ringback_delay_timer (fsmdef_dcb_t *dcb)
 static sm_rcs_t
 fsmdef_ev_default (sm_event_t *event)
 {
-    fsm_fcb_t *fcb = (fsm_fcb_t *) event->data;
+    fsm_fcb_t    *fcb = (fsm_fcb_t *) event->data;
+    fsmdef_dcb_t *dcb = fcb->dcb;
+    cc_feature_t *msg = (cc_feature_t *) event->msg;
 
     FSM_DEBUG_SM("%s", get_debug_string(FSM_DBG_SM_DEFAULT_EVENT));
-    if (fcb->dcb) {
-        cc_call_state(fcb->dcb->call_id, fcb->dcb->line, CC_STATE_UNKNOWN,
-                      NULL);
+
+    if (!dcb) {
+      return (SM_RC_END);
     }
+
+    /*
+     * For WebRTC events, we must send back a message to enable the
+     * corresponding error callback to be called. Arguably, these
+     * should always be caught by the PeerConnection and thrown as exceptions,
+     * but this enusres that the behavior is water-tight.
+     */
+    switch (event->event) {
+      case CC_MSG_CREATEOFFER:
+          ui_create_offer(evCreateOfferError, fcb->state, msg->line,
+              msg->call_id, dcb->caller_id.call_instance_id, strlib_empty(),
+              msg->timecard,
+              PC_INVALID_STATE, "Cannot create offer in state %s",
+              fsmdef_state_name(fcb->state));
+        break;
+
+      case CC_MSG_CREATEANSWER:
+          ui_create_answer(evCreateAnswerError, fcb->state, msg->line,
+              msg->call_id, dcb->caller_id.call_instance_id, strlib_empty(),
+              msg->timecard,
+              PC_INVALID_STATE, "Cannot create answer in state %s",
+              fsmdef_state_name(fcb->state));
+        break;
+
+      case CC_MSG_SETLOCALDESC:
+          ui_set_local_description(evSetLocalDescError, fcb->state, msg->line,
+              msg->call_id, dcb->caller_id.call_instance_id, strlib_empty(),
+              msg->timecard,
+              PC_INVALID_STATE, "Cannot set local description in state %s",
+              fsmdef_state_name(fcb->state));
+        break;
+
+      case CC_MSG_SETREMOTEDESC:
+          ui_set_remote_description(evSetRemoteDescError, fcb->state,
+              msg->line, msg->call_id, dcb->caller_id.call_instance_id,
+              strlib_empty(), msg->timecard, PC_INVALID_STATE,
+              "Cannot set remote description in state %s",
+              fsmdef_state_name(fcb->state));
+        break;
+
+      case CC_MSG_ADDCANDIDATE:
+          ui_ice_candidate_add(evAddIceCandidateError, fcb->state, msg->line,
+              msg->call_id, dcb->caller_id.call_instance_id, strlib_empty(),
+              msg->timecard,
+              PC_INVALID_STATE, "Cannot add ICE candidate in state %s",
+              fsmdef_state_name(fcb->state));
+        break;
+
+      case CC_MSG_FOUNDCANDIDATE:
+          ui_ice_candidate_found(evFoundIceCandidateError, fcb->state, msg->line,
+              msg->call_id, dcb->caller_id.call_instance_id, strlib_empty(),
+              NULL, msg->timecard,
+              PC_INVALID_STATE, "Cannot add found ICE candidate in state %s",
+              fsmdef_state_name(fcb->state));
+        break;
+
+      case CC_MSG_ADDSTREAM:
+      case CC_MSG_REMOVESTREAM:
+          /* This shouldn't happen, since PeerConnection should check
+           * the state before sending these events to us. The debug message
+           * here is to catch the unexpected situation of such an event
+           * getting through anyway. */
+          FSM_DEBUG_SM(DEB_L_C_F_PREFIX"Cannot add or remove streams "
+              "in state %s", DEB_L_C_F_PREFIX_ARGS(FSM, dcb->line,
+              msg->call_id, __FUNCTION__), fsmdef_state_name(fcb->state));
+        break;
+
+      default:
+          cc_call_state(dcb->call_id, dcb->line, CC_STATE_UNKNOWN, NULL);
+        break;
+    }
+
     return (SM_RC_END);
 }
 
@@ -2868,6 +3160,7 @@ fsmdef_ev_createoffer (sm_event_t *event) {
     session_data_t      *sess_data_p = NULL;
     char                *local_sdp = NULL;
     uint32_t            local_sdp_len = 0;
+    boolean             has_stream = FALSE;
 
     FSM_DEBUG_SM(DEB_F_PREFIX"Entered.", DEB_F_PREFIX_ARGS(FSM, __FUNCTION__));
 
@@ -2891,19 +3184,23 @@ fsmdef_ev_createoffer (sm_event_t *event) {
 
         local_sdp = sipsdp_write_to_buf(dcb->sdp->src_sdp, &local_sdp_len);
         if (!local_sdp) {
-            ui_create_offer(evCreateOfferError, line, call_id,
+            ui_create_offer(evCreateOfferError, fcb->state, line, call_id,
                 dcb->caller_id.call_instance_id, strlib_empty(),
+                msg->timecard,
                 PC_INTERNAL_ERROR, "Could not re-create local SDP for offer");
             FSM_DEBUG_SM("%s", get_debug_string(FSM_DBG_SDP_BUILD_ERR));
             return (fsmdef_release(fcb, cause, FALSE));
         }
 
-        ui_create_offer(evCreateOffer, line, call_id,
-            dcb->caller_id.call_instance_id,
-            strlib_malloc(local_sdp,-1), PC_NO_ERROR, NULL);
+        ui_create_offer(evCreateOfferSuccess, fcb->state, line, call_id,
+            dcb->caller_id.call_instance_id, strlib_malloc(local_sdp,-1),
+            msg->timecard, PC_NO_ERROR, NULL);
         free(local_sdp);
         return (SM_RC_END);
     }
+
+    /* clean candidate list, since we are about to return the candidates */
+    gsmsdp_clean_candidate_list(dcb);
 
     dcb->inbound = FALSE;
 
@@ -2913,12 +3210,27 @@ fsmdef_ev_createoffer (sm_event_t *event) {
        msg->data.session.constraints = 0;
     }
 
+    if (dcb->media_cap_tbl->cap[CC_VIDEO_1].enabled ||
+        dcb->media_cap_tbl->cap[CC_AUDIO_1].enabled ||
+        dcb->media_cap_tbl->cap[CC_DATACHANNEL_1].enabled) {
+      has_stream = TRUE;
+    }
+
+    if (!has_stream) {
+      ui_create_offer(evCreateOfferError, fcb->state, line, call_id,
+          dcb->caller_id.call_instance_id, strlib_empty(),
+          msg->timecard,
+          PC_INVALID_STATE, "Cannot create SDP without any streams.");
+      return SM_RC_END;
+    }
+
     vcm_res = vcmGetIceParams(dcb->peerconnection, &ufrag, &ice_pwd);
     if (vcm_res) {
     	FSM_DEBUG_SM(DEB_F_PREFIX"vcmGetIceParams returned an error",
             DEB_F_PREFIX_ARGS(FSM, __FUNCTION__));
-      ui_create_offer(evCreateOfferError, line, call_id,
+      ui_create_offer(evCreateOfferError, fcb->state, line, call_id,
           dcb->caller_id.call_instance_id, strlib_empty(),
+          msg->timecard,
           PC_INTERNAL_ERROR, "Failed to get ICE parameters for local SDP");
       return (fsmdef_release(fcb, cause, FALSE));
     }
@@ -2949,8 +3261,9 @@ fsmdef_ev_createoffer (sm_event_t *event) {
 
     cause = gsmsdp_create_local_sdp(dcb, FALSE, TRUE, TRUE, TRUE, TRUE);
     if (cause != CC_CAUSE_OK) {
-        ui_create_offer(evCreateOfferError, line, call_id,
+        ui_create_offer(evCreateOfferError, fcb->state, line, call_id,
             dcb->caller_id.call_instance_id, strlib_empty(),
+            msg->timecard,
             PC_INTERNAL_ERROR, "Could not create local SDP for offer;"
                 " cause = %s", cc_cause_name(cause));
         FSM_DEBUG_SM("%s", get_debug_string(FSM_DBG_SDP_BUILD_ERR));
@@ -2959,8 +3272,9 @@ fsmdef_ev_createoffer (sm_event_t *event) {
 
     cause = gsmsdp_encode_sdp_and_update_version(dcb, &msg_body);
     if (cause != CC_CAUSE_OK) {
-        ui_create_offer(evCreateOfferError, line, call_id,
+        ui_create_offer(evCreateOfferError, fcb->state, line, call_id,
             dcb->caller_id.call_instance_id, strlib_empty(),
+            msg->timecard,
             PC_INTERNAL_ERROR, "Could not encode local SDP for offer;"
                 " cause = %s", cc_cause_name(cause));
         FSM_DEBUG_SM("%s", get_debug_string(FSM_DBG_SDP_BUILD_ERR));
@@ -2970,9 +3284,10 @@ fsmdef_ev_createoffer (sm_event_t *event) {
     dcb->local_sdp_complete = TRUE;
 
     /* Pass offer SDP back to UI */
-    ui_create_offer(evCreateOffer, line, call_id,
+    ui_create_offer(evCreateOfferSuccess, fcb->state, line, call_id,
         dcb->caller_id.call_instance_id,
-        strlib_malloc(msg_body.parts[0].body, -1), PC_NO_ERROR, NULL);
+        strlib_malloc(msg_body.parts[0].body, -1),
+        msg->timecard, PC_NO_ERROR, NULL);
     cc_free_msg_body_parts(&msg_body);
 
     return (SM_RC_END);
@@ -3019,7 +3334,8 @@ fsmdef_ev_createanswer (sm_event_t *event) {
     }
 
     if (dcb == NULL) {
-        FSM_DEBUG_SM(DEB_F_PREFIX"dcb is NULL.", DEB_F_PREFIX_ARGS(FSM, __FUNCTION__));
+        FSM_DEBUG_SM(DEB_F_PREFIX"dcb is NULL.",
+            DEB_F_PREFIX_ARGS(FSM, __FUNCTION__));
         return SM_RC_CLEANUP;
     }
 
@@ -3032,19 +3348,23 @@ fsmdef_ev_createanswer (sm_event_t *event) {
 
         local_sdp = sipsdp_write_to_buf(dcb->sdp->src_sdp, &local_sdp_len);
         if (!local_sdp) {
-            ui_create_answer(evCreateAnswerError, line, call_id,
+            ui_create_answer(evCreateAnswerError, fcb->state, line, call_id,
                 dcb->caller_id.call_instance_id, strlib_empty(),
+                msg->timecard,
                 PC_INTERNAL_ERROR, "Could not re-create local SDP for answer");
             FSM_DEBUG_SM("%s", get_debug_string(FSM_DBG_SDP_BUILD_ERR));
             return (fsmdef_release(fcb, cause, FALSE));
         }
 
-        ui_create_answer(evCreateAnswer, line, call_id,
-            dcb->caller_id.call_instance_id,
-            strlib_malloc(local_sdp,-1), PC_NO_ERROR, NULL);
+        ui_create_answer(evCreateAnswerSuccess, fcb->state, line, call_id,
+            dcb->caller_id.call_instance_id, strlib_malloc(local_sdp,-1),
+            msg->timecard, PC_NO_ERROR, NULL);
         free(local_sdp);
         return (SM_RC_END);
     }
+
+    /* clean candidate list, since we are about to return the candidates */
+    gsmsdp_clean_candidate_list(dcb);
 
     dcb->inbound = TRUE;
 
@@ -3058,8 +3378,9 @@ fsmdef_ev_createanswer (sm_event_t *event) {
     if (vcm_res) {
     	FSM_DEBUG_SM(DEB_F_PREFIX"vcmGetIceParams returned an error",
             DEB_F_PREFIX_ARGS(FSM, __FUNCTION__));
-      ui_create_answer(evCreateAnswerError, line, call_id,
+      ui_create_answer(evCreateAnswerError, fcb->state, line, call_id,
           dcb->caller_id.call_instance_id, strlib_empty(),
+          msg->timecard,
           PC_INTERNAL_ERROR, "Could not get ICE parameters for answer");
       return (fsmdef_release(fcb, cause, FALSE));
     }
@@ -3100,8 +3421,9 @@ fsmdef_ev_createanswer (sm_event_t *event) {
      */
     cause = gsmsdp_create_local_sdp(dcb, TRUE, has_audio, has_video, has_data, FALSE);
     if (cause != CC_CAUSE_OK) {
-        ui_create_answer(evCreateAnswerError, line, call_id,
+        ui_create_answer(evCreateAnswerError, fcb->state, line, call_id,
             dcb->caller_id.call_instance_id, strlib_empty(),
+            msg->timecard,
             PC_INTERNAL_ERROR, "Could not create local SDP for answer;"
                 " cause = %s", cc_cause_name(cause));
         FSM_DEBUG_SM("%s", get_debug_string(FSM_DBG_SDP_BUILD_ERR));
@@ -3119,8 +3441,9 @@ fsmdef_ev_createanswer (sm_event_t *event) {
             /* create_answer */       TRUE);
 
     if (cause != CC_CAUSE_OK) {
-        ui_create_answer(evCreateAnswerError, line, call_id,
+        ui_create_answer(evCreateAnswerError, fcb->state, line, call_id,
             dcb->caller_id.call_instance_id, strlib_empty(),
+            msg->timecard,
             PC_INTERNAL_ERROR, "Could not negotiate media lines; cause = %s",
                 cc_cause_name(cause));
         return (fsmdef_release(fcb, cause, FALSE));
@@ -3128,8 +3451,9 @@ fsmdef_ev_createanswer (sm_event_t *event) {
 
     cause = gsmsdp_encode_sdp_and_update_version(dcb, &msg_body);
     if (cause != CC_CAUSE_OK) {
-        ui_create_answer(evCreateAnswerError, line, call_id,
+        ui_create_answer(evCreateAnswerError, fcb->state, line, call_id,
             dcb->caller_id.call_instance_id, strlib_empty(),
+            msg->timecard,
             PC_INTERNAL_ERROR, "Could not encode SDP for answer; cause = %s",
                 cc_cause_name(cause));
         FSM_DEBUG_SM("%s", get_debug_string(FSM_DBG_SDP_BUILD_ERR));
@@ -3139,9 +3463,10 @@ fsmdef_ev_createanswer (sm_event_t *event) {
     dcb->local_sdp_complete = TRUE;
 
     /* Pass SDP back to UI */
-    ui_create_answer(evCreateAnswer, line, call_id,
+    ui_create_answer(evCreateAnswerSuccess, fcb->state, line, call_id,
         dcb->caller_id.call_instance_id,
-        strlib_malloc(msg_body.parts[0].body, -1), PC_NO_ERROR, NULL);
+        strlib_malloc(msg_body.parts[0].body, -1),
+        msg->timecard, PC_NO_ERROR, NULL);
     cc_free_msg_body_parts(&msg_body);
 
     return (SM_RC_END);
@@ -3151,6 +3476,9 @@ fsmdef_ev_createanswer (sm_event_t *event) {
 /**
  * SetLocalDescription
  *
+ * Because the PeerConnection relies on receiving either a success or
+ * an error callback, there must be no paths that return from this
+ * function without first calling ui_set_local_description.
  */
 static sm_rcs_t
 fsmdef_ev_setlocaldesc(sm_event_t *event) {
@@ -3158,7 +3486,6 @@ fsmdef_ev_setlocaldesc(sm_event_t *event) {
     fsmdef_dcb_t        *dcb = fcb->dcb;
     cc_feature_t        *msg = (cc_feature_t *) event->msg;
     cc_causes_t         cause = CC_CAUSE_NORMAL;
-    cc_msgbody_info_t   msg_body;
     int                 action = msg->action;
     string_t            sdp = msg->sdp;
     int                 sdpmode = 0;
@@ -3167,78 +3494,72 @@ fsmdef_ev_setlocaldesc(sm_event_t *event) {
     cc_causes_t         lsm_rc;
     char                *local_sdp = NULL;
     uint32_t            local_sdp_len = 0;
+    fsmdef_candidate_t *candidate = NULL;
 
     FSM_DEBUG_SM(DEB_F_PREFIX"Entered.", DEB_F_PREFIX_ARGS(FSM, __FUNCTION__));
 
+    if (dcb == NULL) {
+        FSM_DEBUG_SM(DEB_F_PREFIX"dcb is NULL.",
+          DEB_F_PREFIX_ARGS(FSM, __FUNCTION__));
+        fsm_change_state(fcb, __LINE__, FSMDEF_S_CLOSED);
+        ui_set_local_description(evSetLocalDescError, fcb->state, line, call_id,
+            0, strlib_empty(),
+            msg->timecard,
+            PC_INTERNAL_ERROR, "Unrecoverable error: dcb is NULL.");
+        return (SM_RC_CLEANUP);
+    }
+
     config_get_value(CFGID_SDPMODE, &sdpmode, sizeof(sdpmode));
     if (!sdpmode) {
-        ui_set_local_description(evSetLocalDescError, line, call_id,
+        fsm_change_state(fcb, __LINE__, FSMDEF_S_CLOSED);
+        ui_set_local_description(evSetLocalDescError, fcb->state, line, call_id,
             dcb->caller_id.call_instance_id, strlib_empty(),
+            msg->timecard,
             PC_INTERNAL_ERROR, "'sdpmode' configuration is false. This should "
             "never ever happen. Run for your lives!");
         return (SM_RC_END);
     }
 
-    if (dcb == NULL) {
-        FSM_DEBUG_SM(DEB_F_PREFIX"dcb is NULL.", DEB_F_PREFIX_ARGS(FSM, __FUNCTION__));
-        return SM_RC_CLEANUP;
+    if (!dcb->sdp) {
+        ui_set_local_description(evSetLocalDescError, fcb->state, line, call_id,
+           dcb->caller_id.call_instance_id, strlib_empty(),
+           msg->timecard,
+           PC_INTERNAL_ERROR, "Setting of local SDP before calling "
+           "createOffer or createAnswer is not currently supported.");
+        return (SM_RC_END);
     }
 
-    if (JSEP_OFFER == action) {
-        cause = gsmsdp_encode_sdp(dcb->sdp, &msg_body);
-        if (cause != CC_CAUSE_OK) {
-            FSM_DEBUG_SM("%s", get_debug_string(FSM_DBG_SDP_BUILD_ERR));
-            ui_set_local_description(evSetLocalDescError, line, call_id,
-                dcb->caller_id.call_instance_id, strlib_empty(),
-                PC_INTERNAL_ERROR, "Could not encode SDP for local description"
-                " (offer) -- did you forget to call createOffer?"
-                " cause = %s", cc_cause_name(cause));
+    switch (action) {
+
+    case JSEP_OFFER:
+        if (fcb->state != FSMDEF_S_STABLE &&
+            fcb->state != FSMDEF_S_HAVE_LOCAL_OFFER) {
+            ui_set_local_description(evSetLocalDescError, fcb->state, line,
+                call_id, dcb->caller_id.call_instance_id, strlib_empty(),
+                msg->timecard,
+                PC_INVALID_STATE, "Cannot set local offer in state %s",
+                fsmdef_state_name(fcb->state));
             return (SM_RC_END);
         }
+        /* TODO: Parse incoming SDP and act on it. */
+        fsm_change_state(fcb, __LINE__, FSMDEF_S_HAVE_LOCAL_OFFER);
+        break;
 
-        /* compare and fail if different:
-         * anant: Why? The JS should be able to modify the SDP. Commenting out for now (same for answer)
-        if (strcmp(msg_body.parts[0].body, sdp) != 0) {
-            ui_set_local_description(evSetLocalDescError, line, call_id,
-                dcb->caller_id.call_instance_id, strlib_empty(),
-                PC_INVALID_STATE, "SDP changes are not supported");
-            cc_free_msg_body_parts(&msg_body);
+    case JSEP_ANSWER:
+        if (fcb->state != FSMDEF_S_HAVE_REMOTE_OFFER &&
+            fcb->state != FSMDEF_S_HAVE_LOCAL_PRANSWER) {
+            ui_set_local_description(evSetLocalDescError, fcb->state, line,
+                call_id, dcb->caller_id.call_instance_id, strlib_empty(),
+                msg->timecard,
+                PC_INVALID_STATE, "Cannot set local answer in state %s",
+                fsmdef_state_name(fcb->state));
             return (SM_RC_END);
         }
-        */
-
-        fsm_change_state(fcb, __LINE__, FSMDEF_S_CALL_SENT);
-
-    } else if (JSEP_ANSWER == action) {
-
-        /* compare SDP generated from CreateAnswer */
-        cause = gsmsdp_encode_sdp(dcb->sdp, &msg_body);
-        if (cause != CC_CAUSE_OK) {
-            FSM_DEBUG_SM("%s", get_debug_string(FSM_DBG_SDP_BUILD_ERR));
-            ui_set_local_description(evSetLocalDescError, line, call_id,
-                dcb->caller_id.call_instance_id, strlib_empty(),
-                PC_INTERNAL_ERROR, "Could not encode SDP for local description"
-                " (answer) -- did you forget to call createAnswer?"
-                " cause = %s", cc_cause_name(cause));
-            return (SM_RC_END);
-        }
-
-        /* compare and fail if different
-        if (strcmp(msg_body.parts[0].body, sdp) != 0) {
-            cc_free_msg_body_parts(&msg_body);
-            ui_set_local_description(evSetLocalDescError, line, call_id,
-                dcb->caller_id.call_instance_id, strlib_empty(),
-                PC_INVALID_STATE, "SDP changes are not supported");
-            return (SM_RC_END);
-        }*/
-
+        /* TODO: Parse incoming SDP and act on it. */
         FSM_SET_FLAGS(dcb->msgs_sent, FSMDEF_MSG_CONNECTED);
-
 
         cc_call_state(dcb->call_id, dcb->line, CC_STATE_ANSWERED,
                       FSMDEF_CC_CALLER_ID);
-
-        fsm_change_state(fcb, __LINE__, FSMDEF_S_CONNECTING);
 
         /*
          * Now that we have negotiated the media, time to set up ICE.
@@ -3246,12 +3567,15 @@ fsmdef_ev_setlocaldesc(sm_event_t *event) {
          */
         cause = gsmsdp_install_peer_ice_attributes(fcb);
         if (cause != CC_CAUSE_OK) {
-            ui_set_local_description(evSetLocalDescError, line, call_id,
-                dcb->caller_id.call_instance_id, strlib_empty(),
+            ui_set_local_description(evSetLocalDescError, fcb->state, line,
+                call_id, dcb->caller_id.call_instance_id, strlib_empty(),
+                msg->timecard,
                 PC_INTERNAL_ERROR, "Could not configure local ICE state"
                 " from SDP; cause = %s", cc_cause_name(cause));
             return (SM_RC_END);
         }
+
+        STAMP_TIMECARD(msg->timecard, "ICE Attributes Installed");
 
         /* taken from fsmdef_ev_connected_ack start rx and tx  */
         cc_call_state(dcb->call_id, dcb->line, CC_STATE_CONNECTED,
@@ -3260,41 +3584,86 @@ fsmdef_ev_setlocaldesc(sm_event_t *event) {
          * If DSP is not able to start rx/tx channels, release the call
          */
         if (dcb->dsp_out_of_resources == TRUE) {
-            cc_call_state(fcb->dcb->call_id, fcb->dcb->line, CC_STATE_UNKNOWN, NULL);
+            cc_call_state(fcb->dcb->call_id, fcb->dcb->line,
+                CC_STATE_UNKNOWN, NULL);
+            ui_set_local_description(evSetLocalDescError, fcb->state, line,
+                call_id, dcb->caller_id.call_instance_id, strlib_empty(),
+                msg->timecard,
+                PC_INTERNAL_ERROR, "Cannot start media channels; cause = %s",
+                cc_cause_name(cause));
             return (SM_RC_END);
         }
-
         /* we may want to use the functionality in the following method
          *  to handle media capability changes, needs discussion
          * fsmdef_transition_to_connected(fcb);
          */
-        fsm_change_state(fcb, __LINE__, FSMDEF_S_CONNECTED);
+        fsm_change_state(fcb, __LINE__, FSMDEF_S_STABLE);
+        break;
 
+    case JSEP_PRANSWER:
+        if (fcb->state != FSMDEF_S_HAVE_REMOTE_OFFER &&
+            fcb->state != FSMDEF_S_HAVE_LOCAL_PRANSWER) {
+            ui_set_local_description(evSetLocalDescError, fcb->state, line,
+                call_id, dcb->caller_id.call_instance_id, strlib_empty(),
+                msg->timecard,
+                PC_INVALID_STATE, "Cannot set local pranswer in state %s",
+                fsmdef_state_name(fcb->state));
+            return (SM_RC_END);
+        }
+        ui_set_local_description(evSetLocalDescError, fcb->state, msg->line,
+            msg->call_id, dcb->caller_id.call_instance_id, strlib_empty(),
+            msg->timecard,
+            PC_INTERNAL_ERROR, "Provisional answers are not yet supported");
+        return (SM_RC_END);
+
+    default:
+        ui_set_local_description(evSetLocalDescError, fcb->state, msg->line,
+            msg->call_id, dcb->caller_id.call_instance_id, strlib_empty(),
+            msg->timecard,
+            PC_INTERNAL_ERROR, "Unknown session description type: %d",action);
+        return (SM_RC_END);
     }
-    /* We're done with the msg_body contents -- free them.*/
-    cc_free_msg_body_parts(&msg_body);
 
     /* Encode the current local SDP structure into a char buffer */
     local_sdp = sipsdp_write_to_buf(dcb->sdp->src_sdp, &local_sdp_len);
     if (!local_sdp) {
-        ui_set_local_description(evSetLocalDescError, line, call_id,
-            dcb->caller_id.call_instance_id, strlib_empty(),
+        ui_set_local_description(evSetLocalDescError, fcb->state, msg->line,
+            msg->call_id, dcb->caller_id.call_instance_id, strlib_empty(),
+            msg->timecard,
             PC_INTERNAL_ERROR, "Could not encode local SDP for local "
             "description");
         return (SM_RC_END);
     }
-    ui_set_local_description(evSetLocalDesc, line, call_id,
-        dcb->caller_id.call_instance_id, strlib_malloc(local_sdp,-1),
-        PC_NO_ERROR, NULL);
-    free(local_sdp);
 
+    ui_set_local_description(evSetLocalDescSuccess, fcb->state, msg->line,
+        msg->call_id, dcb->caller_id.call_instance_id,
+        strlib_malloc(local_sdp,-1), msg->timecard, PC_NO_ERROR, NULL);
+
+    /* If we have pending candidates flush them too */
+    while (TRUE) {
+        /* unlink head and free the media */
+        candidate = (fsmdef_candidate_t *)sll_lite_unlink_head(&dcb->candidate_list);
+        if (candidate) {
+            ui_ice_candidate_found(evFoundIceCandidate, fcb->state, line, call_id,
+                                   dcb->caller_id.call_instance_id, strlib_malloc(local_sdp,-1),
+                                   candidate->candidate, /* Transfer ownership */
+                                   NULL, PC_NO_ERROR, NULL);
+            free(candidate);
+        } else {
+            break;
+        }
+    }
+
+    free(local_sdp);
     return (SM_RC_END);
 }
-
 
 /**
  * SetRemoteDescription
  *
+ * Because the PeerConnection relies on receiving either a success or
+ * an error callback, there must be no paths that return from this
+ * function without first calling ui_set_remote_description.
  */
 static sm_rcs_t
 fsmdef_ev_setremotedesc(sm_event_t *event) {
@@ -3319,14 +3688,22 @@ fsmdef_ev_setremotedesc(sm_event_t *event) {
     FSM_DEBUG_SM(DEB_F_PREFIX"Entered.", DEB_F_PREFIX_ARGS(FSM, __FUNCTION__));
 
     if (dcb == NULL) {
-        FSM_DEBUG_SM(DEB_F_PREFIX"dcb is NULL.", DEB_F_PREFIX_ARGS(FSM, __FUNCTION__));
-        return SM_RC_CLEANUP;
+        FSM_DEBUG_SM(DEB_F_PREFIX"dcb is NULL.",
+          DEB_F_PREFIX_ARGS(FSM, __FUNCTION__));
+        fsm_change_state(fcb, __LINE__, FSMDEF_S_CLOSED);
+        ui_set_remote_description(evSetRemoteDescError, fcb->state, line,
+            call_id, 0, strlib_empty(),
+            msg->timecard,
+            PC_INTERNAL_ERROR, "Unrecoverable error: dcb is NULL.");
+        return (SM_RC_CLEANUP);
     }
 
     config_get_value(CFGID_SDPMODE, &sdpmode, sizeof(sdpmode));
     if (!sdpmode) {
-        ui_set_remote_description(evSetRemoteDescError, line, call_id,
-            dcb->caller_id.call_instance_id, strlib_empty(),
+        fsm_change_state(fcb, __LINE__, FSMDEF_S_CLOSED);
+        ui_set_remote_description(evSetRemoteDescError, fcb->state, line,
+            call_id, dcb->caller_id.call_instance_id, strlib_empty(),
+            msg->timecard,
             PC_INTERNAL_ERROR, "'sdpmode' configuration is false. This should "
             "never ever happen. Run for your lives!");
         return (SM_RC_END);
@@ -3338,8 +3715,9 @@ fsmdef_ev_setremotedesc(sm_event_t *event) {
     if (dcb->sdp && dcb->sdp->dest_sdp) {
         FSM_DEBUG_SM(DEB_F_PREFIX"Renegotiation not currently supported.",
                      DEB_F_PREFIX_ARGS(FSM, __FUNCTION__));
-        ui_set_remote_description(evSetRemoteDescError, line, call_id,
-            dcb->caller_id.call_instance_id, strlib_empty(),
+        ui_set_remote_description(evSetRemoteDescError, fcb->state, line,
+            call_id, dcb->caller_id.call_instance_id, strlib_empty(),
+            msg->timecard,
             PC_INVALID_STATE, "Renegotiation of session description is not "
             "currently supported. See Bug 840728 for status.");
         return (SM_RC_END);
@@ -3365,57 +3743,94 @@ fsmdef_ev_setremotedesc(sm_event_t *event) {
     part->content_disposition.disposition = cc_disposition_session;
     part->content_id = NULL;
 
-    if (JSEP_OFFER == action) {
-
+    switch (action) {
+    case JSEP_OFFER:
+        if (fcb->state != FSMDEF_S_STABLE &&
+            fcb->state != FSMDEF_S_HAVE_REMOTE_OFFER) {
+            ui_set_remote_description(evSetRemoteDescError, fcb->state, line,
+                call_id, dcb->caller_id.call_instance_id, strlib_empty(),
+                msg->timecard,
+                PC_INVALID_STATE, "Cannot set remote offer in state %s",
+                fsmdef_state_name(fcb->state));
+            return (SM_RC_END);
+        }
         cause = gsmsdp_process_offer_sdp(fcb, &msg_body, TRUE);
         if (cause != CC_CAUSE_OK) {
-            ui_set_remote_description(evSetRemoteDescError, line, call_id,
-                dcb->caller_id.call_instance_id, strlib_empty(),
-                PC_INTERNAL_ERROR, "Could not process offer SDP; cause = %s",
-                cc_cause_name(cause));
+            ui_set_remote_description(evSetRemoteDescError, fcb->state, line,
+                call_id, dcb->caller_id.call_instance_id, strlib_empty(),
+                msg->timecard,
+                PC_INTERNAL_ERROR, "Could not process offer SDP; "
+                "cause = %s", cc_cause_name(cause));
             return (SM_RC_END);
         }
 
         /*
-         * Determine what media types are offered, used to create matching local SDP
-         * for negotiation.
+         * Determine what media types are offered, used to create matching
+         * local SDP for negotiation.
          */
-        gsmsdp_get_offered_media_types(fcb, dcb->sdp, &has_audio, &has_video, &has_data);
+        gsmsdp_get_offered_media_types(fcb, dcb->sdp, &has_audio,
+            &has_video, &has_data);
 
         /*
          * The sdp member of the dcb has local and remote sdp
          * this next function fills in the local part
          */
-        cause = gsmsdp_create_local_sdp(dcb, TRUE, has_audio, has_video, has_data, FALSE);
+        cause = gsmsdp_create_local_sdp(dcb, TRUE, has_audio, has_video,
+            has_data, FALSE);
         if (cause != CC_CAUSE_OK) {
-            ui_set_remote_description(evSetRemoteDescError, line, call_id,
-              dcb->caller_id.call_instance_id, strlib_empty(),
-              PC_INTERNAL_ERROR, "Could not create local SDP; cause = %s",
-              cc_cause_name(cause));
+            ui_set_remote_description(evSetRemoteDescError, fcb->state, line,
+                  call_id, dcb->caller_id.call_instance_id, strlib_empty(),
+                  msg->timecard,
+                  PC_INTERNAL_ERROR, "Could not create local SDP; cause = %s",
+                  cc_cause_name(cause));
             FSM_DEBUG_SM("%s", get_debug_string(FSM_DBG_SDP_BUILD_ERR));
             // Force clean up call without sending release
             return (fsmdef_release(fcb, cause, FALSE));
         }
 
-        cause = gsmsdp_negotiate_media_lines(fcb, dcb->sdp, TRUE, TRUE, TRUE, FALSE);
+        cause = gsmsdp_negotiate_media_lines(fcb, dcb->sdp,
+            TRUE, TRUE, TRUE, FALSE);
         if (cause != CC_CAUSE_OK) {
-            ui_set_remote_description(evSetRemoteDescError, line, call_id,
-              dcb->caller_id.call_instance_id, strlib_empty(),
+            ui_set_remote_description(evSetRemoteDescError, fcb->state, line,
+              call_id, dcb->caller_id.call_instance_id, strlib_empty(),
+              msg->timecard,
               PC_INTERNAL_ERROR, "Could not negotiate media lines; cause = %s",
               cc_cause_name(cause));
             return (fsmdef_release(fcb, cause, FALSE));
         }
 
+        /* Now that the SDP is digested we need to sanity check
+           for ICE parameters */
+        cause = gsmsdp_check_ice_attributes_exist(fcb);
+        if (cause != CC_CAUSE_OK) {
+            ui_set_remote_description(evSetRemoteDescError, fcb->state, line,
+              call_id, dcb->caller_id.call_instance_id, strlib_empty(),
+              msg->timecard,
+              PC_INTERNAL_ERROR, "ICE attributes missing; cause = %s",
+              cc_cause_name(cause));
+            return (SM_RC_END);
+        }
+
         gsmsdp_clean_media_list(dcb);
 
-        fsm_change_state(fcb, __LINE__, FSMDEF_S_INCOMING_ALERTING);
+        fsm_change_state(fcb, __LINE__, FSMDEF_S_HAVE_REMOTE_OFFER);
+        break;
 
-    } else if (JSEP_ANSWER == action) {
-
+    case JSEP_ANSWER:
+        if (fcb->state != FSMDEF_S_HAVE_LOCAL_OFFER &&
+            fcb->state != FSMDEF_S_HAVE_REMOTE_PRANSWER) {
+            ui_set_remote_description(evSetRemoteDescError, fcb->state, line,
+                call_id, dcb->caller_id.call_instance_id, strlib_empty(),
+                msg->timecard,
+                PC_INVALID_STATE, "Cannot set remote answer in state %s",
+                fsmdef_state_name(fcb->state));
+            return (SM_RC_END);
+        }
         cause = gsmsdp_negotiate_answer_sdp(fcb, &msg_body);
         if (cause != CC_CAUSE_OK) {
-            ui_set_remote_description(evSetRemoteDescError, line, call_id,
-                dcb->caller_id.call_instance_id, strlib_empty(),
+            ui_set_remote_description(evSetRemoteDescError, fcb->state, line,
+                call_id, dcb->caller_id.call_instance_id, strlib_empty(),
+                msg->timecard,
                 PC_INTERNAL_ERROR, "Could not negotiate answer SDP; cause = %s",
                 cc_cause_name(cause));
             return (SM_RC_END);
@@ -3427,22 +3842,49 @@ fsmdef_ev_setremotedesc(sm_event_t *event) {
          */
         cause = gsmsdp_install_peer_ice_attributes(fcb);
         if (cause != CC_CAUSE_OK) {
-            ui_set_remote_description(evSetRemoteDescError, line, call_id,
-                dcb->caller_id.call_instance_id, strlib_empty(),
+            ui_set_remote_description(evSetRemoteDescError, fcb->state, line,
+                call_id, dcb->caller_id.call_instance_id, strlib_empty(),
+                msg->timecard,
                 PC_INTERNAL_ERROR, "Could not configure local ICE state"
                 " from SDP; cause = %s", cc_cause_name(cause));
             return (SM_RC_END);
         }
 
-        cc_call_state(dcb->call_id, dcb->line, CC_STATE_CONNECTED, FSMDEF_CC_CALLER_ID);
+        STAMP_TIMECARD(msg->timecard, "ICE Attributes Installed");
+
+        cc_call_state(dcb->call_id, dcb->line, CC_STATE_CONNECTED,
+            FSMDEF_CC_CALLER_ID);
 
         /* we may want to use the functionality in the following method
          * to handle media capability changes, needs discussion
          * fsmdef_transition_to_connected(fcb);
-         * fsmdef_transition_to_connected(fcb);
          */
 
-        fsm_change_state(fcb, __LINE__, FSMDEF_S_CONNECTED);
+        fsm_change_state(fcb, __LINE__, FSMDEF_S_STABLE);
+        break;
+
+    case JSEP_PRANSWER:
+        if (fcb->state != FSMDEF_S_HAVE_LOCAL_OFFER &&
+            fcb->state != FSMDEF_S_HAVE_REMOTE_PRANSWER) {
+            ui_set_remote_description(evSetRemoteDescError, fcb->state, line,
+                call_id, dcb->caller_id.call_instance_id, strlib_empty(),
+                msg->timecard,
+                PC_INVALID_STATE, "Cannot set remote pranswer in state %s",
+                fsmdef_state_name(fcb->state));
+            return (SM_RC_END);
+        }
+        ui_set_remote_description(evSetRemoteDescError, fcb->state, msg->line,
+            msg->call_id, dcb->caller_id.call_instance_id, strlib_empty(),
+            msg->timecard,
+            PC_INTERNAL_ERROR, "Provisional answers are not yet supported");
+        return (SM_RC_END);
+
+    default:
+        ui_set_remote_description(evSetRemoteDescError, fcb->state, msg->line,
+            msg->call_id, dcb->caller_id.call_instance_id, strlib_empty(),
+            msg->timecard,
+            PC_INTERNAL_ERROR, "Unknown session description type: %d",action);
+        return (SM_RC_END);
     }
 
     /* For the sake of accuracy, we regenerate the SDP text from our parsed
@@ -3454,16 +3896,17 @@ fsmdef_ev_setremotedesc(sm_event_t *event) {
     remote_sdp = sipsdp_write_to_buf(dcb->sdp->dest_sdp, &remote_sdp_len);
 
     if (!remote_sdp) {
-        ui_set_remote_description(evSetRemoteDescError, line, call_id,
-            dcb->caller_id.call_instance_id, strlib_empty(),
+        ui_set_remote_description(evSetRemoteDescError, fcb->state, line,
+            call_id, dcb->caller_id.call_instance_id, strlib_empty(),
+            msg->timecard,
             PC_INTERNAL_ERROR, "Could not serialize remote description;"
             " cause = %s",  cc_cause_name(cause));
         return (SM_RC_END);
     }
 
-    ui_set_remote_description(evSetRemoteDesc, line, call_id,
+    ui_set_remote_description(evSetRemoteDescSuccess, fcb->state, line, call_id,
         dcb->caller_id.call_instance_id, strlib_malloc(remote_sdp,-1),
-        PC_NO_ERROR, NULL);
+        msg->timecard, PC_NO_ERROR, NULL);
 
     free(remote_sdp);
 
@@ -3485,6 +3928,8 @@ fsmdef_ev_setpeerconnection(sm_event_t *event) {
     FSM_DEBUG_SM(DEB_F_PREFIX"Entered.", DEB_F_PREFIX_ARGS(FSM, __FUNCTION__));
     config_get_value(CFGID_SDPMODE, &sdpmode, sizeof(sdpmode));
     if (!sdpmode) {
+        FSM_DEBUG_SM(DEB_F_PREFIX"sdpmode is false; cannot set peerconnection.",
+            DEB_F_PREFIX_ARGS(FSM, __FUNCTION__));
         return (SM_RC_END);
     }
 
@@ -3502,7 +3947,8 @@ fsmdef_ev_setpeerconnection(sm_event_t *event) {
 
       lsm_rc = lsm_get_facility_by_line(call_id, line, FALSE, dcb);
       if (lsm_rc != CC_CAUSE_OK) {
-          FSM_DEBUG_SM(DEB_F_PREFIX"lsm_get_facility_by_line failed.", DEB_F_PREFIX_ARGS(FSM, __FUNCTION__));
+          FSM_DEBUG_SM(DEB_F_PREFIX"lsm_get_facility_by_line failed.",
+                       DEB_F_PREFIX_ARGS(FSM, __FUNCTION__));
           return SM_RC_END;
       }
 
@@ -3512,8 +3958,16 @@ fsmdef_ev_setpeerconnection(sm_event_t *event) {
     }
 
     PR_ASSERT(strlen(msg->data.pc.pc_handle) < PC_HANDLE_SIZE);
-    sstrncpy(dcb->peerconnection, msg->data.pc.pc_handle, sizeof(dcb->peerconnection));
+    sstrncpy(dcb->peerconnection, msg->data.pc.pc_handle,
+             sizeof(dcb->peerconnection));
     dcb->peerconnection_set = TRUE;
+
+    FSM_DEBUG_SM(DEB_F_PREFIX"Setting peerconnection handle for (%d/%d) to %s",
+                 DEB_F_PREFIX_ARGS(FSM, __FUNCTION__),
+                 line, call_id, dcb->peerconnection);
+
+    /* WebRTC connections always start in state "STABLE". */
+    fsm_change_state(fcb, __LINE__, FSMDEF_S_STABLE);
 
     return (SM_RC_END);
 }
@@ -3611,7 +4065,7 @@ fsmdef_ev_removestream(sm_event_t *event) {
         return (SM_RC_END);
     }
 
-	return (SM_RC_END);
+    return (SM_RC_END);
 }
 
 static sm_rcs_t
@@ -3634,15 +4088,17 @@ fsmdef_ev_addcandidate(sm_event_t *event) {
 
     if (!dcb) {
         FSM_DEBUG_SM(DEB_F_PREFIX"dcb is NULL.", DEB_F_PREFIX_ARGS(FSM, __FUNCTION__));
-        ui_ice_candidate_add(evAddIceCandidateError, line, call_id,
-            0, strlib_empty(), PC_INTERNAL_ERROR, "DCB has not been created.");
+        ui_ice_candidate_add(evAddIceCandidateError, fcb->state, line, call_id,
+            0, strlib_empty(), msg->timecard, PC_INTERNAL_ERROR,
+            "DCB has not been created.");
         return SM_RC_CLEANUP;
     }
 
     config_get_value(CFGID_SDPMODE, &sdpmode, sizeof(sdpmode));
     if (sdpmode == FALSE) {
-        ui_ice_candidate_add(evAddIceCandidateError, line, call_id,
+        ui_ice_candidate_add(evAddIceCandidateError, fcb->state, line, call_id,
             dcb->caller_id.call_instance_id, strlib_empty(),
+            msg->timecard,
             PC_INTERNAL_ERROR, "'sdpmode' configuration is false. This should "
             "never ever happen. Run for your lives!");
         return (SM_RC_END);
@@ -3653,8 +4109,9 @@ fsmdef_ev_addcandidate(sm_event_t *event) {
             "remote description been set yet?\n",
             DEB_F_PREFIX_ARGS(FSM, __FUNCTION__));
 
-        ui_ice_candidate_add(evAddIceCandidateError, line, call_id,
+        ui_ice_candidate_add(evAddIceCandidateError, fcb->state, line, call_id,
             dcb->caller_id.call_instance_id, strlib_empty(),
+            msg->timecard,
             PC_INVALID_STATE, "Cannot add remote ICE candidates before "
                               "setting remote SDP.");
 
@@ -3700,20 +4157,132 @@ fsmdef_ev_addcandidate(sm_event_t *event) {
     remote_sdp = sipsdp_write_to_buf(dcb->sdp->dest_sdp, &remote_sdp_len);
 
     if (!remote_sdp) {
-        ui_ice_candidate_add(evAddIceCandidateError, line, call_id,
+        ui_ice_candidate_add(evAddIceCandidateError, fcb->state, line, call_id,
             dcb->caller_id.call_instance_id, strlib_empty(),
+            msg->timecard,
             PC_INTERNAL_ERROR, "Could not serialize new SDP after adding ICE "
             "candidate.");
         return (SM_RC_END);
     }
 
-    ui_ice_candidate_add(evAddIceCandidate, line, call_id,
+    ui_ice_candidate_add(evAddIceCandidate, fcb->state, line, call_id,
         dcb->caller_id.call_instance_id, strlib_malloc(remote_sdp,-1),
-        PC_NO_ERROR, NULL);
+        msg->timecard, PC_NO_ERROR, NULL);
 
     free(remote_sdp);
     return (SM_RC_END);
 }
+
+
+static sm_rcs_t
+fsmdef_ev_foundcandidate(sm_event_t *event) {
+    fsm_fcb_t           *fcb = (fsm_fcb_t *) event->data;
+    fsmdef_dcb_t        *dcb = fcb->dcb;
+    cc_causes_t         cause = CC_CAUSE_NORMAL;
+    cc_feature_t        *msg = (cc_feature_t *) event->msg;
+    int                 sdpmode = 0;
+    short               vcm_res;
+    uint16_t            level;
+    line_t              line = msg->line;
+    callid_t            call_id = msg->call_id;
+    char                *local_sdp = 0;
+    uint32_t            local_sdp_len = 0;
+    string_t            candidate = 0;
+    char                candidate_tmp[CANDIDATE_SIZE + 32]; /* Sort of arbitrary */
+
+    FSM_DEBUG_SM(DEB_F_PREFIX"Entered.", DEB_F_PREFIX_ARGS(FSM, __FUNCTION__));
+
+    if (!dcb) {
+        FSM_DEBUG_SM(DEB_F_PREFIX"dcb is NULL.", DEB_F_PREFIX_ARGS(FSM, __FUNCTION__));
+        ui_ice_candidate_add(evAddIceCandidateError, fcb->state, line, call_id,
+            0, strlib_empty(), msg->timecard, PC_INTERNAL_ERROR,
+            "DCB has not been created.");
+        return SM_RC_CLEANUP;
+    }
+
+    config_get_value(CFGID_SDPMODE, &sdpmode, sizeof(sdpmode));
+    if (!sdpmode) {
+        MOZ_CRASH();
+    }
+
+    MOZ_ASSERT(dcb->sdp && dcb->sdp->src_sdp);
+    if (!dcb->sdp || !dcb->sdp->src_sdp) {
+        FSM_DEBUG_SM(DEB_F_PREFIX"Has the "
+            "local description been set yet?\n",
+            DEB_F_PREFIX_ARGS(FSM, __FUNCTION__));
+
+        ui_ice_candidate_found(evFoundIceCandidateError, fcb->state, line, call_id,
+                               dcb->caller_id.call_instance_id, strlib_empty(),
+                               NULL, msg->timecard,
+            PC_INVALID_STATE, "Cannot add found ICE candidates without"
+                              "local SDP.");
+
+        return SM_RC_END;
+    }
+
+    /* Store the candidate in the SDP for future reference */
+    level = msg->data.candidate.level;
+    gsmsdp_set_ice_attribute (SDP_ATTR_ICE_CANDIDATE, level,
+                              dcb->sdp->src_sdp,
+                              (char *)msg->data.candidate.candidate);
+
+    local_sdp = sipsdp_write_to_buf(dcb->sdp->src_sdp, &local_sdp_len);
+
+    if (!local_sdp) {
+        ui_ice_candidate_found(evFoundIceCandidateError, fcb->state, line, call_id,
+            dcb->caller_id.call_instance_id, strlib_empty(), NULL,
+            msg->timecard,
+            PC_INTERNAL_ERROR, "Could not serialize new SDP after adding ICE "
+            "candidate.");
+        return (SM_RC_END);
+    }
+
+    /* Distinguish between the following two cases:
+
+       1. CreateOffer() has been called but SetLocalDesc() has not.
+       2. We are mid-call.
+
+       Both of these are in state STABLE but only in one do we
+       pass up trickle candidates. In the other we buffer them
+       and send them later.
+    */
+    /* Smuggle the entire candidate structure in a string */
+    PR_snprintf(candidate_tmp, sizeof(candidate_tmp), "%d\t%s\t%s",
+                msg->data.candidate.level,
+                (char *)msg->data.candidate.mid,
+                (char *)msg->data.candidate.candidate);
+
+    if (fcb->state == FSMDEF_S_STABLE) {
+        if (!dcb->sdp->dest_sdp) {
+            fsmdef_candidate_t *buffered_cand = NULL;
+
+            FSM_DEBUG_SM(DEB_F_PREFIX"dcb->sdp->dest_sdp is null."
+                         "assuming CreateOffer called but not SetLocal...\n",
+                         DEB_F_PREFIX_ARGS(FSM, __FUNCTION__));
+
+            buffered_cand = (fsmdef_candidate_t *)cpr_malloc(sizeof(fsmdef_candidate_t));
+            if (!buffered_cand)
+                return SM_RC_END;
+
+            buffered_cand->candidate = strlib_malloc(candidate_tmp, -1);
+
+            if (sll_lite_link_head(&dcb->candidate_list,
+                                   (sll_lite_node_t *)buffered_cand) != SLL_LITE_RET_SUCCESS)
+                return SM_RC_END;
+
+            /* Don't notify upward */
+            return SM_RC_END;
+        }
+    }
+
+    ui_ice_candidate_found(evFoundIceCandidate, fcb->state, line, call_id,
+        dcb->caller_id.call_instance_id, strlib_malloc(local_sdp,-1),
+        strlib_malloc(candidate_tmp, -1),
+        msg->timecard, PC_NO_ERROR, NULL);
+
+    return SM_RC_END;
+}
+
 
 static void
 fsmdef_check_active_feature (fsmdef_dcb_t *dcb, cc_features_t ftr_id)
@@ -6137,11 +6706,11 @@ fsmdef_ev_onhook (sm_event_t *event)
     config_get_value(CFGID_SDPMODE, &sdpmode, sizeof(sdpmode));
 
     if (sdpmode) {
-    	if(dcb->ice_ufrag)
-    		cpr_free(dcb->ice_ufrag);
+        if(dcb->ice_ufrag)
+          cpr_free(dcb->ice_ufrag);
 
-    	if(dcb->ice_pwd)
-    		cpr_free(dcb->ice_pwd);
+        if(dcb->ice_pwd)
+          cpr_free(dcb->ice_pwd);
     }
 
     /*

@@ -5,6 +5,7 @@
 #ifndef nsHostObjectURI_h
 #define nsHostObjectURI_h
 
+#include "mozilla/Attributes.h"
 #include "nsCOMPtr.h"
 #include "nsIClassInfo.h"
 #include "nsIPrincipal.h"
@@ -13,8 +14,9 @@
 #include "nsSimpleURI.h"
 
 /**
- * These URIs refer to host objects: Blobs, with scheme "blob", and
- * MediaStreams, with scheme "mediastream".
+ * These URIs refer to host objects: Blobs, with scheme "blob",
+ * MediaStreams, with scheme "mediastream", and MediaSources, with scheme
+ * "mediasource".
  */
 class nsHostObjectURI : public nsSimpleURI,
                         public nsIURIWithPrincipal
@@ -35,13 +37,13 @@ public:
 
   // Override CloneInternal() and EqualsInternal()
   virtual nsresult CloneInternal(RefHandlingEnum aRefHandlingMode,
-                                 nsIURI** aClone);
+                                 nsIURI** aClone) MOZ_OVERRIDE;
   virtual nsresult EqualsInternal(nsIURI* aOther,
                                   RefHandlingEnum aRefHandlingMode,
-                                  bool* aResult);
+                                  bool* aResult) MOZ_OVERRIDE;
 
   // Override StartClone to hand back a nsHostObjectURI
-  virtual nsSimpleURI* StartClone(RefHandlingEnum /* unused */)
+  virtual nsSimpleURI* StartClone(RefHandlingEnum /* unused */) MOZ_OVERRIDE
   { return new nsHostObjectURI(); }
 
   nsCOMPtr<nsIPrincipal> mPrincipal;

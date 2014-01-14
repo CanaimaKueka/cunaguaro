@@ -12,19 +12,19 @@
 #include <string>
 #include <vector>
 
-#include "gtest/gtest.h"
-
-#include "APITest.h"
-#include "audio_coding_module.h"
-#include "EncodeDecodeTest.h"
-#include "iSACTest.h"
-#include "TestAllCodecs.h"
-#include "TestFEC.h"
-#include "TestStereo.h"
-#include "testsupport/fileutils.h"
-#include "TestVADDTX.h"
-#include "trace.h"
-#include "TwoWayCommunication.h"
+#include "testing/gtest/include/gtest/gtest.h"
+#include "webrtc/modules/audio_coding/main/interface/audio_coding_module.h"
+#include "webrtc/modules/audio_coding/main/test/APITest.h"
+#include "webrtc/modules/audio_coding/main/test/EncodeDecodeTest.h"
+#include "webrtc/modules/audio_coding/main/test/iSACTest.h"
+#include "webrtc/modules/audio_coding/main/test/opus_test.h"
+#include "webrtc/modules/audio_coding/main/test/TestAllCodecs.h"
+#include "webrtc/modules/audio_coding/main/test/TestFEC.h"
+#include "webrtc/modules/audio_coding/main/test/TestStereo.h"
+#include "webrtc/modules/audio_coding/main/test/TestVADDTX.h"
+#include "webrtc/modules/audio_coding/main/test/TwoWayCommunication.h"
+#include "webrtc/system_wrappers/interface/trace.h"
+#include "webrtc/test/testsupport/fileutils.h"
 
 using webrtc::AudioCodingModule;
 using webrtc::Trace;
@@ -122,11 +122,19 @@ void PopulateTests(std::vector<ACMTest*>* tests) {
 TEST(AudioCodingModuleTest, TestAllCodecs) {
   Trace::CreateTrace();
   Trace::SetTraceFile((webrtc::test::OutputPath() +
-      "acm_allcodecs_trace.txt").c_str());
+          "acm_allcodecs_trace.txt").c_str());
   webrtc::TestAllCodecs(ACM_TEST_MODE).Perform();
   Trace::ReturnTrace();
 }
 #endif
+
+TEST(AudioCodingModuleTest, TestOpus) {
+  Trace::CreateTrace();
+  Trace::SetTraceFile((webrtc::test::OutputPath() +
+          "acm_opus_trace.txt").c_str());
+  webrtc::OpusTest().Perform();
+  Trace::ReturnTrace();
+}
 
 TEST(AudioCodingModuleTest, RunAllTests) {
   std::vector<ACMTest*> tests;

@@ -6,15 +6,47 @@
 #ifndef GFX_TILEDCONTENTHOST_H
 #define GFX_TILEDCONTENTHOST_H
 
-#include "ContentHost.h"
-#include "ClientTiledThebesLayer.h" // for BasicTiledLayerBuffer
+#include <stdint.h>                     // for uint16_t
+#include <stdio.h>                      // for FILE
+#include <algorithm>                    // for swap
+#include "ContentHost.h"                // for ContentHost
+#include "TiledLayerBuffer.h"           // for TiledLayerBuffer, etc
+#include "CompositableHost.h"
+#include "gfxPoint.h"                   // for gfxSize
+#include "mozilla/Assertions.h"         // for MOZ_ASSERT, etc
+#include "mozilla/Attributes.h"         // for MOZ_OVERRIDE
+#include "mozilla/RefPtr.h"             // for RefPtr
+#include "mozilla/gfx/Point.h"          // for Point
+#include "mozilla/gfx/Rect.h"           // for Rect
+#include "mozilla/gfx/Types.h"          // for Filter
+#include "mozilla/layers/CompositorTypes.h"  // for TextureInfo, etc
+#include "mozilla/layers/LayersSurfaces.h"  // for SurfaceDescriptor
+#include "mozilla/layers/LayersTypes.h"  // for LayerRenderState, etc
+#include "mozilla/layers/TextureHost.h"  // for DeprecatedTextureHost
+#include "mozilla/layers/TiledContentClient.h"
+#include "mozilla/mozalloc.h"           // for operator delete
+#include "nsRegion.h"                   // for nsIntRegion
+#include "nscore.h"                     // for nsACString
+
+class gfxReusableSurfaceWrapper;
+struct nsIntPoint;
+struct nsIntRect;
+struct nsIntSize;
 
 namespace mozilla {
+namespace gfx {
+class Matrix4x4;
+}
+
 namespace layers {
 
-class ThebesBuffer;
-class OptionalThebesBuffer;
-struct TexturedEffect;
+class Compositor;
+class ISurfaceAllocator;
+class Layer;
+class ThebesBufferData;
+class TiledThebesLayerComposite;
+struct EffectChain;
+ 
 
 class TiledTexture {
 public:
@@ -23,41 +55,41 @@ public:
   // essentially, this is a sentinel used to represent an invalid or blank
   // tile.
   TiledTexture()
-    : mTextureHost(nullptr)
+    : mDeprecatedTextureHost(nullptr)
   {}
 
-  // Constructs a TiledTexture from a TextureHost.
-  TiledTexture(TextureHost* aTextureHost)
-    : mTextureHost(aTextureHost)
+  // Constructs a TiledTexture from a DeprecatedTextureHost.
+  TiledTexture(DeprecatedTextureHost* aDeprecatedTextureHost)
+    : mDeprecatedTextureHost(aDeprecatedTextureHost)
   {}
 
   TiledTexture(const TiledTexture& o) {
-    mTextureHost = o.mTextureHost;
+    mDeprecatedTextureHost = o.mDeprecatedTextureHost;
   }
   TiledTexture& operator=(const TiledTexture& o) {
     if (this == &o) {
       return *this;
     }
-    mTextureHost = o.mTextureHost;
+    mDeprecatedTextureHost = o.mDeprecatedTextureHost;
     return *this;
   }
 
   void Validate(gfxReusableSurfaceWrapper* aReusableSurface, Compositor* aCompositor, uint16_t aSize);
 
   bool operator== (const TiledTexture& o) const {
-    if (!mTextureHost || !o.mTextureHost) {
-      return mTextureHost == o.mTextureHost;
+    if (!mDeprecatedTextureHost || !o.mDeprecatedTextureHost) {
+      return mDeprecatedTextureHost == o.mDeprecatedTextureHost;
     }
-    return *mTextureHost == *o.mTextureHost;
+    return *mDeprecatedTextureHost == *o.mDeprecatedTextureHost;
   }
   bool operator!= (const TiledTexture& o) const {
-    if (!mTextureHost || !o.mTextureHost) {
-      return mTextureHost != o.mTextureHost;
+    if (!mDeprecatedTextureHost || !o.mDeprecatedTextureHost) {
+      return mDeprecatedTextureHost != o.mDeprecatedTextureHost;
     }
-    return *mTextureHost != *o.mTextureHost;
+    return *mDeprecatedTextureHost != *o.mDeprecatedTextureHost;
   }
 
-  RefPtr<TextureHost> mTextureHost;
+  RefPtr<DeprecatedTextureHost> mDeprecatedTextureHost;
 };
 
 class TiledLayerBufferComposite
@@ -66,6 +98,7 @@ class TiledLayerBufferComposite
   friend class TiledLayerBuffer<TiledLayerBufferComposite, TiledTexture>;
 
 public:
+  typedef TiledLayerBuffer<TiledLayerBufferComposite, TiledTexture>::Iterator Iterator;
   TiledLayerBufferComposite()
     : mCompositor(nullptr)
   {}
@@ -104,8 +137,6 @@ private:
   gfxSize mFrameResolution;
 };
 
-class TiledThebesLayerComposite;
-
 /**
  * ContentHost for tiled Thebes layers. Since tiled layers are special snow
  * flakes, we don't call UpdateThebes or AddTextureHost, etc. We do call Composite
@@ -135,8 +166,14 @@ public:
     : ContentHost(aTextureInfo)
     , mPendingUpload(false)
     , mPendingLowPrecisionUpload(false)
-  {}
-  ~TiledContentHost();
+  {
+    MOZ_COUNT_CTOR(TiledContentHost);
+  }
+
+  ~TiledContentHost()
+  {
+    MOZ_COUNT_DTOR(TiledContentHost);
+  }
 
   virtual LayerRenderState GetRenderState() MOZ_OVERRIDE
   {
@@ -157,7 +194,8 @@ public:
     return mLowPrecisionVideoMemoryTiledBuffer.GetValidRegion();
   }
 
-  void PaintedTiledLayerBuffer(const BasicTiledLayerBuffer* mTiledBuffer);
+  void PaintedTiledLayerBuffer(ISurfaceAllocator* aAllocator,
+                               const SurfaceDescriptorTiles& aTiledDescriptor);
 
   // Renders a single given tile.
   void RenderTile(const TiledTexture& aTile,
@@ -184,12 +222,12 @@ public:
 
   virtual TiledLayerComposer* AsTiledLayerComposer() MOZ_OVERRIDE { return this; }
 
-  virtual void EnsureTextureHost(TextureIdentifier aTextureId,
+  virtual void EnsureDeprecatedTextureHost(TextureIdentifier aTextureId,
                                  const SurfaceDescriptor& aSurface,
                                  ISurfaceAllocator* aAllocator,
                                  const TextureInfo& aTextureInfo) MOZ_OVERRIDE
   {
-    MOZ_NOT_REACHED("Does nothing");
+    MOZ_CRASH("Does nothing");
   }
 
   virtual void SetCompositor(Compositor* aCompositor) MOZ_OVERRIDE
@@ -199,7 +237,15 @@ public:
     mLowPrecisionVideoMemoryTiledBuffer.SetCompositor(aCompositor);
   }
 
-  virtual void Attach(Layer* aLayer, Compositor* aCompositor) MOZ_OVERRIDE;
+  virtual void Attach(Layer* aLayer,
+                      Compositor* aCompositor,
+                      AttachFlags aFlags = NO_FLAGS) MOZ_OVERRIDE;
+
+#ifdef MOZ_DUMP_PAINTING
+  virtual void Dump(FILE* aFile=nullptr,
+                    const char* aPrefix="",
+                    bool aDumpHtml=false) MOZ_OVERRIDE;
+#endif
 
 #ifdef MOZ_LAYERS_HAVE_LOG
   virtual void PrintInfo(nsACString& aTo, const char* aPrefix);

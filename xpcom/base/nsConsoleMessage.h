@@ -16,12 +16,13 @@ public:
     nsConsoleMessage();
     nsConsoleMessage(const PRUnichar *message);
 
-    NS_DECL_ISUPPORTS
+    NS_DECL_THREADSAFE_ISUPPORTS
     NS_DECL_NSICONSOLEMESSAGE
 
 private:
     ~nsConsoleMessage() {}
 
+    int64_t mTimeStamp;
     nsString mMessage;
 };
 

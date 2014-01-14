@@ -6,3 +6,24 @@
 
 MODULE = 'caps'
 
+SOURCES += [
+    'nsJSPrincipals.cpp',
+    'nsNullPrincipal.cpp',
+    'nsNullPrincipalURI.cpp',
+    'nsPrincipal.cpp',
+    'nsScriptSecurityManager.cpp',
+    'nsSecurityManagerFactory.cpp',
+    'nsSystemPrincipal.cpp',
+]
+
+LIBRARY_NAME = 'caps_s'
+
+LIBXUL_LIBRARY = True
+
+MSVC_ENABLE_PGO = True
+
+LOCAL_INCLUDES += [
+    '../include',
+    '/dom/base',
+    '/js/xpconnect/src',
+]

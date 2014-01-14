@@ -24,7 +24,7 @@
 <!ENTITY attachCloudCmd.label "Filelink">
 <!ENTITY attachCloudCmd.accesskey "i">
 <!ENTITY attachPageCmd.label "Webside…">
-<!ENTITY attachPageCmd.accesskey "H">
+<!ENTITY attachPageCmd.accesskey "W">
 <!--LOCALIZATION NOTE attachVCardCmd.label Don't translate the term 'vCard' -->
 <!ENTITY attachVCardCmd.label "Mit visitkort (vCard)">
 <!ENTITY attachVCardCmd.accesskey "V">
@@ -50,6 +50,8 @@
 <!ENTITY sendLaterCmd.accesskey "e">
 <!ENTITY printSetupCmd.label "Sideopsætning…">
 <!ENTITY printSetupCmd.accesskey "æ">
+<!ENTITY printPreviewCmd.label "Vis udskrift">
+<!ENTITY printPreviewCmd.accesskey "V">
 <!ENTITY printCmd.label "Udskriv">
 <!ENTITY printCmd.key "P">
 <!ENTITY printCmd.accesskey "U">
@@ -87,6 +89,7 @@
 <!ENTITY findCmd.label "Find og erstat…">
 <!ENTITY findCmd.key "F">
 <!ENTITY findCmd.accesskey "e">
+<!ENTITY findReplaceCmd.key "H">
 <!ENTITY findAgainCmd.label "Find næste">
 <!ENTITY findAgainCmd.key "G">
 <!ENTITY findAgainCmd.accesskey "n">
@@ -214,7 +217,7 @@
 <!-- Headers -->
 <!--LOCALIZATION NOTE headersSpace.style is for aligning  the From:, To: and
     Subject: rows. It should be larger than the largest Header label  -->
-<!ENTITY headersSpace.style "width: 9em;">
+<!ENTITY headersSpace.style "width: 17em;">
 <!ENTITY fromAddr.label "Fra:">
 <!ENTITY fromAddr.accesskey "a">
 <!ENTITY toAddr.label "Til:">

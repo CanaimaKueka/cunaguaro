@@ -45,24 +45,47 @@ const ContentPanning = {
       this.watchedEventsType = 'mouse';
     }
 
-    let els = Cc["@mozilla.org/eventlistenerservice;1"]
-                .getService(Ci.nsIEventListenerService);
+    // If we are using an AsyncPanZoomController for the parent frame,
+    // it will handle subframe scrolling too. We don't need to listen for
+    // these events.
+    if (!this._asyncPanZoomForViewportFrame) {
+      let els = Cc["@mozilla.org/eventlistenerservice;1"]
+                  .getService(Ci.nsIEventListenerService);
 
-    events.forEach(function(type) {
-      // Using the system group for mouse/touch events to avoid
-      // missing events if .stopPropagation() has been called.
-      els.addSystemEventListener(global, type,
-                                 this.handleEvent.bind(this),
-                                 /* useCapture = */ false);
-    }.bind(this));
+      events.forEach(function(type) {
+        // Using the system group for mouse/touch events to avoid
+        // missing events if .stopPropagation() has been called.
+        els.addSystemEventListener(global, type,
+                                   this.handleEvent.bind(this),
+                                   /* useCapture = */ false);
+      }.bind(this));
+    }
 
     addMessageListener("Viewport:Change", this._recvViewportChange.bind(this));
     addMessageListener("Gesture:DoubleTap", this._recvDoubleTap.bind(this));
+    addEventListener("visibilitychange", this._recvVisibilityChange.bind(this));
+    Services.obs.addObserver(this, "BEC:ShownModalPrompt", false);
   },
 
   handleEvent: function cp_handleEvent(evt) {
-    if (evt.defaultPrevented || evt.multipleActionsPrevented)
+    if (evt.defaultPrevented || evt.multipleActionsPrevented) {
+      // clean up panning state even if touchend/mouseup has been preventDefault.
+      if(evt.type === 'touchend' || evt.type === 'mouseup') {
+        if (this.dragging &&
+            (this.watchedEventsType === 'mouse' ||
+             this.findPrimaryPointer(evt.changedTouches))) {
+          this._finishPanning();
+        }
+      }
       return;
+    }
+
+    let start = Date.now();
+    let thread = Services.tm.currentThread;
+    while (this._delayEvents && (Date.now() - start) < this._activeDurationMs) {
+      thread.processNextEvent(true);
+    }
+    this._delayEvents = false;
 
     switch (evt.type) {
       case 'mousedown':
@@ -86,6 +109,12 @@ const ContentPanning = {
                                         : target;
         view.removeEventListener('click', this, true, true);
         break;
+    }
+  },
+
+  observe: function cp_observe(subject, topic, data) {
+    if (topic === 'BEC:ShownModalPrompt') {
+      this._resetHover();
     }
   },
 
@@ -169,6 +198,12 @@ const ContentPanning = {
 
     this.position.set(screenX, screenY);
     KineticPanning.record(new Point(0, 0), evt.timeStamp);
+
+    // We prevent start events to avoid sending a focus event at the end of this
+    // touch series. See bug 889717.
+    if (this.panning || this.preventNextClick) {
+      evt.preventDefault();
+    }
   },
 
   onTouchEnd: function cp_onTouchEnd(evt) {
@@ -200,21 +235,31 @@ const ContentPanning = {
     }
 
     if (this.target && click && (this.panning || this.preventNextClick)) {
-      let target = this.target;
-      let view = target.ownerDocument ? target.ownerDocument.defaultView
-                                      : target;
-      view.addEventListener('click', this, true, true);
+      if (this.hybridEvents) {
+        let target = this.target;
+        let view = target.ownerDocument ? target.ownerDocument.defaultView
+                                        : target;
+        view.addEventListener('click', this, true, true);
+      } else {
+        // We prevent end events to avoid sending a focus event. See bug 889717.
+        evt.preventDefault();
+      }
+    } else if (this.target && click && !this.panning) {
+      this.notify(this._activationTimer);
+
+      this._delayEvents = true;
+      let start = Date.now();
+      let thread = Services.tm.currentThread;
+      while (this._delayEvents && (Date.now() - start) < this._activeDurationMs) {
+        thread.processNextEvent(true);
+      }
+      this._delayEvents = false;
     }
 
-    this._resetActive();
-    this.dragging = false;
-    this.detectingScrolling = false;
-    delete this.primaryPointerId;
-    this._activationTimer.cancel();
+    this._finishPanning();
 
-    if (this.panning) {
-      KineticPanning.start(this);
-    }
+    // Now that we're done, avoid entraining the thing we just panned.
+    this.pointerDownTarget = null;
   },
 
   // True when there's an async pan-zoom controll watching the
@@ -365,27 +410,15 @@ const ContentPanning = {
     return null;
   },
 
-  _generateCallback: function cp_generateCallback(content) {
+  _generateCallback: function cp_generateCallback(root) {
     let firstScroll = true;
     let target;
-    let isScrolling = false;
-    let oldX, oldY, newX, newY;
+    let current;
     let win, doc, htmlNode, bodyNode;
-    let xScrollable = content.scrollWidth > content.clientWidth;
-    let yScrollable = content.scrollHeight > content.clientHeight;
 
     function doScroll(node, delta) {
       if (node instanceof Ci.nsIDOMHTMLElement) {
-        newX = oldX = node.scrollLeft, newY = oldY = node.scrollTop;
-        if (xScrollable) {
-           node.scrollLeft += delta.x;
-           newX = node.scrollLeft;
-        }
-        if (yScrollable) {
-           node.scrollTop += delta.y;
-           newY = node.scrollTop;
-        }
-        return (newX != oldX || newY != oldY);
+        return node.scrollByNoFlush(delta.x, delta.y);
       } else if (node instanceof Ci.nsIDOMWindow) {
         win = node;
         doc = win.document;
@@ -404,41 +437,39 @@ const ContentPanning = {
             delta.y = 0;
           }
         }
-        oldX = node.scrollX, oldY = node.scrollY;
+        let oldX = node.scrollX;
+        let oldY = node.scrollY;
         node.scrollBy(delta.x, delta.y);
-        newX = node.scrollX, newY = node.scrollY;
-        return (newX != oldX || newY != oldY);
+        return (node.scrollX != oldX || node.scrollY != oldY);
       }
       // If we get here, |node| isn't an HTML element and it's not a window,
       // but findPannable apparently thought it was scrollable... What is it?
       return false;
-    };
+    }
 
     function targetParent(node) {
-      if (node.parentNode) {
-        return node.parentNode;
-      }
-      if (node.frameElement) {
-        return node.frameElement;
-      }
-      return null;
+      return node.parentNode || node.frameElement || null;
     }
 
     function scroll(delta) {
-      for (target = content; target;
-           target = ContentPanning._findPannable(targetParent(target))) {
-        isScrolling = doScroll(target, delta);
-        if (isScrolling || !firstScroll) {
-          break;
+      current = root;
+      while (current) {
+        if (doScroll(current, delta)) {
+          firstScroll = false;
+          return true;
         }
-      }
-      if (isScrolling) {
-        if (firstScroll) {
-          content = target; // set scrolling target to the first scrolling region
+
+        // TODO The current code looks for possible scrolling regions only if
+        // this is the first scroll action but this should be more dynamic.
+        if (!firstScroll) {
+          return false;
         }
-        firstScroll = false; // lockdown the scrolling target after a success scrolling
+
+        current = ContentPanning._findPannable(targetParent(current));
       }
-      return isScrolling;
+
+      // There is nothing scrollable here.
+      return false;
     }
     return scroll;
   },
@@ -461,10 +492,22 @@ const ContentPanning = {
     return this._activationDelayMs = delay;
   },
 
+  get _activeDurationMs() {
+    let duration = Services.prefs.getIntPref('ui.touch_activation.duration_ms');
+    delete this._activeDurationMs;
+    return this._activeDurationMs = duration;
+  },
+
   _resetActive: function cp_resetActive() {
     let elt = this.target || this.pointerDownTarget;
     let root = elt.ownerDocument || elt.document;
     this._setActive(root.documentElement);
+  },
+
+  _resetHover: function cp_resetHover() {
+    const kStateHover = 0x00000004;
+    let element = content.document.createElement('foo');
+    this._domUtils.setContentState(element, kStateHover);
   },
 
   _setActive: function cp_setActive(elt) {
@@ -552,6 +595,13 @@ const ContentPanning = {
     }
   },
 
+  _recvVisibilityChange: function(evt) {
+    if (!evt.target.hidden)
+      return;
+
+    this._resetHover();
+  },
+
   _shouldZoomToElement: function(aElement) {
     let win = aElement.ownerDocument.defaultView;
     if (win.getComputedStyle(aElement, null).display == "inline")
@@ -582,6 +632,18 @@ const ContentPanning = {
     let ratioH = (aRect.height / vRect.height);
 
     return (showing > 0.9 && (ratioW > 0.9 || ratioH > 0.9)); 
+  },
+
+  _finishPanning: function() {
+    this._resetActive();
+    this.dragging = false;
+    this.detectingScrolling = false;
+    delete this.primaryPointerId;
+    this._activationTimer.cancel();
+
+    if (this.panning) {
+      KineticPanning.start(this);
+    }
   }
 };
 
@@ -620,9 +682,6 @@ const KineticPanning = {
     // Calculate the initial velocity of the movement based on user input
     let momentums = this.momentums;
     let flick = momentums[momentums.length - 1].time - momentums[0].time < 300;
-
-    // Calculate the panning based on the last moves.
-    momentums = momentums.slice(-kSamples);
 
     let distance = new Point(0, 0);
     momentums.forEach(function(momentum) {
@@ -681,8 +740,26 @@ const KineticPanning = {
 
   momentums: [],
   record: function kp_record(delta, timestamp) {
-    this.momentums.push({ 'time': timestamp, 'dx' : delta.x, 'dy' : delta.y });
+    this.momentums.push({ 'time': this._getTime(timestamp),
+                          'dx' : delta.x, 'dy' : delta.y });
+
+    // We only need to keep kSamples in this.momentums.
+    if (this.momentums.length > kSamples) {
+      this.momentums.shift();
+    }
+
     this.distance.add(delta.x, delta.y);
+  },
+
+  _getTime: function kp_getTime(time) {
+    // Touch events generated by the platform or hand-made are defined in
+    // microseconds instead of milliseconds. Bug 77992 will fix this at the
+    // platform level.
+    if (time > Date.now()) {
+      return Math.floor(time / 1000);
+    } else {
+      return time;
+    }
   },
 
   get threshold() {

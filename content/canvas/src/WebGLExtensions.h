@@ -6,14 +6,13 @@
 #ifndef WEBGLEXTENSIONS_H_
 #define WEBGLEXTENSIONS_H_
 
-#include "WebGLContext.h"
-
 namespace mozilla {
 
+class WebGLContext;
+
 class WebGLExtensionBase
-    : public nsISupports
+    : public nsWrapperCache
     , public WebGLContextBoundObject
-    , public nsWrapperCache
 {
 public:
     WebGLExtensionBase(WebGLContext*);
@@ -23,8 +22,8 @@ public:
         return Context();
     }
 
-    NS_DECL_CYCLE_COLLECTING_ISUPPORTS
-    NS_DECL_CYCLE_COLLECTION_SCRIPT_HOLDER_CLASS(WebGLExtensionBase)
+    NS_INLINE_DECL_CYCLE_COLLECTING_NATIVE_REFCOUNTING(WebGLExtensionBase)
+    NS_DECL_CYCLE_COLLECTION_SCRIPT_HOLDER_NATIVE_CLASS(WebGLExtensionBase)
 };
 
 #define DECL_WEBGL_EXTENSION_GOOP                                           \
@@ -87,6 +86,16 @@ public:
     DECL_WEBGL_EXTENSION_GOOP
 };
 
+class WebGLExtensionElementIndexUint
+    : public WebGLExtensionBase
+{
+public:
+    WebGLExtensionElementIndexUint(WebGLContext*);
+    virtual ~WebGLExtensionElementIndexUint();
+
+    DECL_WEBGL_EXTENSION_GOOP
+};
+
 class WebGLExtensionLoseContext
     : public WebGLExtensionBase
 {
@@ -126,6 +135,74 @@ class WebGLExtensionTextureFloat
 public:
     WebGLExtensionTextureFloat(WebGLContext*);
     virtual ~WebGLExtensionTextureFloat();
+
+    DECL_WEBGL_EXTENSION_GOOP
+};
+
+class WebGLExtensionTextureFloatLinear
+    : public WebGLExtensionBase
+{
+public:
+    WebGLExtensionTextureFloatLinear(WebGLContext*);
+    virtual ~WebGLExtensionTextureFloatLinear();
+
+    DECL_WEBGL_EXTENSION_GOOP
+};
+
+class WebGLExtensionDrawBuffers
+    : public WebGLExtensionBase
+{
+public:
+    WebGLExtensionDrawBuffers(WebGLContext*);
+    virtual ~WebGLExtensionDrawBuffers();
+
+    void DrawBuffersWEBGL(const dom::Sequence<GLenum>& buffers);
+
+    static bool IsSupported(const WebGLContext*);
+
+    static const size_t sMinColorAttachments = 4;
+    static const size_t sMinDrawBuffers = 4;
+    /*
+     WEBGL_draw_buffers does not give a minal value for GL_MAX_DRAW_BUFFERS. But, we request
+     for GL_MAX_DRAW_BUFFERS = 4 at least to be able to use all requested color attachements.
+     See DrawBuffersWEBGL in WebGLExtensionDrawBuffers.cpp inner comments for more informations.
+     */
+
+    DECL_WEBGL_EXTENSION_GOOP
+};
+
+class WebGLExtensionVertexArray
+    : public WebGLExtensionBase
+{
+public:
+    WebGLExtensionVertexArray(WebGLContext*);
+    virtual ~WebGLExtensionVertexArray();
+
+    already_AddRefed<WebGLVertexArray> CreateVertexArrayOES();
+    void DeleteVertexArrayOES(WebGLVertexArray* array);
+    bool IsVertexArrayOES(WebGLVertexArray* array);
+    void BindVertexArrayOES(WebGLVertexArray* array);
+
+    static bool IsSupported(const WebGLContext* context);
+
+    DECL_WEBGL_EXTENSION_GOOP
+};
+
+class WebGLExtensionInstancedArrays
+    : public WebGLExtensionBase
+{
+public:
+    WebGLExtensionInstancedArrays(WebGLContext* context);
+    virtual ~WebGLExtensionInstancedArrays();
+
+    void DrawArraysInstancedANGLE(GLenum mode, GLint first,
+                                  GLsizei count, GLsizei primcount);
+    void DrawElementsInstancedANGLE(GLenum mode, GLsizei count,
+                                    GLenum type, WebGLintptr offset,
+                                    GLsizei primcount);
+    void VertexAttribDivisorANGLE(GLuint index, GLuint divisor);
+
+    static bool IsSupported(const WebGLContext* context);
 
     DECL_WEBGL_EXTENSION_GOOP
 };

@@ -9,8 +9,10 @@
 
 #include "SerializedLoadContext.h"
 #include "mozilla/Attributes.h"
-#include "nsWeakReference.h"
-#include "nsIDOMElement.h"
+#include "nsIWeakReferenceUtils.h"
+#include "mozilla/dom/Element.h"
+#include "nsIInterfaceRequestor.h"
+#include "nsILoadContext.h"
 
 class mozIApplication;
 
@@ -24,34 +26,55 @@ namespace mozilla {
  * typically provided by nsDocShell.  This is only used when the original
  * docshell is in a different process and we need to copy certain values from
  * it.
+ *
+ * Note: we also generate a new nsILoadContext using LoadContext(uint32_t aAppId)
+ * to separate the safebrowsing cookie.
  */
 
-class LoadContext MOZ_FINAL : public nsILoadContext
+class LoadContext MOZ_FINAL : public nsILoadContext,
+                              public nsIInterfaceRequestor
 {
 public:
   NS_DECL_ISUPPORTS
   NS_DECL_NSILOADCONTEXT
+  NS_DECL_NSIINTERFACEREQUESTOR
 
   // AppId/inBrowser arguments override those in SerializedLoadContext provided
   // by child process.
   LoadContext(const IPC::SerializedLoadContext& aToCopy,
-              nsIDOMElement* aTopFrameElement,
+              dom::Element* aTopFrameElement,
               uint32_t aAppId, bool aInBrowser)
-    : mIsNotNull(aToCopy.mIsNotNull)
+    : mTopFrameElement(do_GetWeakReference(aTopFrameElement))
+    , mAppId(aAppId)
     , mIsContent(aToCopy.mIsContent)
     , mUsePrivateBrowsing(aToCopy.mUsePrivateBrowsing)
     , mIsInBrowserElement(aInBrowser)
+#ifdef DEBUG
+    , mIsNotNull(aToCopy.mIsNotNull)
+#endif
+  {}
+
+  // Constructor taking reserved appId for the safebrowsing cookie.
+  LoadContext(uint32_t aAppId)
+    : mTopFrameElement(nullptr)
     , mAppId(aAppId)
-    , mTopFrameElement(do_GetWeakReference(aTopFrameElement))
+    , mIsContent(false)
+    , mUsePrivateBrowsing(false)
+    , mIsInBrowserElement(false)
+#ifdef DEBUG
+    , mIsNotNull(true)
+#endif
   {}
 
 private:
-  bool          mIsNotNull;
+  nsWeakPtr     mTopFrameElement;
+  uint32_t      mAppId;
   bool          mIsContent;
   bool          mUsePrivateBrowsing;
   bool          mIsInBrowserElement;
-  uint32_t      mAppId;
-  nsWeakPtr     mTopFrameElement;
+#ifdef DEBUG
+  bool          mIsNotNull;
+#endif
 };
 
 } // namespace mozilla

@@ -11,13 +11,15 @@
   It implements all the common DOM interfaces and handles attributes.
 */
 
+#include "mozilla/Attributes.h"
 #include "mozilla/css/StyleRule.h"
 #include "nsAutoPtr.h"
 #include "nsChangeHint.h"
 #include "nsCOMPtr.h"
 #include "nsCycleCollectionParticipant.h"
 #include "nsError.h"
-#include "mozilla/dom/Element.h"
+#include "mozilla/dom/DOMRect.h"
+#include "mozilla/dom/ElementInlines.h"
 #include "nsISupportsImpl.h"
 #include "nsStyledElement.h"
 #include "nsSVGClass.h"
@@ -74,7 +76,7 @@ protected:
 
 public:
 
-  virtual nsresult Clone(nsINodeInfo *aNodeInfo, nsINode **aResult) const MOZ_MUST_OVERRIDE;
+  virtual nsresult Clone(nsINodeInfo *aNodeInfo, nsINode **aResult) const MOZ_MUST_OVERRIDE MOZ_OVERRIDE;
 
   typedef mozilla::SVGNumberList SVGNumberList;
   typedef mozilla::SVGAnimatedNumberList SVGAnimatedNumberList;
@@ -280,11 +282,11 @@ public:
     return nullptr;
   }
 
-  virtual nsISMILAttr* GetAnimatedAttr(int32_t aNamespaceID, nsIAtom* aName);
+  virtual nsISMILAttr* GetAnimatedAttr(int32_t aNamespaceID, nsIAtom* aName) MOZ_OVERRIDE;
   void AnimationNeedsResample();
   void FlushAnimations();
 
-  virtual void RecompileScriptEventListeners();
+  virtual void RecompileScriptEventListeners() MOZ_OVERRIDE;
 
   void GetStringBaseValue(uint8_t aAttrEnum, nsAString& aResult) const;
   void SetStringBaseValue(uint8_t aAttrEnum, const nsAString& aValue);
@@ -299,14 +301,13 @@ public:
     return nullptr;
   }
 
-  virtual nsIDOMNode* AsDOMNode() MOZ_FINAL { return this; }
+  virtual nsIDOMNode* AsDOMNode() MOZ_FINAL MOZ_OVERRIDE { return this; }
   virtual bool IsTransformable() { return false; }
 
   // WebIDL
-  mozilla::dom::SVGSVGElement* GetOwnerSVGElement(mozilla::ErrorResult& rv);
+  mozilla::dom::SVGSVGElement* GetOwnerSVGElement();
   nsSVGElement* GetViewportElement();
-  already_AddRefed<nsIDOMSVGAnimatedString> ClassName();
-  already_AddRefed<mozilla::dom::CSSValue> GetPresentationAttribute(const nsAString& aName, mozilla::ErrorResult& rv);
+  already_AddRefed<mozilla::dom::SVGAnimatedString> ClassName();
 protected:
   virtual JSObject* WrapNode(JSContext *cx,
                              JS::Handle<JSObject*> scope) MOZ_OVERRIDE;
@@ -686,12 +687,14 @@ NS_NewSVG##_elementName##Element(nsIContent **aResult,                       \
 // No unlinking, we'd need to null out the value pointer (the object it
 // points to is held by the element) and null-check it everywhere.
 #define NS_SVG_VAL_IMPL_CYCLE_COLLECTION(_val, _element)                     \
+NS_IMPL_CYCLE_COLLECTION_CLASS(_val)                                         \
 NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN(_val)                                \
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(_element) \
 NS_IMPL_CYCLE_COLLECTION_TRAVERSE_END                                        \
 NS_IMPL_CYCLE_COLLECTION_UNLINK_0(_val)
 
 #define NS_SVG_VAL_IMPL_CYCLE_COLLECTION_WRAPPERCACHED(_val, _element)       \
+NS_IMPL_CYCLE_COLLECTION_CLASS(_val)                                         \
 NS_IMPL_CYCLE_COLLECTION_UNLINK_BEGIN(_val)                                  \
 NS_IMPL_CYCLE_COLLECTION_UNLINK_PRESERVED_WRAPPER                            \
 NS_IMPL_CYCLE_COLLECTION_UNLINK_END                                          \

@@ -44,7 +44,17 @@ nsBaseContentList::~nsBaseContentList()
 {
 }
 
-NS_IMPL_CYCLE_COLLECTION_WRAPPERCACHE_1(nsBaseContentList, mElements)
+NS_IMPL_CYCLE_COLLECTION_CLASS(nsBaseContentList)
+NS_IMPL_CYCLE_COLLECTION_UNLINK_BEGIN(nsBaseContentList)
+  NS_IMPL_CYCLE_COLLECTION_UNLINK(mElements)
+  NS_IMPL_CYCLE_COLLECTION_UNLINK_PRESERVED_WRAPPER
+  tmp->RemoveFromCaches();
+NS_IMPL_CYCLE_COLLECTION_UNLINK_END
+NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN(nsBaseContentList)
+  NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mElements)
+  NS_IMPL_CYCLE_COLLECTION_TRAVERSE_SCRIPT_OBJECTS
+NS_IMPL_CYCLE_COLLECTION_TRAVERSE_END
+NS_IMPL_CYCLE_COLLECTION_TRACE_WRAPPERCACHE(nsBaseContentList)
 
 NS_IMPL_CYCLE_COLLECTION_CAN_SKIP_BEGIN(nsBaseContentList)
   if (nsCCUncollectableMarker::sGeneration && tmp->IsBlack()) {
@@ -138,26 +148,6 @@ JSObject*
 nsSimpleContentList::WrapObject(JSContext *cx, JS::Handle<JSObject*> scope)
 {
   return NodeListBinding::Wrap(cx, scope, this);
-}
-
-// nsFormContentList
-
-nsFormContentList::nsFormContentList(nsIContent *aForm,
-                                     nsBaseContentList& aContentList)
-  : nsSimpleContentList(aForm)
-{
-
-  // move elements that belong to mForm into this content list
-
-  uint32_t i, length = 0;
-  aContentList.GetLength(&length);
-
-  for (i = 0; i < length; i++) {
-    nsIContent *c = aContentList.Item(i);
-    if (c && nsContentUtils::BelongsInForm(aForm, c)) {
-      AppendElement(c);
-    }
-  }
 }
 
 // Hashtable for storing nsContentLists
@@ -676,7 +666,7 @@ nsContentList::NamedItem(JSContext* cx, const nsAString& name,
   JS::Rooted<JSObject*> wrapper(cx, GetWrapper());
   JSAutoCompartment ac(cx, wrapper);
   JS::Rooted<JS::Value> v(cx);
-  if (!mozilla::dom::WrapObject(cx, wrapper, item, item, nullptr, v.address())) {
+  if (!mozilla::dom::WrapObject(cx, wrapper, item, item, nullptr, &v)) {
     error.Throw(NS_ERROR_FAILURE);
     return nullptr;
   }

@@ -30,17 +30,23 @@
 
 #include "base/basictypes.h"
 #include "nscore.h"
+#ifdef MOZ_OMX_DECODER
+#include "MediaResourceManagerService.h"
+#endif
+#include "mozilla/TouchEvents.h"
 #include "mozilla/FileUtils.h"
 #include "mozilla/Hal.h"
+#include "mozilla/MouseEvents.h"
 #include "mozilla/Mutex.h"
 #include "mozilla/Services.h"
+#include "mozilla/TextEvents.h"
 #include "nsAppShell.h"
 #include "mozilla/dom/Touch.h"
 #include "nsGkAtoms.h"
-#include "nsGUIEvent.h"
 #include "nsIObserverService.h"
 #include "nsIScreen.h"
 #include "nsScreenManagerGonk.h"
+#include "nsThreadUtils.h"
 #include "nsWindow.h"
 #include "OrientationObserver.h"
 #include "GonkMemoryPressureMonitoring.h"
@@ -49,6 +55,11 @@
 #include "libui/EventHub.h"
 #include "libui/InputReader.h"
 #include "libui/InputDispatcher.h"
+#include "cutils/properties.h"
+
+#ifdef MOZ_NUWA_PROCESS
+#include "ipc/Nuwa.h"
+#endif
 
 #include "GeckoProfiler.h"
 
@@ -75,6 +86,9 @@ bool gDrawRequest = false;
 static nsAppShell *gAppShell = NULL;
 static int epollfd = 0;
 static int signalfds[2] = {0};
+static bool sDevInputAudioJack;
+static int32_t sHeadphoneState;
+static int32_t sMicrophoneState;
 
 NS_IMPL_ISUPPORTS_INHERITED1(nsAppShell, nsBaseAppShell, nsIObserver)
 
@@ -131,13 +145,13 @@ struct UserInputData {
 static void
 sendMouseEvent(uint32_t msg, uint64_t timeMs, int x, int y, bool forwardToChildren)
 {
-    nsMouseEvent event(true, msg, NULL,
-                       nsMouseEvent::eReal, nsMouseEvent::eNormal);
+    WidgetMouseEvent event(true, msg, NULL,
+                           WidgetMouseEvent::eReal, WidgetMouseEvent::eNormal);
 
     event.refPoint.x = x;
     event.refPoint.y = y;
     event.time = timeMs;
-    event.button = nsMouseEvent::eLeftButton;
+    event.button = WidgetMouseEvent::eLeftButton;
     event.inputSource = nsIDOMMouseEvent::MOZ_SOURCE_TOUCH;
     if (msg != NS_MOUSE_MOVE)
         event.clickCount = 1;
@@ -148,7 +162,7 @@ sendMouseEvent(uint32_t msg, uint64_t timeMs, int x, int y, bool forwardToChildr
 }
 
 static void
-addDOMTouch(UserInputData& data, nsTouchEvent& event, int i)
+addDOMTouch(UserInputData& data, WidgetTouchEvent& event, int i)
 {
     const ::Touch& touch = data.motion.touches[i];
     event.touches.AppendElement(
@@ -184,7 +198,7 @@ sendTouchEvent(UserInputData& data, bool* captured)
         break;
     }
 
-    nsTouchEvent event(true, msg, NULL);
+    WidgetTouchEvent event(true, msg, NULL);
 
     event.time = data.timeMs;
 
@@ -205,15 +219,13 @@ static nsEventStatus
 sendKeyEventWithMsg(uint32_t keyCode,
                     KeyNameIndex keyNameIndex,
                     uint32_t msg,
-                    uint64_t timeMs,
-                    const EventFlags& flags)
+                    uint64_t timeMs)
 {
-    nsKeyEvent event(true, msg, NULL);
+    WidgetKeyboardEvent event(true, msg, NULL);
     event.keyCode = keyCode;
     event.mKeyNameIndex = keyNameIndex;
     event.location = nsIDOMKeyEvent::DOM_KEY_LOCATION_MOBILE;
     event.time = timeMs;
-    event.mFlags.Union(flags);
     return nsWindow::DispatchInputEvent(event);
 }
 
@@ -224,12 +236,9 @@ sendKeyEvent(uint32_t keyCode, KeyNameIndex keyNameIndex, bool down,
     EventFlags extraFlags;
     nsEventStatus status =
         sendKeyEventWithMsg(keyCode, keyNameIndex,
-                            down ? NS_KEY_DOWN : NS_KEY_UP, timeMs, extraFlags);
-    if (down) {
-        extraFlags.mDefaultPrevented =
-            (status == nsEventStatus_eConsumeNoDefault);
-        sendKeyEventWithMsg(keyCode, keyNameIndex, NS_KEY_PRESS, timeMs,
-                            extraFlags);
+                            down ? NS_KEY_DOWN : NS_KEY_UP, timeMs);
+    if (down && status != nsEventStatus_eConsumeNoDefault) {
+        sendKeyEventWithMsg(keyCode, keyNameIndex, NS_KEY_PRESS, timeMs);
     }
 }
 
@@ -245,6 +254,41 @@ maybeSendKeyEvent(int keyCode, bool pressed, uint64_t timeMs)
         VERBOSE_LOG("Got unknown key event code. type 0x%04x code 0x%04x value %d",
                     keyCode, pressed);
     }
+}
+
+class SwitchEventRunnable : public nsRunnable {
+public:
+    SwitchEventRunnable(hal::SwitchEvent& aEvent) : mEvent(aEvent)
+    {}
+
+    NS_IMETHOD Run()
+    {
+        hal::NotifySwitchChange(mEvent);
+        return NS_OK;
+    }
+private:
+    hal::SwitchEvent mEvent;
+};
+
+static void
+updateHeadphoneSwitch()
+{
+    hal::SwitchEvent event;
+
+    switch (sHeadphoneState) {
+    case AKEY_STATE_UP:
+        event.status() = hal::SWITCH_STATE_OFF;
+        break;
+    case AKEY_STATE_DOWN:
+        event.status() = sMicrophoneState == AKEY_STATE_DOWN ?
+            hal::SWITCH_STATE_HEADPHONE : hal::SWITCH_STATE_HEADSET;
+        break;
+    default:
+        return;
+    }
+
+    event.device() = hal::SWITCH_HEADPHONES;
+    NS_DispatchToMainThread(new SwitchEventRunnable(event));
 }
 
 class GeckoPointerController : public PointerControllerInterface {
@@ -283,16 +327,18 @@ GeckoPointerController::getBounds(float* outMinX,
 {
     int32_t width, height, orientation;
 
-    mConfig->getDisplayInfo(0, false, &width, &height, &orientation);
+    DisplayViewport viewport;
+
+    mConfig->getDisplayInfo(false, &viewport);
 
     *outMinX = *outMinY = 0;
     if (orientation == DISPLAY_ORIENTATION_90 ||
         orientation == DISPLAY_ORIENTATION_270) {
-        *outMaxX = height;
-        *outMaxY = width;
+        *outMaxX = viewport.deviceHeight;
+        *outMaxY = viewport.deviceWidth;
     } else {
-        *outMaxX = width;
-        *outMaxY = height;
+        *outMaxX = viewport.deviceWidth;
+        *outMaxY = viewport.deviceHeight;
     }
     return true;
 }
@@ -344,6 +390,16 @@ deviceId)
     {
         return new GeckoPointerController(&mConfig);
     };
+    virtual void notifyInputDevicesChanged(const android::Vector<InputDeviceInfo>& inputDevices) {};
+    virtual sp<KeyCharacterMap> getKeyboardLayoutOverlay(const String8& inputDeviceDescriptor)
+    {
+        return NULL;
+    };
+    virtual String8 getDeviceAlias(const InputDeviceIdentifier& identifier)
+    {
+        return String8::empty();
+    };
+
     void setDisplayInfo();
 
 protected:
@@ -374,7 +430,7 @@ public:
             int32_t injectorPid, int32_t injectorUid, int32_t syncMode, int32_t timeoutMillis,
             uint32_t policyFlags);
 
-    virtual void setInputWindows(const Vector<sp<InputWindowHandle> >& inputWindowHandles);
+    virtual void setInputWindows(const android::Vector<sp<InputWindowHandle> >& inputWindowHandles);
     virtual void setFocusedApplication(const sp<InputApplicationHandle>& inputApplicationHandle);
 
     virtual void setInputDispatchMode(bool enabled, bool frozen);
@@ -403,20 +459,33 @@ private:
 void
 GeckoInputReaderPolicy::setDisplayInfo()
 {
-    MOZ_STATIC_ASSERT(nsIScreen::ROTATION_0_DEG ==
-                      DISPLAY_ORIENTATION_0,
-                      "Orientation enums not matched!");
-    MOZ_STATIC_ASSERT(nsIScreen::ROTATION_90_DEG ==
-                      DISPLAY_ORIENTATION_90,
-                      "Orientation enums not matched!");
-    MOZ_STATIC_ASSERT(nsIScreen::ROTATION_180_DEG ==
-                      DISPLAY_ORIENTATION_180,
-                      "Orientation enums not matched!");
-    MOZ_STATIC_ASSERT(nsIScreen::ROTATION_270_DEG ==
-                      DISPLAY_ORIENTATION_270,
-                      "Orientation enums not matched!");
+    static_assert(nsIScreen::ROTATION_0_DEG ==
+                  DISPLAY_ORIENTATION_0,
+                  "Orientation enums not matched!");
+    static_assert(nsIScreen::ROTATION_90_DEG ==
+                  DISPLAY_ORIENTATION_90,
+                  "Orientation enums not matched!");
+    static_assert(nsIScreen::ROTATION_180_DEG ==
+                  DISPLAY_ORIENTATION_180,
+                  "Orientation enums not matched!");
+    static_assert(nsIScreen::ROTATION_270_DEG ==
+                  DISPLAY_ORIENTATION_270,
+                  "Orientation enums not matched!");
 
-    mConfig.setDisplayInfo(0, false, gScreenBounds.width, gScreenBounds.height, nsScreenGonk::GetRotation());
+    DisplayViewport viewport;
+    viewport.displayId = 0;
+    viewport.orientation = nsScreenGonk::GetRotation();
+    viewport.physicalRight = viewport.deviceWidth = gScreenBounds.width;
+    viewport.physicalBottom = viewport.deviceHeight = gScreenBounds.height;
+    if (viewport.orientation == DISPLAY_ORIENTATION_90 ||
+        viewport.orientation == DISPLAY_ORIENTATION_270) {
+        viewport.logicalRight = gScreenBounds.height;
+        viewport.logicalBottom = gScreenBounds.width;
+    } else {
+        viewport.logicalRight = gScreenBounds.width;
+        viewport.logicalBottom = gScreenBounds.height;
+    }
+    mConfig.setDisplayInfo(false, viewport);
 }
 
 void GeckoInputReaderPolicy::getReaderConfiguration(InputReaderConfiguration* outConfig)
@@ -555,6 +624,25 @@ GeckoInputDispatcher::notifyMotion(const NotifyMotionArgs* args)
 
 void GeckoInputDispatcher::notifySwitch(const NotifySwitchArgs* args)
 {
+    if (!sDevInputAudioJack)
+        return;
+
+    bool needSwitchUpdate = false;
+
+    if (args->switchMask & (1 << SW_HEADPHONE_INSERT)) {
+        sHeadphoneState = (args->switchValues & (1 << SW_HEADPHONE_INSERT)) ?
+                          AKEY_STATE_DOWN : AKEY_STATE_UP;
+        needSwitchUpdate = true;
+    }
+
+    if (args->switchMask & (1 << SW_MICROPHONE_INSERT)) {
+        sMicrophoneState = (args->switchValues & (1 << SW_MICROPHONE_INSERT)) ?
+                           AKEY_STATE_DOWN : AKEY_STATE_UP;
+        needSwitchUpdate = true;
+    }
+
+    if (needSwitchUpdate)
+        updateHeadphoneSwitch();
 }
 
 void GeckoInputDispatcher::notifyDeviceReset(const NotifyDeviceResetArgs* args)
@@ -570,7 +658,7 @@ int32_t GeckoInputDispatcher::injectInputEvent(
 }
 
 void
-GeckoInputDispatcher::setInputWindows(const Vector<sp<InputWindowHandle> >& inputWindowHandles)
+GeckoInputDispatcher::setInputWindows(const android::Vector<sp<InputWindowHandle> >& inputWindowHandles)
 {
 }
 
@@ -599,8 +687,8 @@ GeckoInputDispatcher::unregisterInputChannel(const sp<InputChannel>& inputChanne
 
 nsAppShell::nsAppShell()
     : mNativeCallbackRequest(false)
-    , mHandlers()
     , mEnableDraw(false)
+    , mHandlers()
 {
     gAppShell = this;
 }
@@ -639,10 +727,20 @@ nsAppShell::Init()
 
     InitGonkMemoryPressureMonitoring();
 
+#ifdef MOZ_OMX_DECODER
+    if (XRE_GetProcessType() == GeckoProcessType_Default) {
+      android::MediaResourceManagerService::instantiate();
+    }
+#endif
     nsCOMPtr<nsIObserverService> obsServ = GetObserverService();
     if (obsServ) {
         obsServ->AddObserver(this, "browser-ui-startup-complete", false);
     }
+
+#ifdef MOZ_NUWA_PROCESS
+    // Make sure main thread was woken up after Nuwa fork.
+    NuwaAddConstructor((void (*)(void *))&NotifyEvent, nullptr);
+#endif
 
     // Delay initializing input devices until the screen has been
     // initialized (and we know the resolution).
@@ -656,6 +754,12 @@ nsAppShell::Observe(nsISupports* aSubject,
 {
     if (strcmp(aTopic, "browser-ui-startup-complete")) {
         return nsBaseAppShell::Observe(aSubject, aTopic, aData);
+    }
+
+    if (sDevInputAudioJack) {
+        sHeadphoneState  = mReader->getSwitchState(-1, AINPUT_SOURCE_SWITCH, SW_HEADPHONE_INSERT);
+        sMicrophoneState = mReader->getSwitchState(-1, AINPUT_SOURCE_SWITCH, SW_MICROPHONE_INSERT);
+        updateHeadphoneSwitch();
     }
 
     mEnableDraw = true;
@@ -677,6 +781,12 @@ nsAppShell::Exit()
 void
 nsAppShell::InitInputDevices()
 {
+    char value[PROPERTY_VALUE_MAX];
+    property_get("ro.moz.devinputjack", value, "0");
+    sDevInputAudioJack = !strcmp(value, "1");
+    sHeadphoneState = AKEY_STATE_UNKNOWN;
+    sMicrophoneState = AKEY_STATE_UNKNOWN;
+
     mEventHub = new EventHub();
     mReaderPolicy = new GeckoInputReaderPolicy();
     mReaderPolicy->setDisplayInfo();

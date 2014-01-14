@@ -16,6 +16,10 @@ let requestCallback = null;
 
 function test()
 {
+  const PREF = "devtools.webconsole.persistlog";
+  Services.prefs.setBoolPref(PREF, true);
+  registerCleanupFunction(() => Services.prefs.clearUserPref(PREF));
+
   addTab("data:text/html;charset=utf-8,Web Console network logging tests");
 
   browser.addEventListener("load", function onLoad() {
@@ -24,7 +28,7 @@ function test()
     openConsole(null, function(aHud) {
       hud = aHud;
 
-      HUDService.lastFinishedRequestCallback = function(aRequest) {
+      HUDService.lastFinishedRequest.callback = function(aRequest) {
         lastRequest = aRequest;
         if (requestCallback) {
           requestCallback();
@@ -116,19 +120,25 @@ function testFormSubmission()
   requestCallback = function() {
     ok(lastRequest, "testFormSubmission() was logged");
     is(lastRequest.request.method, "POST", "Method is correct");
-    waitForSuccess({
-      name: "all network request displayed",
-      validatorFn: function() {
-        return hud.outputNode.querySelectorAll(".webconsole-msg-network")
-               .length == 5;
-      },
-      successFn: testLiveFilteringOnSearchStrings,
-      failureFn: function() {
-        let nodes = hud.outputNode.querySelectorAll(".webconsole-msg-network");
-        info("nodes: " + nodes.length + "\n");
-        finishTest();
-      },
-    });
+
+    // There should be 3 network requests pointing to the HTML file.
+    waitForMessages({
+      webconsole: hud,
+      messages: [
+        {
+          text: "test-network-request.html",
+          category: CATEGORY_NETWORK,
+          severity: SEVERITY_LOG,
+          count: 3,
+        },
+        {
+          text: "test-data.json",
+          category: CATEGORY_NETWORK,
+          severity: SEVERITY_LOG,
+          count: 2,
+        },
+      ],
+    }).then(testLiveFilteringOnSearchStrings);
   };
 
   let form = content.document.querySelector("form");
@@ -168,14 +178,14 @@ function testLiveFilteringOnSearchStrings() {
   is(countMessageNodes(), 0, "the log nodes are hidden when searching for " +
     "the string \"foo\"bar'baz\"boo'\"");
 
-  HUDService.lastFinishedRequestCallback = null;
+  HUDService.lastFinishedRequest.callback = null;
   lastRequest = null;
   requestCallback = null;
   finishTest();
 }
 
 function countMessageNodes() {
-  let messageNodes = hud.outputNode.querySelectorAll(".hud-msg-node");
+  let messageNodes = hud.outputNode.querySelectorAll(".message");
   let displayedMessageNodes = 0;
   let view = hud.iframeWindow;
   for (let i = 0; i < messageNodes.length; i++) {

@@ -6,13 +6,12 @@
 #include "mozilla/Util.h"
 
 #include "SVGAnimatedPreserveAspectRatio.h"
-#include "nsWhitespaceTokenizer.h"
+#include "mozilla/dom/SVGAnimatedPreserveAspectRatioBinding.h"
 #include "nsSMILValue.h"
 #include "nsSVGAttrTearoffTable.h"
+#include "nsWhitespaceTokenizer.h"
 #include "SMILEnumType.h"
-#include "nsAttrValueInlines.h"
-#include "mozilla/dom/SVGAnimatedPreserveAspectRatioBinding.h"
-#include "nsContentUtils.h"
+#include "SVGContentUtils.h"
 
 using namespace mozilla;
 using namespace mozilla::dom;
@@ -136,12 +135,9 @@ static nsresult
 ToPreserveAspectRatio(const nsAString &aString,
                       SVGPreserveAspectRatio *aValue)
 {
-  if (aString.IsEmpty() || NS_IsAsciiWhitespace(aString[0])) {
-    return NS_ERROR_DOM_SYNTAX_ERR;
-  }
-
-  nsWhitespaceTokenizer tokenizer(aString);
-  if (!tokenizer.hasMoreTokens()) {
+  nsWhitespaceTokenizerTemplate<IsSVGWhitespace> tokenizer(aString);
+  if (tokenizer.whitespaceBeforeFirstToken() ||
+      !tokenizer.hasMoreTokens()) {
     return NS_ERROR_DOM_SYNTAX_ERR;
   }
   const nsAString &token = tokenizer.nextToken();
@@ -173,7 +169,7 @@ ToPreserveAspectRatio(const nsAString &aString,
     val.SetMeetOrSlice(SVG_MEETORSLICE_MEET);
   }
 
-  if (tokenizer.hasMoreTokens()) {
+  if (tokenizer.whitespaceAfterCurrentToken()) {
     return NS_ERROR_DOM_SYNTAX_ERR;
   }
 
@@ -321,7 +317,7 @@ SMILPreserveAspectRatio::ValueFromString(const nsAString& aStr,
   nsresult res = ToPreserveAspectRatio(aStr, &par);
   NS_ENSURE_SUCCESS(res, res);
 
-  nsSMILValue val(&SMILEnumType::sSingleton);
+  nsSMILValue val(SMILEnumType::Singleton());
   val.mU.mUint = PackPreserveAspectRatio(par);
   aValue = val;
   aPreventCachingOfSandwich = false;
@@ -331,7 +327,7 @@ SMILPreserveAspectRatio::ValueFromString(const nsAString& aStr,
 nsSMILValue
 SMILPreserveAspectRatio::GetBaseValue() const
 {
-  nsSMILValue val(&SMILEnumType::sSingleton);
+  nsSMILValue val(SMILEnumType::Singleton());
   val.mU.mUint = PackPreserveAspectRatio(mVal->GetBaseValue());
   return val;
 }
@@ -349,9 +345,9 @@ SMILPreserveAspectRatio::ClearAnimValue()
 nsresult
 SMILPreserveAspectRatio::SetAnimValue(const nsSMILValue& aValue)
 {
-  NS_ASSERTION(aValue.mType == &SMILEnumType::sSingleton,
+  NS_ASSERTION(aValue.mType == SMILEnumType::Singleton(),
                "Unexpected type to assign animated value");
-  if (aValue.mType == &SMILEnumType::sSingleton) {
+  if (aValue.mType == SMILEnumType::Singleton()) {
     mVal->SetAnimValue(aValue.mU.mUint, mSVGElement);
   }
   return NS_OK;

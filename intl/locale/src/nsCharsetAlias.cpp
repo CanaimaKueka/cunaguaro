@@ -6,17 +6,10 @@
 #include "mozilla/Util.h"
 
 #include "nsCharsetAlias.h"
-#include "pratom.h"
 
 // for NS_ERROR_UCONV_NOCONV
-#include "nsEncoderDecoderUtils.h"
 #include "nsCharsetConverterManager.h"
 
-// for NS_IMPL_IDS only
-#include "nsIPlatformCharset.h"
-
-#include "nsReadableUtils.h"
-#include "nsUnicharUtils.h"
 #include "nsUConvPropertySearch.h"
 
 using namespace mozilla;

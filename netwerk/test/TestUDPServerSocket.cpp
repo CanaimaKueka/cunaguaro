@@ -9,6 +9,7 @@
 #include "nsISocketTransport.h"
 #include "nsIOutputStream.h"
 #include "nsIInputStream.h"
+#include "nsINetAddr.h"
 
 #define UDP_PORT 1234
 #define REQUEST  0x68656c6f
@@ -45,7 +46,7 @@
 class UDPListener : public nsIUDPServerSocketListener
 {
 public:
-  NS_DECL_ISUPPORTS
+  NS_DECL_THREADSAFE_ISUPPORTS
   NS_DECL_NSIUDPSERVERSOCKETLISTENER
 
   virtual ~UDPListener();
@@ -53,8 +54,8 @@ public:
   nsresult mResult;
 };
 
-NS_IMPL_THREADSAFE_ISUPPORTS1(UDPListener,
-                              nsIUDPServerSocketListener)
+NS_IMPL_ISUPPORTS1(UDPListener,
+                   nsIUDPServerSocketListener)
 
 UDPListener::~UDPListener()
 {

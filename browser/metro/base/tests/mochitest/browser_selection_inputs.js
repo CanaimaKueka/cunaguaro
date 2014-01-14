@@ -9,8 +9,8 @@ let gWindow = null;
 var gInput = null;
 
 const kMarkerOffsetY = 12;
-const kCommonWaitMs = 5000;
-const kCommonPollMs = 100;
+const kCommonWaitMs = 7000;
+const kCommonPollMs = 200;
 
 ///////////////////////////////////////////////////
 // form input tests
@@ -25,6 +25,8 @@ function setUpAndTearDown() {
   yield waitForCondition(function () {
       return !SelectionHelperUI.isSelectionUIVisible;
     }, kCommonWaitMs, kCommonPollMs);
+  InputSourceHelper.isPrecise = false;
+  InputSourceHelper.fireUpdate();
 }
 
 /*
@@ -42,14 +44,13 @@ gTests.push({
     yield addTab(chromeRoot + "browser_selection_inputs.html");
 
     yield waitForCondition(function () {
-      return !StartUI.isStartPageVisible;
-      }, 10000, 100);
+      return !BrowserUI.isStartTabVisible;
+      });
 
     yield hideContextUI();
 
     gWindow = Browser.selectedTab.browser.contentWindow;
     gInput = gWindow.document.getElementById("a");
-    InputSourceHelper.isPrecise = false;
   },
 });
 
@@ -58,7 +59,7 @@ gTests.push({
   setUp: setUpAndTearDown,
   tearDown: setUpAndTearDown,
   run: function test() {
-    gInput.focus();
+    gInput.blur();
     gInput.selectionStart = gInput.selectionEnd = 0;
 
     let promise = waitForEvent(document, "popupshown");
@@ -72,7 +73,7 @@ gTests.push({
     ok(menuItem, "menu item exists");
     ok(!menuItem.hidden, "menu item visible");
     let popupPromise = waitForEvent(document, "popuphidden");
-    EventUtils.synthesizeMouse(menuItem, 10, 10, {}, gWindow);
+    sendElementTap(gWindow, menuItem);
     yield popupPromise;
 
     yield waitForCondition(function () {
@@ -80,6 +81,7 @@ gTests.push({
       }, kCommonWaitMs, kCommonPollMs);
 
     is(getTrimmedSelection(gInput).toString(), "went", "selection test");
+    is(gWindow.document.activeElement, gInput, "input focused");
   },
 });
 
@@ -89,6 +91,7 @@ gTests.push({
   tearDown: setUpAndTearDown,
   run: function test() {
     gInput.selectionStart = gInput.selectionEnd = gInput.value.length;
+    yield waitForEvent(window, "scroll");
 
     let promise = waitForEvent(document, "popupshown");
     sendContextMenuClick(190, 17);
@@ -101,7 +104,7 @@ gTests.push({
     ok(menuItem, "menu item exists");
     ok(!menuItem.hidden, "menu item visible");
     let popupPromise = waitForEvent(document, "popuphidden");
-    EventUtils.synthesizeMouse(menuItem, 10, 10, {}, gWindow);
+    sendElementTap(gWindow, menuItem);
     yield popupPromise;
 
     yield waitForCondition(function () {
@@ -119,7 +122,7 @@ gTests.push({
     yield waitForCondition(function () {
       return getTrimmedSelection(gInput).toString() == 
         "The rabbit-hole went straight on like a tunnel for some way";
-    }, 6000, 2000);
+    }, kCommonWaitMs, kCommonPollMs);
     touchdrag.end();
 
     yield waitForCondition(function () {
@@ -135,6 +138,7 @@ gTests.push({
   tearDown: setUpAndTearDown,
   run: function test() {
     gInput.selectionStart = gInput.selectionEnd = 0;
+    yield waitForEvent(window, "scroll");
 
     let promise = waitForEvent(document, "popupshown");
     sendContextMenuClick(230, 17);
@@ -147,7 +151,7 @@ gTests.push({
     ok(menuItem, "menu item exists");
     ok(!menuItem.hidden, "menu item visible");
     let popupPromise = waitForEvent(document, "popuphidden");
-    EventUtils.synthesizeMouse(menuItem, 10, 10, {}, gWindow);
+    sendElementTap(gWindow, menuItem);
     yield popupPromise;
 
     yield waitForCondition(function () {
@@ -157,15 +161,16 @@ gTests.push({
     // check text selection
     is(getTrimmedSelection(gInput).toString(), "straight", "selection test");
 
-    // to the right
+    // to the right with scroll
     let xpos = SelectionHelperUI.endMark.xPos;
-    let ypos = SelectionHelperUI.endMark.yPos + 10;
+    let ystartpos = SelectionHelperUI.endMark.yPos + 10;
     var touchdrag = new TouchDragAndHold();
-    yield touchdrag.start(gWindow, xpos, ypos, 510, ypos);
+    yield touchdrag.start(gWindow, xpos, ystartpos, 510, ystartpos);
+    // hold the monocle in position outside the edit to trigger drag
     yield waitForCondition(function () {
       return getTrimmedSelection(gInput).toString() == 
         "straight on like a tunnel for some way and then dipped suddenly down";
-    }, 6000, 2000);
+    }, kCommonWaitMs, kCommonPollMs);
     touchdrag.end();
 
     yield waitForCondition(function () {
@@ -173,24 +178,21 @@ gTests.push({
       }, kCommonWaitMs, kCommonPollMs);
     yield SelectionHelperUI.pingSelectionHandler();
 
-    // down - selection shouldn't change
+    // straight down - selection shouldn't change
     let xpos = SelectionHelperUI.endMark.xPos;
     let ypos = SelectionHelperUI.endMark.yPos + 10;
     yield touchdrag.start(gWindow, xpos, ypos, xpos, ypos + 150);
-    yield waitForMs(2000);
-    touchdrag.end();
+    // no touchend here, we want to continue the drag below
 
+    yield SelectionHelperUI.pingSelectionHandler();
     is(getTrimmedSelection(gInput).toString(), "straight on like a tunnel for some way and then dipped suddenly down", "selection test");
 
-    // left and up - selection should shrink
-    let xpos = SelectionHelperUI.endMark.xPos;
-    let ypos = SelectionHelperUI.endMark.yPos + 10;
-    yield touchdrag.start(gWindow, xpos, ypos, 105, 25);
-    yield waitForCondition(function () {
-      return getTrimmedSelection(gInput).toString() == 
-        "straight on like a tunnel for";
-    }, 6000, 2000);
+    // left and up with no scrolling - selection should shrink
+    yield touchdrag.move(130, ystartpos);
     touchdrag.end();
+
+    yield SelectionHelperUI.pingSelectionHandler();
+    is(getTrimmedSelection(gInput).toString(), "straight on like a tunnel for", "selection test");
   },
 });
 
@@ -199,7 +201,7 @@ function test() {
     todo(false, "browser_selection_tests need landscape mode to run.");
     return;
   }
-
-  requestLongerTimeout(3);
+  // XXX need this until bugs 886624 and 859742 are fully resolved
+  setDevPixelEqualToPx();
   runTests();
 }

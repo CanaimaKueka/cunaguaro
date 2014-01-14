@@ -3,14 +3,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-
-#include "nsCOMPtr.h"
-#include "nsFrame.h"
-#include "nsStyleContext.h"
-#include "nsStyleConsts.h"
-#include "nsINameSpaceManager.h"
-
 #include "nsMathMLmstyleFrame.h"
+#include "mozilla/gfx/2D.h"
 
 //
 // <mstyle> -- style change
@@ -41,9 +35,6 @@ nsMathMLmstyleFrame::InheritAutomaticData(nsIFrame* aParent)
 
   // see if the displaystyle attribute is there
   nsMathMLFrame::FindAttrDisplaystyle(mContent, mPresentationData);
-
-  // see if the directionality attribute is there
-  nsMathMLFrame::FindAttrDirectionality(mContent, mPresentationData);
 
   return NS_OK;
 }

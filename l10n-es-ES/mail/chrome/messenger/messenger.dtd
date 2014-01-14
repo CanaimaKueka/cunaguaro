@@ -25,6 +25,8 @@
 <!ENTITY newExistingEmailAccountCmd.accesskey "E">
 <!ENTITY newIMAccountCmd.label "Cuenta de chat…">
 <!ENTITY newIMAccountCmd.accesskey "h">
+<!ENTITY newFeedAccountCmd.label "Cuenta de canales web…">
+<!ENTITY newFeedAccountCmd.accesskey "w">
 <!ENTITY newIMContactCmd.label "Contactos de chat…">
 <!ENTITY newIMContactCmd.accesskey "h">
 <!ENTITY openMessageFileCmd.label "Abrir mensaje guardado…">
@@ -154,7 +156,7 @@
 <!ENTITY sortByStarCmd.label "Estrella">
 <!ENTITY sortByStarCmd.accesskey "S">
 <!ENTITY sortByAttachmentsCmd.label "Adjuntos">
-<!ENTITY sortByAttachmentsCmd.accesskey "A">
+<!ENTITY sortByAttachmentsCmd.accesskey "m">
 <!ENTITY sortByPriorityCmd.label "Prioridad">
 <!ENTITY sortByPriorityCmd.accesskey "p">
 <!ENTITY sortBySizeCmd.label "Tamaño">
@@ -170,11 +172,11 @@
 <!ENTITY sortByFromCmd.label "Remitente">
 <!ENTITY sortByFromCmd.accesskey "R">
 <!ENTITY sortByRecipientCmd.label "Destinatario">
-<!ENTITY sortByRecipientCmd.accesskey "D">
+<!ENTITY sortByRecipientCmd.accesskey "i">
 <!ENTITY sortByUnreadCmd.label "Leídos">
 <!ENTITY sortByUnreadCmd.accesskey "L">
 <!ENTITY sortByOrderReceivedCmd.label "Orden de recepción">
-<!ENTITY sortByOrderReceivedCmd.accesskey "O">
+<!ENTITY sortByOrderReceivedCmd.accesskey "c">
 <!ENTITY sortAscending.label "Ascendente">
 <!ENTITY sortAscending.accesskey "A">
 <!ENTITY sortDescending.label "Descendente">
@@ -456,7 +458,9 @@
 <!ENTITY accountManagerCmd.label "Configuración de las cuentas…">
 <!ENTITY accountManagerCmd.accesskey "n">
 <!ENTITY accountManagerCmdUnix.accesskey "A">
-<!ENTITY getMsgButton.label "Recibir">
+<!ENTITY allowRemoteDebugging.label "Permitir depuración remota">
+<!ENTITY allowRemoteDebugging.accesskey "r">
+<!ENTITY getMsgButton1.label "Recibir mensajes">
 <!ENTITY newMsgButton.label "Redactar">
 <!ENTITY replyButton.label "Responder">
 <!ENTITY replyAllButton.label "Resp. a todos">
@@ -500,6 +504,8 @@
 <!ENTITY replyAllButton.tooltip "Responder al remitente y a todos los destinatarios">
 <!ENTITY replyListButton.tooltip "Responder a la lista de correo">
 <!ENTITY forwardButton.tooltip "Reenviar mensaje seleccionado">
+<!ENTITY forwardAsInline.tooltip "Reenviar el mensaje seleccionado como texto en el cuerpo">
+<!ENTITY forwardAsAttachment.tooltip "Reenviar el mensaje seleccionado como un adjunto">
 <!ENTITY fileButton.tooltip "Archivar mensaje seleccionado">
 <!ENTITY archiveButton.tooltip "Archivar mensajes seleccionados">
 <!ENTITY nextButton.tooltip "Ir al siguiente mensaje no leído">
@@ -520,10 +526,11 @@
 <!ENTITY tagButton.tooltip "Etiquetar mensajes">
 <!ENTITY compactButton.tooltip "Eliminar mensajes borrados de la carpeta seleccionada">
 <!ENTITY appmenuButton1.tooltip "Mostrar el menú &brandShortName;">
+<!ENTITY buttonMenuForwardAsInline.label "Reenviar en el cuerpo del mensaje">
+<!ENTITY buttonMenuForwardAsAttachment.label "Reenviar como adjunto">
 <!ENTITY appmenuNewMsgCmd.label "Nuevo mensaje">
 <!ENTITY appmenuNewContactCmd.label "Contacto de la libreta de direcciones…">
 <!ENTITY appmenuEditMenu.label "Editar">
-<!ENTITY appmenuQFBMenu.label "Barra de filtrado rápido">
 <!ENTITY appmenuToolbarLayout.label "Disposición de la barra de herramientas…">
 <!ENTITY appmenuSelectThread.label "Seleccionar conversación">
 <!ENTITY appmenuSelectFlagged.label "Seleccionar mensajes con estrella">
@@ -535,8 +542,8 @@
 <!ENTITY folderSizeColumn.label "Tamaño">
 <!ENTITY folderContextGetMessages.label "Recibir mensajes">
 <!ENTITY folderContextGetMessages.accesskey "R">
-<!ENTITY folderContextOpenNewWindow.label "Abrir">
-<!ENTITY folderContextOpenNewWindow.accesskey "A">
+<!ENTITY folderContextOpenInNewWindow.label "Abrir en una ventana nueva">
+<!ENTITY folderContextOpenInNewWindow.accesskey "e">
 <!ENTITY folderContextOpenNewTab.label "Abrir en una pestaña nueva">
 <!ENTITY folderContextOpenNewTab.accesskey "b">
 <!ENTITY folderContextNew.label "Nueva subcarpeta…">
@@ -605,7 +612,7 @@
 <!ENTITY subjectColumn.tooltip "Pulse para ordenar por asunto">
 <!ENTITY dateColumn.tooltip "Pulse para ordenar por fecha">
 <!ENTITY priorityColumn.tooltip "Pulse para ordenar por prioridad">
-<!ENTITY tagsColumn.tooltip "Haga clic para ordenar por etiquetas">
+<!ENTITY tagsColumn.tooltip "Pulse para ordenar por etiquetas">
 <!ENTITY accountColumn.tooltip "Pulsar para ordenar por cuenta">
 <!ENTITY statusColumn.tooltip "Pulse para ordenar por estado">
 <!ENTITY sizeColumn.tooltip "Pulse para ordenar por tamaño">
@@ -638,14 +645,24 @@
 <!ENTITY contextReplyList.accesskey "l">
 <!ENTITY contextForward.label "Reenviar">
 <!ENTITY contextForward.accesskey "n">
-<!ENTITY contextForwardAsAttachment.label "Reenviar como adjunto">
-<!ENTITY contextForwardAsAttachment.accesskey "o">
+<!ENTITY contextForwardAsMenu.label "Reenviar como">
+<!ENTITY contextForwardAsMenu.accesskey "o">
+<!ENTITY contextForwardAsInline.label "Incorporado">
+<!ENTITY contextForwardAsInline.accesskey "I">
+<!ENTITY contextForwardAsAttachmentItem.label "Adjunto">
+<!ENTITY contextForwardAsAttachmentItem.accesskey "A">
+<!ENTITY contextMultiForwardAsAttachment.label "Reenviar como adjuntos">
+<!ENTITY contextMultiForwardAsAttachment.accesskey "o">
 <!ENTITY contextMoveMsgMenu.label "Mover a">
 <!ENTITY contextMoveMsgMenu.accesskey "m">
 <!ENTITY contextMoveCopyMsgRecentMenu.label "Reciente">
 <!ENTITY contextMoveCopyMsgRecentMenu.accesskey "R">
 <!ENTITY contextCopyMsgMenu.label "Copiar a">
 <!ENTITY contextCopyMsgMenu.accesskey "C">
+<!ENTITY contextKillThreadMenu.label "Ignorar conversación">
+<!ENTITY contextKillThreadMenu.accesskey "I">
+<!ENTITY contextKillSubthreadMenu.label "Ignorar sub-conversación">
+<!ENTITY contextWatchThreadMenu.label "Observar conversación">
 <!ENTITY contextSaveAs.label "Guardar como…">
 <!ENTITY contextSaveAs.accesskey "G">
 <!ENTITY contextPrint.label "Imprimir…">

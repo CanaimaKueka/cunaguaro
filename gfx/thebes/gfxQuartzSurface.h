@@ -7,19 +7,22 @@
 #define GFX_QUARTZSURFACE_H
 
 #include "gfxASurface.h"
-#include "gfxImageSurface.h"
+#include "nsSize.h"
+#include "gfxPoint.h"
 
 #include <Carbon/Carbon.h>
 
 class gfxContext;
+class gfxImageSurface;
 
-class THEBES_API gfxQuartzSurface : public gfxASurface {
+class gfxQuartzSurface : public gfxASurface {
 public:
     gfxQuartzSurface(const gfxSize& size, gfxImageFormat format, bool aForPrinting = false);
     gfxQuartzSurface(CGContextRef context, const gfxSize& size, bool aForPrinting = false);
     gfxQuartzSurface(CGContextRef context, const gfxIntSize& size, bool aForPrinting = false);
     gfxQuartzSurface(cairo_surface_t *csurf, bool aForPrinting = false);
     gfxQuartzSurface(unsigned char *data, const gfxSize& size, long stride, gfxImageFormat format, bool aForPrinting = false);
+    gfxQuartzSurface(unsigned char *data, const gfxIntSize& size, long stride, gfxImageFormat format, bool aForPrinting = false);
 
     virtual ~gfxQuartzSurface();
 

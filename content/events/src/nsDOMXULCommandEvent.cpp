@@ -4,14 +4,16 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include "nsDOMClassInfoID.h"
 #include "nsDOMXULCommandEvent.h"
+#include "prtime.h"
+
+using namespace mozilla;
 
 nsDOMXULCommandEvent::nsDOMXULCommandEvent(mozilla::dom::EventTarget* aOwner,
                                            nsPresContext* aPresContext,
-                                           nsInputEvent* aEvent)
+                                           WidgetInputEvent* aEvent)
   : nsDOMUIEvent(aOwner, aPresContext,
-                 aEvent ? aEvent : new nsInputEvent(false, 0, nullptr))
+                 aEvent ? aEvent : new WidgetInputEvent(false, 0, nullptr))
 {
   if (aEvent) {
     mEventIsInternal = false;
@@ -20,28 +22,23 @@ nsDOMXULCommandEvent::nsDOMXULCommandEvent(mozilla::dom::EventTarget* aOwner,
     mEventIsInternal = true;
     mEvent->time = PR_Now();
   }
-  SetIsDOMBinding();
 }
 
 NS_IMPL_ADDREF_INHERITED(nsDOMXULCommandEvent, nsDOMUIEvent)
 NS_IMPL_RELEASE_INHERITED(nsDOMXULCommandEvent, nsDOMUIEvent)
 
-NS_IMPL_CYCLE_COLLECTION_UNLINK_BEGIN_INHERITED(nsDOMXULCommandEvent,
-                                                nsDOMUIEvent)
-  NS_IMPL_CYCLE_COLLECTION_UNLINK(mSourceEvent)
-NS_IMPL_CYCLE_COLLECTION_UNLINK_END
-
-NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN_INHERITED(nsDOMXULCommandEvent,
-                                                  nsDOMUIEvent)
-  NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mSourceEvent)
-NS_IMPL_CYCLE_COLLECTION_TRAVERSE_END
-
-DOMCI_DATA(XULCommandEvent, nsDOMXULCommandEvent)
+NS_IMPL_CYCLE_COLLECTION_INHERITED_1(nsDOMXULCommandEvent, nsDOMUIEvent,
+                                     mSourceEvent)
 
 NS_INTERFACE_MAP_BEGIN_CYCLE_COLLECTION_INHERITED(nsDOMXULCommandEvent)
   NS_INTERFACE_MAP_ENTRY(nsIDOMXULCommandEvent)
-  NS_DOM_INTERFACE_MAP_ENTRY_CLASSINFO(XULCommandEvent)
 NS_INTERFACE_MAP_END_INHERITING(nsDOMUIEvent)
+
+bool
+nsDOMXULCommandEvent::AltKey()
+{
+  return mEvent->AsInputEvent()->IsAlt();
+}
 
 NS_IMETHODIMP
 nsDOMXULCommandEvent::GetAltKey(bool* aIsDown)
@@ -49,6 +46,12 @@ nsDOMXULCommandEvent::GetAltKey(bool* aIsDown)
   NS_ENSURE_ARG_POINTER(aIsDown);
   *aIsDown = AltKey();
   return NS_OK;
+}
+
+bool
+nsDOMXULCommandEvent::CtrlKey()
+{
+  return mEvent->AsInputEvent()->IsControl();
 }
 
 NS_IMETHODIMP
@@ -59,12 +62,24 @@ nsDOMXULCommandEvent::GetCtrlKey(bool* aIsDown)
   return NS_OK;
 }
 
+bool
+nsDOMXULCommandEvent::ShiftKey()
+{
+  return mEvent->AsInputEvent()->IsShift();
+}
+
 NS_IMETHODIMP
 nsDOMXULCommandEvent::GetShiftKey(bool* aIsDown)
 {
   NS_ENSURE_ARG_POINTER(aIsDown);
   *aIsDown = ShiftKey();
   return NS_OK;
+}
+
+bool
+nsDOMXULCommandEvent::MetaKey()
+{
+  return mEvent->AsInputEvent()->IsMeta();
 }
 
 NS_IMETHODIMP
@@ -96,7 +111,8 @@ nsDOMXULCommandEvent::InitCommandEvent(const nsAString& aType,
                                           aView, aDetail);
   NS_ENSURE_SUCCESS(rv, rv);
 
-  Event()->InitBasicModifiers(aCtrlKey, aAltKey, aShiftKey, aMetaKey);
+  mEvent->AsInputEvent()->InitBasicModifiers(aCtrlKey, aAltKey,
+                                             aShiftKey, aMetaKey);
   mSourceEvent = aSourceEvent;
 
   return NS_OK;
@@ -106,7 +122,7 @@ nsDOMXULCommandEvent::InitCommandEvent(const nsAString& aType,
 nsresult NS_NewDOMXULCommandEvent(nsIDOMEvent** aInstancePtrResult,
                                   mozilla::dom::EventTarget* aOwner,
                                   nsPresContext* aPresContext,
-                                  nsInputEvent *aEvent) 
+                                  WidgetInputEvent* aEvent) 
 {
   nsDOMXULCommandEvent* it =
     new nsDOMXULCommandEvent(aOwner, aPresContext, aEvent);

@@ -16,14 +16,15 @@
 #ifdef MOZ_HAVE_SHMIMAGE
 
 #include "nsIWidget.h"
-#include "gfxASurface.h"
+#include "gfxTypes.h"
+#include "nsAutoPtr.h"
 
 #include "mozilla/X11Util.h"
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/extensions/XShm.h>
 
-#if defined(MOZ_WIDGET_GTK2) || defined(MOZ_WIDGET_GTK3)
+#if defined(MOZ_WIDGET_GTK)
 #define DISPLAY gdk_x11_get_default_xdisplay
 #elif defined(MOZ_WIDGET_QT)
 #define DISPLAY mozilla::DefaultXDisplay
@@ -31,6 +32,7 @@
 
 class QRect;
 class QWidget;
+class gfxASurface;
 
 class nsShmImage {
     NS_INLINE_DECL_REFCOUNTING(nsShmImage)
@@ -38,7 +40,7 @@ class nsShmImage {
     typedef mozilla::ipc::SharedMemorySysV SharedMemorySysV;
 
 public:
-    typedef gfxASurface::gfxImageFormat Format;
+    typedef gfxImageFormat Format;
 
     static bool UseShm();
     static already_AddRefed<nsShmImage>
@@ -59,9 +61,9 @@ public:
 
     already_AddRefed<gfxASurface> AsSurface();
 
-#if defined(MOZ_WIDGET_GTK2)
+#if (MOZ_WIDGET_GTK == 2)
     void Put(GdkWindow* aWindow, GdkRectangle* aRects, GdkRectangle* aEnd);
-#elif defined(MOZ_WIDGET_GTK3)
+#elif (MOZ_WIDGET_GTK == 3)
     void Put(GdkWindow* aWindow, cairo_rectangle_list_t* aRects);
 #elif defined(MOZ_WIDGET_QT)
     void Put(QWidget* aWindow, QRect& aRect);

@@ -10,3 +10,15 @@ EXPORTS += [
     'APKOpen.h',
 ]
 
+SOURCES += [
+    'APKOpen.cpp',
+    'nsGeckoUtils.cpp',
+    'NSSBridge.cpp',
+    'SQLiteBridge.cpp',
+]
+
+LIBRARY_NAME = 'android'
+
+FAIL_ON_WARNINGS = True
+
+FORCE_STATIC_LIB = True

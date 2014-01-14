@@ -10,11 +10,11 @@
 #ifndef nsIScrollFrame_h___
 #define nsIScrollFrame_h___
 
-#include "nsISupports.h"
 #include "nsCoord.h"
-#include "nsPresContext.h"
+#include "ScrollbarStyles.h"
 #include "mozilla/gfx/Point.h"
 #include "nsIScrollbarOwner.h"
+#include "Units.h"
 
 #define NS_DEFAULT_VERTICAL_SCROLL_DISTANCE   3
 #define NS_DEFAULT_HORIZONTAL_SCROLL_DISTANCE 5
@@ -22,6 +22,9 @@
 class nsBoxLayoutState;
 class nsIScrollPositionListener;
 class nsIFrame;
+class nsPresContext;
+class nsIContent;
+class nsRenderingContext;
 
 /**
  * Interface for frames that are scrollable. This interface exposes
@@ -30,7 +33,7 @@ class nsIFrame;
  */
 class nsIScrollableFrame : public nsIScrollbarOwner {
 public:
-  typedef mozilla::gfx::Point Point;
+  typedef mozilla::CSSIntPoint CSSIntPoint;
 
   NS_DECL_QUERYFRAME_TARGET(nsIScrollableFrame)
 
@@ -40,13 +43,12 @@ public:
    */
   virtual nsIFrame* GetScrolledFrame() const = 0;
 
-  typedef nsPresContext::ScrollbarStyles ScrollbarStyles;
   /**
    * Get the styles (NS_STYLE_OVERFLOW_SCROLL, NS_STYLE_OVERFLOW_HIDDEN,
    * or NS_STYLE_OVERFLOW_AUTO) governing the horizontal and vertical
    * scrollbars for this frame.
    */
-  virtual ScrollbarStyles GetScrollbarStyles() const = 0;
+  virtual mozilla::ScrollbarStyles GetScrollbarStyles() const = 0;
 
   enum { HORIZONTAL = 0x01, VERTICAL = 0x02 };
   /**
@@ -86,6 +88,21 @@ public:
    */
   virtual nscoord GetNondisappearingScrollbarWidth(nsPresContext* aPresContext,
                                                    nsRenderingContext* aRC) = 0;
+  /**
+   * GetScrolledRect is designed to encapsulate deciding which
+   * directions of overflow should be reachable by scrolling and which
+   * should not.  Callers should NOT depend on it having any particular
+   * behavior (although nsXULScrollFrame currently does).
+   *
+   * This should only be called when the scrolled frame has been
+   * reflowed with the scroll port size given in mScrollPort.
+   *
+   * Currently it allows scrolling down and to the right for
+   * nsHTMLScrollFrames with LTR directionality and for all
+   * nsXULScrollFrames, and allows scrolling down and to the left for
+   * nsHTMLScrollFrames with RTL directionality.
+   */
+  virtual nsRect GetScrolledRect() const = 0;
   /**
    * Get the area of the scrollport relative to the origin of this frame's
    * border-box.
@@ -138,6 +155,7 @@ public:
    */
   enum ScrollMode { INSTANT, SMOOTH, NORMAL };
   /**
+   * @note This method might destroy the frame, pres shell and other objects.
    * Clamps aScrollPosition to GetScrollRange and sets the scroll position
    * to that value.
    * @param aRange If non-null, specifies area which contains aScrollPosition
@@ -148,6 +166,7 @@ public:
   virtual void ScrollTo(nsPoint aScrollPosition, ScrollMode aMode,
                         const nsRect* aRange = nullptr) = 0;
   /**
+   * @note This method might destroy the frame, pres shell and other objects.
    * Scrolls to a particular position in integer CSS pixels.
    * Keeps the exact current horizontal or vertical position if the current
    * position, rounded to CSS pixels, matches aScrollPosition. If
@@ -157,8 +176,9 @@ public:
    * rounding to CSS pixels) will be exactly aScrollPosition.
    * The scroll mode is INSTANT.
    */
-  virtual void ScrollToCSSPixels(nsIntPoint aScrollPosition) = 0;
+  virtual void ScrollToCSSPixels(const CSSIntPoint& aScrollPosition) = 0;
   /**
+   * @note This method might destroy the frame, pres shell and other objects.
    * Scrolls to a particular position in float CSS pixels.
    * This does not guarantee that GetScrollPositionCSSPixels equals
    * aScrollPosition afterward. It tries to scroll as close to
@@ -166,17 +186,19 @@ public:
    * number of layer pixels (so the operation is fast and looks clean).
    * The scroll mode is INSTANT.
    */
-  virtual void ScrollToCSSPixelsApproximate(const Point& aScrollPosition) = 0;
+  virtual void ScrollToCSSPixelsApproximate(const mozilla::CSSPoint& aScrollPosition) = 0;
+
   /**
    * Returns the scroll position in integer CSS pixels, rounded to the nearest
    * pixel.
    */
-  virtual nsIntPoint GetScrollPositionCSSPixels() = 0;
+  virtual CSSIntPoint GetScrollPositionCSSPixels() = 0;
   /**
    * When scrolling by a relative amount, we can choose various units.
    */
   enum ScrollUnit { DEVICE_PIXELS, LINES, PAGES, WHOLE };
   /**
+   * @note This method might destroy the frame, pres shell and other objects.
    * Modifies the current scroll position by aDelta units given by aUnit,
    * clamping it to GetScrollRange. If WHOLE is specified as the unit,
    * content is scrolled all the way in the direction(s) given by aDelta.
@@ -188,6 +210,7 @@ public:
   virtual void ScrollBy(nsIntPoint aDelta, ScrollUnit aUnit, ScrollMode aMode,
                         nsIntPoint* aOverflow = nullptr, nsIAtom *aOrigin = nullptr) = 0;
   /**
+   * @note This method might destroy the frame, pres shell and other objects.
    * This tells the scroll frame to try scrolling to the scroll
    * position that was restored from the history. This must be called
    * at least once after state has been restored. It is called by the
@@ -240,6 +263,11 @@ public:
    * @see nsIStatefulFrame::RestoreState
    */
   virtual void ClearDidHistoryRestore() = 0;
+  /**
+   * Determine if the passed in rect is nearly visible according to the image
+   * visibility heuristics for how close it is to the visible scrollport.
+   */
+  virtual bool IsRectNearlyVisible(const nsRect& aRect) = 0;
 };
 
 #endif

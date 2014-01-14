@@ -10,6 +10,7 @@
  * utility methods for subclasses, and so forth.
  */
 
+#include "mozilla/MemoryReporting.h"
 #include "mozilla/Util.h"
 #include "mozilla/Likely.h"
 
@@ -50,7 +51,8 @@
 #include "nsDOMString.h"
 #include "nsIScriptSecurityManager.h"
 #include "nsIDOMMutationEvent.h"
-#include "nsMutationEvent.h"
+#include "mozilla/MouseEvents.h"
+#include "mozilla/MutationEvent.h"
 #include "nsNodeUtils.h"
 #include "nsDocument.h"
 #include "nsAttrValueOrString.h"
@@ -67,7 +69,6 @@
 #include "nsXBLBinding.h"
 #include "nsPIDOMWindow.h"
 #include "nsPIBoxObject.h"
-#include "nsClientRect.h"
 #include "nsSVGUtils.h"
 #include "nsLayoutUtils.h"
 #include "nsGkAtoms.h"
@@ -78,7 +79,7 @@
 #include "nsIBaseWindow.h"
 #include "nsIWidget.h"
 
-#include "jsapi.h"
+#include "js/GCAPI.h"
 
 #include "nsNodeInfoManager.h"
 #include "nsICategoryManager.h"
@@ -93,7 +94,7 @@
 #include "nsView.h"
 #include "nsViewManager.h"
 #include "nsIScrollableFrame.h"
-#include "nsXBLInsertionPoint.h"
+#include "ChildIterator.h"
 #include "mozilla/css/StyleRule.h" /* For nsCSSSelectorList */
 #include "nsRuleProcessorData.h"
 #include "nsAsyncDOMEvent.h"
@@ -105,7 +106,6 @@
 #include "nsIXULDocument.h"
 #endif /* MOZ_XUL */
 
-#include "nsCycleCollectionParticipant.h"
 #include "nsCCUncollectableMarker.h"
 
 #include "mozAutoDocUpdate.h"
@@ -116,7 +116,6 @@
 #include "nsCycleCollector.h"
 #include "xpcpublic.h"
 #include "nsIScriptError.h"
-#include "nsLayoutStatics.h"
 #include "mozilla/Telemetry.h"
 
 #include "mozilla/CORSMode.h"
@@ -125,8 +124,6 @@
 
 using namespace mozilla;
 using namespace mozilla::dom;
-
-NS_DEFINE_IID(kThisPtrOffsetsSID, NS_THISPTROFFSETS_SID);
 
 int32_t nsIContent::sTabFocusModel = eTabFocus_any;
 bool nsIContent::sTabFocusModelAppliesToXUL = false;
@@ -150,16 +147,14 @@ nsIContent::FindFirstNonChromeOnlyAccessContent() const
 nsIContent*
 nsIContent::GetFlattenedTreeParent() const
 {
-  nsIContent *parent = GetParent();
-  if (parent && parent->HasFlag(NODE_MAY_BE_IN_BINDING_MNGR)) {
-    nsIDocument *doc = parent->OwnerDoc();
-    nsIContent* insertionElement =
-      doc->BindingManager()->GetNestedInsertionPoint(parent, this);
-    if (insertionElement) {
-      parent = insertionElement;
+  if (HasFlag(NODE_MAY_BE_IN_BINDING_MNGR)) {
+    nsIContent* parent = GetXBLInsertionParent();
+    if (parent) {
+      return parent;
     }
   }
-  return parent;
+
+  return GetParent();
 }
 
 nsIContent::IMEState
@@ -287,8 +282,7 @@ nsIContent::GetBaseURI() const
     if (elem->IsSVG()) {
       nsIContent* bindingParent = elem->GetBindingParent();
       if (bindingParent) {
-        nsXBLBinding* binding =
-          bindingParent->OwnerDoc()->BindingManager()->GetBinding(bindingParent);
+        nsXBLBinding* binding = bindingParent->GetXBLBinding();
         if (binding) {
           // XXX sXBL/XBL2 issue
           // If this is an anonymous XBL element use the binding
@@ -507,28 +501,6 @@ nsNodeSupportsWeakRefTearoff::GetWeakReference(nsIWeakReference** aInstancePtr)
 }
 
 //----------------------------------------------------------------------
-
-NS_IMPL_CYCLE_COLLECTION_1(nsTouchEventReceiverTearoff, mElement)
-
-NS_INTERFACE_MAP_BEGIN_CYCLE_COLLECTION(nsTouchEventReceiverTearoff)
-  NS_INTERFACE_MAP_ENTRY(nsITouchEventReceiver)
-NS_INTERFACE_MAP_END_AGGREGATED(mElement)
-
-NS_IMPL_CYCLE_COLLECTING_ADDREF(nsTouchEventReceiverTearoff)
-NS_IMPL_CYCLE_COLLECTING_RELEASE(nsTouchEventReceiverTearoff)
-
-//----------------------------------------------------------------------
-
-NS_IMPL_CYCLE_COLLECTION_1(nsInlineEventHandlersTearoff, mElement)
-
-NS_INTERFACE_MAP_BEGIN_CYCLE_COLLECTION(nsInlineEventHandlersTearoff)
-  NS_INTERFACE_MAP_ENTRY(nsIInlineEventHandlers)
-NS_INTERFACE_MAP_END_AGGREGATED(mElement)
-
-NS_IMPL_CYCLE_COLLECTING_ADDREF(nsInlineEventHandlersTearoff)
-NS_IMPL_CYCLE_COLLECTING_RELEASE(nsInlineEventHandlersTearoff)
-
-//----------------------------------------------------------------------
 FragmentOrElement::nsDOMSlots::nsDOMSlots()
   : nsINode::nsSlots(),
     mDataset(nullptr),
@@ -568,6 +540,12 @@ FragmentOrElement::nsDOMSlots::Traverse(nsCycleCollectionTraversalCallback &cb, 
     cb.NoteXPCOMChild(mControllers);
   }
 
+  NS_CYCLE_COLLECTION_NOTE_EDGE_NAME(cb, "mSlots->mXBLBinding");
+  cb.NoteNativeChild(mXBLBinding, NS_CYCLE_COLLECTION_PARTICIPANT(nsXBLBinding));
+
+  NS_CYCLE_COLLECTION_NOTE_EDGE_NAME(cb, "mSlots->mXBLInsertionParent");
+  cb.NoteXPCOMChild(mXBLInsertionParent.get());
+
   NS_CYCLE_COLLECTION_NOTE_EDGE_NAME(cb, "mSlots->mChildrenList");
   cb.NoteXPCOMChild(NS_ISUPPORTS_CAST(nsIDOMNodeList*, mChildrenList));
 
@@ -586,6 +564,8 @@ FragmentOrElement::nsDOMSlots::Unlink(bool aIsXUL)
   }
   if (aIsXUL)
     NS_IF_RELEASE(mControllers);
+  mXBLBinding = nullptr;
+  mXBLInsertionParent = nullptr;
   mChildrenList = nullptr;
   mUndoManager = nullptr;
   if (mClassList) {
@@ -595,7 +575,7 @@ FragmentOrElement::nsDOMSlots::Unlink(bool aIsXUL)
 }
 
 size_t
-FragmentOrElement::nsDOMSlots::SizeOfIncludingThis(nsMallocSizeOfFun aMallocSizeOf) const
+FragmentOrElement::nsDOMSlots::SizeOfIncludingThis(MallocSizeOf aMallocSizeOf) const
 {
   size_t n = aMallocSizeOf(this);
 
@@ -654,24 +634,14 @@ FragmentOrElement::GetChildren(uint32_t aFilter)
   // explict content altered by insertion point if we were requested for XBL
   // anonymous content, otherwise append explicit content with respect to
   // insertion point if any.
-  nsINodeList *childList = nullptr;
-
-  nsIDocument* document = OwnerDoc();
   if (!(aFilter & eAllButXBL)) {
-    childList = document->BindingManager()->GetXBLChildNodesFor(this);
-    if (!childList) {
-      childList = ChildNodes();
+    FlattenedChildIterator iter(this);
+    for (nsIContent* child = iter.GetNextChild(); child; child = iter.GetNextChild()) {
+      list->AppendElement(child);
     }
-
   } else {
-    childList = document->BindingManager()->GetContentListFor(this);
-  }
-
-  if (childList) {
-    uint32_t length = 0;
-    childList->GetLength(&length);
-    for (uint32_t idx = 0; idx < length; idx++) {
-      nsIContent* child = childList->Item(idx);
+    ExplicitChildIterator iter(this);
+    for (nsIContent* child = iter.GetNextChild(); child; child = iter.GetNextChild()) {
       list->AppendElement(child);
     }
   }
@@ -724,8 +694,7 @@ nsIContent::PreHandleEvent(nsEventChainPreVisitor& aVisitor)
       ((this == aVisitor.mEvent->originalTarget &&
         !ChromeOnlyAccess()) || isAnonForEvents)) {
      nsCOMPtr<nsIContent> relatedTarget =
-       do_QueryInterface(static_cast<nsMouseEvent*>
-                                    (aVisitor.mEvent)->relatedTarget);
+       do_QueryInterface(aVisitor.mEvent->AsMouseEvent()->relatedTarget);
     if (relatedTarget &&
         relatedTarget->OwnerDoc() == OwnerDoc()) {
 
@@ -815,8 +784,7 @@ nsIContent::PreHandleEvent(nsEventChainPreVisitor& aVisitor)
   // check for an anonymous parent
   // XXX XBL2/sXBL issue
   if (HasFlag(NODE_MAY_BE_IN_BINDING_MNGR)) {
-    nsIContent* insertionParent = OwnerDoc()->BindingManager()->
-      GetInsertionParent(this);
+    nsIContent* insertionParent = GetXBLInsertionParent();
     NS_ASSERTION(!(aVisitor.mEventTargetAtParent && insertionParent &&
                    aVisitor.mEventTargetAtParent != insertionParent),
                  "Retargeting and having insertion parent!");
@@ -901,6 +869,80 @@ FragmentOrElement::GetBindingParent() const
   return nullptr;
 }
 
+nsXBLBinding*
+FragmentOrElement::GetXBLBinding() const
+{
+  if (HasFlag(NODE_MAY_BE_IN_BINDING_MNGR)) {
+    nsDOMSlots *slots = GetExistingDOMSlots();
+    if (slots) {
+      return slots->mXBLBinding;
+    }
+  }
+
+  return nullptr;
+}
+
+void
+FragmentOrElement::SetXBLBinding(nsXBLBinding* aBinding,
+                                 nsBindingManager* aOldBindingManager)
+{
+  nsBindingManager* bindingManager;
+  if (aOldBindingManager) {
+    MOZ_ASSERT(!aBinding, "aOldBindingManager should only be provided "
+                          "when removing a binding.");
+    bindingManager = aOldBindingManager;
+  } else {
+    bindingManager = OwnerDoc()->BindingManager();
+  }
+
+  // After this point, aBinding will be the most-derived binding for aContent.
+  // If we already have a binding for aContent, make sure to
+  // remove it from the attached stack.  Otherwise we might end up firing its
+  // constructor twice (if aBinding inherits from it) or firing its constructor
+  // after aContent has been deleted (if aBinding is null and the content node
+  // dies before we process mAttachedStack).
+  nsRefPtr<nsXBLBinding> oldBinding = GetXBLBinding();
+  if (oldBinding) {
+    bindingManager->RemoveFromAttachedQueue(oldBinding);
+  }
+
+  nsDOMSlots *slots = DOMSlots();
+  if (aBinding) {
+    SetFlags(NODE_MAY_BE_IN_BINDING_MNGR);
+    slots->mXBLBinding = aBinding;
+    bindingManager->AddBoundContent(this);
+  } else {
+    slots->mXBLBinding = nullptr;
+    bindingManager->RemoveBoundContent(this);
+    if (oldBinding) {
+      oldBinding->SetBoundElement(nullptr);
+    }
+  }
+}
+
+nsIContent*
+FragmentOrElement::GetXBLInsertionParent() const
+{
+  if (HasFlag(NODE_MAY_BE_IN_BINDING_MNGR)) {
+    nsDOMSlots *slots = GetExistingDOMSlots();
+    if (slots) {
+      return slots->mXBLInsertionParent;
+    }
+  }
+
+  return nullptr;
+}
+
+void
+FragmentOrElement::SetXBLInsertionParent(nsIContent* aContent)
+{
+  nsDOMSlots *slots = DOMSlots();
+  if (aContent) {
+    SetFlags(NODE_MAY_BE_IN_BINDING_MNGR);
+  }
+  slots->mXBLInsertionParent = aContent;
+}
+
 nsresult
 FragmentOrElement::InsertChildAt(nsIContent* aKid,
                                 uint32_t aIndex,
@@ -944,7 +986,7 @@ FragmentOrElement::DestroyContent()
 
   // XXX We really should let cycle collection do this, but that currently still
   //     leaks (see https://bugzilla.mozilla.org/show_bug.cgi?id=406684).
-  nsContentUtils::ReleaseWrapper(this, this);
+  ReleaseWrapper(this);
 
   uint32_t i, count = mAttrsAndChildren.ChildCount();
   for (i = 0; i < count; ++i) {
@@ -977,7 +1019,7 @@ FragmentOrElement::FireNodeInserted(nsIDocument* aDoc,
 
     if (nsContentUtils::HasMutationListeners(childContent,
           NS_EVENT_BITS_MUTATION_NODEINSERTED, aParent)) {
-      nsMutationEvent mutation(true, NS_MUTATION_NODEINSERTED);
+      InternalMutationEvent mutation(true, NS_MUTATION_NODEINSERTED);
       mutation.mRelatedNode = do_QueryInterface(aParent);
 
       mozAutoSubtreeModified subtree(aDoc, aParent);
@@ -997,21 +1039,19 @@ class ContentUnbinder : public nsRunnable
 public:
   ContentUnbinder()
   {
-    nsLayoutStatics::AddRef();
     mLast = this;
   }
 
   ~ContentUnbinder()
   {
     Run();
-    nsLayoutStatics::Release();
   }
 
   void UnbindSubtree(nsIContent* aNode)
   {
     if (aNode->NodeType() != nsIDOMNode::ELEMENT_NODE &&
         aNode->NodeType() != nsIDOMNode::DOCUMENT_FRAGMENT_NODE) {
-      return;  
+      return;
     }
     FragmentOrElement* container = static_cast<FragmentOrElement*>(aNode);
     uint32_t childCount = container->mAttrsAndChildren.ChildCount();
@@ -1046,6 +1086,7 @@ public:
       Telemetry::Accumulate(Telemetry::CYCLE_COLLECTOR_CONTENT_UNBIND,
                             uint32_t(PR_Now() - start) / PR_USEC_PER_MSEC);
     }
+    nsCycleCollector_dispatchDeferredDeletion();
     if (this == sContentUnbinder) {
       sContentUnbinder = nullptr;
       if (mNext) {
@@ -1102,6 +1143,8 @@ FragmentOrElement::ClearContentUnbinder()
   ContentUnbinder::UnbindAll();
 }
 
+NS_IMPL_CYCLE_COLLECTION_CLASS(FragmentOrElement)
+
 NS_IMPL_CYCLE_COLLECTION_UNLINK_BEGIN(FragmentOrElement)
   nsINode::Unlink(tmp);
 
@@ -1156,9 +1199,7 @@ NS_IMPL_CYCLE_COLLECTION_UNLINK_BEGIN(FragmentOrElement)
   }
 NS_IMPL_CYCLE_COLLECTION_UNLINK_END
 
-NS_IMPL_CYCLE_COLLECTION_TRACE_BEGIN(FragmentOrElement)
-  nsINode::Trace(tmp, aCallback, aClosure);
-NS_IMPL_CYCLE_COLLECTION_TRACE_END
+NS_IMPL_CYCLE_COLLECTION_TRACE_WRAPPERCACHE(FragmentOrElement)
 
 void
 FragmentOrElement::MarkUserData(void* aObject, nsIAtom* aKey, void* aChild,
@@ -1179,9 +1220,11 @@ void
 FragmentOrElement::MarkNodeChildren(nsINode* aNode)
 {
   JSObject* o = GetJSObjectChild(aNode);
-  xpc_UnmarkGrayObject(o);
+  if (o) {
+    JS::ExposeObjectToActiveJS(o);
+  }
 
-  nsEventListenerManager* elm = aNode->GetListenerManager(false);
+  nsEventListenerManager* elm = aNode->GetExistingListenerManager();
   if (elm) {
     elm->MarkForCC();
   }
@@ -1400,8 +1443,7 @@ NodeHasActiveFrame(nsIDocument* aCurrentDoc, nsINode* aNode)
 bool
 OwnedByBindingManager(nsIDocument* aCurrentDoc, nsINode* aNode)
 {
-  return aNode->IsElement() &&
-    aCurrentDoc->BindingManager()->GetBinding(aNode->AsElement());
+  return aNode->IsElement() && aNode->AsElement()->GetXBLBinding();
 }
 
 // CanSkip checks if aNode is black, and if it is, returns
@@ -1694,31 +1736,16 @@ NS_INTERFACE_MAP_BEGIN(FragmentOrElement)
   NS_INTERFACE_MAP_ENTRY(mozilla::dom::EventTarget)
   NS_INTERFACE_MAP_ENTRY_TEAROFF(nsISupportsWeakReference,
                                  new nsNodeSupportsWeakRefTearoff(this))
-  NS_INTERFACE_MAP_ENTRY_TEAROFF(nsIDOMNodeSelector,
-                                 new nsNodeSelectorTearoff(this))
   NS_INTERFACE_MAP_ENTRY_TEAROFF(nsIDOMXPathNSResolver,
                                  new nsNode3Tearoff(this))
-  NS_INTERFACE_MAP_ENTRY_TEAROFF(nsITouchEventReceiver,
-                                 new nsTouchEventReceiverTearoff(this))
-  NS_INTERFACE_MAP_ENTRY_TEAROFF(nsIInlineEventHandlers,
-                                 new nsInlineEventHandlersTearoff(this))
-  // nsNodeSH::PreCreate() depends on the identity pointer being the
-  // same as nsINode (which nsIContent inherits), so if you change the
-  // below line, make sure nsNodeSH::PreCreate() still does the right
-  // thing!
+  // DOM bindings depend on the identity pointer being the
+  // same as nsINode (which nsIContent inherits).
   NS_INTERFACE_MAP_ENTRY_AMBIGUOUS(nsISupports, nsIContent)
 NS_INTERFACE_MAP_END
 
 NS_IMPL_CYCLE_COLLECTING_ADDREF(FragmentOrElement)
-NS_IMPL_CYCLE_COLLECTING_RELEASE_WITH_DESTROY(FragmentOrElement,
-                                              nsNodeUtils::LastRelease(this))
-
-nsresult
-FragmentOrElement::PostQueryInterface(REFNSIID aIID, void** aInstancePtr)
-{
-  return OwnerDoc()->BindingManager()->GetBindingImplementation(this, aIID,
-                                                                aInstancePtr);
-}
+NS_IMPL_CYCLE_COLLECTING_RELEASE_WITH_LAST_RELEASE(FragmentOrElement,
+                                                   nsNodeUtils::LastRelease(this))
 
 //----------------------------------------------------------------------
 
@@ -1838,7 +1865,7 @@ FragmentOrElement::FireNodeRemovedForChildren()
 }
 
 size_t
-FragmentOrElement::SizeOfExcludingThis(nsMallocSizeOfFun aMallocSizeOf) const
+FragmentOrElement::SizeOfExcludingThis(MallocSizeOf aMallocSizeOf) const
 {
   size_t n = 0;
   n += nsIContent::SizeOfExcludingThis(aMallocSizeOf);

@@ -4,15 +4,19 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include "mozilla/Util.h"
-
 #include "nsXMLHttpRequest.h"
-#include "nsISimpleEnumerator.h"
-#include "nsIXPConnect.h"
+
+#include "mozilla/dom/XMLHttpRequestUploadBinding.h"
+#include "mozilla/MemoryReporting.h"
+#include "mozilla/Util.h"
+#include "nsDOMBlobBuilder.h"
 #include "nsICharsetConverterManager.h"
+#include "nsIDOMDocument.h"
+#include "nsIDOMProgressEvent.h"
+#include "nsIJARChannel.h"
 #include "nsLayoutCID.h"
-#include "nsXPIDLString.h"
 #include "nsReadableUtils.h"
+
 #include "nsIURI.h"
 #include "nsILoadGroup.h"
 #include "nsNetUtil.h"
@@ -22,42 +26,26 @@
 #include "nsIUploadChannel2.h"
 #include "nsIDOMSerializer.h"
 #include "nsXPCOM.h"
-#include "nsISupportsPrimitives.h"
-#include "nsGUIEvent.h"
-#include "prprf.h"
 #include "nsIDOMEventListener.h"
 #include "nsIScriptSecurityManager.h"
-#include "nsWeakPtr.h"
-#include "nsIScriptGlobalObject.h"
-#include "nsDOMClassInfoID.h"
-#include "nsIDOMElement.h"
 #include "nsIDOMWindow.h"
-#include "nsIMIMEService.h"
-#include "nsCExternalHandlerService.h"
 #include "nsIVariant.h"
 #include "nsVariant.h"
 #include "nsIScriptError.h"
-#include "xpcpublic.h"
-#include "nsStringStream.h"
 #include "nsIStreamConverterService.h"
 #include "nsICachingChannel.h"
 #include "nsContentUtils.h"
+#include "nsCxPusher.h"
 #include "nsEventDispatcher.h"
-#include "nsDOMJSUtils.h"
-#include "nsCOMArray.h"
-#include "nsIScriptableUConv.h"
 #include "nsCycleCollectionParticipant.h"
 #include "nsIContentPolicy.h"
 #include "nsContentPolicyUtils.h"
 #include "nsError.h"
-#include "nsLayoutStatics.h"
 #include "nsCrossSiteListenerProxy.h"
 #include "nsIHTMLDocument.h"
-#include "nsIScriptObjectPrincipal.h"
 #include "nsIStorageStream.h"
 #include "nsIPromptFactory.h"
 #include "nsIWindowWatcher.h"
-#include "nsCharSeparatedTokenizer.h"
 #include "nsIConsoleService.h"
 #include "nsIChannelPolicy.h"
 #include "nsChannelPolicy.h"
@@ -71,19 +59,28 @@
 #include "GeckoProfiler.h"
 #include "mozilla/dom/EncodingUtils.h"
 #include "mozilla/dom/XMLHttpRequestBinding.h"
-#include "nsIDOMFormData.h"
-#include "DictionaryHelpers.h"
 #include "mozilla/Attributes.h"
 #include "nsIPermissionManager.h"
 #include "nsMimeTypes.h"
 #include "nsIHttpChannelInternal.h"
+#include "nsCharSeparatedTokenizer.h"
 #include "nsFormData.h"
 #include "nsStreamListenerWrapper.h"
+#include "xpcjsid.h"
 
 #include "nsWrapperCacheInlines.h"
 
 using namespace mozilla;
 using namespace mozilla::dom;
+
+// Maximum size that we'll grow an ArrayBuffer instead of doubling,
+// once doubling reaches this threshold
+#define XML_HTTP_REQUEST_ARRAYBUFFER_MAX_GROWTH (32*1024*1024)
+// start at 32k to avoid lots of doubling right at the start
+#define XML_HTTP_REQUEST_ARRAYBUFFER_MIN_SIZE (32*1024)
+// the maximum Content-Length that we'll preallocate.  1GB.  Must fit
+// in an int32_t!
+#define XML_HTTP_REQUEST_MAX_CONTENT_LENGTH_PREALLOCATE (1*1024*1024*1024LL)
 
 #define LOAD_STR "load"
 #define ERROR_STR "error"
@@ -129,11 +126,11 @@ using namespace mozilla::dom;
 
 #define NS_PROGRESS_EVENT_INTERVAL 50
 
-#define IMPL_STRING_GETTER(_name)                                               \
+#define IMPL_CSTRING_GETTER(_name)                                              \
   NS_IMETHODIMP                                                                 \
-  nsXMLHttpRequest::_name(nsAString& aOut)                                      \
+  nsXMLHttpRequest::_name(nsACString& aOut)                                     \
   {                                                                             \
-    nsString tmp;                                                               \
+    nsCString tmp;                                                              \
     _name(tmp);                                                                 \
     aOut = tmp;                                                                 \
     return NS_OK;                                                               \
@@ -233,6 +230,8 @@ XMLHttpRequestAuthPrompt::PromptPassword(const PRUnichar* aDialogTitle,
 
 /////////////////////////////////////////////
 
+NS_IMPL_CYCLE_COLLECTION_CLASS(nsXHREventTarget)
+
 NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN_INHERITED(nsXHREventTarget,
                                                   nsDOMEventTargetHelper)
 NS_IMPL_CYCLE_COLLECTION_TRAVERSE_END
@@ -271,6 +270,12 @@ NS_INTERFACE_MAP_END_INHERITING(nsXHREventTarget)
 NS_IMPL_ADDREF_INHERITED(nsXMLHttpRequestUpload, nsXHREventTarget)
 NS_IMPL_RELEASE_INHERITED(nsXMLHttpRequestUpload, nsXHREventTarget)
 
+/* virtual */ JSObject*
+nsXMLHttpRequestUpload::WrapObject(JSContext* aCx, JS::Handle<JSObject*> aScope)
+{
+  return XMLHttpRequestUploadBinding::Wrap(aCx, aScope, this);
+}
+
 /////////////////////////////////////////////
 //
 //
@@ -284,7 +289,7 @@ nsXMLHttpRequest::nsXMLHttpRequest()
     mProgressSinceLastProgressEvent(false),
     mRequestSentTime(0), mTimeoutMilliseconds(0),
     mErrorLoad(false), mWaitingForOnStopRequest(false),
-    mProgressTimerIsActive(false), mProgressEventWasDelayed(false),
+    mProgressTimerIsActive(false),
     mIsHtml(false),
     mWarnAboutSyncHtml(false),
     mLoadLengthComputable(false), mLoadTotal(0),
@@ -296,10 +301,6 @@ nsXMLHttpRequest::nsXMLHttpRequest()
     mResultArrayBuffer(nullptr),
     mXPCOMifier(nullptr)
 {
-  nsLayoutStatics::AddRef();
-
-  mAlreadySetHeaders.Init();
-
   SetIsDOMBinding();
 #ifdef DEBUG
   StaticAssertions();
@@ -320,15 +321,13 @@ nsXMLHttpRequest::~nsXMLHttpRequest()
 
   mResultJSON = JSVAL_VOID;
   mResultArrayBuffer = nullptr;
-  NS_DROP_JS_OBJECTS(this, nsXMLHttpRequest);
-
-  nsLayoutStatics::Release();
+  mozilla::DropJSObjects(this);
 }
 
 void
 nsXMLHttpRequest::RootJSResultObjects()
 {
-  NS_HOLD_JS_OBJECTS(this, nsXMLHttpRequest);
+  mozilla::HoldJSObjects(this);
 }
 
 /**
@@ -425,6 +424,7 @@ nsXMLHttpRequest::ResetResponse()
   mDOMFile = nullptr;
   mBlobSet = nullptr;
   mResultArrayBuffer = nullptr;
+  mArrayBufferBuilder.reset();
   mResultJSON = JSVAL_VOID;
   mLoadTransferred = 0;
   mResponseBodyDecodedPos = 0;
@@ -436,6 +436,8 @@ nsXMLHttpRequest::SetRequestObserver(nsIRequestObserver* aObserver)
   mRequestObserver = aObserver;
 }
 
+NS_IMPL_CYCLE_COLLECTION_CLASS(nsXMLHttpRequest)
+
 NS_IMPL_CYCLE_COLLECTION_CAN_SKIP_BEGIN(nsXMLHttpRequest)
   bool isBlack = tmp->IsBlack();
   if (isBlack || tmp->mWaitingForOnStopRequest) {
@@ -443,7 +445,8 @@ NS_IMPL_CYCLE_COLLECTION_CAN_SKIP_BEGIN(nsXMLHttpRequest)
       tmp->mListenerManager->MarkForCC();
     }
     if (!isBlack && tmp->PreservingWrapper()) {
-      xpc_UnmarkGrayObject(tmp->GetWrapperPreserveColor());
+      // This marks the wrapper black.
+      tmp->GetWrapper();
     }
     return true;
   }
@@ -476,6 +479,7 @@ NS_IMPL_CYCLE_COLLECTION_TRAVERSE_END
 NS_IMPL_CYCLE_COLLECTION_UNLINK_BEGIN_INHERITED(nsXMLHttpRequest,
                                                 nsXHREventTarget)
   tmp->mResultArrayBuffer = nullptr;
+  tmp->mArrayBufferBuilder.reset();
   tmp->mResultJSON = JSVAL_VOID;
   NS_IMPL_CYCLE_COLLECTION_UNLINK(mContext)
   NS_IMPL_CYCLE_COLLECTION_UNLINK(mChannel)
@@ -524,7 +528,7 @@ nsXMLHttpRequest::DisconnectFromOwner()
 
 size_t
 nsXMLHttpRequest::SizeOfEventTargetIncludingThis(
-  nsMallocSizeOfFun aMallocSizeOf) const
+  MallocSizeOf aMallocSizeOf) const
 {
   size_t n = aMallocSizeOf(this);
   n += mResponseBody.SizeOfExcludingThisIfUnshared(aMallocSizeOf);
@@ -566,7 +570,7 @@ static void LogMessage(const char* aWarning, nsPIDOMWindow* aWindow)
     doc = aWindow->GetExtantDoc();
   }
   nsContentUtils::ReportToConsole(nsIScriptError::warningFlag,
-                                  "DOM", doc,
+                                  NS_LITERAL_CSTRING("DOM"), doc,
                                   nsContentUtils::eDOM_PROPERTIES,
                                   aWarning);
 }
@@ -772,12 +776,14 @@ nsXMLHttpRequest::CreateResponseParsedJSON(JSContext* aCx)
   RootJSResultObjects();
 
   // The Unicode converter has already zapped the BOM if there was one
+  JS::Rooted<JS::Value> value(aCx);
   if (!JS_ParseJSON(aCx,
-                    static_cast<const jschar*>(mResponseText.get()),
-                    mResponseText.Length(), &mResultJSON)) {
+                    static_cast<const jschar*>(mResponseText.get()), mResponseText.Length(),
+                    &value)) {
     return NS_ERROR_FAILURE;
   }
 
+  mResultJSON = value;
   return NS_OK;
 }
 
@@ -850,7 +856,7 @@ void
 nsXMLHttpRequest::StaticAssertions()
 {
 #define ASSERT_ENUM_EQUAL(_lc, _uc) \
-  MOZ_STATIC_ASSERT(\
+  static_assert(\
     static_cast<int>(XMLHttpRequestResponseType::_lc)  \
     == XML_HTTP_RESPONSE_TYPE_ ## _uc, \
     #_uc " should match")
@@ -960,7 +966,7 @@ nsXMLHttpRequest::GetResponse(JSContext* aCx, ErrorResult& aRv)
     if (aRv.Failed()) {
       return JSVAL_NULL;
     }
-    JS::Value result;
+    JS::Rooted<JS::Value> result(aCx);
     if (!xpc::StringToJsval(aCx, str, &result)) {
       aRv.Throw(NS_ERROR_OUT_OF_MEMORY);
       return JSVAL_NULL;
@@ -980,9 +986,10 @@ nsXMLHttpRequest::GetResponse(JSContext* aCx, ErrorResult& aRv)
 
     if (!mResultArrayBuffer) {
       RootJSResultObjects();
-      aRv = nsContentUtils::CreateArrayBuffer(aCx, mResponseBody,
-                                              &mResultArrayBuffer);
-      if (aRv.Failed()) {
+
+      mResultArrayBuffer = mArrayBufferBuilder.getArrayBuffer(aCx);
+      if (!mResultArrayBuffer) {
+        aRv.Throw(NS_ERROR_OUT_OF_MEMORY);
         return JSVAL_NULL;
       }
     }
@@ -1006,8 +1013,8 @@ nsXMLHttpRequest::GetResponse(JSContext* aCx, ErrorResult& aRv)
     }
 
     JS::Rooted<JS::Value> result(aCx, JSVAL_NULL);
-    JS::Rooted<JSObject*> scope(aCx, JS_GetGlobalForScopeChain(aCx));
-    aRv = nsContentUtils::WrapNative(aCx, scope, mResponseBlob, result.address(),
+    JS::Rooted<JSObject*> scope(aCx, JS::CurrentGlobalOrNull(aCx));
+    aRv = nsContentUtils::WrapNative(aCx, scope, mResponseBlob, &result,
                                      nullptr, true);
     return result;
   }
@@ -1017,9 +1024,9 @@ nsXMLHttpRequest::GetResponse(JSContext* aCx, ErrorResult& aRv)
       return JSVAL_NULL;
     }
 
-    JS::Rooted<JSObject*> scope(aCx, JS_GetGlobalForScopeChain(aCx));
+    JS::Rooted<JSObject*> scope(aCx, JS::CurrentGlobalOrNull(aCx));
     JS::Rooted<JS::Value> result(aCx, JSVAL_NULL);
-    aRv = nsContentUtils::WrapNative(aCx, scope, mResponseXML, result.address(),
+    aRv = nsContentUtils::WrapNative(aCx, scope, mResponseXML, &result,
                                      nullptr, true);
     return result;
   }
@@ -1117,9 +1124,9 @@ nsXMLHttpRequest::Status()
   return status;
 }
 
-IMPL_STRING_GETTER(GetStatusText)
+IMPL_CSTRING_GETTER(GetStatusText)
 void
-nsXMLHttpRequest::GetStatusText(nsString& aStatusText)
+nsXMLHttpRequest::GetStatusText(nsCString& aStatusText)
 {
   nsCOMPtr<nsIHttpChannel> httpChannel = GetCurrentHttpChannel();
 
@@ -1141,17 +1148,8 @@ nsXMLHttpRequest::GetStatusText(nsString& aStatusText)
     }
   }
 
-  nsCString statusText;
-  httpChannel->GetResponseStatusText(statusText);
-  if (statusText.IsVoid()) {
-    aStatusText.SetIsVoid(true);
-  } else {
-    // We use UTF8ToNewUnicode here because it truncates after invalid UTF-8
-    // characters, CopyUTF8toUTF16 just doesn't copy in that case.
-    uint32_t length;
-    PRUnichar* chars = UTF8ToNewUnicode(statusText, &length);
-    aStatusText.Adopt(chars, length);
-  }
+  httpChannel->GetResponseStatusText(aStatusText);
+
 }
 
 void
@@ -1275,10 +1273,10 @@ nsXMLHttpRequest::IsSafeHeader(const nsACString& header, nsIHttpChannel* httpCha
   return isSafe;
 }
 
-/* DOMString getAllResponseHeaders(); */
-IMPL_STRING_GETTER(GetAllResponseHeaders)
+/* ByteString getAllResponseHeaders(); */
+IMPL_CSTRING_GETTER(GetAllResponseHeaders)
 void
-nsXMLHttpRequest::GetAllResponseHeaders(nsString& aResponseHeaders)
+nsXMLHttpRequest::GetAllResponseHeaders(nsCString& aResponseHeaders)
 {
   aResponseHeaders.Truncate();
 
@@ -1292,7 +1290,7 @@ nsXMLHttpRequest::GetAllResponseHeaders(nsString& aResponseHeaders)
   if (nsCOMPtr<nsIHttpChannel> httpChannel = GetCurrentHttpChannel()) {
     nsRefPtr<nsHeaderVisitor> visitor = new nsHeaderVisitor(this, httpChannel);
     if (NS_SUCCEEDED(httpChannel->VisitResponseHeaders(visitor))) {
-      CopyASCIItoUTF16(visitor->Headers(), aResponseHeaders);
+      aResponseHeaders = visitor->Headers();
     }
     return;
   }
@@ -1305,10 +1303,10 @@ nsXMLHttpRequest::GetAllResponseHeaders(nsString& aResponseHeaders)
   nsAutoCString value;
   if (NS_SUCCEEDED(mChannel->GetContentType(value))) {
     aResponseHeaders.AppendLiteral("Content-Type: ");
-    AppendASCIItoUTF16(value, aResponseHeaders);
+    aResponseHeaders.Append(value);
     if (NS_SUCCEEDED(mChannel->GetContentCharset(value)) && !value.IsEmpty()) {
       aResponseHeaders.AppendLiteral(";charset=");
-      AppendASCIItoUTF16(value, aResponseHeaders);
+      aResponseHeaders.Append(value);
     }
     aResponseHeaders.AppendLiteral("\r\n");
   }
@@ -1743,16 +1741,17 @@ nsXMLHttpRequest::StreamReaderFunc(nsIInputStream* in,
     if (xmlHttpRequest->mResponseType == XML_HTTP_RESPONSE_TYPE_MOZ_BLOB) {
       xmlHttpRequest->mResponseBlob = nullptr;
     }
-    if (NS_SUCCEEDED(rv)) {
-      *writeCount = count;
-    }
-    return rv;
-  }
+  } else if (xmlHttpRequest->mResponseType == XML_HTTP_RESPONSE_TYPE_ARRAYBUFFER ||
+             xmlHttpRequest->mResponseType == XML_HTTP_RESPONSE_TYPE_CHUNKED_ARRAYBUFFER) {
+    // get the initial capacity to something reasonable to avoid a bunch of reallocs right
+    // at the start
+    if (xmlHttpRequest->mArrayBufferBuilder.capacity() == 0)
+      xmlHttpRequest->mArrayBufferBuilder.setCapacity(PR_MAX(count, XML_HTTP_REQUEST_ARRAYBUFFER_MIN_SIZE));
 
-  if ((xmlHttpRequest->mResponseType == XML_HTTP_RESPONSE_TYPE_DEFAULT &&
-       xmlHttpRequest->mResponseXML) ||
-      xmlHttpRequest->mResponseType == XML_HTTP_RESPONSE_TYPE_ARRAYBUFFER ||
-      xmlHttpRequest->mResponseType == XML_HTTP_RESPONSE_TYPE_CHUNKED_ARRAYBUFFER) {
+    xmlHttpRequest->mArrayBufferBuilder.append(reinterpret_cast<const uint8_t*>(fromRawSegment), count,
+                                               XML_HTTP_REQUEST_ARRAYBUFFER_MAX_GROWTH);
+  } else if (xmlHttpRequest->mResponseType == XML_HTTP_RESPONSE_TYPE_DEFAULT &&
+             xmlHttpRequest->mResponseXML) {
     // Copy for our own use
     uint32_t previousLength = xmlHttpRequest->mResponseBody.Length();
     xmlHttpRequest->mResponseBody.Append(fromRawSegment,count);
@@ -1943,6 +1942,17 @@ nsXMLHttpRequest::OnStartRequest(nsIRequest *request, nsISupports *ctxt)
 
   DetectCharset();
 
+  // Set up arraybuffer
+  if (mResponseType == XML_HTTP_RESPONSE_TYPE_ARRAYBUFFER && NS_SUCCEEDED(status)) {
+    int64_t contentLength;
+    rv = channel->GetContentLength(&contentLength);
+    if (NS_SUCCEEDED(rv) &&
+        contentLength > 0 &&
+        contentLength < XML_HTTP_REQUEST_MAX_CONTENT_LENGTH_PREALLOCATE) {
+      mArrayBufferBuilder.setCapacity(static_cast<int32_t>(contentLength));
+    }
+  }
+
   // Set up responseXML
   bool parseBody = mResponseType == XML_HTTP_RESPONSE_TYPE_DEFAULT ||
                      mResponseType == XML_HTTP_RESPONSE_TYPE_DOCUMENT;
@@ -2117,6 +2127,15 @@ nsXMLHttpRequest::OnStopRequest(nsIRequest *request, nsISupports *ctxt, nsresult
     }
     NS_ASSERTION(mResponseBody.IsEmpty(), "mResponseBody should be empty");
     NS_ASSERTION(mResponseText.IsEmpty(), "mResponseText should be empty");
+  } else if (NS_SUCCEEDED(status) &&
+             (mResponseType == XML_HTTP_RESPONSE_TYPE_ARRAYBUFFER ||
+              mResponseType == XML_HTTP_RESPONSE_TYPE_CHUNKED_ARRAYBUFFER)) {
+    // set the capacity down to the actual length, to realloc back
+    // down to the actual size
+    if (!mArrayBufferBuilder.setCapacity(mArrayBufferBuilder.length())) {
+      // this should never happen!
+      status = NS_ERROR_UNEXPECTED;
+    }
   }
 
   nsCOMPtr<nsIChannel> channel(do_QueryInterface(request));
@@ -2153,7 +2172,8 @@ nsXMLHttpRequest::OnStopRequest(nsIRequest *request, nsISupports *ctxt, nsresult
     NS_ASSERTION(!(mState & XML_HTTP_REQUEST_SYNCLOOPING),
       "We weren't supposed to support HTML parsing with XHR!");
     nsCOMPtr<EventTarget> eventTarget = do_QueryInterface(mResponseXML);
-    nsEventListenerManager* manager = eventTarget->GetListenerManager(true);
+    nsEventListenerManager* manager =
+      eventTarget->GetOrCreateListenerManager();
     manager->AddEventListenerByType(new nsXHRParseEndListener(this),
                                     NS_LITERAL_STRING("DOMContentLoaded"),
                                     dom::TrustedEventsAtSystemGroupBubble());
@@ -2287,12 +2307,8 @@ GetRequestBody(nsIDOMDocument* aDoc, nsIInputStream** aResult,
   NS_ENSURE_SUCCESS(rv, rv);
 
   // Make sure to use the encoding we'll send
-  {
-    nsCxPusher pusher;
-    pusher.PushNull();
-    rv = serializer->SerializeToStream(aDoc, output, aCharset);
-    NS_ENSURE_SUCCESS(rv, rv);
-  }
+  rv = serializer->SerializeToStream(aDoc, output, aCharset);
+  NS_ENSURE_SUCCESS(rv, rv);
 
   output->Close();
 
@@ -2922,7 +2938,7 @@ nsXMLHttpRequest::Send(nsIVariant* aVariant, const Nullable<RequestBody>& aBody)
   return rv;
 }
 
-/* void setRequestHeader (in AUTF8String header, in AUTF8String value); */
+/* void setRequestHeader (in ByteString header, in ByteString value); */
 // http://dvcs.w3.org/hg/xhr/raw-file/tip/Overview.html#dom-xmlhttprequest-setrequestheader
 NS_IMETHODIMP
 nsXMLHttpRequest::SetRequestHeader(const nsACString& header,
@@ -3438,6 +3454,7 @@ nsXMLHttpRequest::MaybeDispatchProgressEvents(bool aFinalProgress)
       mResponseBody.Truncate();
       mResponseText.Truncate();
       mResultArrayBuffer = nullptr;
+      mArrayBufferBuilder.reset();
     }
   }
 
@@ -3643,7 +3660,7 @@ nsXMLHttpRequest::GetInterface(JSContext* aCx, nsIJSID* aIID, ErrorResult& aRv)
   JS::Rooted<JSObject*> wrapper(aCx, GetWrapper());
   JSAutoCompartment ac(aCx, wrapper);
   JS::Rooted<JSObject*> global(aCx, JS_GetGlobalForObject(aCx, wrapper));
-  aRv = nsContentUtils::WrapNative(aCx, global, result, iid, v.address());
+  aRv = nsContentUtils::WrapNative(aCx, global, result, iid, &v);
   return aRv.Failed() ? JSVAL_NULL : v;
 }
 
@@ -3735,7 +3752,6 @@ nsXMLHttpRequest::StartProgressEventTimer()
     mProgressNotifier = do_CreateInstance(NS_TIMER_CONTRACTID);
   }
   if (mProgressNotifier) {
-    mProgressEventWasDelayed = false;
     mProgressTimerIsActive = true;
     mProgressNotifier->Cancel();
     mProgressNotifier->InitWithCallback(this, NS_PROGRESS_EVENT_INTERVAL,
@@ -3783,6 +3799,8 @@ NS_IMPL_CYCLE_COLLECTING_RELEASE(nsXMLHttpRequestXPCOMifier)
 
 // Can't NS_IMPL_CYCLE_COLLECTION_1 because mXHR has ambiguous
 // inheritance from nsISupports.
+NS_IMPL_CYCLE_COLLECTION_CLASS(nsXMLHttpRequestXPCOMifier)
+
 NS_IMPL_CYCLE_COLLECTION_UNLINK_BEGIN(nsXMLHttpRequestXPCOMifier)
 if (tmp->mXHR) {
   tmp->mXHR->mXPCOMifier = nullptr;
@@ -3808,3 +3826,120 @@ nsXMLHttpRequestXPCOMifier::GetInterface(const nsIID & aIID, void **aResult)
 
   return mXHR->GetInterface(aIID, aResult);
 }
+
+namespace mozilla {
+
+ArrayBufferBuilder::ArrayBufferBuilder()
+  : mRawContents(nullptr),
+    mDataPtr(nullptr),
+    mCapacity(0),
+    mLength(0)
+{
+}
+
+ArrayBufferBuilder::~ArrayBufferBuilder()
+{
+  reset();
+}
+
+void
+ArrayBufferBuilder::reset()
+{
+  if (mRawContents) {
+    JS_free(nullptr, mRawContents);
+  }
+  mRawContents = mDataPtr = nullptr;
+  mCapacity = mLength = 0;
+}
+
+bool
+ArrayBufferBuilder::setCapacity(uint32_t aNewCap)
+{
+  if (!JS_ReallocateArrayBufferContents(nullptr, aNewCap, &mRawContents, &mDataPtr)) {
+    return false;
+  }
+
+  mCapacity = aNewCap;
+  if (mLength > aNewCap) {
+    mLength = aNewCap;
+  }
+
+  return true;
+}
+
+bool
+ArrayBufferBuilder::append(const uint8_t *aNewData, uint32_t aDataLen,
+                           uint32_t aMaxGrowth)
+{
+  if (mLength + aDataLen > mCapacity) {
+    uint32_t newcap;
+    // Double while under aMaxGrowth or if not specified.
+    if (!aMaxGrowth || mCapacity < aMaxGrowth) {
+      newcap = mCapacity * 2;
+    } else {
+      newcap = mCapacity + aMaxGrowth;
+    }
+
+    // But make sure there's always enough to satisfy our request.
+    if (newcap < mLength + aDataLen) {
+      newcap = mLength + aDataLen;
+    }
+
+    // Did we overflow?
+    if (newcap < mCapacity) {
+      return false;
+    }
+
+    if (!setCapacity(newcap)) {
+      return false;
+    }
+  }
+
+  // Assert that the region isn't overlapping so we can memcpy.
+  MOZ_ASSERT(!areOverlappingRegions(aNewData, aDataLen, mDataPtr + mLength,
+                                    aDataLen));
+
+  memcpy(mDataPtr + mLength, aNewData, aDataLen);
+  mLength += aDataLen;
+
+  return true;
+}
+
+JSObject*
+ArrayBufferBuilder::getArrayBuffer(JSContext* aCx)
+{
+  // we need to check for mLength == 0, because nothing may have been
+  // added
+  if (mCapacity > mLength || mLength == 0) {
+    if (!setCapacity(mLength)) {
+      return nullptr;
+    }
+  }
+
+  JSObject* obj = JS_NewArrayBufferWithContents(aCx, mRawContents);
+  if (!obj) {
+    return nullptr;
+  }
+
+  mRawContents = mDataPtr = nullptr;
+  mLength = mCapacity = 0;
+
+  return obj;
+}
+
+/* static */ bool
+ArrayBufferBuilder::areOverlappingRegions(const uint8_t* aStart1,
+                                          uint32_t aLength1,
+                                          const uint8_t* aStart2,
+                                          uint32_t aLength2)
+{
+  const uint8_t* end1 = aStart1 + aLength1;
+  const uint8_t* end2 = aStart2 + aLength2;
+
+  const uint8_t* max_start = aStart1 > aStart2 ? aStart1 : aStart2;
+  const uint8_t* min_end   = end1 < end2 ? end1 : end2;
+
+  return max_start < min_end;
+}
+
+} // namespace mozilla

@@ -221,6 +221,19 @@ nsNavHistoryResultNode::GetTags(nsAString& aTags) {
   return NS_OK;
 }
 
+NS_IMETHODIMP
+nsNavHistoryResultNode::GetPageGuid(nsACString& aPageGuid) {
+  aPageGuid = mPageGuid;
+  return NS_OK;
+}
+
+
+NS_IMETHODIMP
+nsNavHistoryResultNode::GetBookmarkGuid(nsACString& aBookmarkGuid) {
+  aBookmarkGuid = mBookmarkGuid;
+  return NS_OK;
+}
+
 
 void
 nsNavHistoryResultNode::OnRemoving()
@@ -292,15 +305,9 @@ nsNavHistoryResultNode::GetGeneratingOptions()
   return nullptr;
 }
 
-NS_IMPL_CYCLE_COLLECTION_UNLINK_BEGIN_INHERITED(nsNavHistoryContainerResultNode, nsNavHistoryResultNode)
-  NS_IMPL_CYCLE_COLLECTION_UNLINK(mResult)
-  NS_IMPL_CYCLE_COLLECTION_UNLINK(mChildren)
-NS_IMPL_CYCLE_COLLECTION_UNLINK_END 
-
-NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN_INHERITED(nsNavHistoryContainerResultNode, nsNavHistoryResultNode)
-  NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mResult)
-  NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mChildren)
-NS_IMPL_CYCLE_COLLECTION_TRAVERSE_END
+NS_IMPL_CYCLE_COLLECTION_INHERITED_2(nsNavHistoryContainerResultNode, nsNavHistoryResultNode,
+                                     mResult,
+                                     mChildren)
 
 NS_IMPL_ADDREF_INHERITED(nsNavHistoryContainerResultNode, nsNavHistoryResultNode)
 NS_IMPL_RELEASE_INHERITED(nsNavHistoryContainerResultNode, nsNavHistoryResultNode)
@@ -1152,32 +1159,29 @@ int32_t nsNavHistoryContainerResultNode::SortComparison_AnnotationLess(
           }                                                                   \
         }
 
-    // Surprising as it is, we don't support sorting by a binary annotation
-    if (annoType != nsIAnnotationService::TYPE_BINARY) {
-      if (annoType == nsIAnnotationService::TYPE_STRING) {
-        nsAutoString a_val, b_val;
-        GET_ANNOTATIONS_VALUES(GetItemAnnotationString,
-                               GetPageAnnotationString, a_val, b_val);
-        value = SortComparison_StringLess(a_val, b_val);
-      }
-      else if (annoType == nsIAnnotationService::TYPE_INT32) {
-        int32_t a_val = 0, b_val = 0;
-        GET_ANNOTATIONS_VALUES(GetItemAnnotationInt32,
-                               GetPageAnnotationInt32, &a_val, &b_val);
-        value = (a_val < b_val) ? -1 : (a_val > b_val) ? 1 : 0;
-      }
-      else if (annoType == nsIAnnotationService::TYPE_INT64) {
-        int64_t a_val = 0, b_val = 0;
-        GET_ANNOTATIONS_VALUES(GetItemAnnotationInt64,
-                               GetPageAnnotationInt64, &a_val, &b_val);
-        value = (a_val < b_val) ? -1 : (a_val > b_val) ? 1 : 0;
-      }
-      else if (annoType == nsIAnnotationService::TYPE_DOUBLE) {
-        double a_val = 0, b_val = 0;
-        GET_ANNOTATIONS_VALUES(GetItemAnnotationDouble,
-                               GetPageAnnotationDouble, &a_val, &b_val);
-        value = (a_val < b_val) ? -1 : (a_val > b_val) ? 1 : 0;
-      }
+    if (annoType == nsIAnnotationService::TYPE_STRING) {
+      nsAutoString a_val, b_val;
+      GET_ANNOTATIONS_VALUES(GetItemAnnotationString,
+                             GetPageAnnotationString, a_val, b_val);
+      value = SortComparison_StringLess(a_val, b_val);
+    }
+    else if (annoType == nsIAnnotationService::TYPE_INT32) {
+      int32_t a_val = 0, b_val = 0;
+      GET_ANNOTATIONS_VALUES(GetItemAnnotationInt32,
+                             GetPageAnnotationInt32, &a_val, &b_val);
+      value = (a_val < b_val) ? -1 : (a_val > b_val) ? 1 : 0;
+    }
+    else if (annoType == nsIAnnotationService::TYPE_INT64) {
+      int64_t a_val = 0, b_val = 0;
+      GET_ANNOTATIONS_VALUES(GetItemAnnotationInt64,
+                             GetPageAnnotationInt64, &a_val, &b_val);
+      value = (a_val < b_val) ? -1 : (a_val > b_val) ? 1 : 0;
+    }
+    else if (annoType == nsIAnnotationService::TYPE_DOUBLE) {
+      double a_val = 0, b_val = 0;
+      GET_ANNOTATIONS_VALUES(GetItemAnnotationDouble,
+                             GetPageAnnotationDouble, &a_val, &b_val);
+      value = (a_val < b_val) ? -1 : (a_val > b_val) ? 1 : 0;
     }
   }
 
@@ -1617,8 +1621,8 @@ nsNavHistoryContainerResultNode::ChangeTitles(nsIURI* aURI,
   NS_ENSURE_SUCCESS(rv, rv);
 
   // The recursive function will update the result's tree nodes, but only if we
-  // give it a non-null pointer.  So if there isn't a tree, just pass NULL so
-  // it doesn't bother trying to call the result.
+  // give it a non-null pointer.  So if there isn't a tree, just pass nullptr
+  // so it doesn't bother trying to call the result.
   nsNavHistoryResult* result = GetResult();
   NS_ENSURE_STATE(result);
 
@@ -3947,6 +3951,8 @@ RemoveBookmarkFolderObserversCallback(nsTrimInt64HashKey::KeyType aKey,
   return PL_DHASH_REMOVE;
 }
 
+NS_IMPL_CYCLE_COLLECTION_CLASS(nsNavHistoryResult)
+
 NS_IMPL_CYCLE_COLLECTION_UNLINK_BEGIN(nsNavHistoryResult)
   tmp->StopObserving();
   NS_IMPL_CYCLE_COLLECTION_UNLINK(mRootNode)
@@ -4006,13 +4012,14 @@ NS_INTERFACE_MAP_BEGIN_CYCLE_COLLECTION(nsNavHistoryResult)
 NS_INTERFACE_MAP_END
 
 nsNavHistoryResult::nsNavHistoryResult(nsNavHistoryContainerResultNode* aRoot)
-: mRootNode(aRoot)
-, mNeedsToApplySortingMode(false)
-, mIsHistoryObserver(false)
-, mIsBookmarkFolderObserver(false)
-, mIsAllBookmarksObserver(false)
-, mBatchInProgress(false)
-, mSuppressNotifications(false)
+  : mRootNode(aRoot)
+  , mNeedsToApplySortingMode(false)
+  , mIsHistoryObserver(false)
+  , mIsBookmarkFolderObserver(false)
+  , mIsAllBookmarksObserver(false)
+  , mBookmarkFolderObservers(128)
+  , mBatchInProgress(false)
+  , mSuppressNotifications(false)
 {
   mRootNode->mResult = this;
 }
@@ -4071,8 +4078,6 @@ nsNavHistoryResult::Init(nsINavHistoryQuery** aQueries,
   mSortingMode = aOptions->SortingMode();
   rv = aOptions->GetSortingAnnotation(mSortingAnnotation);
   NS_ENSURE_SUCCESS(rv, rv);
-
-  mBookmarkFolderObservers.Init(128);
 
   NS_ASSERTION(mRootNode->mIndentLevel == -1,
                "Root node's indent level initialized wrong");

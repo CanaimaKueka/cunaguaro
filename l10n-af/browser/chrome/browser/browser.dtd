@@ -20,6 +20,11 @@
 <!ENTITY  reloadTab.accesskey                "H">
 <!ENTITY  reloadAllTabs.label                "Herlaai alle oortjies">
 <!ENTITY  reloadAllTabs.accesskey            "a">
+<!-- LOCALIZATION NOTE (closeTabsToTheEnd.label): This should indicate the
+direction in which tabs are closed, i.e. locales that use RTL mode should say
+left instead of right. -->
+<!ENTITY  closeTabsToTheEnd.label            "Sluit oortjies wat regs lê">
+<!ENTITY  closeTabsToTheEnd.accesskey        "e">
 <!ENTITY  closeOtherTabs.label               "Sluit ander oortjies">
 <!ENTITY  closeOtherTabs.accesskey           "a">
 <!-- LOCALIZATION NOTE (pinTab.label, unpinTab.label): "Pin" is being
@@ -41,6 +46,11 @@ can reach it easily. -->
 <!ENTITY  bookmarkAllTabs.accesskey          "o">
 <!ENTITY  undoCloseTab.label                 "Ontdoen oortjie sluit">
 <!ENTITY  undoCloseTab.accesskey             "O">
+<!-- LOCALIZATION NOTE (undoCloseTabs.label) : This label is used
+when the previous tab-closing operation closed more than one tab. It
+replaces the undoCloseTab.label and will use the same accesskey as the
+undoCloseTab.label so users will not need to learn new keyboard controls. -->
+<!ENTITY  undoCloseTabs.label                "Ontdoen sluit van oortjies">
 <!ENTITY  closeTab.label                     "Sluit oortjie">
 <!ENTITY  closeTab.accesskey                 "S">
 
@@ -68,12 +78,9 @@ can reach it easily. -->
 <!ENTITY menubarCmd.label "Kieslysbalk">
 <!ENTITY menubarCmd.accesskey "K">
 <!ENTITY navbarCmd.label "Navigasienutsbalk">
-<!ENTITY navbarCmd.accesskey "N">
 <!ENTITY personalbarCmd.label "Boekmerknutsbalk">
 <!ENTITY personalbarCmd.accesskey "B">
 <!ENTITY bookmarksToolbarItem.label "Boekmerknutsbalk-items">
-<!ENTITY addonBarCmd.label "Byvoeging-balk">
-<!ENTITY addonBarCmd.accesskey "B">
 
 <!ENTITY pageSourceCmd.label "Bladsybron">
 <!ENTITY pageSourceCmd.accesskey "r">
@@ -100,11 +107,10 @@ These should match what Safari and other Apple applications use on OS X Lion. --
 <!ENTITY fullScreenAutohide.accesskey "V">
 <!ENTITY fullScreenExit.label "Sluit volskermmodus af">
 <!ENTITY fullScreenExit.accesskey "v">
-<!ENTITY fullscreenAllowButton.label "Toelaat">
+<!ENTITY fullscreenAllowButton.label "Laat toe">
 <!ENTITY fullscreenExitButton.label "Weier">
-<!ENTITY fullscreenApproval.value "Laat volskerm toe?">
 
-<!ENTITY fullscreenExitHint.value "Druk te enige tyd ESC om volskerm te verlaat.">
+<!ENTITY fullscreenExitHint2.value "Druk enige tyd ESC om te verlaat.">
 <!ENTITY leaveDOMFullScreen.label "Verlaat volskerm">
 <!ENTITY leaveDOMFullScreen.accesskey "o">
 
@@ -115,7 +121,18 @@ These should match what Safari and other Apple applications use on OS X Lion. --
 <!ENTITY bookmarksMenu.accesskey "B">
 <!ENTITY bookmarkThisPageCmd.label "Boekmerk hierdie bladsy">
 <!ENTITY bookmarkThisPageCmd.commandkey "d">
-<!ENTITY sharePageCmd.commandkey "l">
+<!ENTITY markPageCmd.commandkey "l">
+<!ENTITY sharePageCmd.label "Deel dié bladsy">
+<!ENTITY sharePageCmd.commandkey "S">
+<!ENTITY sharePageCmd.accesskey "D">
+<!ENTITY shareLinkCmd.label "Deel dié skakel">
+<!ENTITY shareLinkCmd.accesskey "D">
+<!ENTITY shareImageCmd.label "Deel dié beeld">
+<!ENTITY shareImageCmd.accesskey "D">
+<!ENTITY shareSelectCmd.label "Deel seleksie">
+<!ENTITY shareSelectCmd.accesskey "D">
+<!ENTITY shareVideoCmd.label "Deel dié video">
+<!ENTITY shareVideoCmd.accesskey "D">
 <!ENTITY subscribeToPageMenupopup.label "Teken in op hierdie bladsy">
 <!ENTITY subscribeToPageMenuitem.label "Teken in op hierdie bladsy…">
 <!ENTITY addCurPagesCmd.label "Boekmerk alle oortjies…">
@@ -145,22 +162,15 @@ These should match what Safari and other Apple applications use on OS X Lion. --
 <!ENTITY backForwardItem.title        "Terug/vorentoe">
 <!ENTITY locationItem.title           "Ligging">
 <!ENTITY searchItem.title             "Soek">
-<!ENTITY throbberItem.title           "Aktiwiteitaanwyser">
 <!ENTITY bookmarksItem.title          "Boekmerke">
 <!-- Toolbar items --> 
 
-<!ENTITY appMenuButton.label          "Kieslys">
-<!ENTITY appMenuButton.tooltip        "Open &brandShortName;-kieslys">
 <!ENTITY homeButton.label             "Tuis">
 
 <!ENTITY tabGroupsButton.label        "Oortjie-groepe">
 <!ENTITY tabGroupsButton.tooltip      "Groepeer jou oortjies">
 
-<!ENTITY feedButton.label             "Inteken">
-<!ENTITY feedButton.tooltip           "Teken in op hierdie bladsy…">
-
 <!ENTITY bookmarksButton.label          "Boekmerke">
-<!ENTITY bookmarksButton.tooltip        "Vertoon u boekmerke">
 <!ENTITY bookmarksCmd.commandkey "b">
 
 <!ENTITY bookmarksMenuButton.label          "Boekmerke">
@@ -176,7 +186,6 @@ These should match what Safari and other Apple applications use on OS X Lion. --
 <!ENTITY bookmarksWinCmd.commandkey "i">
 
 <!ENTITY historyButton.label            "Geskiedenis">
-<!ENTITY historyButton.tooltip          "Vertoon bladsye wat u onlangs bekyk het">
 <!ENTITY historySidebarCmd.commandKey   "h">
 
 <!ENTITY toolsMenu.label              "Nutsgoed">
@@ -184,8 +193,7 @@ These should match what Safari and other Apple applications use on OS X Lion. --
 
 <!ENTITY keywordfield.label           "Voeg 'n sleutelwoord vir hierdie soektog by…">
 <!ENTITY keywordfield.accesskey       "s">
-<!ENTITY search.label                 "Websoektog">
-<!ENTITY search.accesskey             "s">
+
 <!ENTITY downloads.label              "Afgelaai">
 <!ENTITY downloads.tooltip            "Vertoon die vordering van voortgaande aflaaie">
 <!ENTITY downloads.accesskey          "A">
@@ -198,14 +206,20 @@ These should match what Safari and other Apple applications use on OS X Lion. --
 <!ENTITY webDeveloperMenu.label       "Webontwikkelaar">
 <!ENTITY webDeveloperMenu.accesskey   "W">
 
+<!ENTITY devToolsCmd.keycode          "VK_F12">
+<!ENTITY devToolsCmd.keytext          "F12">
+
 <!ENTITY devtoolsConnect.label        "Koppel…">
 <!ENTITY devtoolsConnect.accesskey    "e">
 
 <!ENTITY errorConsoleCmd.label        "Foutkonsole">
 <!ENTITY errorConsoleCmd.accesskey    "k">
-<!ENTITY errorConsoleCmd.commandkey   "j">
 
 <!ENTITY remoteWebConsoleCmd.label    "Afgeleë webkonsole">
+
+<!ENTITY browserConsoleCmd.label      "Blaaierkonsole">
+<!ENTITY browserConsoleCmd.commandkey "j">
+<!ENTITY browserConsoleCmd.accesskey  "B">
 
 <!ENTITY inspectContextMenu.label     "Inspekteer element">
 <!ENTITY inspectContextMenu.accesskey "n">
@@ -228,14 +242,23 @@ These should match what Safari and other Apple applications use on OS X Lion. --
 <!ENTITY scratchpad.accesskey         "R">
 <!ENTITY scratchpad.keycode           "VK_F4">
 <!ENTITY scratchpad.keytext           "F4">
+<!-- LOCALIZATION NOTE (chromeDebuggerMenu.label): This is the label for the
+  -  application menu item that opens the browser debugger UI in the Tools menu. -->
+
+<!ENTITY chromeDebuggerMenu.label       "Blaaier-ontfouter">
+<!ENTITY chromeDebuggerMenu.accesskey   "e">
 
 <!ENTITY devToolbarCloseButton.tooltiptext "Sluit ontwikkelingsnutsbalk">
 <!ENTITY devToolbarMenu.label              "Ontwikkelingsnutsbalk">
 <!ENTITY devToolbarMenu.accesskey          "O">
+
+
 <!ENTITY devToolbar.keycode                "VK_F2">
 <!ENTITY devToolbar.keytext                "F2">
 <!ENTITY devToolboxMenuItem.label          "Gereedskap aan/af">
 <!ENTITY devToolboxMenuItem.accesskey      "G">
+<!ENTITY devToolboxMenuItem.keycode        "I">
+<!ENTITY devToolboxMenuItem.keytext        "I">
 
 <!ENTITY devToolbarToolsButton.tooltip     "Ontwikkerlaargereedskap aan/af">
 <!ENTITY devToolbarOtherToolsButton.label  "Meer gereedskap">
@@ -293,8 +316,6 @@ These should match what Safari and other Apple applications use on OS X Lion. --
 <!ENTITY viewSidebarMenu.accesskey "b">
 <!ENTITY viewCustomizeToolbar.label       "Doelmaak…"> 
 <!ENTITY viewCustomizeToolbar.accesskey     "D">
-<!ENTITY viewTabsOnTop.label            "Oortjies bo-op">
-<!ENTITY viewTabsOnTop.accesskey        "t">
 
 <!ENTITY historyMenu.label "Geskiedenis">
 <!ENTITY historyMenu.accesskey "s">
@@ -303,20 +324,10 @@ These should match what Safari and other Apple applications use on OS X Lion. --
 <!ENTITY historyUndoWindowMenu.label "Onlangs gesluite vensters">
 <!ENTITY historyRestoreLastSession.label "Laai vorige sessie terug">
 
-<!ENTITY historyHomeCmd.label "Tuis">
 <!ENTITY showAllHistoryCmd2.label "Wys hele geskiedenis">
 <!ENTITY showAllHistoryCmd.commandkey "H">
 
-<!ENTITY appMenuEdit.label "Redigeer">
 <!ENTITY appMenuCustomize.label "Doelmaak">
-<!ENTITY appMenuToolbarLayout.label "Nutsbalk-uitleg…">
-<!ENTITY appMenuSidebars.label "Kantstawe">
-<!ENTITY appMenuFind.label "Vind…">
-<!ENTITY appMenuUnsorted.label "Ongeliasseerde boekmerke">
-<!ENTITY appMenuWebDeveloper.label "Webontwikkelaar">
-<!ENTITY appMenuGettingStarted.label "Hoe om te begin">
-<!ENTITY appMenuSafeMode.label "Herbegin met byvoegings gedeaktiveer…">
-<!ENTITY appMenuSafeMode.accesskey "H">
 
 <!ENTITY openCmd.commandkey           "l">
 <!ENTITY urlbar.placeholder2          "Soek of tik adres in">
@@ -385,6 +396,8 @@ These should match what Safari and other Apple applications use on OS X Lion. --
 <!ENTITY viewImageCmd.accesskey       "p">
 <!ENTITY viewImageInfoCmd.label       "Bekyk prentinfo">
 <!ENTITY viewImageInfoCmd.accesskey   "f">
+<!ENTITY viewImageDescCmd.label       "Bekyk beskrywing">
+<!ENTITY viewImageDescCmd.accesskey   "b">
 <!ENTITY viewVideoCmd.label           "Bekyk video">
 <!ENTITY viewVideoCmd.accesskey       "i">
 <!ENTITY viewBGImageCmd.label         "Bekyk agtergrondprent">
@@ -520,15 +533,7 @@ you can use these alternative items. Otherwise, their values should be empty.  -
 <!ENTITY newWindowButton.tooltip        "Open 'n nuwe venster">
 <!ENTITY sidebarCloseButton.tooltip     "Sluit kantbalk">
 
-<!ENTITY cutButton.tooltip              "Knip">
-<!ENTITY copyButton.tooltip             "Kopieer">
-<!ENTITY pasteButton.tooltip            "Plak">
-
 <!ENTITY fullScreenButton.tooltip       "Wys die venster in volskerm">
-
-<!ENTITY zoomOutButton.tooltip          "Zoem uit">
-<!ENTITY zoomInButton.tooltip           "Zoem in">
-<!ENTITY zoomControls.label             "Zoemkontroles">
 
 <!ENTITY quitApplicationCmdWin.label       "Afsluit"> 
 <!ENTITY quitApplicationCmdWin.accesskey   "s">
@@ -537,7 +542,8 @@ you can use these alternative items. Otherwise, their values should be empty.  -
 <!ENTITY quitApplicationCmd.label       "Afsluit"> 
 <!ENTITY quitApplicationCmd.accesskey   "A">
 <!ENTITY quitApplicationCmdMac.label    "Sluit &brandShortName; af">
-<!ENTITY quitApplicationCmdMac.key      "Q">
+<!-- LOCALIZATION NOTE(quitApplicationCmdUnix.key): This keyboard shortcut is used by both Linux and OSX builds. -->
+<!ENTITY quitApplicationCmdUnix.key     "Q">
 
 <!ENTITY closeCmd.label                 "Sluit">  
 <!ENTITY closeCmd.key                   "W">  
@@ -598,6 +604,13 @@ just addresses the organization to follow, e.g. "This site is run by " -->
 <!ENTITY identity.runBy "wat bedryf word deur">
 
 <!ENTITY identity.moreInfoLinkText "Meer inligting…">
+
+<!ENTITY identity.permissions "Toestemming">
+<!-- LOCALIZATION NOTE (identity.help.tooltip) : This string should be the
+     localized title of this SUMO article
+     https://support.mozilla.org/kb/how-do-i-tell-if-my-connection-is-secure -->
+
+<!ENTITY identity.help.tooltip "Hoe weet mens of 'n verbinding aan 'n webwerf beveilig is?">
 <!-- Name for the tabs toolbar as spoken by screen readers.
      The word "toolbar" is appended automatically and should not be contained below! -->
 
@@ -614,9 +627,6 @@ just addresses the organization to follow, e.g. "This site is run by " -->
 <!ENTITY syncSyncNowItem.accesskey    "S">
 <!ENTITY syncToolbarButton.label      "Sync">
 
-<!ENTITY addonBarCloseButton.tooltip  "Maak byvoeging-staaf toe">
-<!ENTITY toggleAddonBarCmd.key        "/">
-
 <!ENTITY socialToolbar.title        "Knoppie vir sosiale nutsbalk">
 <!ENTITY social.notLoggedIn.label   "Nie aangemeld nie">
 
@@ -631,12 +641,21 @@ just addresses the organization to follow, e.g. "This site is run by " -->
 <!ENTITY social.toggleNotifications.label "Wys werkskermkennisgewings">
 <!ENTITY social.toggleNotifications.accesskey "k">
 
-<!ENTITY social.activated.undobutton.label "Ontdoen">
-<!ENTITY social.activated.undobutton.accesskey "O">
+<!ENTITY social.activated.description "Dienste van <label/> is geaktiveer. Verander gerus instellings vir dienste in die <label class='text-link'>Byvoegingbestuurder</label>.">
+<!ENTITY social.activated.undo.label "Nee gits! Weg hiermee!">
+<!ENTITY social.activated.undo.accesskey "W">
+<!ENTITY social.learnMore.label "Meer inligting…">
+<!ENTITY social.learnMore.accesskey "M">
+<!ENTITY social.closeNotificationItem.label "Nie nou nie">
 
 <!ENTITY social.chatBar.commandkey "c">
-<!ENTITY social.chatBar.label "Focus chats">
-<!ENTITY social.chatBar.accesskey "c">
+
+
+
+<!ENTITY social.markpageMenu.accesskey "b">
+<!ENTITY social.markpageMenu.label "Stoor bladsy na…">
+<!ENTITY social.marklinkMenu.accesskey "s">
+<!ENTITY social.marklinkMenu.label "Stoor skakel na…">
 
 <!ENTITY getUserMedia.selectCamera.label "Kamera om te deel:">
 <!ENTITY getUserMedia.selectCamera.accesskey "K">
@@ -650,3 +669,59 @@ just addresses the organization to follow, e.g. "This site is run by " -->
 <!ENTITY mixedContentBlocked.moreinfo "Meeste webwerwe sal steeds reg werk selfs as dié inhoud geblok word.">
 
 <!ENTITY pointerLock.notification.message "Druk enige tyd ESC om dit weer te wys.">
+
+<!ENTITY pluginNotification.showAll.label "Wys almal">
+<!ENTITY pluginNotification.showAll.accesskey "s">
+<!-- LOCALIZATION NOTE (pluginActivateNow.label, pluginActivateAlways.label, pluginBlockNow.label): These should be the same as the matching strings in browser.properties -->
+
+<!ENTITY pluginActivateNow.label "Laat nou toe">
+<!ENTITY pluginActivateAlways.label "Laat toe en onthou">
+<!ENTITY pluginBlockNow.label "Blokkeer inprop">
+<!-- LOCALIZATION NOTE: (pluginNotification.width): This is used to determine the
+     width of the plugin popup notification that can appear if a plugin has been
+     blocked on a page. Should be wide enough to fit the pluginActivateNow.label
+     and pluginActivateAlways.label strings above on a single line. This must be
+     a CSS length value. -->
+
+<!ENTITY pluginNotification.width "28em">
+
+<!ENTITY tabCrashed.header "Oortjie het omgeval">
+<!ENTITY tabCrashed.message "Sjoe, dis jammer. Hierdie webbladsy moes nou wys, maar dit reageer nie.">
+<!ENTITY tabCrashed.checkSendReport "Vertel &vendorShortName; oor hierdie probleem sodat dit reggemaak kan word.">
+<!ENTITY tabCrashed.tryAgain "Probeer weer">
+<!-- LOCALIZATION NOTE: the following strings are unused in Australis, they're
+     kept here to avoid warnings from l10n tools like compare-locales on
+     l10n-central. They will be definitely removed when Australis is ready
+     for mozilla-aurora. -->
+
+
+<!ENTITY navbarCmd.accesskey           "N">
+<!ENTITY addonBarCmd.label             "Byvoeging-balk">
+<!ENTITY addonBarCmd.accesskey         "B">
+<!ENTITY throbberItem.title            "Aktiwiteitaanwyser">
+<!ENTITY appMenuButton.label           "Kieslys">
+<!ENTITY appMenuButton.tooltip         "Open &brandShortName;-kieslys">
+<!ENTITY feedButton.label              "Inteken">
+<!ENTITY feedButton.tooltip            "Teken in op hierdie bladsy…">
+<!ENTITY bookmarksButton.tooltip       "Vertoon u boekmerke">
+<!ENTITY historyButton.tooltip         "Vertoon bladsye wat u onlangs bekyk het">
+<!ENTITY viewTabsOnTop.label           "Oortjies bo-op">
+<!ENTITY viewTabsOnTop.accesskey       "t">
+<!ENTITY appMenuEdit.label             "Redigeer">
+<!ENTITY appMenuToolbarLayout.label    "Nutsbalk-uitleg…">
+<!ENTITY appMenuSidebars.label         "Kantstawe">
+<!ENTITY appMenuFind.label             "Vind…">
+<!ENTITY appMenuUnsorted.label         "Ongeliasseerde boekmerke">
+<!ENTITY appMenuWebDeveloper.label     "Webontwikkelaar">
+<!ENTITY appMenuGettingStarted.label   "Hoe om te begin">
+<!ENTITY appMenuSafeMode.label         "Herbegin met byvoegings gedeaktiveer…">
+<!ENTITY appMenuSafeMode.accesskey     "H">
+<!ENTITY cutButton.tooltip             "Knip">
+<!ENTITY copyButton.tooltip            "Kopieer">
+<!ENTITY pasteButton.tooltip           "Plak">
+<!ENTITY zoomOutButton.tooltip         "Zoem uit">
+<!ENTITY zoomInButton.tooltip          "Zoem in">
+<!ENTITY zoomControls.label            "Zoemkontroles">
+<!ENTITY addonBarCloseButton.tooltip   "Maak byvoeging-staaf toe">
+<!ENTITY toggleAddonBarCmd.key         "/">
+<!-- end of strings to be removed post-Australis -->

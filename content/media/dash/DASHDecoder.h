@@ -18,7 +18,6 @@
 #include "nsTArray.h"
 #include "nsIURI.h"
 #include "nsITimer.h"
-#include "nsThreadUtils.h"
 #include "MediaDecoder.h"
 #include "DASHReader.h"
 
@@ -57,9 +56,8 @@ public:
 
   // Loads the MPD from the network and subsequently loads the media streams.
   // Called from the main thread only.
-  nsresult Load(MediaResource* aResource,
-                nsIStreamListener** aListener,
-                MediaDecoder* aCloneDonor);
+  virtual nsresult Load(nsIStreamListener** aListener,
+                        MediaDecoder* aCloneDonor) MOZ_OVERRIDE;
 
   // Notifies download of MPD file has ended.
   // Called on the main thread only.

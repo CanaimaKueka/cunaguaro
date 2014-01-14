@@ -1,7 +1,7 @@
 #filter substitution
 package @ANDROID_PACKAGE_NAME@.tests;
 
-public class testTabHistory extends PixelTest {
+public class testTabHistory extends BaseTest {
 
     @Override
     protected int getTestType() {
@@ -21,17 +21,19 @@ public class testTabHistory extends PixelTest {
         String url3 = getAbsoluteUrl("/robocop/robocop_blank_03.html");
 
         // Create tab history
-        loadAndPaint(url);
-        loadAndPaint(url2);
-        loadAndPaint(url3);
+        inputAndLoadUrl(url);
+        verifyPageTitle("Browser Blank Page 01");
+        inputAndLoadUrl(url2);
+        verifyPageTitle("Browser Blank Page 02");
+        inputAndLoadUrl(url3);
+        verifyPageTitle("Browser Blank Page 03");
 
         // Get the device information and create the navigation for it
-        Device device = new Device();
-        Navigation nav = new Navigation(device);
-        mAsserter.dumpLog("device type: "+device.type);
-        mAsserter.dumpLog("device version: "+device.version);
-        mAsserter.dumpLog("device width: "+device.width);
-        mAsserter.dumpLog("device height: "+device.height);
+        Navigation nav = new Navigation(mDevice);
+        mAsserter.dumpLog("device type: "+mDevice.type);
+        mAsserter.dumpLog("device version: "+mDevice.version);
+        mAsserter.dumpLog("device width: "+mDevice.width);
+        mAsserter.dumpLog("device height: "+mDevice.height);
 
         // Go to the 2nd page
         nav.back();

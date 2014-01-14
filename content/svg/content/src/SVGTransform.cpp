@@ -6,17 +6,20 @@
 
 #include "mozilla/dom/SVGTransform.h"
 #include "mozilla/dom/SVGMatrix.h"
+#include "mozilla/dom/SVGTransformBinding.h"
 #include "nsError.h"
-#include "nsContentUtils.h"
-#include "nsAttrValueInlines.h"
 #include "nsSVGAnimatedTransformList.h"
 #include "nsSVGAttrTearoffTable.h"
-#include "mozilla/dom/SVGTransformBinding.h"
 
 namespace mozilla {
 namespace dom {
 
-static nsSVGAttrTearoffTable<SVGTransform, SVGMatrix> sSVGMatrixTearoffTable;
+static nsSVGAttrTearoffTable<SVGTransform, SVGMatrix>&
+SVGMatrixTearoffTable()
+{
+  static nsSVGAttrTearoffTable<SVGTransform, SVGMatrix> sSVGMatrixTearoffTable;
+  return sSVGMatrixTearoffTable;
+}
 
 //----------------------------------------------------------------------
 
@@ -24,6 +27,8 @@ static nsSVGAttrTearoffTable<SVGTransform, SVGMatrix> sSVGMatrixTearoffTable;
 // clear our list's weak ref to us to be safe. (The other option would be to
 // not unlink and rely on the breaking of the other edges in the cycle, as
 // NS_SVG_VAL_IMPL_CYCLE_COLLECTION does.)
+NS_IMPL_CYCLE_COLLECTION_CLASS(SVGTransform)
+
 NS_IMPL_CYCLE_COLLECTION_UNLINK_BEGIN(SVGTransform)
   // We may not belong to a list, so we must null check tmp->mList.
   if (tmp->mList) {
@@ -36,7 +41,7 @@ NS_IMPL_CYCLE_COLLECTION_UNLINK_END
 NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN(SVGTransform)
 NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mList)
   SVGMatrix* matrix =
-    sSVGMatrixTearoffTable.GetTearoff(tmp);
+    SVGMatrixTearoffTable().GetTearoff(tmp);
   CycleCollectionNoteChild(cb, matrix, "matrix");
 NS_IMPL_CYCLE_COLLECTION_TRAVERSE_SCRIPT_OBJECTS
 NS_IMPL_CYCLE_COLLECTION_TRAVERSE_END
@@ -104,9 +109,9 @@ SVGTransform::SVGTransform(const nsSVGTransform &aTransform)
 
 SVGTransform::~SVGTransform()
 {
-  SVGMatrix* matrix = sSVGMatrixTearoffTable.GetTearoff(this);
+  SVGMatrix* matrix = SVGMatrixTearoffTable().GetTearoff(this);
   if (matrix) {
-    sSVGMatrixTearoffTable.RemoveTearoff(this);
+    SVGMatrixTearoffTable().RemoveTearoff(this);
     NS_RELEASE(matrix);
   }
   // Our mList's weak ref to us must be nulled out when we die. If GC has
@@ -127,10 +132,10 @@ SVGMatrix*
 SVGTransform::Matrix()
 {
   SVGMatrix* wrapper =
-    sSVGMatrixTearoffTable.GetTearoff(this);
+    SVGMatrixTearoffTable().GetTearoff(this);
   if (!wrapper) {
     NS_ADDREF(wrapper = new SVGMatrix(*this));
-    sSVGMatrixTearoffTable.AddTearoff(this, wrapper);
+    SVGMatrixTearoffTable().AddTearoff(this, wrapper);
   }
   return wrapper;
 }

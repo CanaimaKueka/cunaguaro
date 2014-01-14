@@ -11,6 +11,8 @@
 
 #include "mozIStorageStatement.h"
 
+#include "js/Value.h"
+
 namespace IPC {
 template <typename T> struct ParamTraits;
 } // namespace IPC
@@ -159,7 +161,7 @@ public:
   }
 
   nsresult SetFromJSVal(JSContext* aCx,
-                        const jsval aVal)
+                        const JS::Value aVal)
   {
     mBuffer.Truncate();
 
@@ -179,10 +181,10 @@ public:
   }
 
   nsresult ToJSVal(JSContext* aCx,
-                   jsval* aVal) const
+                   JS::MutableHandle<JS::Value> aVal) const
   {
     if (IsUnset()) {
-      *aVal = JSVAL_VOID;
+      aVal.set(JSVAL_VOID);
       return NS_OK;
     }
 
@@ -196,9 +198,20 @@ public:
     return NS_OK;
   }
 
+  nsresult ToJSVal(JSContext* aCx,
+                   JS::Heap<JS::Value>& aVal) const
+  {
+    JS::Rooted<JS::Value> value(aCx);
+    nsresult rv = ToJSVal(aCx, &value);
+    if (NS_SUCCEEDED(rv)) {
+      aVal = value;
+    }
+    return rv;
+  }
+
   nsresult AppendItem(JSContext* aCx,
                       bool aFirstOfArray,
-                      const jsval aVal)
+                      const JS::Value aVal)
   {
     nsresult rv = EncodeJSVal(aCx, aVal, aFirstOfArray ? eMaxType : 0);
     if (NS_FAILED(rv)) {
@@ -292,7 +305,7 @@ private:
   }
 
   // Encoding functions. These append the encoded value to the end of mBuffer
-  inline nsresult EncodeJSVal(JSContext* aCx, const jsval aVal,
+  inline nsresult EncodeJSVal(JSContext* aCx, const JS::Value aVal,
                               uint8_t aTypeOffset)
   {
     return EncodeJSValInternal(aCx, aVal, aTypeOffset, 0);
@@ -304,7 +317,7 @@ private:
   // past the consumed value.
   static inline nsresult DecodeJSVal(const unsigned char*& aPos,
                                      const unsigned char* aEnd, JSContext* aCx,
-                                     uint8_t aTypeOffset, jsval* aVal)
+                                     uint8_t aTypeOffset, JS::MutableHandle<JS::Value> aVal)
   {
     return DecodeJSValInternal(aPos, aEnd, aCx, aTypeOffset, aVal, 0);
   }
@@ -318,13 +331,13 @@ private:
   nsCString mBuffer;
 
 private:
-  nsresult EncodeJSValInternal(JSContext* aCx, const jsval aVal,
+  nsresult EncodeJSValInternal(JSContext* aCx, const JS::Value aVal,
                                uint8_t aTypeOffset, uint16_t aRecursionDepth);
 
   static nsresult DecodeJSValInternal(const unsigned char*& aPos,
                                       const unsigned char* aEnd,
                                       JSContext* aCx, uint8_t aTypeOffset,
-                                      jsval* aVal, uint16_t aRecursionDepth);
+                                      JS::MutableHandle<JS::Value> aVal, uint16_t aRecursionDepth);
 };
 
 END_INDEXEDDB_NAMESPACE

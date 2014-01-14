@@ -4,12 +4,13 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef _LIBMATH_H
-#define _LIBMATH_H
+#ifndef jslibmath_h
+#define jslibmath_h
 
 #include "mozilla/FloatingPoint.h"
 
 #include <math.h>
+
 #include "jsnum.h"
 
 /*
@@ -23,12 +24,6 @@
 #define js_copysign _copysign
 #else
 #define js_copysign copysign
-#endif
-
-#if defined(_M_X64) && defined(_MSC_VER) && _MSC_VER <= 1500
-// This is a workaround for fmod bug (http://support.microsoft.com/kb/982107)
-extern "C" double js_myfmod(double x, double y);
-#define fmod js_myfmod
 #endif
 
 /* Consistency wrapper for platform deviations in fmod() */
@@ -59,11 +54,11 @@ NumberDiv(double a, double b)
             || mozilla::IsNaN(b) /* XXX MSVC miscompiles such that (NaN == 0) */
 #endif
         )
-            return js_NaN;
+            return JS::GenericNaN();
 
         if (mozilla::IsNegative(a) != mozilla::IsNegative(b))
-            return js_NegativeInfinity;
-        return js_PositiveInfinity;
+            return mozilla::NegativeInfinity();
+        return mozilla::PositiveInfinity();
     }
 
     return a / b;
@@ -72,11 +67,10 @@ NumberDiv(double a, double b)
 inline double
 NumberMod(double a, double b) {
     if (b == 0) 
-        return js_NaN;
+        return JS::GenericNaN();
     return js_fmod(a, b);
 }
 
 }
 
-#endif /* _LIBMATH_H */
-
+#endif /* jslibmath_h */

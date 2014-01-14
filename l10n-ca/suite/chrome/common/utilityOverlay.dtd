@@ -50,12 +50,12 @@
 <!ENTITY pasteCmd.label                   "Enganxa">
 <!ENTITY pasteCmd.key                     "V">
 <!ENTITY pasteCmd.accesskey               "x">
-<!ENTITY pasteGoCmd.label                 "Enganxa-ho i vés-hi">
+<!ENTITY pasteGoCmd.label                 "Enganxa i vés-hi">
 <!ENTITY pasteGoCmd.accesskey             "g">
 <!-- LOCALIZATION NOTE (pasteSearchCmd): "Search" is a verb, this is the
      search bar equivalent to the url bar's "Paste & Go"  -->
 
-<!ENTITY pasteSearchCmd.label             "Enganxa-ho i cerca-ho">
+<!ENTITY pasteSearchCmd.label             "Enganxa i cerca-ho">
 <!ENTITY pasteSearchCmd.accesskey         "E">
 <!ENTITY deleteCmd.label                  "Suprimeix">
 <!ENTITY deleteCmd.accesskey              "u">
@@ -97,13 +97,13 @@
 <!ENTITY helpMenu.label     "Ajuda"> 
 <!ENTITY helpMenu.accesskey    "j"> 
 
-<!ENTITY helpTroubleshootingInfo.label      "Informació per a la resolució de problemes">
+<!ENTITY helpTroubleshootingInfo.label      "Informació de resolució de problemes">
 <!ENTITY helpTroubleshootingInfo.accesskey  "r">
 <!ENTITY releaseCmd.label                   "Notes de la versió">
 <!ENTITY releaseCmd.accesskey               "v">
 <!ENTITY helpSafeMode.label                 "Reinicia amb els complements inhabilitats">
 <!ENTITY helpSafeMode.accesskey             "R">
-<!ENTITY updateCmd.label                    "Comprova si hi ha actualitzacions…">
+<!ENTITY updateCmd.label                    "Cerca actualitzacions…">
 <!ENTITY updateCmd.accesskey                "C">
 <!ENTITY aboutCmd.label     "Quant al &brandShortName;">
 <!ENTITY aboutCmd.accesskey    "a">

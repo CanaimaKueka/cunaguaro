@@ -1,3 +1,7 @@
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+
 <!--
 # Translator(s):
 #
@@ -9,9 +13,9 @@
 <!ENTITY copyCmd.label "Kòpérëjë">
 <!ENTITY copyCmd.accesskey "K">
 <!ENTITY pasteCmd.label "Wlepi">
-<!ENTITY pasteCmd.accesskey "p">
+<!ENTITY pasteCmd.accesskey "l">
 <!ENTITY undoCmd.label "Copni">
-<!ENTITY undoCmd.accesskey "C">
+<!ENTITY undoCmd.accesskey "i">
 <!ENTITY selectAllCmd.label "Wëbierzë wszëtkò">
 <!ENTITY selectAllCmd.accesskey "w">
 <!ENTITY deleteCmd.label "Rëmôj">
@@ -27,4 +31,4 @@
 <!ENTITY spellUndoAddToDictionary.accesskey "n"> 
 <!ENTITY spellUndoAddToDictionary.label "Copni dodôj do katalogù"> 
 <!ENTITY spellCheckToggle.label "Sprôwdzë pisënk">
-<!ENTITY spellCheckToggle.accesskey "S">
+<!ENTITY spellCheckToggle.accesskey "ô">

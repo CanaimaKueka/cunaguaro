@@ -4,12 +4,11 @@
 
 from __future__ import print_function, unicode_literals
 
-import getpass
+import itertools
 import logging
 import operator
 import os
 import sys
-import time
 
 from mach.decorators import (
     CommandArgument,
@@ -17,7 +16,15 @@ from mach.decorators import (
     Command,
 )
 
-from mozbuild.base import MachCommandBase
+from mach.mixin.logging import LoggingMixin
+
+from mozbuild.base import (
+    MachCommandBase,
+    MozbuildObject,
+    MozconfigFindException,
+    MozconfigLoadException,
+    ObjdirMismatchException,
+)
 
 
 BUILD_WHAT_HELP = '''
@@ -43,6 +50,234 @@ Preferences.
 '''.strip()
 
 
+class TerminalLoggingHandler(logging.Handler):
+    """Custom logging handler that works with terminal window dressing.
+
+    This class should probably live elsewhere, like the mach core. Consider
+    this a proving ground for its usefulness.
+    """
+    def __init__(self):
+        logging.Handler.__init__(self)
+
+        self.fh = sys.stdout
+        self.footer = None
+
+    def flush(self):
+        self.acquire()
+
+        try:
+            self.fh.flush()
+        finally:
+            self.release()
+
+    def emit(self, record):
+        msg = self.format(record)
+
+        self.acquire()
+
+        try:
+            if self.footer:
+                self.footer.clear()
+
+            self.fh.write(msg)
+            self.fh.write('\n')
+
+            if self.footer:
+                self.footer.draw()
+
+            # If we don't flush, the footer may not get drawn.
+            self.fh.flush()
+        finally:
+            self.release()
+
+
+class BuildProgressFooter(object):
+    """Handles display of a build progress indicator in a terminal.
+
+    When mach builds inside a blessings-supported terminal, it will render
+    progress information collected from a BuildMonitor. This class converts the
+    state of BuildMonitor into terminal output.
+    """
+
+    def __init__(self, terminal, monitor):
+        # terminal is a blessings.Terminal.
+        self._t = terminal
+        self._fh = sys.stdout
+        self._monitor = monitor
+
+    def _clear_lines(self, n):
+        self._fh.write(self._t.move_x(0))
+        self._fh.write(self._t.clear_eos())
+
+    def clear(self):
+        """Removes the footer from the current terminal."""
+        self._clear_lines(1)
+
+    def draw(self):
+        """Draws this footer in the terminal."""
+        tiers = self._monitor.tiers
+
+        if not tiers.tiers:
+            return
+
+        # The drawn terminal looks something like:
+        # TIER: base nspr nss js platform app SUBTIER: static export libs tools DIRECTORIES: 06/09 (memory)
+
+        # This is a list of 2-tuples of (encoding function, input). None means
+        # no encoding. For a full reason on why we do things this way, read the
+        # big comment below.
+        parts = [('bold', 'TIER'), ':', ' ']
+
+        for tier, active, finished in tiers.tier_status():
+            if active:
+                parts.extend([('underline_yellow', tier), ' '])
+            elif finished:
+                parts.extend([('green', tier), ' '])
+            else:
+                parts.extend([tier, ' '])
+
+        parts.extend([('bold', 'SUBTIER'), ':', ' '])
+        for subtier, active, finished in tiers.current_subtier_status():
+            if active:
+                parts.extend([('underline_yellow', subtier), ' '])
+            elif finished:
+                parts.extend([('green', subtier), ' '])
+            else:
+                parts.extend([subtier, ' '])
+
+        if tiers.active_dirs:
+            parts.extend([('bold', 'DIRECTORIES'), ': '])
+            have_dirs = False
+
+            for subtier, all_dirs, active_dirs, complete in tiers.current_dirs_status():
+                if len(all_dirs) < 2:
+                    continue
+
+                have_dirs = True
+
+                parts.extend([
+                    '%02d' % (complete + 1),
+                    '/',
+                    '%02d' % len(all_dirs),
+                    ' ',
+                    '(',
+                ])
+                if active_dirs:
+                    commas = [', '] * (len(active_dirs) - 1)
+                    magenta_dirs = [('magenta', d) for d in active_dirs]
+                    parts.extend(i.next() for i in itertools.cycle((iter(magenta_dirs),
+                                                                    iter(commas))))
+                parts.append(')')
+
+            if not have_dirs:
+                parts = parts[0:-2]
+
+        # We don't want to write more characters than the current width of the
+        # terminal otherwise wrapping may result in weird behavior. We can't
+        # simply truncate the line at terminal width characters because a)
+        # non-viewable escape characters count towards the limit and b) we
+        # don't want to truncate in the middle of an escape sequence because
+        # subsequent output would inherit the escape sequence.
+        max_width = self._t.width
+        written = 0
+        write_pieces = []
+        for part in parts:
+            if isinstance(part, tuple):
+                func, arg = part
+
+                if written + len(arg) > max_width:
+                    write_pieces.append(arg[0:max_width - written])
+                    written += len(arg)
+                    break
+
+                encoded = getattr(self._t, func)(arg)
+
+                write_pieces.append(encoded)
+                written += len(arg)
+            else:
+                if written + len(part) > max_width:
+                    write_pieces.append(part[0:max_width - written])
+                    written += len(part)
+                    break
+
+                write_pieces.append(part)
+                written += len(part)
+        with self._t.location():
+            self._t.move(self._t.height-1,0)
+            self._fh.write(''.join(write_pieces))
+        self._fh.flush()
+
+
+class BuildOutputManager(LoggingMixin):
+    """Handles writing build output to a terminal, to logs, etc."""
+
+    def __init__(self, log_manager, monitor):
+        self.populate_logger()
+
+        self.monitor = monitor
+        self.footer = None
+
+        terminal = log_manager.terminal
+
+        # TODO convert terminal footer to config file setting.
+        if not terminal or os.environ.get('MACH_NO_TERMINAL_FOOTER', None):
+            return
+
+        self.t = terminal
+        self.footer = BuildProgressFooter(terminal, monitor)
+
+        self._handler = TerminalLoggingHandler()
+        self._handler.setFormatter(log_manager.terminal_formatter)
+        self._handler.footer = self.footer
+
+        old = log_manager.replace_terminal_handler(self._handler)
+        self._handler.level = old.level
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        if self.footer:
+            self.footer.clear()
+            # Prevents the footer from being redrawn if logging occurs.
+            self._handler.footer = None
+
+    def write_line(self, line):
+        if self.footer:
+            self.footer.clear()
+
+        print(line)
+
+        if self.footer:
+            self.footer.draw()
+
+    def refresh(self):
+        if not self.footer:
+            return
+
+        self.footer.clear()
+        self.footer.draw()
+
+    def on_line(self, line):
+        warning, state_changed, relevant = self.monitor.on_line(line)
+
+        if warning:
+            self.log(logging.INFO, 'compiler_warning', warning,
+                'Warning: {flag} in {filename}: {message}')
+
+        if relevant:
+            self.log(logging.INFO, 'build_output', {'line': line}, '{line}')
+        elif state_changed:
+            have_handler = hasattr(self, 'handler')
+            if have_handler:
+                self.handler.acquire()
+            try:
+                self.refresh()
+            finally:
+                if have_handler:
+                    self.handler.release()
+
+
 @CommandProvider
 class Build(MachCommandBase):
     """Interface to build the tree."""
@@ -51,112 +286,136 @@ class Build(MachCommandBase):
     @CommandArgument('--jobs', '-j', default='0', metavar='jobs', type=int,
         help='Number of concurrent jobs to run. Default is the number of CPUs.')
     @CommandArgument('what', default=None, nargs='*', help=BUILD_WHAT_HELP)
+    @CommandArgument('-p', '--pymake', action='store_true',
+        help='Force using pymake over GNU make.')
     @CommandArgument('-X', '--disable-extra-make-dependencies',
                      default=False, action='store_true',
                      help='Do not add extra make dependencies.')
-    def build(self, what=None, disable_extra_make_dependencies=None, jobs=0):
-        # This code is only meant to be temporary until the more robust tree
-        # building code in bug 780329 lands.
-        from mozbuild.compilation.warnings import WarningsCollector
-        from mozbuild.compilation.warnings import WarningsDatabase
+    @CommandArgument('-v', '--verbose', action='store_true',
+        help='Verbose output for what commands the build is running.')
+    def build(self, what=None, pymake=False,
+        disable_extra_make_dependencies=None, jobs=0, verbose=False):
+        import which
+        from mozbuild.controller.building import BuildMonitor
         from mozbuild.util import resolve_target_to_make
 
+        self.log_manager.register_structured_logger(logging.getLogger('mozbuild'))
+
         warnings_path = self._get_state_filename('warnings.json')
-        warnings_database = WarningsDatabase()
+        monitor = self._spawn(BuildMonitor)
+        monitor.init(warnings_path)
 
-        if os.path.exists(warnings_path):
-            try:
-                warnings_database.load_from_file(warnings_path)
-            except ValueError:
-                os.remove(warnings_path)
+        with BuildOutputManager(self.log_manager, monitor) as output:
+            monitor.start()
 
-        warnings_collector = WarningsCollector(database=warnings_database,
-            objdir=self.topobjdir)
-
-        def on_line(line):
-            try:
-                warning = warnings_collector.process_line(line)
-                if warning:
-                    self.log(logging.INFO, 'compiler_warning', warning,
-                        'Warning: {flag} in {filename}: {message}')
-            except:
-                # This will get logged in the more robust implementation.
-                pass
-
-            self.log(logging.INFO, 'build_output', {'line': line}, '{line}')
-
-        finder_start_cpu = self._get_finder_cpu_usage()
-        time_start = time.time()
-
-        if what:
-            top_make = os.path.join(self.topobjdir, 'Makefile')
-            if not os.path.exists(top_make):
-                print('Your tree has not been configured yet. Please run '
-                    '|mach build| with no arguments.')
-                return 1
-
-            # Collect target pairs.
-            target_pairs = []
-            for target in what:
-                path_arg = self._wrap_path_argument(target)
-
-                make_dir, make_target = resolve_target_to_make(self.topobjdir,
-                    path_arg.relpath())
-
-                if make_dir is None and make_target is None:
+            if what:
+                top_make = os.path.join(self.topobjdir, 'Makefile')
+                if not os.path.exists(top_make):
+                    print('Your tree has not been configured yet. Please run '
+                        '|mach build| with no arguments.')
                     return 1
 
-                target_pairs.append((make_dir, make_target))
+                # Collect target pairs.
+                target_pairs = []
+                for target in what:
+                    path_arg = self._wrap_path_argument(target)
 
-            # Possibly add extra make depencies using dumbmake.
-            if not disable_extra_make_dependencies:
-                from dumbmake.dumbmake import (dependency_map,
-                                               add_extra_dependencies)
-                depfile = os.path.join(self.topsrcdir, 'build',
-                                       'dumbmake-dependencies')
-                with open(depfile) as f:
-                    dm = dependency_map(f.readlines())
-                new_pairs = list(add_extra_dependencies(target_pairs, dm))
-                self.log(logging.DEBUG, 'dumbmake',
-                         {'target_pairs': target_pairs,
-                          'new_pairs': new_pairs},
-                         'Added extra dependencies: will build {new_pairs} ' +
-                         'instead of {target_pairs}.')
-                target_pairs = new_pairs
+                    make_dir, make_target = resolve_target_to_make(self.topobjdir,
+                        path_arg.relpath())
 
-            # Build target pairs.
-            for make_dir, make_target in target_pairs:
-                status = self._run_make(directory=make_dir, target=make_target,
-                    line_handler=on_line, log=False, print_directory=False,
-                    ensure_exit_code=False, num_jobs=jobs)
+                    if make_dir is None and make_target is None:
+                        return 1
 
-                if status != 0:
-                    break
-        else:
-            status = self._run_make(srcdir=True, filename='client.mk',
-                line_handler=on_line, log=False, print_directory=False,
-                allow_parallel=False, ensure_exit_code=False, num_jobs=jobs)
+                    # See bug 886162 - we don't want to "accidentally" build
+                    # the entire tree (if that's really the intent, it's
+                    # unlikely they would have specified a directory.)
+                    if not make_dir and not make_target:
+                        print("The specified directory doesn't contain a "
+                              "Makefile and the first parent with one is the "
+                              "root of the tree. Please specify a directory "
+                              "with a Makefile or run |mach build| if you "
+                              "want to build the entire tree.")
+                        return 1
 
-            self.log(logging.WARNING, 'warning_summary',
-                {'count': len(warnings_collector.database)},
-                '{count} compiler warnings present.')
+                    target_pairs.append((make_dir, make_target))
 
-        warnings_database.prune()
-        warnings_database.save_to_file(warnings_path)
+                # Possibly add extra make depencies using dumbmake.
+                if not disable_extra_make_dependencies:
+                    from dumbmake.dumbmake import (dependency_map,
+                                                   add_extra_dependencies)
+                    depfile = os.path.join(self.topsrcdir, 'build',
+                                           'dumbmake-dependencies')
+                    with open(depfile) as f:
+                        dm = dependency_map(f.readlines())
+                    new_pairs = list(add_extra_dependencies(target_pairs, dm))
+                    self.log(logging.DEBUG, 'dumbmake',
+                             {'target_pairs': target_pairs,
+                              'new_pairs': new_pairs},
+                             'Added extra dependencies: will build {new_pairs} ' +
+                             'instead of {target_pairs}.')
+                    target_pairs = new_pairs
 
-        time_end = time.time()
-        time_elapsed = time_end - time_start
-        self._handle_finder_cpu_usage(time_elapsed, finder_start_cpu)
+                # Build target pairs.
+                for make_dir, make_target in target_pairs:
+                    # We don't display build status messages during partial
+                    # tree builds because they aren't reliable there. This
+                    # could potentially be fixed if the build monitor were more
+                    # intelligent about encountering undefined state.
+                    status = self._run_make(directory=make_dir, target=make_target,
+                        line_handler=output.on_line, log=False, print_directory=False,
+                        ensure_exit_code=False, num_jobs=jobs, silent=not verbose,
+                        append_env={b'NO_BUILDSTATUS_MESSAGES': b'1'},
+                        force_pymake=pymake)
 
-        long_build = time_elapsed > 600
+                    if status != 0:
+                        break
+            else:
+                monitor.start_resource_recording()
+                status = self._run_make(srcdir=True, filename='client.mk',
+                    line_handler=output.on_line, log=False, print_directory=False,
+                    allow_parallel=False, ensure_exit_code=False, num_jobs=jobs,
+                    silent=not verbose, force_pymake=pymake)
+
+                self.log(logging.WARNING, 'warning_summary',
+                    {'count': len(monitor.warnings_database)},
+                    '{count} compiler warnings present.')
+
+            monitor.finish(record_usage=status==0)
+
+        high_finder, finder_percent = monitor.have_high_finder_usage()
+        if high_finder:
+            print(FINDER_SLOW_MESSAGE % finder_percent)
+
+        if monitor.elapsed > 300:
+            # Display a notification when the build completes.
+            # This could probably be uplifted into the mach core or at least
+            # into a helper API. It is here as an experimentation to see how it
+            # is received.
+            try:
+                if sys.platform.startswith('darwin'):
+                    notifier = which.which('terminal-notifier')
+                    self.run_process([notifier, '-title',
+                        'Mozilla Build System', '-group', 'mozbuild',
+                        '-message', 'Build complete'], ensure_exit_code=False)
+            except which.WhichError:
+                pass
+            except Exception as e:
+                self.log(logging.WARNING, 'notifier-failed', {'error':
+                    e.message}, 'Notification center failed: {error}')
 
         if status:
             return status
+
+        long_build = monitor.elapsed > 600
 
         if long_build:
             print('We know it took a while, but your build finally finished successfully!')
         else:
             print('Your build was successful!')
+
+        if monitor.have_resource_usage:
+            print('To view resource usage of the build, run |mach '
+                'resource-usage|.')
 
         # Only for full builds because incremental builders likely don't
         # need to be burdened with this.
@@ -173,63 +432,8 @@ class Build(MachCommandBase):
 
         return status
 
-    def _get_finder_cpu_usage(self):
-        """Obtain the CPU usage of the Finder app on OS X.
-
-        This is used to detect high CPU usage.
-        """
-        if not sys.platform.startswith('darwin'):
-            return None
-
-        try:
-            import psutil
-        except ImportError:
-            return None
-
-        for proc in psutil.process_iter():
-            if proc.name != 'Finder':
-                continue
-
-            if proc.username != getpass.getuser():
-                continue
-
-            # Try to isolate system finder as opposed to other "Finder"
-            # processes.
-            if not proc.exe.endswith('CoreServices/Finder.app/Contents/MacOS/Finder'):
-                continue
-
-            return proc.get_cpu_times()
-
-        return None
-
-    def _handle_finder_cpu_usage(self, elapsed, start):
-        if not start:
-            return
-
-        # We only measure if the measured range is sufficiently long.
-        if elapsed < 15:
-            return
-
-        end = self._get_finder_cpu_usage()
-        if not end:
-            return
-
-        start_total = start.user + start.system
-        end_total = end.user + end.system
-
-        cpu_seconds = end_total - start_total
-
-        # If Finder used more than 25% of 1 core during the build, report an
-        # error.
-        finder_percent = cpu_seconds / elapsed * 100
-        if finder_percent < 25:
-            return
-
-        print(FINDER_SLOW_MESSAGE % finder_percent)
-
-
     @Command('configure', category='build',
-        description='Configure the tree (run configure and config.status')
+        description='Configure the tree (run configure and config.status).')
     def configure(self):
         def on_line(line):
             self.log(logging.INFO, 'build_output', {'line': line}, '{line}')
@@ -244,6 +448,34 @@ class Build(MachCommandBase):
 
         return status
 
+    @Command('resource-usage', category='post-build',
+        description='Show information about system resource usage for a build.')
+    @CommandArgument('--address', default='localhost',
+        help='Address the HTTP server should listen on.')
+    @CommandArgument('--port', type=int, default=0,
+        help='Port number the HTTP server should listen on.')
+    @CommandArgument('--browser', default='firefox',
+        help='Web browser to automatically open. See webbrowser Python module.')
+    def resource_usage(self, address=None, port=None, browser=None):
+        import webbrowser
+        from mozbuild.html_build_viewer import BuildViewerServer
+
+        last = self._get_state_filename('build_resources.json')
+        if not os.path.exists(last):
+            print('Build resources not available. If you have performed a '
+                'build and receive this message, the psutil Python package '
+                'likely failed to initialize properly.')
+            return 1
+
+        server = BuildViewerServer(address, port)
+        server.add_resource_json_file('last', last)
+        try:
+            webbrowser.get(browser).open_new_tab(server.url)
+        except Exception:
+            print('Please open %s in a browser.' % server.url)
+
+        print('Hit CTRL+c to stop server.')
+        server.run()
 
     @Command('clobber', category='build',
         description='Clobber the tree (delete the object directory).')
@@ -251,14 +483,15 @@ class Build(MachCommandBase):
         try:
             self.remove_objdir()
             return 0
-        except WindowsError as e:
-            if e.winerror in (5, 32):
-                self.log(logging.ERROR, 'file_access_error', {'error': e},
-                    "Could not clobber because a file was in use. If the "
-                    "application is running, try closing it. {error}")
-                return 1
-            else:
-                raise
+        except OSError as e:
+            if sys.platform.startswith('win'):
+                if isinstance(e, WindowsError) and e.winerror in (5,32):
+                    self.log(logging.ERROR, 'file_access_error', {'error': e},
+                        "Could not clobber because a file was in use. If the "
+                        "application is running, try closing it. {error}")
+                    return 1
+
+            raise
 
 
 @CommandProvider
@@ -338,12 +571,18 @@ class GTestCommands(MachCommandBase):
     @CommandArgument('--shuffle', '-s', action='store_true',
         help='Randomize the execution order of tests.')
     def gtest(self, shuffle, jobs, gtest_filter, tbpl_parser):
+
+        # We lazy build gtest because it's slow to link
+        self._run_make(directory="testing/gtest", target='gtest', ensure_exit_code=True)
+
         app_path = self.get_binary_path('app')
 
         # Use GTest environment variable to control test execution
         # For details see:
         # https://code.google.com/p/googletest/wiki/AdvancedGuide#Running_Test_Programs:_Advanced_Options
         gtest_env = {b'GTEST_FILTER': gtest_filter}
+
+        gtest_env[b"MOZ_RUN_GTEST"] = b"True"
 
         if shuffle:
             gtest_env[b"GTEST_SHUFFLE"] = b"True"
@@ -466,14 +705,22 @@ class RunProgram(MachCommandBase):
         description='Run the compiled program.')
     @CommandArgument('params', default=None, nargs='...',
         help='Command-line arguments to pass to the program.')
-    def run(self, params):
+    @CommandArgument('+remote', '+r', action='store_true',
+        help='Do not pass the -no-remote argument by default.')
+    @CommandArgument('+background', '+b', action='store_true',
+        help='Do not pass the -foreground argument by default on Mac')
+    def run(self, params, remote, background):
         try:
-            args = [self.get_binary_path('app'), '-no-remote']
+            args = [self.get_binary_path('app')]
         except Exception as e:
             print("It looks like your program isn't built.",
                 "You can run |mach build| to build it.")
             print(e)
             return 1
+        if not remote:
+            args.append('-no-remote')
+        if not background and sys.platform == 'darwin':
+            args.append('-foreground')
         if params:
             args.extend(params)
         return self.run_process(args=args, ensure_exit_code=False,
@@ -487,7 +734,13 @@ class DebugProgram(MachCommandBase):
         description='Debug the compiled program.')
     @CommandArgument('params', default=None, nargs='...',
         help='Command-line arguments to pass to the program.')
-    def debug(self, params):
+    @CommandArgument('+remote', '+r', action='store_true',
+        help='Do not pass the -no-remote argument by default')
+    @CommandArgument('+background', '+b', action='store_true',
+        help='Do not pass the -foreground argument by default on Mac')
+    @CommandArgument('+gdbparams', default=None, metavar='params', type=str,
+        help='Command-line arguments to pass to GDB itself; split as the Bourne shell would.')
+    def debug(self, params, remote, background, gdbparams):
         import which
         try:
             debugger = which.which('gdb')
@@ -495,13 +748,26 @@ class DebugProgram(MachCommandBase):
             print("You don't have gdb in your PATH")
             print(e)
             return 1
+        args = [debugger]
+        if gdbparams:
+            import pymake.process
+            (argv, badchar) = pymake.process.clinetoargv(gdbparams, os.getcwd())
+            if badchar:
+                print("The +gdbparams you passed require a real shell to parse them.")
+                print("(We can't handle the %r character.)" % (badchar,))
+                return 1
+            args.extend(argv)
         try:
-            args = [debugger, '--args', self.get_binary_path('app'), '-no-remote']
+            args.extend(['--args', self.get_binary_path('app')])
         except Exception as e:
             print("It looks like your program isn't built.",
                 "You can run |mach build| to build it.")
             print(e)
             return 1
+        if not remote:
+            args.append('-no-remote')
+        if not background and sys.platform == 'darwin':
+            args.append('-foreground')
         if params:
             args.extend(params)
         return self.run_process(args=args, ensure_exit_code=False,
@@ -568,3 +834,148 @@ class Makefiles(MachCommandBase):
                 if f == 'Makefile.in':
                     yield os.path.join(root, f)
 
+@CommandProvider
+class MachDebug(MachCommandBase):
+    @Command('environment', category='build-dev',
+        description='Show info about the mach and build environment.')
+    @CommandArgument('--verbose', '-v', action='store_true',
+        help='Print verbose output.')
+    def environment(self, verbose=False):
+        import platform
+        print('platform:\n\t%s' % platform.platform())
+        print('python version:\n\t%s' % sys.version)
+        print('python prefix:\n\t%s' % sys.prefix)
+        print('mach cwd:\n\t%s' % self._mach_context.cwd)
+        print('os cwd:\n\t%s' % os.getcwd())
+        print('mach directory:\n\t%s' % self._mach_context.topdir)
+        print('state directory:\n\t%s' % self._mach_context.state_dir)
+
+        try:
+            mb = MozbuildObject.from_environment(cwd=self._mach_context.cwd)
+        except ObjdirMismatchException as e:
+            print('Ambiguous object directory detected. We detected that '
+                'both %s and %s could be object directories. This is '
+                'typically caused by having a mozconfig pointing to a '
+                'different object directory from the current working '
+                'directory. To solve this problem, ensure you do not have a '
+                'default mozconfig in searched paths.' % (e.objdir1,
+                    e.objdir2))
+            return 1
+
+        mozconfig = None
+
+        try:
+            mozconfig = mb.mozconfig
+            print('mozconfig path:\n\t%s' % mozconfig['path'])
+        except MozconfigFindException as e:
+            print('Unable to find mozconfig: %s' % e.message)
+            return 1
+
+        except MozconfigLoadException as e:
+            print('Error loading mozconfig: %s' % e.path)
+            print(e.message)
+
+            if e.output:
+                print('mozconfig evaluation output:')
+                for line in e.output:
+                    print(line)
+
+            return 1
+
+        print('object directory:\n\t%s' % mb.topobjdir)
+
+        if mozconfig:
+            print('mozconfig configure args:')
+            if mozconfig['configure_args']:
+                for arg in mozconfig['configure_args']:
+                    print('\t%s' % arg)
+
+            print('mozconfig extra make args:')
+            if mozconfig['make_extra']:
+                for arg in mozconfig['make_extra']:
+                    print('\t%s' % arg)
+
+            print('mozconfig make flags:')
+            if mozconfig['make_flags']:
+                for arg in mozconfig['make_flags']:
+                    print('\t%s' % arg)
+
+        config = None
+
+        try:
+            config = mb.config_environment
+
+        except Exception:
+            pass
+
+        if config:
+            print('config topsrcdir:\n\t%s' % config.topsrcdir)
+            print('config topobjdir:\n\t%s' % config.topobjdir)
+
+            if verbose:
+                print('config substitutions:')
+                for k in sorted(config.substs):
+                    print('\t%s: %s' % (k, config.substs[k]))
+
+                print('config defines:')
+                for k in sorted(config.defines):
+                    print('\t%s' % k)
+
+
+@CommandProvider
+class Documentation(MachCommandBase):
+    """Helps manage in-tree documentation."""
+
+    @Command('build-docs', category='build-dev',
+        description='Generate documentation for the tree.')
+    @CommandArgument('--format', default='html',
+        help='Documentation format to write.')
+    @CommandArgument('--api-docs', action='store_true',
+        help='If specified, we will generate api docs templates for in-tree '
+            'Python. This will likely create and/or modify files in '
+            'build/docs. It is meant to be run by build maintainers when new '
+            'Python modules are added to the tree.')
+    @CommandArgument('outdir', default='<DEFAULT>', nargs='?',
+        help='Where to write output.')
+    def build_docs(self, format=None, api_docs=False, outdir=None):
+        self._activate_virtualenv()
+
+        self.virtualenv_manager.install_pip_package('mdn-sphinx-theme==0.3')
+
+        if api_docs:
+            import sphinx.apidoc
+            outdir = os.path.join(self.topsrcdir, 'build', 'docs', 'python')
+
+            base_args = [sys.argv[0], '--no-toc', '-o', outdir]
+
+            packages = [
+                ('python/codegen',),
+                ('python/mozbuild/mozbuild', 'test'),
+                ('python/mozbuild/mozpack', 'test'),
+                ('python/mozversioncontrol/mozversioncontrol',),
+            ]
+
+            for package in packages:
+                extra_args = [os.path.join(self.topsrcdir, package[0])]
+                extra_args.extend(package[1:])
+
+                sphinx.apidoc.main(base_args + extra_args)
+
+            return 0
+
+        import sphinx
+        if outdir == '<DEFAULT>':
+            outdir = os.path.join(self.topobjdir, 'docs', format)
+
+        args = [
+            sys.argv[0],
+            '-b', format,
+            os.path.join(self.topsrcdir, 'build', 'docs'),
+            outdir,
+        ]
+
+        result = sphinx.main(args)
+
+        print('Docs written to %s.' % outdir)
+
+        return result

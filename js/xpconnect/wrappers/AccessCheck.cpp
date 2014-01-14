@@ -5,26 +5,20 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include "mozilla/Util.h"
-
 #include "AccessCheck.h"
 
 #include "nsJSPrincipals.h"
-#include "nsIDocument.h"
 #include "nsIDOMWindow.h"
-#include "nsPIDOMWindow.h"
 #include "nsIDOMWindowCollection.h"
-#include "nsContentUtils.h"
-#include "nsJSUtils.h"
 
 #include "XPCWrapper.h"
 #include "XrayWrapper.h"
-#include "FilteringWrapper.h"
 
 #include "jsfriendapi.h"
 #include "mozilla/dom/BindingUtils.h"
 
 using namespace mozilla;
+using namespace JS;
 using namespace js;
 
 namespace xpc {
@@ -179,8 +173,8 @@ IsFrameId(JSContext *cx, JSObject *objArg, jsid idArg)
 
     obj = JS_ObjectToInnerObject(cx, obj);
     MOZ_ASSERT(!js::IsWrapper(obj));
-    XPCWrappedNative *wn = IS_WN_WRAPPER(obj) ? XPCWrappedNative::Get(obj)
-                                              : nullptr;
+    XPCWrappedNative *wn = IS_WN_REFLECTOR(obj) ? XPCWrappedNative::Get(obj)
+                                                : nullptr;
     if (!wn) {
         return false;
     }
@@ -222,15 +216,23 @@ AccessCheck::isCrossOriginAccessPermitted(JSContext *cx, JSObject *wrapperArg, j
         return true;
 
     if (act == Wrapper::CALL)
-        return true;
+        return false;
 
     RootedId id(cx, idArg);
     RootedObject wrapper(cx, wrapperArg);
     RootedObject obj(cx, Wrapper::wrappedObject(wrapper));
 
+    // Enumerate-like operations pass JSID_VOID to |enter|, since there isn't
+    // another sane value to pass. For XOWs, we generally want to deny such
+    // operations but fail silently (see CrossOriginAccessiblePropertiesOnly::
+    // deny). We could just fall through here and rely on the fact that none
+    // of the whitelisted properties below will match JSID_VOID, but EIBTI.
+    if (id == JSID_VOID)
+        return false;
+
     const char *name;
-    js::Class *clasp = js::GetObjectClass(obj);
-    NS_ASSERTION(Jsvalify(clasp) != &XrayUtils::HolderClass, "shouldn't have a holder here");
+    const js::Class *clasp = js::GetObjectClass(obj);
+    MOZ_ASSERT(Jsvalify(clasp) != &XrayUtils::HolderClass, "shouldn't have a holder here");
     if (clasp->ext.innerObject)
         name = "Window";
     else
@@ -240,6 +242,9 @@ AccessCheck::isCrossOriginAccessPermitted(JSContext *cx, JSObject *wrapperArg, j
         if (IsPermitted(name, JSID_TO_FLAT_STRING(id), act == Wrapper::SET))
             return true;
     }
+
+    if (act != Wrapper::GET)
+        return false;
 
     // Check for frame IDs. If we're resolving named frames, make sure to only
     // resolve ones that don't shadow native properties. See bug 860494.
@@ -264,10 +269,10 @@ AccessCheck::needsSystemOnlyWrapper(JSObject *obj)
     if (dom::GetSameCompartmentWrapperForDOMBinding(wrapper))
         return wrapper != obj;
 
-    if (!IS_WN_WRAPPER(obj))
+    if (!IS_WN_REFLECTOR(obj))
         return false;
 
-    XPCWrappedNative *wn = static_cast<XPCWrappedNative *>(js::GetObjectPrivate(obj));
+    XPCWrappedNative *wn = XPCWrappedNative::Get(obj);
     return wn->NeedsSOW();
 }
 
@@ -298,7 +303,7 @@ ExposedPropertiesOnly::check(JSContext *cx, JSObject *wrapperArg, jsid idArg, Wr
     // Unfortunately, |cx| can be in either compartment when we call ::check. :-(
     JSAutoCompartment ac(cx, wrappedObject);
 
-    JSBool found = false;
+    bool found = false;
     if (!JS_HasPropertyById(cx, wrappedObject, exposedPropsId, &found))
         return false;
 
@@ -319,7 +324,7 @@ ExposedPropertiesOnly::check(JSContext *cx, JSObject *wrapperArg, jsid idArg, Wr
         return true;
 
     RootedValue exposedProps(cx);
-    if (!JS_LookupPropertyById(cx, wrappedObject, exposedPropsId, exposedProps.address()))
+    if (!JS_LookupPropertyById(cx, wrappedObject, exposedPropsId, &exposedProps))
         return false;
 
     if (exposedProps.isNullOrUndefined())
@@ -340,7 +345,7 @@ ExposedPropertiesOnly::check(JSContext *cx, JSObject *wrapperArg, jsid idArg, Wr
     Access access = NO_ACCESS;
 
     Rooted<JSPropertyDescriptor> desc(cx);
-    if (!JS_GetPropertyDescriptorById(cx, hallpass, id, 0, desc.address())) {
+    if (!JS_GetPropertyDescriptorById(cx, hallpass, id, 0, &desc)) {
         return false; // Error
     }
     if (!desc.object() || !desc.isEnumerable())

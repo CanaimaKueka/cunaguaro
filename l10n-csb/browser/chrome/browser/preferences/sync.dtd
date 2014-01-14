@@ -1,3 +1,7 @@
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+
 <!--
 # Translator(s):
 #
@@ -8,7 +12,7 @@
 <!-- The page shown when not logged in… -->
 <!ENTITY setupButton.label          "Ùstawi &syncBrand.fullName.label;">
 <!ENTITY setupButton.accesskey      "s">
-<!ENTITY weaveDesc.label            "&syncBrand.fullName.label; dôwô przistãp do Twòji historii, załóżkòw, parolów i kôrtów na wszëtczéch Twòjich ùrządzeniach.">
+<!ENTITY weaveDesc.label            "&syncBrand.fullName.label; dôwô przistãp do Twòji historie, załóżkòw, parolów i kôrtów na wszëtczéch Twòjich ùrządzeniach.">
 
 <!-- The page shown when logged in... -->
 
@@ -33,7 +37,7 @@
 <!ENTITY engine.history.label       "Historiô">
 <!ENTITY engine.history.accesskey   "r">
 <!ENTITY engine.passwords.label     "Parole">
-<!ENTITY engine.passwords.accesskey "P">
+<!ENTITY engine.passwords.accesskey "r">
 <!ENTITY engine.prefs.label         "Preferencje">
 <!ENTITY engine.prefs.accesskey     "P">
 <!ENTITY engine.addons.label        "Dodôwczi">

@@ -8,21 +8,19 @@
  * PR assertion checker.
  */
 
-#ifndef jsutil_h___
-#define jsutil_h___
+#ifndef jsutil_h
+#define jsutil_h
 
-#include "mozilla/Attributes.h"
 #include "mozilla/Compiler.h"
 #include "mozilla/GuardObjects.h"
 
-#include "js/Utility.h"
+#include <limits.h>
 
 #ifdef USE_ZLIB
-#include "zlib.h"
+#include <zlib.h>
 #endif
 
-/* Forward declarations. */
-struct JSContext;
+#include "js/Utility.h"
 
 static JS_ALWAYS_INLINE void *
 js_memcpy(void *dst_, const void *src_, size_t len)
@@ -198,35 +196,28 @@ AlignBytes(T bytes, U alignment)
     return bytes + ComputeByteAlignment(bytes, alignment);
 }
 
-JS_ALWAYS_INLINE static size_t
+static JS_ALWAYS_INLINE size_t
 UnsignedPtrDiff(const void *bigger, const void *smaller)
 {
     return size_t(bigger) - size_t(smaller);
 }
 
-/*
- * Ordinarily, a function taking a JSContext* 'cx' parameter reports errors on
- * the context. In some cases, functions optionally report and indicate this by
- * taking a nullable 'maybecx' parameter. In some cases, though, a function
- * always needs a 'cx', but optionally reports. This option is presented by the
- * MaybeReportError.
- */
-enum MaybeReportError { REPORT_ERROR = true, DONT_REPORT_ERROR = false };
-
 /*****************************************************************************/
 
 /* A bit array is an array of bits represented by an array of words (size_t). */
 
+static const size_t BitArrayElementBits = sizeof(size_t) * CHAR_BIT;
+
 static inline unsigned
 NumWordsForBitArrayOfLength(size_t length)
 {
-    return (length + (JS_BITS_PER_WORD - 1)) / JS_BITS_PER_WORD;
+    return (length + (BitArrayElementBits - 1)) / BitArrayElementBits;
 }
 
 static inline unsigned
 BitArrayIndexToWordIndex(size_t length, size_t bitIndex)
 {
-    unsigned wordIndex = bitIndex / JS_BITS_PER_WORD;
+    unsigned wordIndex = bitIndex / BitArrayElementBits;
     JS_ASSERT(wordIndex < length);
     return wordIndex;
 }
@@ -234,7 +225,7 @@ BitArrayIndexToWordIndex(size_t length, size_t bitIndex)
 static inline size_t
 BitArrayIndexToWordMask(size_t i)
 {
-    return size_t(1) << (i % JS_BITS_PER_WORD);
+    return size_t(1) << (i % BitArrayElementBits);
 }
 
 static inline bool
@@ -354,12 +345,13 @@ JS_DumpHistogram(JSBasicStats *bs, FILE *fp);
 
 /* A jsbitmap_t is a long integer that can be used for bitmaps. */
 typedef size_t jsbitmap;
-#define JS_TEST_BIT(_map,_bit)  ((_map)[(_bit)>>JS_BITS_PER_WORD_LOG2] &      \
-                                 ((jsbitmap)1<<((_bit)&(JS_BITS_PER_WORD-1))))
-#define JS_SET_BIT(_map,_bit)   ((_map)[(_bit)>>JS_BITS_PER_WORD_LOG2] |=     \
-                                 ((jsbitmap)1<<((_bit)&(JS_BITS_PER_WORD-1))))
-#define JS_CLEAR_BIT(_map,_bit) ((_map)[(_bit)>>JS_BITS_PER_WORD_LOG2] &=     \
-                                 ~((jsbitmap)1<<((_bit)&(JS_BITS_PER_WORD-1))))
+#define JS_BITMAP_NBITS (sizeof(jsbitmap) * CHAR_BIT)
+#define JS_TEST_BIT(_map,_bit)  ((_map)[(_bit)/JS_BITMAP_NBITS] &             \
+                                 (jsbitmap(1)<<((_bit)%JS_BITMAP_NBITS)))
+#define JS_SET_BIT(_map,_bit)   ((_map)[(_bit)/JS_BITMAP_NBITS] |=            \
+                                 (jsbitmap(1)<<((_bit)%JS_BITMAP_NBITS)))
+#define JS_CLEAR_BIT(_map,_bit) ((_map)[(_bit)/JS_BITMAP_NBITS] &=            \
+                                 ~(jsbitmap(1)<<((_bit)%JS_BITMAP_NBITS)))
 
 /* Wrapper for various macros to stop warnings coming from their expansions. */
 #if defined(__clang__)
@@ -391,4 +383,4 @@ typedef size_t jsbitmap;
     JS_END_MACRO
 #endif
 
-#endif /* jsutil_h___ */
+#endif /* jsutil_h */

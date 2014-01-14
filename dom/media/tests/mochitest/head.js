@@ -113,18 +113,32 @@ function getUserMedia(constraints, onSuccess, onError) {
  *        Test method to execute after initialization
  */
 function runTest(aCallback) {
-  SimpleTest.waitForExplicitFinish();
-  SpecialPowers.pushPrefEnv({'set': [
-    ['media.peerconnection.enabled', true],
-    ['media.navigator.permission.disabled', true]]
-  }, function () {
-    try {
-      aCallback();
-    }
-    catch (err) {
-      unexpectedCallbackAndFinish(new Error)(err);
-    }
-  });
+  if (window.SimpleTest) {
+    // Running as a Mochitest.
+    SimpleTest.waitForExplicitFinish();
+    SpecialPowers.pushPrefEnv({'set': [
+      ['media.peerconnection.enabled', true],
+      ['media.navigator.permission.disabled', true]]
+    }, function () {
+      try {
+        aCallback();
+      }
+      catch (err) {
+        unexpectedCallbackAndFinish()(err);
+      }
+    });
+  } else {
+    // Steeplechase, let it call the callback.
+    window.run_test = function(is_initiator) {
+      var options = {is_local: is_initiator,
+                     is_remote: !is_initiator};
+      aCallback(options);
+    };
+    // Also load the steeplechase test code.
+    var s = document.createElement("script");
+    s.src = "/test.js";
+    document.head.appendChild(s);
+  }
 }
 
 /**
@@ -166,27 +180,72 @@ function checkMediaStreamTracks(constraints, mediaStream) {
 }
 
 /**
+ * Utility methods
+ */
+
+/**
+ * Returns the contents of a blob as text
+ *
+ * @param {Blob} blob
+          The blob to retrieve the contents from
+ * @param {Function} onSuccess
+          Callback with the blobs content as parameter
+ */
+function getBlobContent(blob, onSuccess) {
+  var reader = new FileReader();
+
+  // Listen for 'onloadend' which will always be called after a success or failure
+  reader.onloadend = function (event) {
+    onSuccess(event.target.result);
+  };
+
+  reader.readAsText(blob);
+}
+
+/**
  * Generates a callback function fired only under unexpected circumstances
  * while running the tests. The generated function kills off the test as well
  * gracefully.
  *
- * @param {Error} error
- *        A new Error object, generated at the callback site, from which a
- *        filename and line number can be extracted for diagnostic purposes
+ * @param {String} [message]
+ *        An optional message to show if no object gets passed into the
+ *        generated callback method.
  */
-function unexpectedCallbackAndFinish(error) {
+function unexpectedCallbackAndFinish(message) {
+  var stack = new Error().stack.split("\n");
+  stack.shift(); // Don't include this instantiation frame
+
   /**
    * @param {object} aObj
    *        The object fired back from the callback
    */
-  return function(aObj) {
-    var where = error.fileName + ":" + error.lineNumber;
+  return function (aObj) {
     if (aObj && aObj.name && aObj.message) {
-      ok(false, "Unexpected error callback from " + where + " with name = '" +
-                aObj.name + "', message = '" + aObj.message + "'");
+      ok(false, "Unexpected callback for '" + aObj.name + "' with message = '" +
+         aObj.message + "' at " + JSON.stringify(stack));
     } else {
-      ok(false, "Unexpected error callback from " + where + " with " + aObj);
+      ok(false, "Unexpected callback with message = '" + message +
+         "' at: " + JSON.stringify(stack));
     }
+    SimpleTest.finish();
+  }
+}
+
+/**
+ * Generates a callback function fired only for unexpected events happening.
+ *
+ * @param {String} description
+          Description of the object for which the event has been fired
+ * @param {String} eventName
+          Name of the unexpected event
+ */
+function unexpectedEventAndFinish(message, eventName) {
+  var stack = new Error().stack.split("\n");
+  stack.shift(); // Don't include this instantiation frame
+
+  return function () {
+    ok(false, "Unexpected event '" + eventName + "' fired with message = '" +
+       message + "' at: " + JSON.stringify(stack));
     SimpleTest.finish();
   }
 }

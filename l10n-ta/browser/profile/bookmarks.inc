@@ -16,16 +16,16 @@
 #define bookmarks_heading புத்தகக்குறிகள்
 
 
-#define bookmarks_toolbarfolder Bookmarks Toolbar Folder
+#define bookmarks_toolbarfolder புத்தகக்குறிகளுக்கான கருவிப்பட்டி அடைவு
 
 
-#define bookmarks_toolbarfolder_description Add bookmarks to this folder to see them displayed on the Bookmarks Toolbar
+#define bookmarks_toolbarfolder_description இந்த கோப்புறையில் புத்தகக்குறிகள் சேர்ப்பு அவைகளின் புத்தகக்குறிகளுக்கான கருவிப்பட்டையில் காட்டப்படும்
 
 
 # LOCALIZATION NOTE (getting_started):
 
 
-# link title for http://en-US.www.mozilla.com/en-US/firefox/central/
+# link title for https://www.mozilla.org/en-US/firefox/central/
 
 
 #define getting_started துவங்குதல்
@@ -43,7 +43,7 @@
 # LOCALIZATION NOTE (firefox_help):
 
 
-# link title for http://en-US.www.mozilla.com/en-US/firefox/help/
+# link title for https://www.mozilla.org/en-US/firefox/help/
 
 
 #define firefox_help உதவி மற்றும் பயிற்சிகள்
@@ -52,7 +52,7 @@
 # LOCALIZATION NOTE (firefox_customize):
 
 
-# link title for http://en-US.www.mozilla.com/en-US/firefox/customize/
+# link title for https://www.mozilla.org/en-US/firefox/customize/
 
 
 #define firefox_customize firefox தனிப்பயனாக்கம் 
@@ -61,7 +61,7 @@
 # LOCALIZATION NOTE (firefox_community):
 
 
-# link title for http://en-US.www.mozilla.com/en-US/firefox/community/
+# link title for https://www.mozilla.org/en-US/contribute/
 
 
 #define firefox_community எங்களுடன் ஈடுபட
@@ -70,7 +70,7 @@
 # LOCALIZATION NOTE (firefox_about):
 
 
-# link title for http://en-US.www.mozilla.com/en-US/about/
+# link title for https://www.mozilla.org/en-US/about/
 
 
 #define firefox_about எங்களை பற்றி

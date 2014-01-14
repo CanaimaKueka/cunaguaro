@@ -46,6 +46,8 @@
 <!ENTITY sendLaterCmd.accesskey "з">
 <!ENTITY printSetupCmd.label "Параметры страницы…">
 <!ENTITY printSetupCmd.accesskey "а">
+<!ENTITY printPreviewCmd.label "Предварительный просмотр">
+<!ENTITY printPreviewCmd.accesskey "е">
 <!ENTITY printCmd.label "Печать…">
 <!ENTITY printCmd.key "P">
 <!ENTITY printCmd.accesskey "П">
@@ -81,6 +83,7 @@
 <!ENTITY findCmd.label "Найти и заменить…">
 <!ENTITY findCmd.key "F">
 <!ENTITY findCmd.accesskey "Н">
+<!ENTITY findReplaceCmd.key "H">
 <!ENTITY findAgainCmd.label "Найти ещё раз">
 <!ENTITY findAgainCmd.key "G">
 <!ENTITY findAgainCmd.accesskey "а">

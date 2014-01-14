@@ -6,6 +6,7 @@
 #ifndef nsDOMFile_h__
 #define nsDOMFile_h__
 
+#include "mozilla/Attributes.h"
 #include "nsICharsetDetectionObserver.h"
 #include "nsIFile.h"
 #include "nsIDOMFile.h"
@@ -18,10 +19,13 @@
 #include "nsString.h"
 #include "nsIXMLHttpRequest.h"
 #include "nsAutoPtr.h"
+#include "nsFileStreams.h"
+#include "nsTemporaryFileInputStream.h"
 
 #include "mozilla/GuardObjects.h"
 #include "mozilla/LinkedList.h"
-#include "mozilla/StandardInteger.h"
+#include <stdint.h>
+#include "mozilla/StaticMutex.h"
 #include "mozilla/StaticPtr.h"
 #include "mozilla/dom/DOMError.h"
 #include "mozilla/dom/indexedDB/FileInfo.h"
@@ -145,6 +149,7 @@ protected:
 
   nsString mContentType;
   nsString mName;
+  nsString mPath; // The path relative to a directory chosen by the user
 
   uint64_t mStart;
   uint64_t mLength;
@@ -176,7 +181,7 @@ public:
   : nsDOMFileBase(aContentType, aStart, aLength)
   { }
 
-  NS_DECL_ISUPPORTS
+  NS_DECL_THREADSAFE_ISUPPORTS
 };
 
 class nsDOMFileCC : public nsDOMFileBase
@@ -289,12 +294,14 @@ public:
   }
 
   // Overrides
-  NS_IMETHOD GetSize(uint64_t* aSize);
-  NS_IMETHOD GetType(nsAString& aType);
-  NS_IMETHOD GetLastModifiedDate(JSContext* cx, JS::Value* aLastModifiedDate);
-  NS_IMETHOD GetMozLastModifiedDate(uint64_t* aLastModifiedDate);
-  NS_IMETHOD GetMozFullPathInternal(nsAString& aFullPath);
-  NS_IMETHOD GetInternalStream(nsIInputStream**);
+  NS_IMETHOD GetSize(uint64_t* aSize) MOZ_OVERRIDE;
+  NS_IMETHOD GetType(nsAString& aType) MOZ_OVERRIDE;
+  NS_IMETHOD GetLastModifiedDate(JSContext* cx, JS::Value* aLastModifiedDate) MOZ_OVERRIDE;
+  NS_IMETHOD GetMozLastModifiedDate(uint64_t* aLastModifiedDate) MOZ_OVERRIDE;
+  NS_IMETHOD GetMozFullPathInternal(nsAString& aFullPath) MOZ_OVERRIDE;
+  NS_IMETHOD GetInternalStream(nsIInputStream**) MOZ_OVERRIDE;
+
+  void SetPath(const nsAString& aFullPath);
 
 protected:
   // Create slice
@@ -326,14 +333,14 @@ protected:
 
   virtual already_AddRefed<nsIDOMBlob>
   CreateSlice(uint64_t aStart, uint64_t aLength,
-              const nsAString& aContentType);
+              const nsAString& aContentType) MOZ_OVERRIDE;
 
-  virtual bool IsStoredFile() const
+  virtual bool IsStoredFile() const MOZ_OVERRIDE
   {
     return mStoredFile;
   }
 
-  virtual bool IsWholeFile() const
+  virtual bool IsWholeFile() const MOZ_OVERRIDE
   {
     return mWholeFile;
   }
@@ -343,6 +350,10 @@ protected:
   bool mStoredFile;
 };
 
+/**
+ * This class may be used off the main thread, and in particular, its
+ * constructor and destructor may not run on the same thread.  Be careful!
+ */
 class nsDOMMemoryFile : public nsDOMFile
 {
 public:
@@ -367,7 +378,7 @@ public:
     NS_ASSERTION(mDataOwner && mDataOwner->mData, "must have data");
   }
 
-  NS_IMETHOD GetInternalStream(nsIInputStream**);
+  NS_IMETHOD GetInternalStream(nsIInputStream**) MOZ_OVERRIDE;
 
 protected:
   // Create slice
@@ -381,7 +392,7 @@ protected:
   }
   virtual already_AddRefed<nsIDOMBlob>
   CreateSlice(uint64_t aStart, uint64_t aLength,
-              const nsAString& aContentType);
+              const nsAString& aContentType) MOZ_OVERRIDE;
 
   // These classes need to see DataOwner.
   friend class DataOwnerAdapter;
@@ -394,16 +405,36 @@ protected:
       : mData(aMemoryBuffer)
       , mLength(aLength)
     {
+      mozilla::StaticMutexAutoLock lock(sDataOwnerMutex);
+
+      if (!sDataOwners) {
+        sDataOwners = new mozilla::LinkedList<DataOwner>();
+        EnsureMemoryReporterRegistered();
+      }
+      sDataOwners->insertBack(this);
     }
 
     ~DataOwner() {
+      mozilla::StaticMutexAutoLock lock(sDataOwnerMutex);
+
+      remove();
+      if (sDataOwners->isEmpty()) {
+        // Free the linked list if it's empty.
+        sDataOwners = nullptr;
+      }
+
       moz_free(mData);
     }
 
     static void EnsureMemoryReporterRegistered();
 
-    static bool sMemoryReporterRegistered;
+    // sDataOwners and sMemoryReporterRegistered may only be accessed while
+    // holding sDataOwnerMutex!  You also must hold the mutex while touching
+    // elements of the linked list that DataOwner inherits from.
+    static mozilla::StaticMutex sDataOwnerMutex;
     static mozilla::StaticAutoPtr<mozilla::LinkedList<DataOwner> > sDataOwners;
+    static bool sMemoryReporterRegistered;
+
     void* mData;
     uint64_t mLength;
   };
@@ -488,6 +519,42 @@ public:
   nsAutoString mUrl;
 private:
   MOZ_DECL_USE_GUARD_OBJECT_NOTIFIER
+};
+// This class would take the ownership of aFD and the caller must not close it.
+class nsDOMTemporaryFileBlob : public nsDOMFile
+{
+public:
+  nsDOMTemporaryFileBlob(PRFileDesc* aFD, uint64_t aStartPos, uint64_t aLength,
+                         const nsAString& aContentType)
+    : nsDOMFile(aContentType, aLength),
+      mLength(aLength),
+      mStartPos(aStartPos),
+      mContentType(aContentType)
+  {
+    mFileDescOwner = new nsTemporaryFileInputStream::FileDescOwner(aFD);
+  }
+
+  ~nsDOMTemporaryFileBlob() { }
+  NS_IMETHOD GetInternalStream(nsIInputStream**) MOZ_OVERRIDE;
+
+protected:
+  nsDOMTemporaryFileBlob(const nsDOMTemporaryFileBlob* aOther, uint64_t aStart, uint64_t aLength,
+                         const nsAString& aContentType)
+    : nsDOMFile(aContentType, aLength),
+      mLength(aLength),
+      mStartPos(aStart),
+      mFileDescOwner(aOther->mFileDescOwner),
+      mContentType(aContentType) { }
+
+  virtual already_AddRefed<nsIDOMBlob>
+  CreateSlice(uint64_t aStart, uint64_t aLength,
+              const nsAString& aContentType) MOZ_OVERRIDE;
+
+private:
+  uint64_t mLength;
+  uint64_t mStartPos;
+  nsRefPtr<nsTemporaryFileInputStream::FileDescOwner> mFileDescOwner;
+  nsString mContentType;
 };
 
 #endif

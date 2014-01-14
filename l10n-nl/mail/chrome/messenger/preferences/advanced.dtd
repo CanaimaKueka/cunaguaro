@@ -16,10 +16,10 @@
 <!ENTITY enableGlodaSearch.label       "Globaal zoeken en indexer activeren">
 <!ENTITY enableGlodaSearch.accesskey   "G">
 
-<!ENTITY scrolling.label               "Schuiven">
-<!ENTITY useAutoScroll.label           "Automatisch schuiven gebruiken">
+<!ENTITY scrolling.label               "Scrollen">
+<!ENTITY useAutoScroll.label           "Automatisch scrollen gebruiken">
 <!ENTITY useAutoScroll.accesskey       "m">
-<!ENTITY useSmoothScrolling.label      "Vloeiend schuiven gebruiken">
+<!ENTITY useSmoothScrolling.label      "Vloeiend scrollen gebruiken">
 <!ENTITY useSmoothScrolling.accesskey  "e">
 
 <!ENTITY systemIntegration.label       "Systeemintegratie">
@@ -117,8 +117,6 @@
 
 <!ENTITY viewCertificates.label         "Certificaten bekijken">
 <!ENTITY viewCertificates.accesskey     "C">
-<!ENTITY viewCRLs.label                 "Intrekkingslijsten">
-<!ENTITY viewCRLs.accesskey             "I">
 <!ENTITY validation.label               "Validatie">
 <!ENTITY validation.accesskey           "V">
 <!ENTITY viewSecurityDevices.label      "Beveiligingsapparaten">

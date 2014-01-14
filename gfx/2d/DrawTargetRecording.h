@@ -157,7 +157,7 @@ public:
                           const GlyphBuffer &aBuffer,
                           const Pattern &aPattern,
                           const DrawOptions &aOptions = DrawOptions(),
-                          const GlyphRenderingOptions *aRenderingOptions = NULL);
+                          const GlyphRenderingOptions *aRenderingOptions = nullptr);
 
   /*
    * This takes a source pattern and a mask, and composites the source pattern
@@ -171,6 +171,11 @@ public:
   virtual void Mask(const Pattern &aSource,
                     const Pattern &aMask,
                     const DrawOptions &aOptions = DrawOptions());
+
+  virtual void MaskSurface(const Pattern &aSource,
+                           SourceSurface *aMask,
+                           Point aOffset,
+                           const DrawOptions &aOptions = DrawOptions());
 
   /*
    * Push a clip to the DrawTarget.

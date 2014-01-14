@@ -7,11 +7,15 @@
 #define SURFACE_TYPES_H_
 
 #include "mozilla/TypedEnum.h"
-#include "mozilla/StandardInteger.h"
+#include <stdint.h>
 
 #include <cstring>
 
 namespace mozilla {
+namespace layers {
+class ISurfaceAllocator;
+}
+
 namespace gfx {
 
 typedef uintptr_t SurfaceStreamHandle;
@@ -24,6 +28,10 @@ struct SurfaceCaps
     bool depth, stencil;
     bool antialias;
     bool preserve;
+
+    // The surface allocator that we want to create this
+    // for.  May be null.
+    layers::ISurfaceAllocator* surfaceAllocator;
 
     SurfaceCaps() {
         Clear();
@@ -70,6 +78,7 @@ MOZ_BEGIN_ENUM_CLASS(SharedSurfaceType, uint8_t)
     DXGLInterop,
     DXGLInterop2,
     Gralloc,
+    IOSurface,
 
     Max
 MOZ_END_ENUM_CLASS(SharedSurfaceType)

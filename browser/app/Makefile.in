@@ -2,13 +2,6 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-DEPTH		= @DEPTH@
-topsrcdir	= @top_srcdir@
-srcdir		= @srcdir@
-VPATH		= @srcdir@
-
-include $(DEPTH)/config/autoconf.mk
-
 dist_dest   = $(DIST)/$(MOZ_MACBUNDLE_NAME)
 
 ifdef ENABLE_MARIONETTE
@@ -43,8 +36,6 @@ endif #} LIBXUL_SDK
 
 # Build a binary bootstrapping with XRE_main
 
-CPPSRCS = nsBrowserApp.cpp
-
 LOCAL_INCLUDES += \
   -I$(topsrcdir)/toolkit/xre \
   -I$(topsrcdir)/xpcom/base \
@@ -56,7 +47,6 @@ DEFINES += -DXPCOM_GLUE
 STL_FLAGS=
 
 LIBS += \
-	$(EXTRA_DSO_LIBS) \
 	$(XPCOM_STANDALONE_GLUE_LDOPTS) \
 	$(NULL)
 
@@ -92,7 +82,9 @@ ifeq ($(OS_ARCH),WINNT)
 RCINCLUDE = splash.rc
 # Rebuild firefox.exe if the manifest changes - it's included by splash.rc.
 # (this dependency should really be just for firefox.exe, not other targets)
-EXTRA_DEPS += $(PROGRAM).manifest
+# Note the manifest file exists in the tree, so we use the explicit filename
+# here.
+EXTRA_DEPS += firefox.exe.manifest
 ifndef GNU_CC
 RCFLAGS += -DMOZ_PHOENIX -I$(srcdir)
 else
@@ -135,7 +127,7 @@ GARBAGE += $(addprefix $(FINAL_TARGET)/defaults/pref/, firefox.js)
 
 endif
 
-ifeq ($(MOZ_WIDGET_TOOLKIT),gtk2)
+ifdef MOZ_WIDGET_GTK
 libs::
 	$(INSTALL) $(IFLAGS1) $(DIST)/branding/mozicon128.png $(FINAL_TARGET)/icons
 	$(INSTALL) $(IFLAGS1) $(DIST)/branding/default16.png  $(FINAL_TARGET)/chrome/icons/default
@@ -179,13 +171,10 @@ endif
 
 MAC_BUNDLE_VERSION = $(shell $(PYTHON) $(srcdir)/macversion.py --version=$(MOZ_APP_VERSION) --buildid=$(DEPTH)/config/buildid)
 
-libs-preqs = \
-  $(call mkdir_deps,$(dist_dest)/Contents/MacOS) \
-  $(call mkdir_deps,$(dist_dest)/Contents/Resources/$(AB).lproj) \
-  $(NULL)
-
 .PHONY: repackage
-libs repackage:: $(PROGRAM) $(libs-preqs)
+tools repackage:: $(PROGRAM)
+	$(MKDIR) -p $(dist_dest)/Contents/MacOS
+	$(MKDIR) -p $(dist_dest)/Contents/Resources/$(AB).lproj
 	rsync -a --exclude "*.in" $(srcdir)/macbuild/Contents $(dist_dest) --exclude English.lproj
 	rsync -a --exclude "*.in" $(srcdir)/macbuild/Contents/Resources/English.lproj/ $(dist_dest)/Contents/Resources/$(AB).lproj
 	sed -e "s/%APP_VERSION%/$(MOZ_APP_VERSION)/" -e "s/%MAC_APP_NAME%/$(MAC_APP_NAME)/" -e "s/%MOZ_MACBUNDLE_ID%/$(MOZ_MACBUNDLE_ID)/" -e "s/%MAC_BUNDLE_VERSION%/$(MAC_BUNDLE_VERSION)/" $(srcdir)/macbuild/Contents/Info.plist.in > $(dist_dest)/Contents/Info.plist

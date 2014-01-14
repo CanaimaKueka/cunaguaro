@@ -4,16 +4,16 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef DateTime_h___
-#define DateTime_h___
+#ifndef vm_DateTime_h
+#define vm_DateTime_h
 
 #include "mozilla/FloatingPoint.h"
 #include "mozilla/MathAlgorithms.h"
-#include "mozilla/StandardInteger.h"
 
-#include <math.h>
+#include <stdint.h>
 
-#include "NumericConversions.h"
+#include "js/Value.h"
+#include "vm/NumericConversions.h"
 
 namespace js {
 
@@ -47,7 +47,7 @@ TimeClip(double time)
 {
     /* Steps 1-2. */
     if (!mozilla::IsFinite(time) || mozilla::Abs(time) > MaxTimeMagnitude)
-        return js_NaN;
+        return JS::GenericNaN();
 
     /* Step 3. */
     return ToInteger(time + (+0.0));
@@ -159,4 +159,4 @@ class DateTimeInfo
 
 }  /* namespace js */
 
-#endif /* DateTime_h___ */
+#endif /* vm_DateTime_h */

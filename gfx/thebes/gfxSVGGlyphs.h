@@ -1,55 +1,32 @@
-/* ***** BEGIN LICENSE BLOCK *****
- * Version: MPL 1.1/GPL 2.0/LGPL 2.1
- *
- * The contents of this file are subject to the Mozilla Public License Version
- * 1.1 (the "License"); you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- * http://www.mozilla.org/MPL/
- *
- * Software distributed under the License is distributed on an "AS IS" basis,
- * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
- * for the specific language governing rights and limitations under the
- * License.
- *
- * The Original Code is Mozilla Foundation code.
- *
- * The Initial Developer of the Original Code is the Mozilla Foundation
- * Portions created by the Initial Developer are Copyright (C) 2011
- * the Initial Developer. All Rights Reserved.
- *
- * Contributor(s):
- *   Edwin Flores <eflores@mozilla.com>
- *
- * Alternatively, the contents of this file may be used under the terms of
- * either the GNU General Public License Version 2 or later (the "GPL"), or
- * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
- * in which case the provisions of the GPL or the LGPL are applicable instead
- * of those above. If you wish to allow use of your version of this file only
- * under the terms of either the GPL or the LGPL, and not to allow others to
- * use your version of this file under the terms of the MPL, indicate your
- * decision by deleting the provisions above and replace them with the notice
- * and other provisions required by the GPL or the LGPL. If you do not delete
- * the provisions above, a recipient may use your version of this file under
- * the terms of any one of the MPL, the GPL or the LGPL.
- *
- * ***** END LICENSE BLOCK ***** */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #ifndef GFX_SVG_GLYPHS_WRAPPER_H
 #define GFX_SVG_GLYPHS_WRAPPER_H
 
 #include "gfxFontUtils.h"
 #include "nsString.h"
-#include "nsIDocument.h"
 #include "nsAutoPtr.h"
-#include "nsIContentViewer.h"
-#include "nsIPresShell.h"
 #include "nsClassHashtable.h"
 #include "nsBaseHashtable.h"
 #include "nsHashKeys.h"
 #include "gfxPattern.h"
-#include "gfxFont.h"
 #include "mozilla/gfx/UserData.h"
+#include "nsRefreshDriver.h"
+#include "DrawMode.h"
 
+class nsIDocument;
+class nsIContentViewer;
+class nsIPresShell;
+class gfxSVGGlyphs;
+class gfxTextContextPaint;
+
+namespace mozilla {
+namespace dom {
+class Element;
+}
+}
 
 /**
  * Wraps an SVG document contained in the SVG table of an OpenType font.
@@ -59,40 +36,38 @@
  * Finds and looks up elements contained in the SVG document which have glyph
  *   mappings to be drawn by gfxSVGGlyphs
  */
-class gfxSVGGlyphsDocument
+class gfxSVGGlyphsDocument MOZ_FINAL : public nsAPostRefreshObserver
 {
     typedef mozilla::dom::Element Element;
-    typedef gfxFont::DrawMode DrawMode;
 
 public:
-    gfxSVGGlyphsDocument(uint8_t *aBuffer, uint32_t aBufLen,
-                         const FallibleTArray<uint8_t>& aCmapTable);
+    gfxSVGGlyphsDocument(const uint8_t *aBuffer, uint32_t aBufLen,
+                         gfxSVGGlyphs *aSVGGlyphs);
 
     Element *GetGlyphElement(uint32_t aGlyphId);
 
-    ~gfxSVGGlyphsDocument() {
-        if (mViewer) {
-            mViewer->Destroy();
-        }
-    }
+    ~gfxSVGGlyphsDocument();
+
+    virtual void DidRefresh() MOZ_OVERRIDE;
 
 private:
-    nsresult ParseDocument(uint8_t *aBuffer, uint32_t aBufLen);
+    nsresult ParseDocument(const uint8_t *aBuffer, uint32_t aBufLen);
 
     nsresult SetupPresentation();
 
-    void FindGlyphElements(Element *aElement,
-                           const FallibleTArray<uint8_t> &aCmapTable);
+    void FindGlyphElements(Element *aElement);
 
     void InsertGlyphId(Element *aGlyphElement);
-    void InsertGlyphChar(Element *aGlyphElement,
-                         const FallibleTArray<uint8_t> &aCmapTable);
 
+    // Weak so as not to create a cycle. mOwner owns us so this can't dangle.
+    gfxSVGGlyphs* mOwner;
     nsCOMPtr<nsIDocument> mDocument;
     nsCOMPtr<nsIContentViewer> mViewer;
     nsCOMPtr<nsIPresShell> mPresShell;
 
     nsBaseHashtable<nsUint32HashKey, Element*, Element*> mGlyphIdMap;
+
+    nsAutoCString mSVGGlyphsDocumentURI;
 };
 
 /**
@@ -105,22 +80,26 @@ class gfxSVGGlyphs
 {
 private:
     typedef mozilla::dom::Element Element;
-    typedef gfxFont::DrawMode DrawMode;
 
 public:
-    static const float SVG_UNITS_PER_EM;
-
     /**
      * @param aSVGTable The SVG table from the OpenType font
-     * @param aCmapTable The CMAP table from the OpenType font
+     *
+     * The gfxSVGGlyphs object takes over ownership of the blob references
+     * that are passed in, and will hb_blob_destroy() them when finished;
+     * the caller should -not- destroy these references.
      */
-    gfxSVGGlyphs(FallibleTArray<uint8_t>& aSVGTable,
-                 const FallibleTArray<uint8_t>& aCmapTable);
+    gfxSVGGlyphs(hb_blob_t *aSVGTable, gfxFontEntry *aFontEntry);
 
     /**
-     * Big- to little-endian conversion for headers
+     * Releases our references to the SVG table and cleans up everything else.
      */
-    void UnmangleHeaders();
+    ~gfxSVGGlyphs();
+
+    /**
+     * This is called when the refresh driver has ticked.
+     */
+    void DidRefresh();
 
     /**
      * Find the |gfxSVGGlyphsDocument| containing an SVG glyph for |aGlyphId|.
@@ -136,12 +115,12 @@ public:
 
     /**
      * Render the SVG glyph for |aGlyphId|
-     * @param aDrawMode Whether to fill or stroke or both; see gfxFont::DrawMode
-     * @param aObjectPaint Information on outer text object paints.
-     *   See |gfxTextObjectPaint|.
+     * @param aDrawMode Whether to fill or stroke or both; see DrawMode
+     * @param aContextPaint Information on text context paints.
+     *   See |gfxTextContextPaint|.
      */
     bool RenderGlyph(gfxContext *aContext, uint32_t aGlyphId, DrawMode aDrawMode,
-                     gfxTextObjectPaint *aObjectPaint);
+                     gfxTextContextPaint *aContextPaint);
 
     /**
      * Get the extents for the SVG glyph associated with |aGlyphId|
@@ -157,38 +136,43 @@ private:
     nsClassHashtable<nsUint32HashKey, gfxSVGGlyphsDocument> mGlyphDocs;
     nsBaseHashtable<nsUint32HashKey, Element*, Element*> mGlyphIdMap;
 
-    FallibleTArray<uint8_t> mSVGData;
-    FallibleTArray<uint8_t> mCmapData;
+    hb_blob_t *mSVGData;
+    gfxFontEntry *mFontEntry;
 
-    struct Header {
-        uint16_t mVersion;
-        uint16_t mIndexLength;
+    const struct Header {
+        mozilla::AutoSwap_PRUint16 mVersion;
+        mozilla::AutoSwap_PRUint32 mDocIndexOffset;
+        mozilla::AutoSwap_PRUint32 mColorPalettesOffset;
     } *mHeader;
 
     struct IndexEntry {
-        uint16_t mStartGlyph;
-        uint16_t mEndGlyph;
-        uint32_t mDocOffset;
-        uint32_t mDocLength;
-    } *mIndex;
+        mozilla::AutoSwap_PRUint16 mStartGlyph;
+        mozilla::AutoSwap_PRUint16 mEndGlyph;
+        mozilla::AutoSwap_PRUint32 mDocOffset;
+        mozilla::AutoSwap_PRUint32 mDocLength;
+    };
+
+    const struct DocIndex {
+      mozilla::AutoSwap_PRUint16 mNumEntries;
+      IndexEntry mEntries[1]; /* actual length = mNumEntries */
+    } *mDocIndex;
 
     static int CompareIndexEntries(const void *_a, const void *_b);
 };
 
 /**
  * Used for trickling down paint information through to SVG glyphs.
- * Will be extended in later patch.
  */
-class gfxTextObjectPaint
+class gfxTextContextPaint
 {
 protected:
-    gfxTextObjectPaint() { }
+    gfxTextContextPaint() { }
 
 public:
     static mozilla::gfx::UserDataKey sUserDataKey;
 
     /*
-     * Get outer text object pattern with the specified opacity value.
+     * Get text context pattern with the specified opacity value.
      * This lets us inherit paints and paint opacities (i.e. fill/stroke and
      * fill-opacity/stroke-opacity) separately.
      */
@@ -223,7 +207,7 @@ public:
         return GetStrokePattern(GetStrokeOpacity(), aCTM);
     }
 
-    virtual ~gfxTextObjectPaint() { }
+    virtual ~gfxTextContextPaint() { }
 
 private:
     FallibleTArray<gfxFloat> mDashes;
@@ -232,10 +216,10 @@ private:
 };
 
 /**
- * For passing in patterns where the outer text object has no separate pattern
+ * For passing in patterns where the text context has no separate pattern
  * opacity value.
  */
-class SimpleTextObjectPaint : public gfxTextObjectPaint
+class SimpleTextContextPaint : public gfxTextContextPaint
 {
 private:
     static const gfxRGBA sZero;
@@ -252,7 +236,7 @@ public:
         return deviceToUser * aPattern->GetMatrix();
     }
 
-    SimpleTextObjectPaint(gfxPattern *aFillPattern, gfxPattern *aStrokePattern,
+    SimpleTextContextPaint(gfxPattern *aFillPattern, gfxPattern *aStrokePattern,
                           const gfxMatrix& aCTM) :
         mFillPattern(aFillPattern ? aFillPattern : new gfxPattern(sZero)),
         mStrokePattern(aStrokePattern ? aStrokePattern : new gfxPattern(sZero))

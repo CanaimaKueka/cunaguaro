@@ -11,26 +11,6 @@
   - A good criteria is the language in which you'd find the best
   - documentation on web development on the web. -->
 
-<!-- LOCALIZATION NOTE (debuggerMenu.label): This is the label for the
-  -  application menu item that opens the debugger UI. -->
-<!ENTITY debuggerMenu.label2            "Débogueur">
-
-<!-- LOCALIZATION NOTE (debuggerMenu.accesskey): This is accesskey for the
-  -  Tools menu entry of Debugger that opens the debugger UI. -->
-<!ENTITY debuggerMenu.accesskey         "D">
-
-<!-- LOCALIZATION NOTE (remoteDebuggerMenu.label): This is the label for the
-  -  application menu item that opens the remote debugger UI. -->
-<!ENTITY remoteDebuggerMenu.label       "Débogueur distant">
-
-<!-- LOCALIZATION NOTE (chromeDebuggerMenu.label): This is the label for the
-  -  application menu item that opens the browser debugger UI. -->
-<!ENTITY chromeDebuggerMenu.label       "Débogueur du navigateur">
-
-<!-- LOCALIZATION NOTE (debuggerMenu.commandkey): This is the command key that
-  -  launches the debugger UI. Do not translate this one! -->
-<!ENTITY debuggerMenu.commandkey        "S">
-
 <!-- LOCALIZATION NOTE (debuggerUI.closeButton.tooltip): This is the tooltip for
   -  the button that closes the debugger UI. -->
 <!ENTITY debuggerUI.closeButton.tooltip "Fermer">
@@ -39,14 +19,37 @@
   -  the button that toggles the panes visible or hidden in the debugger UI. -->
 <!ENTITY debuggerUI.panesButton.tooltip "Développer/Réduire les panneaux">
 
+<!-- LOCALIZATION NOTE (debuggerUI.blackBoxMessage.label): This is the message
+  - displayed to users when they select a black boxed source from the sources
+  - list in the debugger. -->
+<!ENTITY debuggerUI.blackBoxMessage.label "Cette source est placée dans une boîte noire : ses points d'arrêt sont désactivés et elle est ignorée par l'exécution pas-à-pas.">
+
+<!-- LOCALIZATION NOTE (debuggerUI.blackBoxMessage.unBlackBoxButton): This is
+  - the text displayed in the button to stop black boxing the currently selected
+  - source. -->
+<!ENTITY debuggerUI.blackBoxMessage.unBlackBoxButton "Retirer cette source de la boîte noire">
+
 <!-- LOCALIZATION NOTE (debuggerUI.optsButton.tooltip): This is the tooltip for
   -  the button that opens up an options context menu for the debugger UI. -->
 <!ENTITY debuggerUI.optsButton.tooltip  "Options du débogueur">
+
+<!-- LOCALIZATION NOTE (debuggerUI.sources.blackBoxTooltip): This is the tooltip
+  -  for the button that black boxes the selected source. -->
+<!ENTITY debuggerUI.sources.blackBoxTooltip "Placer cette source dans une boîte noire ou la retirer">
+
+<!-- LOCALIZATION NOTE (debuggerUI.sources.prettyPrint): This is the tooltip for the
+  -  button that pretty prints the selected source. -->
+<!ENTITY debuggerUI.sources.prettyPrint "Formater et indenter la source">
 
 <!-- LOCALIZATION NOTE (debuggerUI.pauseExceptions): This is the label for the
   -  checkbox that toggles pausing on exceptions. -->
 <!ENTITY debuggerUI.pauseExceptions     "Pause sur les exceptions">
 <!ENTITY debuggerUI.pauseExceptions.key "e">
+
+<!-- LOCALIZATION NOTE (debuggerUI.pauseExceptions): This is the label for the
+  -  checkbox that toggles ignoring caught exceptions. -->
+<!ENTITY debuggerUI.ignoreCaughtExceptions     "Ignorer les exceptions interceptées">
+<!ENTITY debuggerUI.ignoreCaughtExceptions.key "c">
 
 <!-- LOCALIZATION NOTE (debuggerUI.showPanesOnInit): This is the label for the
   -  checkbox that toggles visibility of panes when opening the debugger. -->
@@ -71,9 +74,9 @@
 <!ENTITY debuggerUI.showOriginalSource      "Afficher les sources originales">
 <!ENTITY debuggerUI.showOriginalSource.key  "O">
 
-<!-- LOCALIZATION NOTE (debuggerUI.searchPanelTitle): This is the text that
-  -  appears in the filter panel popup as a description. -->
-<!ENTITY debuggerUI.searchPanelTitle    "Opérateurs">
+<!-- LOCALIZATION NOTE (debuggerUI.searchPanelOperators): This is the text that
+  -  appears in the filter panel popup as a header for the operators part. -->
+<!ENTITY debuggerUI.searchPanelOperators    "Operateurs :">
 
 <!-- LOCALIZATION NOTE (debuggerUI.searchFile): This is the text that appears
   -  in the source editor's context menu for the scripts search operation. -->
@@ -98,8 +101,8 @@
 
 <!-- LOCALIZATION NOTE (debuggerUI.searchLine): This is the text that appears
   -  in the source editor's context menu for the line search operation. -->
-<!ENTITY debuggerUI.searchLine          "Aller à la ligne…">
-<!ENTITY debuggerUI.searchLine.key      "A">
+<!ENTITY debuggerUI.searchGoToLine      "Aller à la ligne…">
+<!ENTITY debuggerUI.searchGoToLine.key  "A">
 
 <!-- LOCALIZATION NOTE (debuggerUI.searchVariable): This is the text that appears
   -  in the source editor's context menu for the variables search operation. -->
@@ -109,7 +112,7 @@
 <!-- LOCALIZATION NOTE (debuggerUI.focusVariables): This is the text that appears
   -  in the source editor's context menu for the variables focus operation. -->
 <!ENTITY debuggerUI.focusVariables      "Sélectionner les variables de l'arbre">
-<!ENTITY debuggerUI.focusVariables.key  "v">
+<!ENTITY debuggerUI.focusVariables.key  "l">
 
 <!-- LOCALIZATION NOTE (debuggerUI.condBreakPanelTitle): This is the text that
   -  appears in the conditional breakpoint panel popup as a description. -->
@@ -125,6 +128,11 @@
   -  breakpoint. -->
 <!ENTITY debuggerUI.seMenuCondBreak     "Ajouter un point d'arrêt conditionnel">
 <!ENTITY debuggerUI.seMenuCondBreak.key "A">
+
+<!-- LOCALIZATION NOTE (debuggerUI.instruments.*): This is the text that
+  -  appears in the debugger's instruments pane tabs. -->
+<!ENTITY debuggerUI.tabs.variables      "Variables">
+<!ENTITY debuggerUI.tabs.events         "Évènements">
 
 <!-- LOCALIZATION NOTE (debuggerUI.seMenuAddWatch): This is the text that
   -  appears in the source editor context menu for adding an expression. -->
@@ -144,7 +152,11 @@
 <!-- LOCALIZATION NOTE (debuggerUI.stepping): These are the keycodes that
   -  control the stepping commands in the debugger (continue, step over,
   -  step in and step out). -->
-<!ENTITY debuggerUI.stepping.resume     "VK_F6">
-<!ENTITY debuggerUI.stepping.stepOver   "VK_F7">
-<!ENTITY debuggerUI.stepping.stepIn     "VK_F8">
-<!ENTITY debuggerUI.stepping.stepOut    "VK_F8">
+<!ENTITY debuggerUI.stepping.resume1    "VK_F8">
+<!ENTITY debuggerUI.stepping.resume2    "VK_SLASH">
+<!ENTITY debuggerUI.stepping.stepOver1  "VK_F10">
+<!ENTITY debuggerUI.stepping.stepOver2  "VK_QUOTE">
+<!ENTITY debuggerUI.stepping.stepIn1    "VK_F11">
+<!ENTITY debuggerUI.stepping.stepIn2    "VK_SEMICOLON">
+<!ENTITY debuggerUI.stepping.stepOut1   "VK_F11">
+<!ENTITY debuggerUI.stepping.stepOut2   "VK_SEMICOLON">

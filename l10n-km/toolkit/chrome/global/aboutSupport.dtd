@@ -9,6 +9,16 @@
 ព្យាយាម​ដោះស្រាយ​បញ្ហា ។ ប្រសិនបើ​អ្នក​កំពុង​រក​ចម្លើយ​សម្រាប់​សំណួរ​ទូទៅ 
 អំពី &brandShortName; ពិនិត្យមើល <a id='supportLink'>តំបន់​បណ្ដាញ​គាំទ្រ</a> របស់​យើង ។">
 
+<!ENTITY aboutSupport.crashes.title "របាយការណ៍​ការ​គាំង">
+<!-- LOCALIZATION NOTE (aboutSupport.crashes.id):
+This is likely the same like id.heading in crashes.dtd. -->
+<!ENTITY aboutSupport.crashes.id "លេខ​សម្គាល់​របាយការណ៍">
+<!-- LOCALIZATION NOTE (aboutSupport.crashes.id):
+This is likely the same like date.heading in crashes.dtd. -->
+<!ENTITY aboutSupport.crashes.sendDate "បាន​ដាក់​ស្នើ">
+<!ENTITY aboutSupport.crashes.allReports "របាយការណ៍​ការ​គាំង​ទាំងអស់">
+<!ENTITY aboutSupport.crashes.noConfig "កម្មវិធី​នេះ​មិន​ទាន់​បាន​កំណត់​រចនាសម្ព័ន្ធ​ដើម្បី​បង្ហាញ​របាយការណ៍​ការ​គាំ​ទេ។">
+
 <!ENTITY aboutSupport.extensionsTitle "ផ្នែក​បន្ថែម">
 <!ENTITY aboutSupport.extensionName "ឈ្មោះ">
 <!ENTITY aboutSupport.extensionEnabled "បាន​អនុញ្ញាត">
@@ -18,6 +28,11 @@
 <!ENTITY aboutSupport.appBasicsTitle "មូលដ្ឋាន​គ្រឹះ​របស់​កម្មវិធី">
 <!ENTITY aboutSupport.appBasicsName "ឈ្មោះ">
 <!ENTITY aboutSupport.appBasicsVersion "កំណែ">
+<!-- LOCALIZATION NOTE (aboutSupport.appBasicsUpdateHistory, aboutSupport.appBasicsShowUpdateHistory):
+"Update" is a noun here, not a verb. -->
+
+<!ENTITY aboutSupport.appBasicsUpdateHistory "ប្រវត្តិ​ធ្វើ​បច្ចុប្បន្នភាព">
+<!ENTITY aboutSupport.appBasicsShowUpdateHistory "បង្ហាញ​ប្រវត្តិ​បច្ចុប្បន្នភាព">
 
 <!ENTITY aboutSupport.appBasicsProfileDir "ថត​​​ទម្រង់">
 <!-- LOCALIZATION NOTE (aboutSupport.appBasicsProfileDirWinMac):
@@ -28,7 +43,6 @@ Windows/Mac use the term "Folder" instead of "Directory" -->
 <!ENTITY aboutSupport.appBasicsEnabledPlugins "កម្មវិធី​ជំនួយ​ដែល​បាន​បើក">
 <!ENTITY aboutSupport.appBasicsBuildConfig "ស្ថាបនា​ការ​កំណត់​រចនាសម្ព័ន្ធ">
 <!ENTITY aboutSupport.appBasicsUserAgent "ភ្នាក់ងារ​អ្នកប្រើ">
-<!ENTITY aboutSupport.appBasicsCrashIDs "របាយការណ៍​ការ​គាំង">
 <!ENTITY aboutSupport.appBasicsMemoryUse "អង្គ​ចងចាំ​ដែល​ប្រើ">
 
 <!ENTITY aboutSupport.showDir.label "បើក​ថត">
@@ -60,7 +74,7 @@ variant of aboutSupport.showDir.label. -->
 <!ENTITY aboutSupport.libraryVersionsTitle "កំណែ​បណ្ណាល័យ">
 
 <!ENTITY aboutSupport.installationHistoryTitle "ប្រវត្តិ​នៃ​ការ​ដំឡើង">
-<!ENTITY aboutSupport.updateHistoryTitle "ប្រវត្តិ​នៃ​ការ​ធ្វើ​បច្ចុប្បន្នភាព">
+<!ENTITY aboutSupport.updateHistoryTitle "ប្រវត្តិ​ធ្វើ​បច្ចុប្បន្នភាព">
 
 <!ENTITY aboutSupport.copyTextToClipboard.label "ចម្លង​អត្ថបទ​ទៅ​ក្ដារ​តម្បៀត​ខ្ទាស់">
 <!ENTITY aboutSupport.copyRawDataToClipboard.label "ចម្លង​ទិន្នន័យ​ដើម​ទៅ​ក្ដារ​តម្បៀត​ខ្ទាស់">

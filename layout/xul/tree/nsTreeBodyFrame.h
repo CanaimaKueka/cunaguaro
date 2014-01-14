@@ -122,9 +122,9 @@ public:
 
   void ManageReflowCallback(const nsRect& aRect, nscoord aHorzWidth);
 
-  virtual nsSize GetMinSize(nsBoxLayoutState& aBoxLayoutState);
+  virtual nsSize GetMinSize(nsBoxLayoutState& aBoxLayoutState) MOZ_OVERRIDE;
   virtual void SetBounds(nsBoxLayoutState& aBoxLayoutState, const nsRect& aRect,
-                         bool aRemoveOverflowArea = false);
+                         bool aRemoveOverflowArea = false) MOZ_OVERRIDE;
 
   // nsIReflowCallback
   virtual bool ReflowFinished() MOZ_OVERRIDE;
@@ -134,7 +134,7 @@ public:
   virtual bool PseudoMatches(nsCSSSelector* aSelector) MOZ_OVERRIDE;
 
   // nsIScrollbarMediator
-  NS_IMETHOD PositionChanged(nsScrollbarFrame* aScrollbar, int32_t aOldIndex, int32_t& aNewIndex);
+  NS_IMETHOD PositionChanged(nsScrollbarFrame* aScrollbar, int32_t aOldIndex, int32_t& aNewIndex) MOZ_OVERRIDE;
   NS_IMETHOD ScrollbarButtonPressed(nsScrollbarFrame* aScrollbar, int32_t aOldIndex, int32_t aNewIndex) MOZ_OVERRIDE;
   NS_IMETHOD VisibilityChanged(bool aVisible) MOZ_OVERRIDE { Invalidate(); return NS_OK; }
 
@@ -148,20 +148,20 @@ public:
   virtual void Init(nsIContent*     aContent,
                     nsIFrame*       aParent,
                     nsIFrame*       aPrevInFlow) MOZ_OVERRIDE;
-  virtual void DestroyFrom(nsIFrame* aDestructRoot);
+  virtual void DestroyFrom(nsIFrame* aDestructRoot) MOZ_OVERRIDE;
 
   NS_IMETHOD GetCursor(const nsPoint& aPoint,
-                       nsIFrame::Cursor& aCursor);
+                       nsIFrame::Cursor& aCursor) MOZ_OVERRIDE;
 
   NS_IMETHOD HandleEvent(nsPresContext* aPresContext,
-                         nsGUIEvent* aEvent,
-                         nsEventStatus* aEventStatus);
+                         mozilla::WidgetGUIEvent* aEvent,
+                         nsEventStatus* aEventStatus) MOZ_OVERRIDE;
 
   virtual void BuildDisplayList(nsDisplayListBuilder*   aBuilder,
                                 const nsRect&           aDirtyRect,
                                 const nsDisplayListSet& aLists) MOZ_OVERRIDE;
 
-  virtual void DidSetStyleContext(nsStyleContext* aOldStyleContext);
+  virtual void DidSetStyleContext(nsStyleContext* aOldStyleContext) MOZ_OVERRIDE;
 
   friend nsIFrame* NS_NewTreeBodyFrame(nsIPresShell* aPresShell);
   friend class nsTreeColumn;
@@ -402,7 +402,9 @@ protected:
   // Also calc if we're in the region in which we want to auto-scroll the tree.
   // A positive value of |aScrollLines| means scroll down, a negative value
   // means scroll up, a zero value means that we aren't in drag scroll region.
-  void ComputeDropPosition(nsGUIEvent* aEvent, int32_t* aRow, int16_t* aOrient,
+  void ComputeDropPosition(mozilla::WidgetGUIEvent* aEvent,
+                           int32_t* aRow,
+                           int16_t* aOrient,
                            int16_t* aScrollLines);
 
   // Mark ourselves dirty if we're a select widget
@@ -462,6 +464,9 @@ protected:
 
   void PostScrollEvent();
   void FireScrollEvent();
+
+  virtual void ScrollbarActivityStarted() const MOZ_OVERRIDE;
+  virtual void ScrollbarActivityStopped() const MOZ_OVERRIDE;
 
   /**
    * Clear the pointer to this frame for all nsTreeImageListeners that were
@@ -543,7 +548,7 @@ protected: // Data Members
 
   nsRevocableEventPtr<ScrollEvent> mScrollEvent;
 
-  nsCOMPtr<ScrollbarActivity> mScrollbarActivity;
+  nsRefPtr<ScrollbarActivity> mScrollbarActivity;
 
   // The cached box object parent.
   nsCOMPtr<nsITreeBoxObject> mTreeBoxObject;
@@ -616,6 +621,10 @@ protected: // Data Members
   bool mHorizontalOverflow;
 
   bool mReflowCallbackPosted;
+
+  // Set while we flush layout to take account of effects of
+  // overflow/underflow event handlers
+  bool mCheckingOverflow;
 
   // Hash table to keep track of which listeners we created and thus
   // have pointers to us.

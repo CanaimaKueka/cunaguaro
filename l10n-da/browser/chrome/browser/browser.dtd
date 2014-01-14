@@ -20,6 +20,11 @@
 <!ENTITY  reloadTab.accesskey                "e">
 <!ENTITY  reloadAllTabs.label                "Genindlæs alle faneblade">
 <!ENTITY  reloadAllTabs.accesskey            "a">
+<!-- LOCALIZATION NOTE (closeTabsToTheEnd.label): This should indicate the
+direction in which tabs are closed, i.e. locales that use RTL mode should say
+left instead of right. -->
+<!ENTITY  closeTabsToTheEnd.label            "Luk faneblade til højre">
+<!ENTITY  closeTabsToTheEnd.accesskey        "h">
 <!ENTITY  closeOtherTabs.label               "Luk øvrige faneblade">
 <!ENTITY  closeOtherTabs.accesskey           "ø">
 
@@ -41,6 +46,11 @@ can reach it easily. -->
 <!ENTITY  bookmarkAllTabs.accesskey          "o">
 <!ENTITY  undoCloseTab.label                 "Fortryd lukning af faneblad">
 <!ENTITY  undoCloseTab.accesskey             "l">
+<!-- LOCALIZATION NOTE (undoCloseTabs.label) : This label is used
+when the previous tab-closing operation closed more than one tab. It
+replaces the undoCloseTab.label and will use the same accesskey as the
+undoCloseTab.label so users will not need to learn new keyboard controls. -->
+<!ENTITY  undoCloseTabs.label                "Fortryd lukning af faneblade">
 <!ENTITY  closeTab.label                     "Luk faneblad">
 <!ENTITY  closeTab.accesskey                 "u">
 
@@ -72,6 +82,7 @@ can reach it easily. -->
 <!ENTITY personalbarCmd.label "Bogmærkelinje">
 <!ENTITY personalbarCmd.accesskey "B">
 <!ENTITY bookmarksToolbarItem.label "Bogmærkelinje-elementer">
+
 <!ENTITY addonBarCmd.label "Tilføjelseslinje">
 <!ENTITY addonBarCmd.accesskey "T">
 
@@ -100,11 +111,10 @@ These should match what Safari and other Apple applications use on OS X Lion. --
 <!ENTITY fullScreenAutohide.accesskey "S">
 <!ENTITY fullScreenExit.label "Afslut fuldskærmstilstand">
 <!ENTITY fullScreenExit.accesskey "A">
-
 <!ENTITY fullscreenAllowButton.label "Tillad">
 <!ENTITY fullscreenExitButton.label "Afvis">
-<!ENTITY fullscreenApproval.value "Tillad fuldskærmstilstand?">
-<!ENTITY fullscreenExitHint.value "Tast ESC for at afslutte visning i fuld skærm.">
+
+<!ENTITY fullscreenExitHint2.value "Tryk ESC for at afslutte visning i fuld skærm.">
 <!ENTITY leaveDOMFullScreen.label "Afslut fuldskærmstilstand">
 <!ENTITY leaveDOMFullScreen.accesskey "u">
 
@@ -195,8 +205,6 @@ These should match what Safari and other Apple applications use on OS X Lion. --
 
 <!ENTITY keywordfield.label           "Tilføj et stikord til denne søgning…">
 <!ENTITY keywordfield.accesskey       "s">
-<!ENTITY search.label                 "Søgning">
-<!ENTITY search.accesskey             "S">
 <!ENTITY downloads.label              "Filhentning">
 <!ENTITY downloads.tooltip            "Vis status for filhentning">
 <!ENTITY downloads.accesskey          "F">
@@ -209,16 +217,20 @@ These should match what Safari and other Apple applications use on OS X Lion. --
 <!ENTITY webDeveloperMenu.label       "Webudvikler">
 <!ENTITY webDeveloperMenu.accesskey   "W">
 
+<!ENTITY devToolsCmd.keycode          "VK_F12">
+<!ENTITY devToolsCmd.keytext          "F12">
+
 <!ENTITY devtoolsConnect.label        "Opret forbindelse…">
 <!ENTITY devtoolsConnect.accesskey    "f">
 
 <!ENTITY errorConsoleCmd.label        "Fejlkonsol">
 <!ENTITY errorConsoleCmd.accesskey    "j">
-<!ENTITY errorConsoleCmd.commandkey   "j">
 
 <!ENTITY remoteWebConsoleCmd.label    "Remote webkonsol">
 
 <!ENTITY browserConsoleCmd.label      "Browserkonsol">
+<!ENTITY browserConsoleCmd.commandkey "B">
+<!ENTITY browserConsoleCmd.accesskey  "B">
 
 <!ENTITY inspectContextMenu.label     "Inspicér element">
 <!ENTITY inspectContextMenu.accesskey "n">
@@ -242,13 +254,22 @@ These should match what Safari and other Apple applications use on OS X Lion. --
 <!ENTITY scratchpad.keycode           "VK_F4">
 <!ENTITY scratchpad.keytext           "F4">
 
+<!-- LOCALIZATION NOTE (chromeDebuggerMenu.label): This is the label for the
+  -  application menu item that opens the browser debugger UI in the Tools menu. -->
+<!ENTITY chromeDebuggerMenu.label       "Browser-debugger">
+<!ENTITY chromeDebuggerMenu.accesskey   "e">
+
 <!ENTITY devToolbarCloseButton.tooltiptext "Luk udviklerlinjen">
 <!ENTITY devToolbarMenu.label              "Udviklerlinje">
 <!ENTITY devToolbarMenu.accesskey          "U">
+<!ENTITY devAppMgrMenu.label               "App-manager">
+<!ENTITY devAppMgrMenu.accesskey           "a">
 <!ENTITY devToolbar.keycode                "VK_F2">
 <!ENTITY devToolbar.keytext                "F2">
 <!ENTITY devToolboxMenuItem.label          "Vis værktøjer">
 <!ENTITY devToolboxMenuItem.accesskey      "V">
+<!ENTITY devToolboxMenuItem.keycode        "I">
+<!ENTITY devToolboxMenuItem.keytext        "I">
 
 <!ENTITY devToolbarToolsButton.tooltip     "Vis udviklerværktøjer">
 <!ENTITY devToolbarOtherToolsButton.label  "Flere værktøjer">
@@ -316,9 +337,8 @@ These should match what Safari and other Apple applications use on OS X Lion. --
 <!ENTITY historyUndoWindowMenu.label "Senest lukkede vinduer">
 <!ENTITY historyRestoreLastSession.label "Genskab forrige session">
 
-<!ENTITY historyHomeCmd.label "Hjem">
 <!ENTITY showAllHistoryCmd2.label "Vis historik">
-<!ENTITY showAllHistoryCmd.commandkey "V">
+<!ENTITY showAllHistoryCmd.commandkey "H">
 
 <!ENTITY appMenuEdit.label "Rediger">
 <!ENTITY appMenuCustomize.label "Tilpas">
@@ -398,6 +418,9 @@ These should match what Safari and other Apple applications use on OS X Lion. --
 <!ENTITY viewImageCmd.accesskey       "V">
 <!ENTITY viewImageInfoCmd.label       "Vis billededoplysninger">
 <!ENTITY viewImageInfoCmd.accesskey   "i">
+<!ENTITY viewImageDescCmd.label       "Vis beskrivelse">
+<!ENTITY viewImageDescCmd.accesskey   "b">
+
 <!ENTITY viewVideoCmd.label           "Vis video">
 <!ENTITY viewVideoCmd.accesskey       "V">
 <!ENTITY viewBGImageCmd.label         "Vis baggrundsbillede">
@@ -612,6 +635,13 @@ just addresses the organization to follow, e.g. "This site is run by " -->
 
 <!ENTITY identity.moreInfoLinkText "Flere informationer…">
 
+<!ENTITY identity.permissions "Tilladelser">
+
+<!-- LOCALIZATION NOTE (identity.help.tooltip) : This string should be the
+     localized title of this SUMO article
+     https://support.mozilla.org/kb/how-do-i-tell-if-my-connection-is-secure -->
+<!ENTITY identity.help.tooltip "Hvordan kan jeg se, om min forbindelse til et websted er sikker?">
+
 <!-- Name for the tabs toolbar as spoken by screen readers.
      The word "toolbar" is appended automatically and should not be contained below! -->
 <!ENTITY tabsToolbar.label "Faneblade">
@@ -655,9 +685,10 @@ just addresses the organization to follow, e.g. "This site is run by " -->
 <!ENTITY social.chatBar.label "Flyt fokus til chats">
 <!ENTITY social.chatBar.accesskey "c">
 
-<!-- labels are set dynamically, see browser.properties -->
-<!ENTITY social.markpage.accesskey "m">
-<!ENTITY social.marklink.accesskey "M">
+<!ENTITY social.markpageMenu.accesskey "s">
+<!ENTITY social.markpageMenu.label "Gem side til…">
+<!ENTITY social.marklinkMenu.accesskey "l">
+<!ENTITY social.marklinkMenu.label "Gem link til…">
 
 <!ENTITY getUserMedia.selectCamera.label "Kamera til deling:">
 <!ENTITY getUserMedia.selectCamera.accesskey "K">
@@ -671,3 +702,24 @@ just addresses the organization to follow, e.g. "This site is run by " -->
 <!ENTITY mixedContentBlocked.moreinfo "De fleste websteder vil stadig fungere korrekt, selvom dette indhold er blokeret.">
 
 <!ENTITY pointerLock.notification.message "Tryk på ESC for at få den vist igen.">
+
+<!ENTITY pluginNotification.showAll.label "Vis alle">
+<!ENTITY pluginNotification.showAll.accesskey "V">
+
+<!-- LOCALIZATION NOTE (pluginActivateNow.label, pluginActivateAlways.label, pluginBlockNow.label): These should be the same as the matching strings in browser.properties -->
+<!ENTITY pluginActivateNow.label "Tillad nu">
+<!ENTITY pluginActivateAlways.label "Tillad og husk">
+<!ENTITY pluginBlockNow.label "Bloker plugin">
+
+<!-- LOCALIZATION NOTE: (pluginNotification.width): This is used to determine the
+     width of the plugin popup notification that can appear if a plugin has been
+     blocked on a page. Should be wide enough to fit the pluginActivateNow.label
+     and pluginActivateAlways.label strings above on a single line. This must be
+     a CSS length value. -->
+<!ENTITY pluginNotification.width "28em">
+
+<!ENTITY tabCrashed.header "Fanebladet gik ned">
+<!ENTITY tabCrashed.message "Se, det her er pinligt. Vi forsøgte at vise denne webside, men den svarer ikke">
+<!ENTITY tabCrashed.checkSendReport "Fortæl &vendorShortName; om dette, så de kan ordne problemet.">
+<!ENTITY tabCrashed.tryAgain "Prøv igen">
+

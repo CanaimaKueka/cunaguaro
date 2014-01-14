@@ -419,9 +419,6 @@ nsXREDirProvider::GetFile(const char* aProperty, bool* aPersistent,
       EnsureProfileFileExists(file);
       ensureFilePermissions = true;
     }
-    else if (!strcmp(aProperty, NS_APP_STORAGE_50_FILE)) {
-      rv = file->AppendNative(NS_LITERAL_CSTRING("storage.sdb"));
-    }
     else if (!strcmp(aProperty, NS_APP_DOWNLOADS_50_FILE)) {
       rv = file->AppendNative(NS_LITERAL_CSTRING("downloads.rdf"));
     }
@@ -885,9 +882,9 @@ GetShellFolderPath(int folder, nsAString& _retval)
 
   nsresult rv = NS_OK;
 
-  LPITEMIDLIST pItemIDList = NULL;
+  LPITEMIDLIST pItemIDList = nullptr;
 
-  if (SUCCEEDED(SHGetSpecialFolderLocation(NULL, folder, &pItemIDList)) &&
+  if (SUCCEEDED(SHGetSpecialFolderLocation(nullptr, folder, &pItemIDList)) &&
       SHGetPathFromIDListW(pItemIDList, buf)) {
     // We're going to use wcslen (wcsnlen not available in msvc7.1) so make
     // sure to null terminate.
@@ -922,8 +919,8 @@ GetRegWindowsAppDataFolder(bool aLocal, nsAString& _retval)
   }
 
   DWORD type, size;
-  res = RegQueryValueExW(key, (aLocal ? L"Local AppData" : L"AppData"), NULL,
-                         &type, NULL, &size);
+  res = RegQueryValueExW(key, (aLocal ? L"Local AppData" : L"AppData"),
+                         nullptr, &type, nullptr, &size);
   // The call to RegQueryValueExW must succeed, the type must be REG_SZ, the
   // buffer size must not equal 0, and the buffer size be a multiple of 2.
   if (res != ERROR_SUCCESS || type != REG_SZ || size == 0 || size % 2 != 0) {
@@ -944,8 +941,8 @@ GetRegWindowsAppDataFolder(bool aLocal, nsAString& _retval)
     return NS_ERROR_NOT_AVAILABLE;
   }
 
-  res = RegQueryValueExW(key, (aLocal ? L"Local AppData" : L"AppData"), NULL,
-                         NULL, (LPBYTE) begin.get(), &size);
+  res = RegQueryValueExW(key, (aLocal ? L"Local AppData" : L"AppData"),
+                         nullptr, nullptr, (LPBYTE) begin.get(), &size);
   ::RegCloseKey(key);
   if (res != ERROR_SUCCESS) {
     _retval.SetLength(0);
@@ -954,6 +951,28 @@ GetRegWindowsAppDataFolder(bool aLocal, nsAString& _retval)
 
   return NS_OK;
 }
+
+static bool
+GetCachedHash(HKEY rootKey, const nsAString &regPath, const nsAString &path,
+              nsAString &cachedHash)
+{
+  HKEY baseKey;
+  if (RegOpenKeyExW(rootKey, regPath.BeginReading(), 0, KEY_READ, &baseKey) !=
+      ERROR_SUCCESS) {
+    return false;
+  }
+
+  wchar_t cachedHashRaw[512];
+  DWORD bufferSize = sizeof(cachedHashRaw);
+  LONG result = RegQueryValueExW(baseKey, path.BeginReading(), 0, nullptr,
+                                 (LPBYTE)cachedHashRaw, &bufferSize);
+  RegCloseKey(baseKey);
+  if (result == ERROR_SUCCESS) {
+    cachedHash.Assign(cachedHashRaw);
+  }
+  return ERROR_SUCCESS == result;
+}
+
 #endif
 
 nsresult
@@ -976,6 +995,46 @@ nsXREDirProvider::GetUpdateRootDir(nsIFile* *aResult)
   NS_ENSURE_SUCCESS(rv, rv);
 
 #ifdef XP_WIN
+
+  nsAutoString pathHash;
+  bool pathHashResult = false;
+
+  nsAutoString appDirPath;
+  if (gAppData->vendor && !getenv("MOZ_UPDATE_NO_HASH_DIR") &&
+      SUCCEEDED(updRoot->GetPath(appDirPath))) {
+
+    // Figure out where we should check for a cached hash value
+    wchar_t regPath[1024] = { L'\0' };
+    swprintf_s(regPath, mozilla::ArrayLength(regPath), L"SOFTWARE\\%S\\%S\\TaskBarIDs",
+               gAppData->vendor, MOZ_APP_NAME);
+
+    // If we pre-computed the hash, grab it from the registry.
+    pathHashResult = GetCachedHash(HKEY_LOCAL_MACHINE,
+                                   nsDependentString(regPath), appDirPath,
+                                   pathHash);
+    if (!pathHashResult) {
+      pathHashResult = GetCachedHash(HKEY_CURRENT_USER,
+                                     nsDependentString(regPath), appDirPath,
+                                     pathHash);
+    }
+  }
+
+  // Get the local app data directory and if a vendor name exists append it.
+  // If only a product name exists, append it.  If neither exist fallback to
+  // old handling.  We don't use the product name on purpose because we want a
+  // shared update directory for different apps run from the same path (like
+  // Metro & Desktop).
+  nsCOMPtr<nsIFile> localDir;
+  if (pathHashResult && (gAppData->vendor || gAppData->name) &&
+      NS_SUCCEEDED(GetUserDataDirectoryHome(getter_AddRefs(localDir), true)) &&
+      NS_SUCCEEDED(localDir->AppendNative(nsDependentCString(gAppData->vendor ?
+                                          gAppData->vendor : gAppData->name))) &&
+      NS_SUCCEEDED(localDir->Append(NS_LITERAL_STRING("updates"))) &&
+      NS_SUCCEEDED(localDir->Append(pathHash))) {
+    NS_ADDREF(*aResult = localDir);
+    return NS_OK;
+  }
+
   nsAutoString appPath;
   rv = updRoot->GetPath(appPath);
   NS_ENSURE_SUCCESS(rv, rv);

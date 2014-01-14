@@ -28,9 +28,11 @@
 #include "nsQuickSort.h"
 #include "nsEnumeratorUtils.h"
 #include "nsThreadUtils.h"
+#include "mozilla/MemoryReporting.h"
 #include "mozilla/Services.h"
 
 #include "ManifestParser.h"
+#include "nsISimpleEnumerator.h"
 
 using namespace mozilla;
 class nsIComponentLoaderManager;
@@ -209,7 +211,6 @@ CategoryNode::Create(PLArenaPool* aArena)
   if (!node)
     return nullptr;
 
-  node->mTable.Init();
   return node;
 }
 
@@ -251,7 +252,7 @@ CategoryNode::AddLeaf(const char* aEntryName,
                       PLArenaPool* aArena)
 {
   if (_retval)
-    *_retval = NULL;
+    *_retval = nullptr;
 
   MutexAutoLock lock(mLock);
   CategoryLeaf* leaf = 
@@ -312,7 +313,7 @@ CategoryNode::Enumerate(nsISimpleEnumerator **_retval)
 }
 
 size_t
-CategoryNode::SizeOfExcludingThis(nsMallocSizeOfFun aMallocSizeOf)
+CategoryNode::SizeOfExcludingThis(MallocSizeOf aMallocSizeOf)
 {
     // We don't measure the strings pointed to by the entries because the
     // pointers are non-owning.
@@ -401,14 +402,20 @@ CategoryEnumerator::enumfunc_createenumerator(const char* aStr, CategoryNode* aN
 
 NS_IMPL_QUERY_INTERFACE1(nsCategoryManager, nsICategoryManager)
 
-NS_MEMORY_REPORTER_MALLOC_SIZEOF_FUN(CategoryManagerMallocSizeOf)
-
-NS_MEMORY_REPORTER_IMPLEMENT(CategoryManager,
-    "explicit/xpcom/category-manager",
-    KIND_HEAP,
-    nsIMemoryReporter::UNITS_BYTES,
-    nsCategoryManager::GetCategoryManagerSize,
-    "Memory used for the XPCOM category manager.")
+class XPCOMCategoryManagerReporter MOZ_FINAL : public MemoryUniReporter
+{
+public:
+    XPCOMCategoryManagerReporter()
+      : MemoryUniReporter("explicit/xpcom/category-manager",
+                           KIND_HEAP, UNITS_BYTES,
+                           "Memory used for the XPCOM category manager.")
+    {}
+private:
+    int64_t Amount() MOZ_OVERRIDE
+    {
+        return nsCategoryManager::SizeOfIncludingThis(MallocSizeOf);
+    }
+};
 
 NS_IMETHODIMP_(nsrefcnt)
 nsCategoryManager::AddRef()
@@ -455,21 +462,18 @@ nsCategoryManager::nsCategoryManager()
 {
   PL_INIT_ARENA_POOL(&mArena, "CategoryManagerArena",
                      NS_CATEGORYMANAGER_ARENA_SIZE);
-
-  mTable.Init();
 }
 
 void
 nsCategoryManager::InitMemoryReporter()
 {
-  mReporter = new NS_MEMORY_REPORTER_NAME(CategoryManager);
+  mReporter = new XPCOMCategoryManagerReporter();
   NS_RegisterMemoryReporter(mReporter);
 }
 
 nsCategoryManager::~nsCategoryManager()
 {
-  (void)::NS_UnregisterMemoryReporter(mReporter);
-  mReporter = nullptr;
+  NS_UnregisterMemoryReporter(mReporter);
 
   // the hashtable contains entries that must be deleted before the arena is
   // destroyed, or else you will have PRLocks undestroyed and other Really
@@ -489,17 +493,18 @@ nsCategoryManager::get_category(const char* aName) {
 }
 
 /* static */ int64_t
-nsCategoryManager::GetCategoryManagerSize()
+nsCategoryManager::SizeOfIncludingThis(MallocSizeOf aMallocSizeOf)
 {
-  MOZ_ASSERT(nsCategoryManager::gCategoryManager);
-  return nsCategoryManager::gCategoryManager->SizeOfIncludingThis(
-           CategoryManagerMallocSizeOf);
+  return nsCategoryManager::gCategoryManager
+       ? nsCategoryManager::gCategoryManager->SizeOfIncludingThisHelper(
+          aMallocSizeOf)
+       : 0;
 }
 
 static size_t
 SizeOfCategoryManagerTableEntryExcludingThis(nsDepCharHashKey::KeyType aKey,
                                              const nsAutoPtr<CategoryNode> &aData,
-                                             nsMallocSizeOfFun aMallocSizeOf,
+                                             MallocSizeOf aMallocSizeOf,
                                              void* aUserArg)
 {
     // We don't measure the string pointed to by aKey because it's a non-owning
@@ -508,7 +513,7 @@ SizeOfCategoryManagerTableEntryExcludingThis(nsDepCharHashKey::KeyType aKey,
 }
 
 size_t
-nsCategoryManager::SizeOfIncludingThis(nsMallocSizeOfFun aMallocSizeOf)
+nsCategoryManager::SizeOfIncludingThisHelper(MallocSizeOf aMallocSizeOf)
 {
   size_t n = aMallocSizeOf(this);
 
@@ -632,7 +637,7 @@ nsCategoryManager::AddCategoryEntry(const char *aCategoryName,
                                     char** aOldValue)
 {
   if (aOldValue)
-    *aOldValue = NULL;
+    *aOldValue = nullptr;
 
   // Before we can insert a new entry, we'll need to
   //  find the |CategoryNode| to put it in...

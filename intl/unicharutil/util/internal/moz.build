@@ -6,3 +6,12 @@
 
 MODULE = 'unicharutil'
 
+include('../objs.mozbuild')
+
+SOURCES += intl_unicharutil_util_cppsrcs
+
+LIBRARY_NAME = 'unicharutil_s'
+
+EXPORT_LIBRARY = True
+
+FORCE_STATIC_LIB = True

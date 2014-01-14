@@ -50,6 +50,8 @@
 <!ENTITY sendLaterCmd.accesskey "k">
 <!ENTITY printSetupCmd.label "Nastavitve strani …">
 <!ENTITY printSetupCmd.accesskey "N">
+<!ENTITY printPreviewCmd.label "Predogled tiskanja">
+<!ENTITY printPreviewCmd.accesskey "r">
 <!ENTITY printCmd.label "Natisni …">
 <!ENTITY printCmd.key "p">
 <!ENTITY printCmd.accesskey "T">
@@ -87,6 +89,7 @@
 <!ENTITY findCmd.label "Išči in zamenjaj …">
 <!ENTITY findCmd.key "f">
 <!ENTITY findCmd.accesskey "I">
+<!ENTITY findReplaceCmd.key "H">
 <!ENTITY findAgainCmd.label "Ponovno poišči">
 <!ENTITY findAgainCmd.key "G">
 <!ENTITY findAgainCmd.accesskey "p">

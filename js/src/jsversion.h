@@ -4,21 +4,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef jsversion_h___
-#define jsversion_h___
-
-/*
- * Deprecated JS_VERSION handler.
- */
-#ifdef JS_VERSION
-# if JS_VERSION == 185
-#  warning "JS_VERSION defined but unsupported (legacy)"
-# elif JS_VERSION < 185
-#  error "Unsupported JS_VERSION"
-# else
-#  error "Unknown JS_VERSION"
-# endif
-#endif
+#ifndef jsversion_h
+#define jsversion_h
 
 /*
  * JS Capability Macros.
@@ -52,16 +39,16 @@
  * Feature for Object.prototype.__{define,lookup}{G,S}etter__ legacy support;
  * support likely to be made opt-in at some future time.
  */
-#define OLD_GETTER_SETTER_METHODS       1
+#define JS_OLD_GETTER_SETTER_METHODS    1
 
 /* A kill-switch for bug 586842.  Embedders shouldn't touch this! */
-#define USE_NEW_OBJECT_REPRESENTATION 0
+#define JS_USE_NEW_OBJECT_REPRESENTATION 0
 
-#if USE_NEW_OBJECT_REPRESENTATION
-#  define NEW_OBJECT_REPRESENTATION_ONLY() ((void)0)
+#if JS_USE_NEW_OBJECT_REPRESENTATION
+# define JS_NEW_OBJECT_REPRESENTATION_ONLY() ((void)0)
 #else
-#  define NEW_OBJECT_REPRESENTATION_ONLY() \
-     MOZ_NOT_REACHED("don't call this!  to be used in the new object representation")
+# define JS_NEW_OBJECT_REPRESENTATION_ONLY() \
+     MOZ_ASSUME_UNREACHABLE("don't call this!  to be used in the new object representation")
 #endif
 
-#endif /* jsversion_h___ */
+#endif /* jsversion_h */

@@ -12,13 +12,13 @@
 
 #include <cstdio>
 
-#include "gtest/gtest.h"
+#include "testing/gtest/include/gtest/gtest.h"
 
 using ::webrtc::DataLog;
 
 const char* kDataLogFileName = "table_1.txt";
 
-void PerformLogging(std::string table_name) {
+void PerformLogging(const std::string& table_name) {
   // Simulate normal DataTable logging behavior using this table name.
   ASSERT_EQ(0, DataLog::AddTable(table_name));
   ASSERT_EQ(0, DataLog::AddColumn(table_name, "test", 1));

@@ -11,8 +11,9 @@
 #include "nsPoint.h"
 #include "nsRegion.h"
 #include "nsCRT.h"
-#include "nsEvent.h"
+#include "nsWidgetInitData.h" // for nsWindowType
 #include "nsIWidgetListener.h"
+#include "mozilla/EventForwards.h"
 
 class nsViewManager;
 class nsIWidget;
@@ -34,11 +35,6 @@ enum nsViewVisibility {
 
 // Indicates that the view is a floating view.
 #define NS_VIEW_FLAG_FLOATING             0x0008
-
-// If set it indicates that this view should be
-// displayed above z-index:auto views if this view 
-// is z-index:auto also
-#define NS_VIEW_FLAG_TOPMOST              0x0010
 
 //----------------------------------------------------------------------
 
@@ -290,17 +286,8 @@ public:
   bool HasWidget() const { return mWindow != nullptr; }
   
   void SetForcedRepaint(bool aForceRepaint) { 
-    if (!mInAlternatePaint) { 
-      mForcedRepaint = aForceRepaint; 
-    }
+    mForcedRepaint = aForceRepaint; 
   }
-
-  /**
-   * Returns true if the view is currently painting
-   * into an alternate destination, such as the titlebar
-   * area on OSX.
-   */
-  bool InAlternatePaint() { return mInAlternatePaint; }
 
   /**
    * Make aWidget direct its events to this view.
@@ -353,7 +340,7 @@ public:
    * relative to the view's siblings.
    * @param zindex new z depth
    */
-  void SetZIndex(bool aAuto, int32_t aZIndex, bool aTopMost);
+  void SetZIndex(bool aAuto, int32_t aZIndex);
   bool GetZIndexIsAuto() const { return (mVFlags & NS_VIEW_FLAG_AUTO_ZINDEX) != 0; }
   int32_t GetZIndex() const { return mZIndex; }
 
@@ -381,10 +368,11 @@ public:
   virtual bool WindowResized(nsIWidget* aWidget, int32_t aWidth, int32_t aHeight) MOZ_OVERRIDE;
   virtual bool RequestWindowClose(nsIWidget* aWidget) MOZ_OVERRIDE;
   virtual void WillPaintWindow(nsIWidget* aWidget) MOZ_OVERRIDE;
-  virtual bool PaintWindow(nsIWidget* aWidget, nsIntRegion aRegion, uint32_t aFlags) MOZ_OVERRIDE;
+  virtual bool PaintWindow(nsIWidget* aWidget, nsIntRegion aRegion) MOZ_OVERRIDE;
   virtual void DidPaintWindow() MOZ_OVERRIDE;
   virtual void RequestRepaint() MOZ_OVERRIDE;
-  virtual nsEventStatus HandleEvent(nsGUIEvent* aEvent, bool aUseAttachedEvents) MOZ_OVERRIDE;
+  virtual nsEventStatus HandleEvent(mozilla::WidgetGUIEvent* aEvent,
+                                    bool aUseAttachedEvents) MOZ_OVERRIDE;
 
   virtual ~nsView();
 
@@ -444,9 +432,6 @@ private:
   void InsertChild(nsView *aChild, nsView *aSibling);
   void RemoveChild(nsView *aChild);
 
-  void SetTopMost(bool aTopMost) { aTopMost ? mVFlags |= NS_VIEW_FLAG_TOPMOST : mVFlags &= ~NS_VIEW_FLAG_TOPMOST; }
-  bool IsTopMost() { return((mVFlags & NS_VIEW_FLAG_TOPMOST) != 0); }
-
   void ResetWidgetBounds(bool aRecurse, bool aForceSync);
   void AssertNoWindow();
 
@@ -476,7 +461,6 @@ private:
   uint32_t          mVFlags;
   bool              mWidgetIsTopLevel;
   bool              mForcedRepaint;
-  bool              mInAlternatePaint;
 };
 
 #endif

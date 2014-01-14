@@ -5,3 +5,18 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 MODULE = 'xpcom_glue_gtest'
+
+SOURCES += [
+    'TestFileUtils.cpp',
+]
+
+LOCAL_INCLUDES = [
+    '../..',
+]
+
+LIBRARY_NAME = 'xpcom_glue_gtest'
+
+LIBXUL_LIBRARY = True
+
+EXPORT_LIBRARY = True
+

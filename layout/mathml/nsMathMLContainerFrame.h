@@ -7,15 +7,11 @@
 #define nsMathMLContainerFrame_h___
 
 #include "mozilla/Attributes.h"
-#include "nsCOMPtr.h"
 #include "nsContainerFrame.h"
 #include "nsBlockFrame.h"
 #include "nsInlineFrame.h"
-#include "nsMathMLAtoms.h"
 #include "nsMathMLOperators.h"
-#include "nsMathMLChar.h"
 #include "nsMathMLFrame.h"
-#include "nsMathMLParts.h"
 #include "mozilla/Likely.h"
 
 /*
@@ -47,13 +43,13 @@ public:
   Stretch(nsRenderingContext& aRenderingContext,
           nsStretchDirection   aStretchDirection,
           nsBoundingMetrics&   aContainerSize,
-          nsHTMLReflowMetrics& aDesiredStretchSize);
+          nsHTMLReflowMetrics& aDesiredStretchSize) MOZ_OVERRIDE;
 
   NS_IMETHOD
   UpdatePresentationDataFromChildAt(int32_t         aFirstIndex,
                                     int32_t         aLastIndex,
                                     uint32_t        aFlagsValues,
-                                    uint32_t        aFlagsToUpdate)
+                                    uint32_t        aFlagsToUpdate) MOZ_OVERRIDE
   {
     PropagatePresentationDataFromChildAt(this, aFirstIndex, aLastIndex,
       aFlagsValues, aFlagsToUpdate);
@@ -75,7 +71,7 @@ public:
   // --------------------------------------------------------------------------
   // Overloaded nsContainerFrame methods -- see documentation in nsIFrame.h
 
-  virtual bool IsFrameOfType(uint32_t aFlags) const
+  virtual bool IsFrameOfType(uint32_t aFlags) const MOZ_OVERRIDE
   {
     return !(aFlags & nsIFrame::eLineParticipant) &&
       nsContainerFrame::IsFrameOfType(aFlags &
@@ -84,7 +80,7 @@ public:
 
   NS_IMETHOD
   AppendFrames(ChildListID     aListID,
-               nsFrameList&    aFrameList);
+               nsFrameList&    aFrameList) MOZ_OVERRIDE;
 
   NS_IMETHOD
   InsertFrames(ChildListID     aListID,
@@ -99,8 +95,8 @@ public:
    * Both GetMinWidth and GetPrefWidth return whatever
    * GetIntrinsicWidth returns.
    */
-  virtual nscoord GetMinWidth(nsRenderingContext *aRenderingContext);
-  virtual nscoord GetPrefWidth(nsRenderingContext *aRenderingContext);
+  virtual nscoord GetMinWidth(nsRenderingContext *aRenderingContext) MOZ_OVERRIDE;
+  virtual nscoord GetPrefWidth(nsRenderingContext *aRenderingContext) MOZ_OVERRIDE;
 
   /**
    * Return the intrinsic width of the frame's content area.
@@ -111,10 +107,10 @@ public:
   Reflow(nsPresContext*          aPresContext,
          nsHTMLReflowMetrics&     aDesiredSize,
          const nsHTMLReflowState& aReflowState,
-         nsReflowStatus&          aStatus);
+         nsReflowStatus&          aStatus) MOZ_OVERRIDE;
 
   NS_IMETHOD
-  WillReflow(nsPresContext* aPresContext)
+  WillReflow(nsPresContext* aPresContext) MOZ_OVERRIDE
   {
     mPresentationData.flags &= ~NS_MATHML_ERROR;
     return nsContainerFrame::WillReflow(aPresContext);
@@ -123,7 +119,7 @@ public:
   NS_IMETHOD
   DidReflow(nsPresContext*           aPresContext,
             const nsHTMLReflowState*  aReflowState,
-            nsDidReflowStatus         aStatus)
+            nsDidReflowStatus         aStatus) MOZ_OVERRIDE
 
   {
     mPresentationData.flags &= ~NS_MATHML_STRETCH_DONE;
@@ -134,7 +130,7 @@ public:
                                 const nsRect&           aDirtyRect,
                                 const nsDisplayListSet& aLists) MOZ_OVERRIDE;
 
-  virtual bool UpdateOverflow();
+  virtual bool UpdateOverflow() MOZ_OVERRIDE;
 
   // Notification when an attribute is changed. The MathML module uses the
   // following paradigm:
@@ -156,13 +152,13 @@ public:
   NS_IMETHOD
   AttributeChanged(int32_t         aNameSpaceID,
                    nsIAtom*        aAttribute,
-                   int32_t         aModType);
+                   int32_t         aModType) MOZ_OVERRIDE;
 
   // helper function to apply mirroring to a horizontal coordinate, if needed.
   nscoord
   MirrorIfRTL(nscoord aParentWidth, nscoord aChildWidth, nscoord aChildLeading)
   {
-    return (NS_MATHML_IS_RTL(mPresentationData.flags) ?
+    return (StyleVisibility()->mDirection ?
             aParentWidth - aChildWidth - aChildLeading : aChildLeading);
   }
 
@@ -257,6 +253,14 @@ public:
    */
   nsresult
   ReportChildCountError();
+
+  /*
+   * Helper to call ReportErrorToConsole when certain tags have
+   * invalid child tags
+   * @param aChildTag The tag which is forbidden in this context
+   */
+  nsresult
+  ReportInvalidChildError(nsIAtom* aChildTag);
 
   /*
    * Helper to call ReportToConsole when an error occurs.
@@ -405,7 +409,7 @@ public:
   // cannot use mFrames{.FirstChild()|.etc} since the block code doesn't set mFrames
   NS_IMETHOD
   SetInitialChildList(ChildListID     aListID,
-                      nsFrameList&    aChildList)
+                      nsFrameList&    aChildList) MOZ_OVERRIDE
   {
     NS_ASSERTION(aListID == kPrincipalList, "unexpected frame list");
     nsresult rv = nsBlockFrame::SetInitialChildList(aListID, aChildList);
@@ -416,7 +420,7 @@ public:
 
   NS_IMETHOD
   AppendFrames(ChildListID     aListID,
-               nsFrameList&    aFrameList)
+               nsFrameList&    aFrameList) MOZ_OVERRIDE
   {
     NS_ASSERTION(aListID == kPrincipalList || aListID == kNoReflowPrincipalList,
                  "unexpected frame list");
@@ -475,7 +479,7 @@ public:
 
   NS_IMETHOD
   SetInitialChildList(ChildListID     aListID,
-                      nsFrameList&    aChildList)
+                      nsFrameList&    aChildList) MOZ_OVERRIDE
   {
     NS_ASSERTION(aListID == kPrincipalList, "unexpected frame list");
     nsresult rv = nsInlineFrame::SetInitialChildList(aListID, aChildList);
@@ -521,7 +525,7 @@ public:
     return rv;
   }
 
-  virtual bool IsFrameOfType(uint32_t aFlags) const {
+  virtual bool IsFrameOfType(uint32_t aFlags) const MOZ_OVERRIDE {
       return nsInlineFrame::IsFrameOfType(aFlags &
                 ~(nsIFrame::eMathML | nsIFrame::eExcludesIgnorableWhitespace));
   }

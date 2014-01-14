@@ -4,68 +4,41 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef jspubtd_h___
-#define jspubtd_h___
+#ifndef jspubtd_h
+#define jspubtd_h
 
 /*
  * JS public API typedefs.
  */
 
+#include "mozilla/NullPtr.h"
+#include "mozilla/PodOperations.h"
+
 #include "jsprototypes.h"
 #include "jstypes.h"
 
+#include "js/TypeDecls.h"
+
+#if defined(JSGC_ROOT_ANALYSIS) || defined(JSGC_USE_EXACT_ROOTING) || defined(DEBUG)
+# define JSGC_TRACK_EXACT_ROOTS
+#endif
+
 namespace JS {
 
-/*
- * Allow headers to reference JS::Value without #including the whole jsapi.h.
- * Unfortunately, typedefs (hence jsval) cannot be declared.
- */
-class Value;
+class AutoIdVector;
+class CallArgs;
 
 template <typename T>
 class Rooted;
 
+class JS_PUBLIC_API(AutoGCRooter);
+
+class JS_PUBLIC_API(CompileOptions);
+class JS_PUBLIC_API(CompartmentOptions);
+
 struct Zone;
 
 } /* namespace JS */
-
-/*
- * In release builds, jsid is defined to be an integral type. This
- * prevents many bugs from being caught at compile time. E.g.:
- *
- *  jsid id = ...
- *  if (id == JS_TRUE)  // error
- *    ...
- *
- *  size_t n = id;      // error
- *
- * To catch more errors, jsid is given a struct type in C++ debug builds.
- * Struct assignment and (in C++) operator== allow correct code to be mostly
- * oblivious to the change. This feature can be explicitly disabled in debug
- * builds by defining JS_NO_JSVAL_JSID_STRUCT_TYPES.
- */
-# if defined(DEBUG) && !defined(JS_NO_JSVAL_JSID_STRUCT_TYPES)
-#  define JS_USE_JSID_STRUCT_TYPES
-# endif
-
-# ifdef JS_USE_JSID_STRUCT_TYPES
-struct jsid
-{
-    size_t asBits;
-    bool operator==(jsid rhs) const { return asBits == rhs.asBits; }
-    bool operator!=(jsid rhs) const { return asBits != rhs.asBits; }
-};
-#  define JSID_BITS(id) (id.asBits)
-# else  /* defined(JS_USE_JSID_STRUCT_TYPES) */
-typedef ptrdiff_t jsid;
-#  define JSID_BITS(id) (id)
-# endif  /* defined(JS_USE_JSID_STRUCT_TYPES) */
-
-#ifdef WIN32
-typedef wchar_t   jschar;
-#else
-typedef uint16_t  jschar;
-#endif
 
 /*
  * Run-time version enumeration.  For compile-time version checking, please use
@@ -99,7 +72,7 @@ typedef enum JSType {
 typedef enum JSProtoKey {
 #define PROTOKEY_AND_INITIALIZER(name,code,init) JSProto_##name = code,
     JS_FOR_EACH_PROTOTYPE(PROTOKEY_AND_INITIALIZER)
-#undef JS_PROTO
+#undef PROTOKEY_AND_INITIALIZER
     JSProto_LIMIT
 } JSProtoKey;
 
@@ -150,9 +123,10 @@ typedef enum {
     JSTRACE_SCRIPT,
 
     /*
-     * Trace kinds internal to the engine. The embedding can only them if it
-     * implements JSTraceCallback.
+     * Trace kinds internal to the engine. The embedding can only see them if
+     * it implements JSTraceCallback.
      */
+    JSTRACE_LAZY_SCRIPT,
     JSTRACE_IONCODE,
     JSTRACE_SHAPE,
     JSTRACE_BASE_SHAPE,
@@ -164,7 +138,6 @@ typedef enum {
 typedef struct JSClass                      JSClass;
 typedef struct JSCompartment                JSCompartment;
 typedef struct JSConstDoubleSpec            JSConstDoubleSpec;
-typedef struct JSContext                    JSContext;
 typedef struct JSCrossCompartmentCall       JSCrossCompartmentCall;
 typedef struct JSErrorReport                JSErrorReport;
 typedef struct JSExceptionState             JSExceptionState;
@@ -184,20 +157,32 @@ typedef struct JSStructuredCloneWriter      JSStructuredCloneWriter;
 typedef struct JSTracer                     JSTracer;
 
 class                                       JSFlatString;
-class                                       JSFunction;
-class                                       JSObject;
-class                                       JSScript;
 class                                       JSStableString;  // long story
-class                                       JSString;
 
 #ifdef JS_THREADSAFE
-typedef struct PRCallOnceType    JSCallOnceType;
+typedef struct PRCallOnceType   JSCallOnceType;
 #else
-typedef JSBool                   JSCallOnceType;
+typedef bool                    JSCallOnceType;
 #endif
-typedef JSBool                 (*JSInitCallback)(void);
+typedef bool                    (*JSInitCallback)(void);
+
+/*
+ * Generic trace operation that calls JS_CallTracer on each traceable thing
+ * stored in data.
+ */
+typedef void
+(* JSTraceDataOp)(JSTracer *trc, void *data);
+
+namespace js {
+namespace gc {
+class StoreBuffer;
+}
+}
 
 namespace JS {
+
+typedef void (*OffThreadCompileCallback)(void *token, void *callbackData);
+
 namespace shadow {
 
 struct Runtime
@@ -209,21 +194,54 @@ struct Runtime
     /* Allow inlining of Nursery::isInside. */
     uintptr_t gcNurseryStart_;
     uintptr_t gcNurseryEnd_;
+
+  private:
+    js::gc::StoreBuffer *gcStoreBufferPtr_;
 #endif
 
-    Runtime()
+  public:
+    Runtime(
+#ifdef JSGC_GENERATIONAL
+        js::gc::StoreBuffer *storeBuffer
+#endif
+    )
       : needsBarrier_(false)
 #ifdef JSGC_GENERATIONAL
       , gcNurseryStart_(0)
       , gcNurseryEnd_(0)
+      , gcStoreBufferPtr_(storeBuffer)
 #endif
     {}
+
+    bool needsBarrier() const {
+        return needsBarrier_;
+    }
+
+#ifdef JSGC_GENERATIONAL
+    js::gc::StoreBuffer *gcStoreBufferPtr() { return gcStoreBufferPtr_; }
+#endif
+
+    static JS::shadow::Runtime *asShadowRuntime(JSRuntime *rt) {
+        return reinterpret_cast<JS::shadow::Runtime*>(rt);
+    }
 };
 
 } /* namespace shadow */
 } /* namespace JS */
 
 namespace js {
+
+/*
+ * Parallel operations in general can have one of three states. They may
+ * succeed, fail, or "bail", where bail indicates that the code encountered an
+ * unexpected condition and should be re-run sequentially. Different
+ * subcategories of the "bail" state are encoded as variants of TP_RETRY_*.
+ */
+enum ParallelResult { TP_SUCCESS, TP_RETRY_SEQUENTIALLY, TP_RETRY_AFTER_GC, TP_FATAL };
+
+struct ThreadSafeContext;
+struct ForkJoinSlice;
+class ExclusiveContext;
 
 class Allocator;
 
@@ -245,6 +263,19 @@ enum ThingRootKind
     THING_ROOT_BINDINGS,
     THING_ROOT_PROPERTY_DESCRIPTOR,
     THING_ROOT_LIMIT
+};
+
+/*
+ * This list enumerates the different types of conceptual stacks we have in
+ * SpiderMonkey. In reality, they all share the C stack, but we allow different
+ * stack limits depending on the type of code running.
+ */
+enum StackKind
+{
+    StackForSystemCode,      // C++, such as the GC, running on behalf of the VM.
+    StackForTrustedScript,   // Script running with trusted principals.
+    StackForUntrustedScript, // Script running with untrusted principals.
+    StackKindCount
 };
 
 template <typename T>
@@ -269,18 +300,28 @@ template <> struct RootKind<JSScript *> : SpecificRootKind<JSScript *, THING_ROO
 template <> struct RootKind<jsid> : SpecificRootKind<jsid, THING_ROOT_ID> {};
 template <> struct RootKind<JS::Value> : SpecificRootKind<JS::Value, THING_ROOT_VALUE> {};
 
-struct ContextFriendFields {
-    JSRuntime *const    runtime;
+struct ContextFriendFields
+{
+  protected:
+    JSRuntime *const     runtime_;
 
     /* The current compartment. */
-    JSCompartment       *compartment;
+    JSCompartment       *compartment_;
 
     /* The current zone. */
     JS::Zone            *zone_;
 
+  public:
     explicit ContextFriendFields(JSRuntime *rt)
-      : runtime(rt), compartment(NULL), zone_(NULL)
-    { }
+      : runtime_(rt), compartment_(nullptr), zone_(nullptr), autoGCRooters(nullptr)
+    {
+#ifdef JSGC_TRACK_EXACT_ROOTS
+        mozilla::PodArrayZero(thingGCRooters);
+#endif
+#if defined(DEBUG) && defined(JS_GC_ZEAL) && defined(JSGC_ROOT_ANALYSIS) && !defined(JS_THREADSAFE)
+        skipGCRooters = nullptr;
+#endif
+    }
 
     static const ContextFriendFields *get(const JSContext *cx) {
         return reinterpret_cast<const ContextFriendFields *>(cx);
@@ -290,7 +331,7 @@ struct ContextFriendFields {
         return reinterpret_cast<ContextFriendFields *>(cx);
     }
 
-#if defined(JSGC_ROOT_ANALYSIS) || defined(JSGC_USE_EXACT_ROOTING)
+#ifdef JSGC_TRACK_EXACT_ROOTS
     /*
      * Stack allocated GC roots for stack GC heap pointers, which may be
      * overwritten if moved during a GC.
@@ -309,6 +350,13 @@ struct ContextFriendFields {
      */
     SkipRoot *skipGCRooters;
 #endif
+
+    /* Stack of thread-stack-allocated GC roots. */
+    JS::AutoGCRooter   *autoGCRooters;
+
+    friend JSRuntime *GetRuntime(const JSContext *cx);
+    friend JSCompartment *GetContextCompartment(const JSContext *cx);
+    friend JS::Zone *GetContextZone(const JSContext *cx);
 };
 
 class PerThreadData;
@@ -334,7 +382,7 @@ struct PerThreadDataFriendFields
 
     PerThreadDataFriendFields();
 
-#if defined(JSGC_ROOT_ANALYSIS) || defined(JSGC_USE_EXACT_ROOTING)
+#ifdef JSGC_TRACK_EXACT_ROOTS
     /*
      * Stack allocated GC roots for stack GC heap pointers, which may be
      * overwritten if moved during a GC.
@@ -355,7 +403,7 @@ struct PerThreadDataFriendFields
 #endif
 
     /* Limit pointer for checking native stack consumption. */
-    uintptr_t nativeStackLimit;
+    uintptr_t nativeStackLimit[StackKindCount];
 
     static const size_t RuntimeMainThreadOffset = offsetof(RuntimeDummy, mainThread);
 
@@ -380,4 +428,4 @@ struct PerThreadDataFriendFields
 
 } /* namespace js */
 
-#endif /* jspubtd_h___ */
+#endif /* jspubtd_h */

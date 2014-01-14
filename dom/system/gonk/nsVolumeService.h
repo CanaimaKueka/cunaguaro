@@ -10,16 +10,15 @@
 #include "mozilla/StaticPtr.h"
 #include "nsCOMPtr.h"
 #include "nsIDOMWakeLockListener.h"
-#include "nsIObserver.h"
 #include "nsIVolume.h"
 #include "nsIVolumeService.h"
 #include "nsVolume.h"
-#include "Volume.h"
 
 namespace mozilla {
 namespace system {
 
 class WakeLockCallback;
+class Volume;
 
 /***************************************************************************
 * The nsVolumeData class encapsulates the data that is updated/maintained
@@ -28,12 +27,10 @@ class WakeLockCallback;
 */
 
 class nsVolumeService MOZ_FINAL : public nsIVolumeService,
-                                  public nsIObserver,
                                   public nsIDOMMozWakeLockListener
 {
 public:
-  NS_DECL_ISUPPORTS
-  NS_DECL_NSIOBSERVER
+  NS_DECL_THREADSAFE_ISUPPORTS
   NS_DECL_NSIVOLUMESERVICE
   NS_DECL_NSIDOMMOZWAKELOCKLISTENER
 
@@ -53,7 +50,7 @@ private:
                       const nsAString& aMountLockState);
   already_AddRefed<nsVolume> FindVolumeByMountLockName(const nsAString& aMountLockName);
   already_AddRefed<nsVolume> FindVolumeByName(const nsAString& aName);
-  already_AddRefed<nsVolume> CreateOrFindVolumeByName(const nsAString& aName);
+  already_AddRefed<nsVolume> CreateOrFindVolumeByName(const nsAString& aName, bool aIsFake = false);
 
   Monitor mArrayMonitor;
   nsVolume::Array mVolumeArray;

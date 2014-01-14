@@ -19,7 +19,8 @@ interface HTMLObjectElement : HTMLElement {
            attribute DOMString data;
   [Pure, SetterThrows]
            attribute DOMString type;
-//           attribute boolean typeMustMatch;
+  [Pure, SetterThrows]
+           attribute boolean typeMustMatch;
   [Pure, SetterThrows]
            attribute DOMString name;
   [Pure, SetterThrows]
@@ -71,7 +72,7 @@ partial interface HTMLObjectElement {
 };
 
 partial interface HTMLObjectElement {
-  // nsIDOMGetSVGDocument
+  // GetSVGDocument
   Document? getSVGDocument();
 };
 
@@ -175,6 +176,9 @@ interface MozObjectLoadingContent {
    */
   [ChromeOnly]
   readonly attribute URI? srcURI;
+
+  [ChromeOnly]
+  readonly attribute unsigned long defaultFallbackType;
 
   [ChromeOnly]
   readonly attribute unsigned long pluginFallbackType;

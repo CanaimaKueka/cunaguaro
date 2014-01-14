@@ -6,13 +6,24 @@
 #ifndef GFX_FRAMEMETRICS_H
 #define GFX_FRAMEMETRICS_H
 
-#include "gfxPoint.h"
-#include "gfxTypes.h"
-#include "nsRect.h"
-#include "mozilla/gfx/Rect.h"
+#include <stdint.h>                     // for uint32_t, uint64_t
+#include "Units.h"                      // for CSSRect, CSSPixel, etc
+#include "mozilla/gfx/BasePoint.h"      // for BasePoint
+#include "mozilla/gfx/Rect.h"           // for RoundedIn
+#include "mozilla/gfx/ScaleFactor.h"    // for ScaleFactor
 
 namespace mozilla {
 namespace layers {
+
+// The layer coordinates of the parent layer. Like the layer coordinates
+// of the current layer (LayerPixel) but doesn't include the current layer's
+// resolution.
+struct ParentLayerPixel {};
+
+typedef gfx::ScaleFactor<LayoutDevicePixel, ParentLayerPixel> LayoutDeviceToParentLayerScale;
+typedef gfx::ScaleFactor<ParentLayerPixel, LayerPixel> ParentLayerToLayerScale;
+
+typedef gfx::ScaleFactor<ParentLayerPixel, ScreenPixel> ParentLayerToScreenScale;
 
 /**
  * The viewport and displayport metrics for the painted frame at the
@@ -20,7 +31,7 @@ namespace layers {
  * useful for shadow layers, because the metrics values are updated
  * atomically with new pixels.
  */
-struct THEBES_API FrameMetrics {
+struct FrameMetrics {
 public:
   // We use IDs to identify frames across processes.
   typedef uint64_t ViewID;
@@ -31,17 +42,18 @@ public:
 
   FrameMetrics()
     : mCompositionBounds(0, 0, 0, 0)
-    , mContentRect(0, 0, 0, 0)
     , mDisplayPort(0, 0, 0, 0)
     , mCriticalDisplayPort(0, 0, 0, 0)
     , mViewport(0, 0, 0, 0)
     , mScrollOffset(0, 0)
     , mScrollId(NULL_SCROLL_ID)
     , mScrollableRect(0, 0, 0, 0)
-    , mResolution(1, 1)
-    , mZoom(1, 1)
+    , mResolution(1)
+    , mCumulativeResolution(1)
+    , mZoom(1)
     , mDevPixelsPerCSSPixel(1)
     , mMayHaveTouchListeners(false)
+    , mPresShellId(-1)
   {}
 
   // Default copy ctor and operator= are fine
@@ -49,7 +61,6 @@ public:
   bool operator==(const FrameMetrics& aOther) const
   {
     return mCompositionBounds.IsEqualEdges(aOther.mCompositionBounds) &&
-           mContentRect.IsEqualEdges(aOther.mContentRect) &&
            mDisplayPort.IsEqualEdges(aOther.mDisplayPort) &&
            mCriticalDisplayPort.IsEqualEdges(aOther.mCriticalDisplayPort) &&
            mViewport.IsEqualEdges(aOther.mViewport) &&
@@ -57,8 +68,10 @@ public:
            mScrollId == aOther.mScrollId &&
            mScrollableRect.IsEqualEdges(aOther.mScrollableRect) &&
            mResolution == aOther.mResolution &&
+           mCumulativeResolution == aOther.mCumulativeResolution &&
            mDevPixelsPerCSSPixel == aOther.mDevPixelsPerCSSPixel &&
-           mMayHaveTouchListeners == aOther.mMayHaveTouchListeners;
+           mMayHaveTouchListeners == aOther.mMayHaveTouchListeners &&
+           mPresShellId == aOther.mPresShellId;
   }
   bool operator!=(const FrameMetrics& aOther) const
   {
@@ -67,7 +80,10 @@ public:
 
   bool IsDefault() const
   {
-    return (FrameMetrics() == *this);
+    FrameMetrics def;
+
+    def.mPresShellId = mPresShellId;
+    return (def == *this);
   }
 
   bool IsRootScrollable() const
@@ -80,52 +96,54 @@ public:
     return mScrollId != NULL_SCROLL_ID;
   }
 
-  gfxSize LayersPixelsPerCSSPixel() const
+  CSSToLayerScale LayersPixelsPerCSSPixel() const
   {
-    return mResolution * mDevPixelsPerCSSPixel;
+    return mCumulativeResolution * mDevPixelsPerCSSPixel;
   }
 
-  gfxPoint GetScrollOffsetInLayerPixels() const
+  LayerPoint GetScrollOffsetInLayerPixels() const
   {
-    return gfxPoint(
-      static_cast<gfx::Float>(
-        mScrollOffset.x * LayersPixelsPerCSSPixel().width),
-      static_cast<gfx::Float>(
-        mScrollOffset.y * LayersPixelsPerCSSPixel().height));
+    return mScrollOffset * LayersPixelsPerCSSPixel();
+  }
+
+  LayoutDeviceToParentLayerScale GetParentResolution() const
+  {
+    return mCumulativeResolution / mResolution;
+  }
+
+  /**
+   * Return the scale factor needed to fit the viewport
+   * into its composition bounds.
+   */
+  CSSToScreenScale CalculateIntrinsicScale() const
+  {
+    return CSSToScreenScale(float(mCompositionBounds.width) / float(mViewport.width));
+  }
+
+  CSSRect CalculateCompositedRectInCssPixels() const
+  {
+    return CSSRect(gfx::RoundedIn(mCompositionBounds / mZoom));
   }
 
   // ---------------------------------------------------------------------------
   // The following metrics are all in widget space/device pixels.
   //
 
-  // This is the area within the widget that we're compositing to, which means
-  // that it is the visible region of this frame. It is not relative to
-  // anything.
-  // So { 0, 0, [compositeArea.width], [compositeArea.height] }.
+  // This is the area within the widget that we're compositing to. It is relative
+  // to the layer tree origin.
   //
   // This is useful because, on mobile, the viewport and composition dimensions
   // are not always the same. In this case, we calculate the displayport using
   // an area bigger than the region we're compositing to. If we used the
   // viewport dimensions to calculate the displayport, we'd run into situations
   // where we're prerendering the wrong regions and the content may be clipped,
-  // or too much of it prerendered. If the displayport is the same as the
-  // viewport, there is no need for this and we can just use the viewport
+  // or too much of it prerendered. If the composition dimensions are the same as the
+  // viewport dimensions, there is no need for this and we can just use the viewport
   // instead.
   //
-  // This is only valid on the root layer. Nested iframes do not need this
-  // metric as they do not have a displayport set. See bug 775452.
-  nsIntRect mCompositionBounds;
-
-  // |mScrollableRect|, stored in device pixels. DECPRECATED, DO NOT USE.
-  //
-  // This is valid on any layer where |mScrollableRect| is, though it may be
-  // more lazily maintained than |mScrollableRect|. That is, when
-  // |mScrollableRect| is updated, this may lag. For this reason, it's better to
-  // use |mScrollableRect| for any control logic.
-  //
-  // FIXME/bug 785929: Is this really necessary? Can it not be calculated from
-  // |mScrollableRect| whenever it's needed?
-  nsIntRect mContentRect;
+  // This value is valid for nested scrollable layers as well, and is still
+  // relative to the layer tree origin.
+  ScreenIntRect mCompositionBounds;
 
   // ---------------------------------------------------------------------------
   // The following metrics are all in CSS pixels. They are not in any uniform
@@ -145,11 +163,11 @@ public:
   //
   // To pre-render a margin of 100 CSS pixels around the window,
   // { x = -100, y = - 100,
-  //   width = window.innerWidth + 100, height = window.innerHeight + 100 }
+  //   width = window.innerWidth + 200, height = window.innerHeight + 200 }
   //
   // This is only valid on the root layer. Nested iframes do not have a
   // displayport set on them. See bug 775452.
-  gfx::Rect mDisplayPort;
+  CSSRect mDisplayPort;
 
   // If non-empty, the area of a frame's contents that is considered critical
   // to paint. Area outside of this area (i.e. area inside mDisplayPort, but
@@ -157,7 +175,7 @@ public:
   // painted with lower precision, or not painted at all.
   //
   // The same restrictions for mDisplayPort apply here.
-  gfx::Rect mCriticalDisplayPort;
+  CSSRect mCriticalDisplayPort;
 
   // The CSS viewport, which is the dimensions we're using to constrain the
   // <html> element of this frame, relative to the top-left of the layer. Note
@@ -168,7 +186,7 @@ public:
   // their own viewport, which will just be the size of the window of the
   // iframe. For layers that don't correspond to a document, this metric is
   // meaningless and invalid.
-  gfx::Rect mViewport;
+  CSSRect mViewport;
 
   // The position of the top-left of the CSS viewport, relative to the document
   // (or the document relative to the viewport, if that helps understand it).
@@ -179,22 +197,22 @@ public:
   //
   // It is required that the rect:
   // { x = mScrollOffset.x, y = mScrollOffset.y,
-  //   width = mCompositionBounds.x / mResolution.width,
-  //   height = mCompositionBounds.y / mResolution.height }
+  //   width = mCompositionBounds.x / mResolution.scale,
+  //   height = mCompositionBounds.y / mResolution.scale }
   // Be within |mScrollableRect|.
   //
   // This is valid for any layer, but is always relative to this frame and
   // not any parents, regardless of parent transforms.
-  gfx::Point mScrollOffset;
+  CSSPoint mScrollOffset;
 
   // A unique ID assigned to each scrollable frame (unless this is
   // ROOT_SCROLL_ID, in which case it is not unique).
   ViewID mScrollId;
 
   // The scrollable bounds of a frame. This is determined by reflow.
-  // For the top-level |window|,
-  // { x = window.scrollX, y = window.scrollY, // could be 0, 0
-  //   width = window.innerWidth, height = window.innerHeight }
+  // Ordinarily the x and y will be 0 and the width and height will be the
+  // size of the element being scrolled. However for RTL pages or elements
+  // the x value may be negative.
   //
   // This is relative to the document. It is in the same coordinate space as
   // |mScrollOffset|, but a different coordinate space than |mViewport| and
@@ -202,45 +220,41 @@ public:
   // window.scrollTo().
   //
   // This is valid on any layer unless it has no content.
-  gfx::Rect mScrollableRect;
+  CSSRect mScrollableRect;
 
   // ---------------------------------------------------------------------------
   // The following metrics are dimensionless.
   //
 
-  // The resolution, along both axes, that the current frame has been painted
-  // at.
+  // The resolution that the current frame has been painted at.
   //
   // Every time this frame is composited and the compositor samples its
   // transform, this metric is used to create a transform which is
   // post-multiplied into the parent's transform. Since this only happens when
   // we walk the layer tree, the resulting transform isn't stored here. Thus the
   // resolution of parent layers is opaque to this metric.
-  gfxSize mResolution;
+  ParentLayerToLayerScale mResolution;
 
-  // The resolution-independent "user zoom".  For example, if a page
-  // configures the viewport to a zoom value of 2x, then this member
-  // will always be 2.0 no matter what the viewport or composition
-  // bounds.
-  //
-  // In the steady state (no animations), and ignoring DPI, then the
-  // following is usually true
-  //
-  //  intrinsicScale = (mCompositionBounds / mViewport)
-  //  mResolution = mZoom * intrinsicScale
-  //
-  // When this is not true, we're probably asynchronously sampling a
-  // zoom animation for content.
-  gfxSize mZoom;
+  // The cumulative resolution that the current frame has been painted at.
+  // This is the product of our mResolution and the mResolutions of our parent frames.
+  LayoutDeviceToLayerScale mCumulativeResolution;
+
+  // The "user zoom". Content is painted by gecko at mResolution * mDevPixelsPerCSSPixel,
+  // but will be drawn to the screen at mZoom. In the steady state, the
+  // two will be the same, but during an async zoom action the two may
+  // diverge.
+  CSSToScreenScale mZoom;
 
   // The conversion factor between CSS pixels and device pixels for this frame.
   // This can vary based on a variety of things, such as reflowing-zoom. The
   // conversion factor for device pixels to layers pixels is just the
   // resolution.
-  float mDevPixelsPerCSSPixel;
+  CSSToLayoutDeviceScale mDevPixelsPerCSSPixel;
 
   // Whether or not this frame may have touch listeners.
   bool mMayHaveTouchListeners;
+
+  uint32_t mPresShellId;
 };
 
 }

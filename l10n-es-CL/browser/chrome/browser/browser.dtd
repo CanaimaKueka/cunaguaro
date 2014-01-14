@@ -10,6 +10,8 @@
 <!ENTITY reloadTab.accesskey "r">
 <!ENTITY reloadAllTabs.label "Recargar todas las pestañas">
 <!ENTITY reloadAllTabs.accesskey "A">
+<!ENTITY  closeTabsToTheEnd.label            "Cerrar pestañas a la derecha">
+<!ENTITY  closeTabsToTheEnd.accesskey        "i">
 <!ENTITY closeOtherTabs.label "Cerrar las otras pestañas">
 <!ENTITY closeOtherTabs.accesskey "o">
 <!ENTITY pinTab.label "Pegar pestaña">
@@ -25,6 +27,7 @@
 <!ENTITY bookmarkAllTabs.accesskey "t">
 <!ENTITY undoCloseTab.label "Deshacer cerrar pestaña">
 <!ENTITY undoCloseTab.accesskey "h">
+<!ENTITY undoCloseTabs.label "Deshacer cerrar pestañas">
 <!ENTITY closeTab.label "Cerrar pestaña">
 <!ENTITY closeTab.accesskey "c">
 <!ENTITY listAllTabs.label "Listar todas las pestañas">
@@ -78,8 +81,7 @@
 <!ENTITY fullScreenExit.accesskey "S">
 <!ENTITY fullscreenAllowButton.label "Permitir">
 <!ENTITY fullscreenExitButton.label "Denegar">
-<!ENTITY fullscreenApproval.value "¿Permitir pantalla completa?">
-<!ENTITY fullscreenExitHint.value "Presiona ESC en cualquier momento para salir de pantalla completa.">
+<!ENTITY fullscreenExitHint2.value "Presiona ESC en cualquier momento para salir.">
 <!ENTITY leaveDOMFullScreen.label "Salir de pantalla completa">
 <!ENTITY leaveDOMFullScreen.accesskey "u">
 <!ENTITY closeWindow.label "Cerrar ventana">
@@ -153,8 +155,6 @@
 <!ENTITY toolsMenu.accesskey "t">
 <!ENTITY keywordfield.label "Agregue una palabra clave a esta búsqueda…">
 <!ENTITY keywordfield.accesskey "A">
-<!ENTITY search.label "Buscar en la Web">
-<!ENTITY search.accesskey "s">
 <!ENTITY downloads.label "Descargas">
 <!ENTITY downloads.tooltip "Muestra el estado de las descargas en curso">
 <!ENTITY downloads.accesskey "D">
@@ -165,13 +165,16 @@
 <!ENTITY addons.commandkey "A">
 <!ENTITY webDeveloperMenu.label "Desarrollador web">
 <!ENTITY webDeveloperMenu.accesskey "w">
+<!ENTITY devToolsCmd.keycode          "VK_F12">
+<!ENTITY devToolsCmd.keytext          "F12">
 <!ENTITY devtoolsConnect.label        "Conectar…">
 <!ENTITY devtoolsConnect.accesskey    "e">
 <!ENTITY errorConsoleCmd.label "Consola de errores">
 <!ENTITY errorConsoleCmd.accesskey "C">
-<!ENTITY errorConsoleCmd.commandkey "j">
 <!ENTITY remoteWebConsoleCmd.label "Consola web remota">
 <!ENTITY browserConsoleCmd.label      "Consola del navegador">
+<!ENTITY browserConsoleCmd.commandkey "j">
+<!ENTITY browserConsoleCmd.accesskey  "B">
 <!ENTITY inspectContextMenu.label "Inspeccionar elemento">
 <!ENTITY inspectContextMenu.accesskey "o">
 <!ENTITY responsiveDesignTool.label "Vista de diseño flexible">
@@ -181,13 +184,19 @@
 <!ENTITY scratchpad.accesskey "B">
 <!ENTITY scratchpad.keycode "VK_F4">
 <!ENTITY scratchpad.keytext "F4">
+<!ENTITY chromeDebuggerMenu.label       "Depurador del navegador">
+<!ENTITY chromeDebuggerMenu.accesskey   "e">
 <!ENTITY devToolbarCloseButton.tooltiptext "Cerrar barra de desarrollador">
 <!ENTITY devToolbarMenu.label "Barra de desarrollador">
 <!ENTITY devToolbarMenu.accesskey "v">
+<!ENTITY devAppMgrMenu.label               "Administrador de aplicaciones">
+<!ENTITY devAppMgrMenu.accesskey           "a">
 <!ENTITY devToolbar.keycode "VK_F2">
 <!ENTITY devToolbar.keytext "F2">
 <!ENTITY devToolboxMenuItem.label          "Activar herramientas">
 <!ENTITY devToolboxMenuItem.accesskey      "T">
+<!ENTITY devToolboxMenuItem.keycode        "I">
+<!ENTITY devToolboxMenuItem.keytext        "I">
 <!ENTITY devToolbarToolsButton.tooltip     "Activar las herramientas de desarrollador">
 <!ENTITY devToolbarOtherToolsButton.label "Más herramientas">
 <!ENTITY getMoreDevtoolsCmd.label "Obtener más herramientas">
@@ -245,12 +254,11 @@
 <!ENTITY historyUndoMenu.label "Pestañas cerradas recientemente">
 <!ENTITY historyUndoWindowMenu.label "Ventanas cerradas recientemente">
 <!ENTITY historyRestoreLastSession.label "Restaurar sesión anterior">
-<!ENTITY historyHomeCmd.label "Inicio">
 <!ENTITY showAllHistoryCmd2.label "Mostrar todo el historial">
 <!ENTITY showAllHistoryCmd.commandkey "H">
 <!ENTITY appMenuEdit.label "Editar">
 <!ENTITY appMenuCustomize.label "Personalizar">
-<!ENTITY appMenuToolbarLayout.label "Barra de diseño…">
+<!ENTITY appMenuToolbarLayout.label "Diseño de barra…">
 <!ENTITY appMenuSidebars.label "Barras laterales">
 <!ENTITY appMenuFind.label "Buscar…">
 <!ENTITY appMenuUnsorted.label "Marcadores sin ordenar">
@@ -300,6 +308,8 @@
 <!ENTITY viewImageCmd.accesskey "i">
 <!ENTITY viewImageInfoCmd.label "Ver información de la imagen">
 <!ENTITY viewImageInfoCmd.accesskey "f">
+<!ENTITY viewImageDescCmd.label       "Ver descripción">
+<!ENTITY viewImageDescCmd.accesskey   "D">
 <!ENTITY viewVideoCmd.label "Ver video">
 <!ENTITY viewVideoCmd.accesskey "V">
 <!ENTITY viewBGImageCmd.label "Ver imagen de fondo">
@@ -384,12 +394,12 @@
 <!ENTITY videoShowStats.accesskey "t">
 <!ENTITY videoHideStats.label "Ocultar estadisticas">
 <!ENTITY videoHideStats.accesskey "t">
-<!ENTITY fullZoomEnlargeCmd.label "Aumentar">
+<!ENTITY fullZoomEnlargeCmd.label "Acercar">
 <!ENTITY fullZoomEnlargeCmd.accesskey "A">
 <!ENTITY fullZoomEnlargeCmd.commandkey "+">
 <!ENTITY fullZoomEnlargeCmd.commandkey2 "=">
 <!ENTITY fullZoomEnlargeCmd.commandkey3 "">
-<!ENTITY fullZoomReduceCmd.label "Reducir">
+<!ENTITY fullZoomReduceCmd.label "Alejar">
 <!ENTITY fullZoomReduceCmd.accesskey "A">
 <!ENTITY fullZoomReduceCmd.commandkey "-">
 <!ENTITY fullZoomReduceCmd.commandkey2 "">
@@ -399,7 +409,7 @@
 <!ENTITY fullZoomResetCmd.commandkey2 "">
 <!ENTITY fullZoomToggleCmd.label "Zoom sólo en el texto">
 <!ENTITY fullZoomToggleCmd.accesskey "t">
-<!ENTITY fullZoom.label "Ampliar">
+<!ENTITY fullZoom.label "Acercar">
 <!ENTITY fullZoom.accesskey "A">
 <!ENTITY newTabButton.tooltip "Abrir una nueva pestaña">
 <!ENTITY newWindowButton.tooltip "Abrir una nueva ventana">
@@ -408,8 +418,8 @@
 <!ENTITY copyButton.tooltip "Copiar">
 <!ENTITY pasteButton.tooltip "Pegar">
 <!ENTITY fullScreenButton.tooltip "Mostrar la ventana en pantalla completa">
-<!ENTITY zoomOutButton.tooltip "Acercar">
-<!ENTITY zoomInButton.tooltip "Alejar">
+<!ENTITY zoomOutButton.tooltip "Alejar">
+<!ENTITY zoomInButton.tooltip "Acercar">
 <!ENTITY zoomControls.label "Controles de zoom">
 <!ENTITY quitApplicationCmdWin.label "Salir">
 <!ENTITY quitApplicationCmdWin.accesskey "S">
@@ -455,6 +465,8 @@
 <!ENTITY identity.connectedTo "Está conectado a">
 <!ENTITY identity.runBy "el cual es corrido por">
 <!ENTITY identity.moreInfoLinkText "Más información…">
+<!ENTITY identity.permissions "Permisos">
+<!ENTITY identity.help.tooltip "¿Cómo puedo saber si mi conexión a un sitio web es segura?">
 <!ENTITY tabsToolbar.label "Pestañas del navegador">
 <!ENTITY syncTabsMenu2.label "Pestañas de otros dispositivos">
 <!ENTITY syncBrand.shortName.label "Sync">
@@ -483,8 +495,10 @@
 <!ENTITY social.chatBar.commandkey "c">
 <!ENTITY social.chatBar.label "Concentrarse en los chats">
 <!ENTITY social.chatBar.accesskey "c">
-<!ENTITY social.markpage.accesskey "m">
-<!ENTITY social.marklink.accesskey "M">
+<!ENTITY social.markpageMenu.accesskey "P">
+<!ENTITY social.markpageMenu.label "Guardar enlace a…">
+<!ENTITY social.marklinkMenu.accesskey "L">
+<!ENTITY social.marklinkMenu.label "Guardar enlace a…">
 <!ENTITY getUserMedia.selectCamera.label "Cámara a compartir:">
 <!ENTITY getUserMedia.selectCamera.accesskey "C">
 <!ENTITY getUserMedia.selectMicrophone.label "Micrófono a compartir:">
@@ -497,3 +511,15 @@
 
 <!ENTITY pointerLock.notification.message "Presiona ESC en cualquier momento para mostrarlo nuevamente.">
 
+<!ENTITY pluginNotification.showAll.label "Mostrar todas">
+<!ENTITY pluginNotification.showAll.accesskey "S">
+
+<!ENTITY pluginActivateNow.label "Permitir ahora">
+<!ENTITY pluginActivateAlways.label "Permitir y recordar">
+<!ENTITY pluginBlockNow.label "Bloquear complemento">
+<!ENTITY pluginNotification.width "28em">
+
+<!ENTITY tabCrashed.header "Pestaña colgada">
+<!ENTITY tabCrashed.message "Esto es vergonzoso. Hemos intentado mostrar esta página Web, pero no está respondiendo.">
+<!ENTITY tabCrashed.checkSendReport "Contarle a &vendorShortName; sobre este fallo para que lo puedan reparar.">
+<!ENTITY tabCrashed.tryAgain "Intentar nuevamente">

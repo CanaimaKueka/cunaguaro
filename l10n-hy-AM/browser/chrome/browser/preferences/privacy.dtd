@@ -4,12 +4,12 @@
 
 <!ENTITY tracking.label                 "Հետևում">
 
-<!ENTITY dntTrackingNopref.label        "Կայքերին չհաղորդել հետևելու իմ կարգավորումների մասին:">
-<!ENTITY dntTrackingNopref.accesskey    "հ">
-<!ENTITY dntTrackingNotOkay.label       "Հաղորդել կայքերին, որ ես չեմ ցանկանում, որ ինձ հետևեն:">
-<!ENTITY dntTrackingNotOkay.accesskey   "չ">
-<!ENTITY dntTrackingOkay.label          "Հաղորդել կայքերին, որ ես ցանկանում եմ, որ ինձ հետևեն:">
-<!ENTITY dntTrackingOkay.accesskey      "Հ">
+<!ENTITY dntTrackingNopref.label2       "Կայքերին չհաղորդել հետևելու իմ կարգավորումների մասին">
+<!ENTITY dntTrackingNopref.accesskey    "o">
+<!ENTITY dntTrackingNotOkay.label2      "Հաղորդել կայքերին, որ ես չեմ ցանկանում, որ ինձ հետևեն:">
+<!ENTITY dntTrackingNotOkay.accesskey   "n">
+<!ENTITY dntTrackingOkay.label2         "Հաղորդել կայքերին, որ ես ցանկանում եմ, որ ինձ հետևեն:">
+<!ENTITY dntTrackingOkay.accesskey      "t">
 <!ENTITY doNotTrackInfo.label           "Մանրամասն">
 
 <!ENTITY  history.label                 "Պատմություն">
@@ -18,7 +18,7 @@
 
 <!ENTITY  locbar.pre.label              "Հասցեի վահանակը օգտագործելիս առաջարկել հղումներ՝">
 <!ENTITY  locbar.pre.accessKey          "օ">
-<!ENTITY  locbar.post.label             "Հասցեի տողը օգտագործելիս առաջարկել՝">
+<!ENTITY  locbar.post.label             "">
 <!ENTITY  locbar.both.label             "Պատմություն և էջանիշեր">
 <!ENTITY  locbar.history.label          "Պատմություն">
 <!ENTITY  locbar.bookmarks.label        "Էջանիշեր">
@@ -34,7 +34,7 @@
 <!ENTITY  acceptThirdParty.visited.label  "Այցելածներից">
 
 <!ENTITY  keepUntil.label               "Պահել մինչև`">
-<!ENTITY  keepUntil.accesskey           "Պ">
+<!ENTITY  keepUntil.accesskey           "և">
 
 <!ENTITY  expire.label                  "ավարտման ժամկերը">
 <!ENTITY  close.label                   "&brandShortName;-ը փակելը">
@@ -50,10 +50,10 @@
 <!ENTITY  historyHeader.pre.accesskey      "կ">
 <!ENTITY  historyHeader.remember.label     "Հիշել պատմությունը">
 <!ENTITY  historyHeader.dontremember.label "Երբեք չհիշել այցելությունները">
-<!ENTITY  historyHeader.custom.label       "Պատմւթյան համար օգտագործել սեփական կարգավորումները">
-<!ENTITY  historyHeader.post.label         "Պատմության համար օգտագործել ընտրված կարգավորումներ">
+<!ENTITY  historyHeader.custom.label       "Պատմության համար օգտագործել սեփական կարգավորումները">
+<!ENTITY  historyHeader.post.label         "">
 
-<!ENTITY  rememberDescription.label      "&brandShortName;-ըը հիշելու է ձեր դիտարկումները, բեռնումները, ձևերի լրացումը և որոնման պատմությունը, նաև պահելու է cookie-ը՝ ձեր այցելած վեբ կայքերից:">
+<!ENTITY  rememberDescription.label      "&brandShortName;-ը հիշելու է ձեր դիտարկումները, բեռնումները, ձևերը և որոնման պատմությունը և պահելու է cookie-ները:">
 <!-- LOCALIZATION NOTE (rememberActions.pre.label): include a trailing space as needed -->
 <!-- LOCALIZATION NOTE (rememberActions.middle.label): include a starting and trailing space as needed -->
 <!-- LOCALIZATION NOTE (rememberActions.post.label): include a starting space as needed -->

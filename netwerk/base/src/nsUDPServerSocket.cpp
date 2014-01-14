@@ -3,7 +3,6 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include "nsIServiceManager.h"
 #include "nsSocketTransport2.h"
 #include "nsUDPServerSocket.h"
 #include "nsProxyRelease.h"
@@ -15,10 +14,11 @@
 #include "mozilla/Attributes.h"
 #include "nsNetAddr.h"
 #include "nsNetSegmentUtils.h"
+#include "NetworkActivityMonitor.h"
 #include "nsStreamUtils.h"
 #include "nsIPipe.h"
 #include "prerror.h"
-#include "nsINSSErrorsService.h"
+#include "nsThreadUtils.h"
 
 using namespace mozilla::net;
 using namespace mozilla;
@@ -43,7 +43,7 @@ PostEvent(nsUDPServerSocket *s, nsUDPServerSocketFunc func)
 //-----------------------------------------------------------------------------
 // nsUPDOutputStream impl
 //-----------------------------------------------------------------------------
-NS_IMPL_THREADSAFE_ISUPPORTS1(nsUDPOutputStream, nsIOutputStream)
+NS_IMPL_ISUPPORTS1(nsUDPOutputStream, nsIOutputStream)
 
 nsUDPOutputStream::nsUDPOutputStream(nsUDPServerSocket* aServer,
                                      PRFileDesc* aFD,
@@ -117,7 +117,7 @@ NS_IMETHODIMP nsUDPOutputStream::IsNonBlocking(bool *_retval)
 //-----------------------------------------------------------------------------
 // nsUPDMessage impl
 //-----------------------------------------------------------------------------
-NS_IMPL_THREADSAFE_ISUPPORTS1(nsUDPMessage, nsIUDPMessage)
+NS_IMPL_ISUPPORTS1(nsUDPMessage, nsIUDPMessage)
 
 nsUDPMessage::nsUDPMessage(PRNetAddr* aAddr,
              nsIOutputStream* aOutputStream,
@@ -383,7 +383,7 @@ nsUDPServerSocket::IsLocal(bool *aIsLocal)
 // nsServerSocket::nsISupports
 //-----------------------------------------------------------------------------
 
-NS_IMPL_THREADSAFE_ISUPPORTS1(nsUDPServerSocket, nsIUDPServerSocket)
+NS_IMPL_ISUPPORTS1(nsUDPServerSocket, nsIUDPServerSocket)
 
 
 //-----------------------------------------------------------------------------
@@ -454,6 +454,9 @@ nsUDPServerSocket::InitWithAddress(const NetAddr *aAddr)
 
   PRNetAddrToNetAddr(&addr, &mAddr);
 
+  // create proxy via NetworkActivityMonitor
+  NetworkActivityMonitor::AttachIOLayer(mFD);
+
   // wait until AsyncListen is called before polling the socket for
   // client connections.
   return NS_OK;
@@ -513,17 +516,17 @@ class ServerSocketListenerProxy MOZ_FINAL : public nsIUDPServerSocketListener
 {
 public:
   ServerSocketListenerProxy(nsIUDPServerSocketListener* aListener)
-    : mListener(aListener)
+    : mListener(new nsMainThreadPtrHolder<nsIUDPServerSocketListener>(aListener))
     , mTargetThread(do_GetCurrentThread())
   { }
 
-  NS_DECL_ISUPPORTS
+  NS_DECL_THREADSAFE_ISUPPORTS
   NS_DECL_NSIUDPSERVERSOCKETLISTENER
 
   class OnPacketReceivedRunnable : public nsRunnable
   {
   public:
-    OnPacketReceivedRunnable(nsIUDPServerSocketListener* aListener,
+    OnPacketReceivedRunnable(const nsMainThreadPtrHandle<nsIUDPServerSocketListener>& aListener,
                      nsIUDPServerSocket* aServ,
                      nsIUDPMessage* aMessage)
       : mListener(aListener)
@@ -534,7 +537,7 @@ public:
     NS_DECL_NSIRUNNABLE
 
   private:
-    nsCOMPtr<nsIUDPServerSocketListener> mListener;
+    nsMainThreadPtrHandle<nsIUDPServerSocketListener> mListener;
     nsCOMPtr<nsIUDPServerSocket> mServ;
     nsCOMPtr<nsIUDPMessage> mMessage;
   };
@@ -542,7 +545,7 @@ public:
   class OnStopListeningRunnable : public nsRunnable
   {
   public:
-    OnStopListeningRunnable(nsIUDPServerSocketListener* aListener,
+    OnStopListeningRunnable(const nsMainThreadPtrHandle<nsIUDPServerSocketListener>& aListener,
                             nsIUDPServerSocket* aServ,
                             nsresult aStatus)
       : mListener(aListener)
@@ -553,18 +556,18 @@ public:
     NS_DECL_NSIRUNNABLE
 
   private:
-    nsCOMPtr<nsIUDPServerSocketListener> mListener;
+    nsMainThreadPtrHandle<nsIUDPServerSocketListener> mListener;
     nsCOMPtr<nsIUDPServerSocket> mServ;
     nsresult mStatus;
   };
 
 private:
-  nsCOMPtr<nsIUDPServerSocketListener> mListener;
+  nsMainThreadPtrHandle<nsIUDPServerSocketListener> mListener;
   nsCOMPtr<nsIEventTarget> mTargetThread;
 };
 
-NS_IMPL_THREADSAFE_ISUPPORTS1(ServerSocketListenerProxy,
-                              nsIUDPServerSocketListener)
+NS_IMPL_ISUPPORTS1(ServerSocketListenerProxy,
+                   nsIUDPServerSocketListener)
 
 NS_IMETHODIMP
 ServerSocketListenerProxy::OnPacketReceived(nsIUDPServerSocket* aServ,

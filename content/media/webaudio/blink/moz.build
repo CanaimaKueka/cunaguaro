@@ -6,3 +6,29 @@
 
 MODULE = 'content'
 
+SOURCES += [
+    'Biquad.cpp',
+    'DirectConvolver.cpp',
+    'DynamicsCompressor.cpp',
+    'DynamicsCompressorKernel.cpp',
+    'FFTConvolver.cpp',
+    'HRTFDatabase.cpp',
+    'HRTFDatabaseLoader.cpp',
+    'HRTFElevation.cpp',
+    'HRTFKernel.cpp',
+    'HRTFPanner.cpp',
+    'PeriodicWave.cpp',
+    'Reverb.cpp',
+    'ReverbAccumulationBuffer.cpp',
+    'ReverbConvolver.cpp',
+    'ReverbConvolverStage.cpp',
+    'ReverbInputBuffer.cpp',
+    'ZeroPole.cpp',
+]
+
+LIBXUL_LIBRARY = True
+
+LIBRARY_NAME = 'gkconwebaudio_blink_s'
+
+include('/ipc/chromium/chromium-config.mozbuild')
+

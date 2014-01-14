@@ -11,3 +11,14 @@ EXPORTS += [
     'nsUCVJACID.h',
 ]
 
+SOURCES += [
+    'UnifiedUCVJA.cpp',
+]
+
+LIBRARY_NAME = 'ucvja_s'
+
+LIBXUL_LIBRARY = True
+
+LOCAL_INCLUDES += [
+    '../util',
+]

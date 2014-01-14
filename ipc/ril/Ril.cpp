@@ -48,7 +48,7 @@ private:
 bool
 DispatchRILEvent::RunTask(JSContext *aCx)
 {
-    JSObject *obj = JS_GetGlobalObject(aCx);
+    JSObject *obj = JS::CurrentGlobalOrNull(aCx);
 
     JSObject *array = JS_NewUint8Array(aCx, mMessage->mSize);
     if (!array) {
@@ -76,6 +76,7 @@ public:
                           sockaddr_any& aAddr,
                           const char* aAddress);
   virtual bool SetUp(int aFd);
+  virtual bool SetUpListenSocket(int aFd);
   virtual void GetSocketAddr(const sockaddr_any& aAddr,
                              nsAString& aAddrStr);
 
@@ -152,12 +153,18 @@ RilConnector::SetUp(int aFd)
     return true;
 }
 
+bool
+RilConnector::SetUpListenSocket(int aFd)
+{
+    // Nothing to do here.
+    return true;
+}
+
 void
 RilConnector::GetSocketAddr(const sockaddr_any& aAddr,
                             nsAString& aAddrStr)
 {
-    // Unused.
-    MOZ_NOT_REACHED("This should never be called!");
+    MOZ_CRASH("This should never be called!");
 }
 
 } // anonymous namespace
@@ -205,20 +212,20 @@ void
 RilConsumer::OnConnectSuccess()
 {
     // Nothing to do here.
-    LOG("Socket open for RIL\n");
+    LOG("RIL[%u]: %s\n", mClientId, __FUNCTION__);
 }
 
 void
 RilConsumer::OnConnectError()
 {
-    LOG("%s\n", __FUNCTION__);
+    LOG("RIL[%u]: %s\n", mClientId, __FUNCTION__);
     CloseSocket();
 }
 
 void
 RilConsumer::OnDisconnect()
 {
-    LOG("%s\n", __FUNCTION__);
+    LOG("RIL[%u]: %s\n", mClientId, __FUNCTION__);
     if (!mShutdown) {
         ConnectSocket(new RilConnector(mClientId), mAddress.get(), 1000);
     }

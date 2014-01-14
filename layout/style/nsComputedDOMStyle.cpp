@@ -6,9 +6,10 @@
 
 /* DOM object returned from element.getComputedStyle() */
 
-#include "mozilla/Util.h"
-
 #include "nsComputedDOMStyle.h"
+
+#include "mozilla/Preferences.h"
+#include "mozilla/Util.h"
 
 #include "nsError.h"
 #include "nsDOMString.h"
@@ -18,7 +19,6 @@
 #include "nsContentUtils.h"
 #include "nsIContent.h"
 
-#include "nsCSSProps.h"
 #include "nsDOMCSSRect.h"
 #include "nsDOMCSSRGBColor.h"
 #include "nsDOMCSSValueList.h"
@@ -41,7 +41,9 @@
 #include "nsDOMCSSDeclaration.h"
 #include "nsStyleTransformMatrix.h"
 #include "mozilla/dom/Element.h"
+#include "prtime.h"
 #include "nsWrapperCacheInlines.h"
+#include "mozilla/AppUnits.h"
 #include <algorithm>
 
 using namespace mozilla;
@@ -81,6 +83,149 @@ NS_NewComputedDOMStyle(dom::Element* aElement, const nsAString& aPseudoElt,
   }
 
   return computedStyle.forget();
+}
+
+/**
+ * An object that represents the ordered set of properties that are exposed on
+ * an nsComputedDOMStyle object and how their computed values can be obtained.
+ */
+struct nsComputedStyleMap
+{
+  friend class nsComputedDOMStyle;
+
+  struct Entry
+  {
+    // Create a pointer-to-member-function type.
+    typedef mozilla::dom::CSSValue* (nsComputedDOMStyle::*ComputeMethod)();
+
+    nsCSSProperty mProperty;
+    ComputeMethod mGetter;
+
+    bool IsLayoutFlushNeeded() const
+    {
+      return nsCSSProps::PropHasFlags(mProperty,
+                                      CSS_PROPERTY_GETCS_NEEDS_LAYOUT_FLUSH);
+    }
+
+    bool IsEnabled() const
+    {
+      return nsCSSProps::IsEnabled(mProperty);
+    }
+  };
+
+  // We define this enum just to count the total number of properties that can
+  // be exposed on an nsComputedDOMStyle, including properties that may be
+  // disabled.
+  enum {
+#define COMPUTED_STYLE_PROP(prop_, method_) \
+    eComputedStyleProperty_##prop_,
+#include "nsComputedDOMStylePropertyList.h"
+#undef COMPUTED_STYLE_PROP
+    eComputedStyleProperty_COUNT
+  };
+
+  /**
+   * Returns the number of properties that should be exposed on an
+   * nsComputedDOMStyle, ecxluding any disabled properties.
+   */
+  uint32_t Length()
+  {
+    Update();
+    return mExposedPropertyCount;
+  }
+
+  /**
+   * Returns the property at the given index in the list of properties
+   * that should be exposed on an nsComputedDOMStyle, excluding any
+   * disabled properties.
+   */
+  nsCSSProperty PropertyAt(uint32_t aIndex)
+  {
+    Update();
+    return kEntries[EntryIndex(aIndex)].mProperty;
+  }
+
+  /**
+   * Searches for and returns the computed style map entry for the given
+   * property, or nullptr if the property is not exposed on nsComputedDOMStyle
+   * or is currently disabled.
+   */
+  const Entry* FindEntryForProperty(nsCSSProperty aPropID)
+  {
+    Update();
+    for (uint32_t i = 0; i < mExposedPropertyCount; i++) {
+      const Entry* entry = &kEntries[EntryIndex(i)];
+      if (entry->mProperty == aPropID) {
+        return entry;
+      }
+    }
+    return nullptr;
+  }
+
+  /**
+   * Records that mIndexMap needs updating, due to prefs changing that could
+   * affect the set of properties exposed on an nsComputedDOMStyle.
+   */
+  void MarkDirty() { mExposedPropertyCount = 0; }
+
+  // The member variables are public so that we can use an initializer in
+  // nsComputedDOMStyle::GetComputedStyleMap.  Use the member functions
+  // above to get information from this object.
+
+  /**
+   * An entry for each property that can be exposed on an nsComputedDOMStyle.
+   */
+  const Entry kEntries[eComputedStyleProperty_COUNT];
+
+  /**
+   * The number of properties that should be exposed on an nsComputedDOMStyle.
+   * This will be less than eComputedStyleProperty_COUNT if some property
+   * prefs are disabled.  A value of 0 indicates that it and mIndexMap are out
+   * of date.
+   */
+  uint32_t mExposedPropertyCount;
+
+  /**
+   * A map of indexes on the nsComputedDOMStyle object to indexes into kEntries.
+   */
+  uint32_t mIndexMap[eComputedStyleProperty_COUNT];
+
+private:
+  /**
+   * Returns whether mExposedPropertyCount and mIndexMap are out of date.
+   */
+  bool IsDirty() { return mExposedPropertyCount == 0; }
+
+  /**
+   * Updates mExposedPropertyCount and mIndexMap to take into account properties
+   * whose prefs are currently disabled.
+   */
+  void Update();
+
+  /**
+   * Maps an nsComputedDOMStyle indexed getter index to an index into kEntries.
+   */
+  uint32_t EntryIndex(uint32_t aIndex) const
+  {
+    MOZ_ASSERT(aIndex < mExposedPropertyCount);
+    return mIndexMap[aIndex];
+  }
+};
+
+void
+nsComputedStyleMap::Update()
+{
+  if (!IsDirty()) {
+    return;
+  }
+
+  uint32_t index = 0;
+  for (uint32_t i = 0; i < eComputedStyleProperty_COUNT; i++) {
+    if (kEntries[i].IsEnabled()) {
+      mIndexMap[index++] = i;
+    }
+  }
+  mExposedPropertyCount = index;
 }
 
 nsComputedDOMStyle::nsComputedDOMStyle(dom::Element* aElement,
@@ -224,7 +369,7 @@ nsComputedDOMStyle::GetLength(uint32_t* aLength)
 {
   NS_PRECONDITION(aLength, "Null aLength!  Prepare to die!");
 
-  (void)GetQueryablePropertyMap(aLength);
+  *aLength = GetComputedStyleMap()->Length();
 
   return NS_OK;
 }
@@ -273,7 +418,7 @@ nsComputedDOMStyle::GetStyleContextForElement(Element* aElement,
   // set.  Using the pres shell from the content also means that any
   // content that's actually *in* a document will get the style from the
   // correct document.
-  nsIPresShell *presShell = GetPresShellForContent(aElement);
+  nsCOMPtr<nsIPresShell> presShell = GetPresShellForContent(aElement);
   if (!presShell) {
     presShell = aPresShell;
     if (!presShell)
@@ -307,10 +452,9 @@ nsComputedDOMStyle::GetStyleContextForElementNoFlush(Element* aElement,
   }
 
   if (!aPseudo && aStyleType == eAll) {
-    nsIFrame* frame = aElement->GetPrimaryFrame();
+    nsIFrame* frame = nsLayoutUtils::GetStyleFrame(aElement);
     if (frame) {
-      nsStyleContext* result =
-        nsLayoutUtils::GetStyleFrame(frame)->StyleContext();
+      nsStyleContext* result = frame->StyleContext();
       // Don't use the style context if it was influenced by
       // pseudo-elements, since then it's not the primary style
       // for this element.
@@ -459,7 +603,7 @@ nsComputedDOMStyle::GetPropertyCSSValue(const nsAString& aPropertyName, ErrorRes
   // for all aliases, including those in nsCSSPropAliasList) want
   // aliases to be enumerable (via GetLength and IndexedGetter), so
   // handle them here rather than adding entries to
-  // GetQueryablePropertyMap.
+  // the nsComputedStyleMap.
   if (prop != eCSSProperty_UNKNOWN &&
       nsCSSProps::PropHasFlags(prop, CSS_PROPERTY_IS_ALIAS)) {
     const nsCSSProperty* subprops = nsCSSProps::SubpropertyEntryFor(prop);
@@ -468,17 +612,9 @@ nsComputedDOMStyle::GetPropertyCSSValue(const nsAString& aPropertyName, ErrorRes
     prop = subprops[0];
   }
 
-  const ComputedStyleMapEntry* propEntry = nullptr;
-  {
-    uint32_t length = 0;
-    const ComputedStyleMapEntry* propMap = GetQueryablePropertyMap(&length);
-    for (uint32_t i = 0; i < length; ++i) {
-      if (prop == propMap[i].mProperty) {
-        propEntry = &propMap[i];
-        break;
-      }
-    }
-  }
+  const nsComputedStyleMap::Entry* propEntry =
+    GetComputedStyleMap()->FindEntryForProperty(prop);
+
   if (!propEntry) {
 #ifdef DEBUG_ComputedDOMStyle
     NS_WARNING(PromiseFlatCString(NS_ConvertUTF16toUTF8(aPropertyName) +
@@ -494,9 +630,9 @@ nsComputedDOMStyle::GetPropertyCSSValue(const nsAString& aPropertyName, ErrorRes
   // we're computing style in, not on the document mContent is in -- the two
   // may be different.
   document->FlushPendingNotifications(
-    propEntry->mNeedsLayoutFlush ? Flush_Layout : Flush_Style);
+    propEntry->IsLayoutFlushNeeded() ? Flush_Layout : Flush_Style);
 #ifdef DEBUG
-  mFlushedPendingReflows = propEntry->mNeedsLayoutFlush;
+  mFlushedPendingReflows = propEntry->IsLayoutFlushNeeded();
 #endif
 
   mPresShell = document->GetShell();
@@ -621,11 +757,10 @@ void
 nsComputedDOMStyle::IndexedGetter(uint32_t aIndex, bool& aFound,
                                   nsAString& aPropName)
 {
-  uint32_t length = 0;
-  const ComputedStyleMapEntry* propMap = GetQueryablePropertyMap(&length);
-  aFound = aIndex < length;
+  nsComputedStyleMap* map = GetComputedStyleMap();
+  aFound = aIndex < map->Length();
   if (aFound) {
-    CopyASCIItoUTF16(nsCSSProps::GetStringValue(propMap[aIndex].mProperty),
+    CopyASCIItoUTF16(nsCSSProps::GetStringValue(map->PropertyAt(aIndex)),
                      aPropName);
   }
 }
@@ -635,7 +770,7 @@ nsComputedDOMStyle::IndexedGetter(uint32_t aIndex, bool& aFound,
 CSSValue*
 nsComputedDOMStyle::DoGetBinding()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
 
   const nsStyleDisplay* display = StyleDisplay();
 
@@ -651,7 +786,7 @@ nsComputedDOMStyle::DoGetBinding()
 CSSValue*
 nsComputedDOMStyle::DoGetClear()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   val->SetIdent(nsCSSProps::ValueToKeywordEnum(StyleDisplay()->mBreakType,
                                                nsCSSProps::kClearKTable));
   return val;
@@ -660,7 +795,7 @@ nsComputedDOMStyle::DoGetClear()
 CSSValue*
 nsComputedDOMStyle::DoGetFloat()
 {
-  nsROCSSPrimitiveValue* val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue* val = new nsROCSSPrimitiveValue;
   val->SetIdent(nsCSSProps::ValueToKeywordEnum(StyleDisplay()->mFloats,
                                                nsCSSProps::kFloatKTable));
   return val;
@@ -675,7 +810,7 @@ nsComputedDOMStyle::DoGetBottom()
 CSSValue*
 nsComputedDOMStyle::DoGetStackSizing()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   val->SetIdent(StyleXUL()->mStretchStack ? eCSSKeyword_stretch_to_fit :
                 eCSSKeyword_ignore);
   return val;
@@ -690,10 +825,10 @@ nsComputedDOMStyle::SetToRGBAColor(nsROCSSPrimitiveValue* aValue,
     return;
   }
 
-  nsROCSSPrimitiveValue *red   = GetROCSSPrimitiveValue();
-  nsROCSSPrimitiveValue *green = GetROCSSPrimitiveValue();
-  nsROCSSPrimitiveValue *blue  = GetROCSSPrimitiveValue();
-  nsROCSSPrimitiveValue *alpha  = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *red   = new nsROCSSPrimitiveValue;
+  nsROCSSPrimitiveValue *green = new nsROCSSPrimitiveValue;
+  nsROCSSPrimitiveValue *blue  = new nsROCSSPrimitiveValue;
+  nsROCSSPrimitiveValue *alpha  = new nsROCSSPrimitiveValue;
 
   uint8_t a = NS_GET_A(aColor);
   nsDOMCSSRGBColor *rgbColor =
@@ -710,7 +845,7 @@ nsComputedDOMStyle::SetToRGBAColor(nsROCSSPrimitiveValue* aValue,
 CSSValue*
 nsComputedDOMStyle::DoGetColor()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   SetToRGBAColor(val, StyleColor()->mColor);
   return val;
 }
@@ -718,7 +853,7 @@ nsComputedDOMStyle::DoGetColor()
 CSSValue*
 nsComputedDOMStyle::DoGetOpacity()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   val->SetNumber(StyleDisplay()->mOpacity);
   return val;
 }
@@ -726,7 +861,7 @@ nsComputedDOMStyle::DoGetOpacity()
 CSSValue*
 nsComputedDOMStyle::DoGetColumnCount()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
 
   const nsStyleColumn* column = StyleColumn();
 
@@ -742,7 +877,7 @@ nsComputedDOMStyle::DoGetColumnCount()
 CSSValue*
 nsComputedDOMStyle::DoGetColumnWidth()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
 
   // XXX fix the auto case. When we actually have a column frame, I think
   // we should return the computed column width.
@@ -753,7 +888,7 @@ nsComputedDOMStyle::DoGetColumnWidth()
 CSSValue*
 nsComputedDOMStyle::DoGetColumnGap()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
 
   const nsStyleColumn* column = StyleColumn();
   if (column->mColumnGap.GetUnit() == eStyleUnit_Normal) {
@@ -768,7 +903,7 @@ nsComputedDOMStyle::DoGetColumnGap()
 CSSValue*
 nsComputedDOMStyle::DoGetColumnFill()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   val->SetIdent(
     nsCSSProps::ValueToKeywordEnum(StyleColumn()->mColumnFill,
                                    nsCSSProps::kColumnFillKTable));
@@ -778,7 +913,7 @@ nsComputedDOMStyle::DoGetColumnFill()
 CSSValue*
 nsComputedDOMStyle::DoGetColumnRuleWidth()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   val->SetAppUnits(StyleColumn()->GetComputedColumnRuleWidth());
   return val;
 }
@@ -786,7 +921,7 @@ nsComputedDOMStyle::DoGetColumnRuleWidth()
 CSSValue*
 nsComputedDOMStyle::DoGetColumnRuleStyle()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   val->SetIdent(
     nsCSSProps::ValueToKeywordEnum(StyleColumn()->mColumnRuleStyle,
                                    nsCSSProps::kBorderStyleKTable));
@@ -796,7 +931,7 @@ nsComputedDOMStyle::DoGetColumnRuleStyle()
 CSSValue*
 nsComputedDOMStyle::DoGetColumnRuleColor()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
 
   const nsStyleColumn* column = StyleColumn();
   nscolor ruleColor;
@@ -816,14 +951,14 @@ nsComputedDOMStyle::DoGetContent()
   const nsStyleContent *content = StyleContent();
 
   if (content->ContentCount() == 0) {
-    nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+    nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
     val->SetIdent(eCSSKeyword_none);
     return val;
   }
 
   if (content->ContentCount() == 1 &&
       content->ContentAt(0).mType == eStyleContentType_AltContent) {
-    nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+    nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
     val->SetIdent(eCSSKeyword__moz_alt_content);
     return val;
   }
@@ -831,7 +966,7 @@ nsComputedDOMStyle::DoGetContent()
   nsDOMCSSValueList *valueList = GetROCSSValueList(false);
 
   for (uint32_t i = 0, i_end = content->ContentCount(); i < i_end; ++i) {
-    nsROCSSPrimitiveValue* val = GetROCSSPrimitiveValue();
+    nsROCSSPrimitiveValue* val = new nsROCSSPrimitiveValue;
     valueList->AppendCSSValue(val);
 
     const nsStyleContentData &data = content->ContentAt(i);
@@ -926,7 +1061,7 @@ nsComputedDOMStyle::DoGetCounterIncrement()
   const nsStyleContent *content = StyleContent();
 
   if (content->CounterIncrementCount() == 0) {
-    nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+    nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
     val->SetIdent(eCSSKeyword_none);
     return val;
   }
@@ -934,10 +1069,10 @@ nsComputedDOMStyle::DoGetCounterIncrement()
   nsDOMCSSValueList *valueList = GetROCSSValueList(false);
 
   for (uint32_t i = 0, i_end = content->CounterIncrementCount(); i < i_end; ++i) {
-    nsROCSSPrimitiveValue* name = GetROCSSPrimitiveValue();
+    nsROCSSPrimitiveValue* name = new nsROCSSPrimitiveValue;
     valueList->AppendCSSValue(name);
 
-    nsROCSSPrimitiveValue* value = GetROCSSPrimitiveValue();
+    nsROCSSPrimitiveValue* value = new nsROCSSPrimitiveValue;
     valueList->AppendCSSValue(value);
 
     const nsStyleCounterData *data = content->GetCounterIncrementAt(i);
@@ -966,19 +1101,19 @@ nsComputedDOMStyle::DoGetTransformOrigin()
   /* Now, get the values. */
   const nsStyleDisplay* display = StyleDisplay();
 
-  nsROCSSPrimitiveValue* width = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue* width = new nsROCSSPrimitiveValue;
   SetValueToCoord(width, display->mTransformOrigin[0], false,
                   &nsComputedDOMStyle::GetFrameBoundsWidthForTransform);
   valueList->AppendCSSValue(width);
 
-  nsROCSSPrimitiveValue* height = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue* height = new nsROCSSPrimitiveValue;
   SetValueToCoord(height, display->mTransformOrigin[1], false,
                   &nsComputedDOMStyle::GetFrameBoundsHeightForTransform);
   valueList->AppendCSSValue(height);
 
   if (display->mTransformOrigin[2].GetUnit() != eStyleUnit_Coord ||
       display->mTransformOrigin[2].GetCoordValue() != 0) {
-    nsROCSSPrimitiveValue* depth = GetROCSSPrimitiveValue();
+    nsROCSSPrimitiveValue* depth = new nsROCSSPrimitiveValue;
     SetValueToCoord(depth, display->mTransformOrigin[2], false,
                     nullptr);
     valueList->AppendCSSValue(depth);
@@ -1003,12 +1138,12 @@ nsComputedDOMStyle::DoGetPerspectiveOrigin()
   /* Now, get the values. */
   const nsStyleDisplay* display = StyleDisplay();
 
-  nsROCSSPrimitiveValue* width = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue* width = new nsROCSSPrimitiveValue;
   SetValueToCoord(width, display->mPerspectiveOrigin[0], false,
                   &nsComputedDOMStyle::GetFrameBoundsWidthForTransform);
   valueList->AppendCSSValue(width);
 
-  nsROCSSPrimitiveValue* height = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue* height = new nsROCSSPrimitiveValue;
   SetValueToCoord(height, display->mPerspectiveOrigin[1], false,
                   &nsComputedDOMStyle::GetFrameBoundsHeightForTransform);
   valueList->AppendCSSValue(height);
@@ -1019,7 +1154,7 @@ nsComputedDOMStyle::DoGetPerspectiveOrigin()
 CSSValue*
 nsComputedDOMStyle::DoGetPerspective()
 {
-    nsROCSSPrimitiveValue* val = GetROCSSPrimitiveValue();
+    nsROCSSPrimitiveValue* val = new nsROCSSPrimitiveValue;
     if (StyleDisplay()->mChildPerspective.GetUnit() == eStyleUnit_Coord &&
         StyleDisplay()->mChildPerspective.GetCoordValue() == 0.0) {
         val->SetIdent(eCSSKeyword_none);
@@ -1032,7 +1167,7 @@ nsComputedDOMStyle::DoGetPerspective()
 CSSValue*
 nsComputedDOMStyle::DoGetBackfaceVisibility()
 {
-    nsROCSSPrimitiveValue* val = GetROCSSPrimitiveValue();
+    nsROCSSPrimitiveValue* val = new nsROCSSPrimitiveValue;
     val->SetIdent(
         nsCSSProps::ValueToKeywordEnum(StyleDisplay()->mBackfaceVisibility,
                                        nsCSSProps::kBackfaceVisibilityKTable));
@@ -1042,7 +1177,7 @@ nsComputedDOMStyle::DoGetBackfaceVisibility()
 CSSValue*
 nsComputedDOMStyle::DoGetTransformStyle()
 {
-    nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+    nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
     val->SetIdent(
         nsCSSProps::ValueToKeywordEnum(StyleDisplay()->mTransformStyle,
                                        nsCSSProps::kTransformStyleKTable));
@@ -1063,7 +1198,7 @@ nsComputedDOMStyle::DoGetTransform()
    * entry and hand it back.
    */
   if (!display->mSpecifiedTransform) {
-    nsROCSSPrimitiveValue* val = GetROCSSPrimitiveValue();
+    nsROCSSPrimitiveValue* val = new nsROCSSPrimitiveValue;
 
     /* Set it to "none." */
     val->SetIdent(eCSSKeyword_none);
@@ -1094,8 +1229,14 @@ nsComputedDOMStyle::DoGetTransform()
                                             mStyleContextHolder->PresContext(),
                                             dummy,
                                             bounds,
-                                            float(nsDeviceContext::AppUnitsPerCSSPixel()));
+                                            float(mozilla::AppUnitsPerCSSPixel()));
 
+  return MatrixToCSSValue(matrix);
+}
+
+/* static */ nsROCSSPrimitiveValue*
+nsComputedDOMStyle::MatrixToCSSValue(gfx3DMatrix& matrix)
+{
   bool is3D = !matrix.Is2D();
 
   nsAutoString resultString(NS_LITERAL_STRING("matrix"));
@@ -1144,7 +1285,7 @@ nsComputedDOMStyle::DoGetTransform()
   resultString.Append(NS_LITERAL_STRING(")"));
 
   /* Create a value to hold our result. */
-  nsROCSSPrimitiveValue* val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue* val = new nsROCSSPrimitiveValue;
 
   val->SetString(resultString);
   return val;
@@ -1156,7 +1297,7 @@ nsComputedDOMStyle::DoGetCounterReset()
   const nsStyleContent *content = StyleContent();
 
   if (content->CounterResetCount() == 0) {
-    nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+    nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
     val->SetIdent(eCSSKeyword_none);
     return val;
   }
@@ -1164,10 +1305,10 @@ nsComputedDOMStyle::DoGetCounterReset()
   nsDOMCSSValueList *valueList = GetROCSSValueList(false);
 
   for (uint32_t i = 0, i_end = content->CounterResetCount(); i < i_end; ++i) {
-    nsROCSSPrimitiveValue* name = GetROCSSPrimitiveValue();
+    nsROCSSPrimitiveValue* name = new nsROCSSPrimitiveValue;
     valueList->AppendCSSValue(name);
 
-    nsROCSSPrimitiveValue* value = GetROCSSPrimitiveValue();
+    nsROCSSPrimitiveValue* value = new nsROCSSPrimitiveValue;
     valueList->AppendCSSValue(value);
 
     const nsStyleCounterData *data = content->GetCounterResetAt(i);
@@ -1186,7 +1327,7 @@ nsComputedDOMStyle::DoGetQuotes()
   const nsStyleQuotes *quotes = StyleQuotes();
 
   if (quotes->QuotesCount() == 0) {
-    nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+    nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
     val->SetIdent(eCSSKeyword_none);
     return val;
   }
@@ -1194,10 +1335,10 @@ nsComputedDOMStyle::DoGetQuotes()
   nsDOMCSSValueList *valueList = GetROCSSValueList(false);
 
   for (uint32_t i = 0, i_end = quotes->QuotesCount(); i < i_end; ++i) {
-    nsROCSSPrimitiveValue* openVal = GetROCSSPrimitiveValue();
+    nsROCSSPrimitiveValue* openVal = new nsROCSSPrimitiveValue;
     valueList->AppendCSSValue(openVal);
 
-    nsROCSSPrimitiveValue* closeVal = GetROCSSPrimitiveValue();
+    nsROCSSPrimitiveValue* closeVal = new nsROCSSPrimitiveValue;
     valueList->AppendCSSValue(closeVal);
 
     nsString s;
@@ -1214,7 +1355,7 @@ nsComputedDOMStyle::DoGetQuotes()
 CSSValue*
 nsComputedDOMStyle::DoGetFontFamily()
 {
-  nsROCSSPrimitiveValue* val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue* val = new nsROCSSPrimitiveValue;
 
   const nsStyleFont* font = StyleFont();
 
@@ -1247,7 +1388,7 @@ nsComputedDOMStyle::DoGetFontFamily()
 CSSValue*
 nsComputedDOMStyle::DoGetFontSize()
 {
-  nsROCSSPrimitiveValue* val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue* val = new nsROCSSPrimitiveValue;
 
   // Note: StyleFont()->mSize is the 'computed size';
   // StyleFont()->mFont.size is the 'actual size'
@@ -1258,7 +1399,7 @@ nsComputedDOMStyle::DoGetFontSize()
 CSSValue*
 nsComputedDOMStyle::DoGetFontSizeAdjust()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
 
   const nsStyleFont *font = StyleFont();
 
@@ -1272,9 +1413,18 @@ nsComputedDOMStyle::DoGetFontSizeAdjust()
 }
 
 CSSValue*
+nsComputedDOMStyle::DoGetOSXFontSmoothing()
+{
+  nsROCSSPrimitiveValue* val = new nsROCSSPrimitiveValue;
+  val->SetIdent(nsCSSProps::ValueToKeywordEnum(StyleFont()->mFont.smoothing,
+                                               nsCSSProps::kFontSmoothingKTable));
+  return val;
+}
+
+CSSValue*
 nsComputedDOMStyle::DoGetFontStretch()
 {
-  nsROCSSPrimitiveValue* val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue* val = new nsROCSSPrimitiveValue;
 
   val->SetIdent(nsCSSProps::ValueToKeywordEnum(StyleFont()->mFont.stretch,
                                                nsCSSProps::kFontStretchKTable));
@@ -1285,7 +1435,7 @@ nsComputedDOMStyle::DoGetFontStretch()
 CSSValue*
 nsComputedDOMStyle::DoGetFontStyle()
 {
-  nsROCSSPrimitiveValue* val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue* val = new nsROCSSPrimitiveValue;
   val->SetIdent(nsCSSProps::ValueToKeywordEnum(StyleFont()->mFont.style,
                                                nsCSSProps::kFontStyleKTable));
   return val;
@@ -1294,7 +1444,7 @@ nsComputedDOMStyle::DoGetFontStyle()
 CSSValue*
 nsComputedDOMStyle::DoGetFontWeight()
 {
-  nsROCSSPrimitiveValue* val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue* val = new nsROCSSPrimitiveValue;
 
   const nsStyleFont* font = StyleFont();
 
@@ -1308,7 +1458,7 @@ nsComputedDOMStyle::DoGetFontWeight()
 CSSValue*
 nsComputedDOMStyle::DoGetFontVariant()
 {
-  nsROCSSPrimitiveValue* val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue* val = new nsROCSSPrimitiveValue;
   val->SetIdent(
     nsCSSProps::ValueToKeywordEnum(StyleFont()->mFont.variant,
                                    nsCSSProps::kFontVariantKTable));
@@ -1318,7 +1468,7 @@ nsComputedDOMStyle::DoGetFontVariant()
 CSSValue*
 nsComputedDOMStyle::DoGetFontFeatureSettings()
 {
-  nsROCSSPrimitiveValue* val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue* val = new nsROCSSPrimitiveValue;
 
   const nsStyleFont* font = StyleFont();
   if (font->mFont.fontFeatureSettings.IsEmpty()) {
@@ -1333,9 +1483,19 @@ nsComputedDOMStyle::DoGetFontFeatureSettings()
 }
 
 CSSValue*
+nsComputedDOMStyle::DoGetFontKerning()
+{
+  nsROCSSPrimitiveValue* val = new nsROCSSPrimitiveValue;
+  val->SetIdent(
+    nsCSSProps::ValueToKeywordEnum(StyleFont()->mFont.kerning,
+                                   nsCSSProps::kFontKerningKTable));
+  return val;
+}
+
+CSSValue*
 nsComputedDOMStyle::DoGetFontLanguageOverride()
 {
-  nsROCSSPrimitiveValue* val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue* val = new nsROCSSPrimitiveValue;
 
   const nsStyleFont* font = StyleFont();
   if (font->mFont.languageOverride.IsEmpty()) {
@@ -1349,6 +1509,157 @@ nsComputedDOMStyle::DoGetFontLanguageOverride()
 }
 
 CSSValue*
+nsComputedDOMStyle::DoGetFontSynthesis()
+{
+  nsROCSSPrimitiveValue* val = new nsROCSSPrimitiveValue;
+
+  int32_t intValue = StyleFont()->mFont.synthesis;
+
+  if (0 == intValue) {
+    val->SetIdent(eCSSKeyword_none);
+  } else {
+    nsAutoString valueStr;
+
+    nsStyleUtil::AppendBitmaskCSSValue(eCSSProperty_font_synthesis,
+      intValue, NS_FONT_SYNTHESIS_WEIGHT,
+      NS_FONT_SYNTHESIS_STYLE, valueStr);
+    val->SetString(valueStr);
+  }
+
+  return val;
+}
+
+CSSValue*
+nsComputedDOMStyle::DoGetFontVariantAlternates()
+{
+  nsROCSSPrimitiveValue* val = new nsROCSSPrimitiveValue;
+
+  int32_t intValue = StyleFont()->mFont.variantAlternates;
+
+  if (0 == intValue) {
+    val->SetIdent(eCSSKeyword_normal);
+    return val;
+  }
+
+  // first, include enumerated values
+  nsAutoString valueStr;
+
+  nsStyleUtil::AppendBitmaskCSSValue(eCSSProperty_font_variant_alternates,
+    intValue & NS_FONT_VARIANT_ALTERNATES_ENUMERATED_MASK,
+    NS_FONT_VARIANT_ALTERNATES_HISTORICAL,
+    NS_FONT_VARIANT_ALTERNATES_HISTORICAL, valueStr);
+
+  // next, include functional values if present
+  if (intValue & NS_FONT_VARIANT_ALTERNATES_FUNCTIONAL_MASK) {
+    nsStyleUtil::SerializeFunctionalAlternates(StyleFont()->mFont.alternateValues,
+                                               valueStr);
+  }
+
+  val->SetString(valueStr);
+  return val;
+}
+
+
+CSSValue*
+nsComputedDOMStyle::DoGetFontVariantCaps()
+{
+  nsROCSSPrimitiveValue* val = new nsROCSSPrimitiveValue;
+
+  int32_t intValue = StyleFont()->mFont.variantCaps;
+
+  if (0 == intValue) {
+    val->SetIdent(eCSSKeyword_normal);
+  } else {
+    val->SetIdent(
+      nsCSSProps::ValueToKeywordEnum(intValue,
+                                     nsCSSProps::kFontVariantCapsKTable));
+  }
+
+  return val;
+}
+
+CSSValue*
+nsComputedDOMStyle::DoGetFontVariantEastAsian()
+{
+  nsROCSSPrimitiveValue* val = new nsROCSSPrimitiveValue;
+
+  int32_t intValue = StyleFont()->mFont.variantEastAsian;
+
+  if (0 == intValue) {
+    val->SetIdent(eCSSKeyword_normal);
+  } else {
+    nsAutoString valueStr;
+
+    nsStyleUtil::AppendBitmaskCSSValue(eCSSProperty_font_variant_east_asian,
+      intValue, NS_FONT_VARIANT_EAST_ASIAN_JIS78,
+      NS_FONT_VARIANT_EAST_ASIAN_RUBY, valueStr);
+    val->SetString(valueStr);
+  }
+
+  return val;
+}
+
+CSSValue*
+nsComputedDOMStyle::DoGetFontVariantLigatures()
+{
+  nsROCSSPrimitiveValue* val = new nsROCSSPrimitiveValue;
+
+  int32_t intValue = StyleFont()->mFont.variantLigatures;
+
+  if (0 == intValue) {
+    val->SetIdent(eCSSKeyword_normal);
+  } else {
+    nsAutoString valueStr;
+
+    nsStyleUtil::AppendBitmaskCSSValue(eCSSProperty_font_variant_ligatures,
+      intValue, NS_FONT_VARIANT_LIGATURES_COMMON,
+      NS_FONT_VARIANT_LIGATURES_NO_CONTEXTUAL, valueStr);
+    val->SetString(valueStr);
+  }
+
+  return val;
+}
+
+CSSValue*
+nsComputedDOMStyle::DoGetFontVariantNumeric()
+{
+  nsROCSSPrimitiveValue* val = new nsROCSSPrimitiveValue;
+
+  int32_t intValue = StyleFont()->mFont.variantNumeric;
+
+  if (0 == intValue) {
+    val->SetIdent(eCSSKeyword_normal);
+  } else {
+    nsAutoString valueStr;
+
+    nsStyleUtil::AppendBitmaskCSSValue(eCSSProperty_font_variant_numeric,
+      intValue, NS_FONT_VARIANT_NUMERIC_LINING,
+      NS_FONT_VARIANT_NUMERIC_ORDINAL, valueStr);
+    val->SetString(valueStr);
+  }
+
+  return val;
+}
+
+CSSValue*
+nsComputedDOMStyle::DoGetFontVariantPosition()
+{
+  nsROCSSPrimitiveValue* val = new nsROCSSPrimitiveValue;
+
+  int32_t intValue = StyleFont()->mFont.variantPosition;
+
+  if (0 == intValue) {
+    val->SetIdent(eCSSKeyword_normal);
+  } else {
+    val->SetIdent(
+      nsCSSProps::ValueToKeywordEnum(intValue,
+                                     nsCSSProps::kFontVariantPositionKTable));
+  }
+
+  return val;
+}
+
+CSSValue*
 nsComputedDOMStyle::GetBackgroundList(uint8_t nsStyleBackground::Layer::* aMember,
                                       uint32_t nsStyleBackground::* aCount,
                                       const int32_t aTable[])
@@ -1358,7 +1669,7 @@ nsComputedDOMStyle::GetBackgroundList(uint8_t nsStyleBackground::Layer::* aMembe
   nsDOMCSSValueList *valueList = GetROCSSValueList(true);
 
   for (uint32_t i = 0, i_end = bg->*aCount; i < i_end; ++i) {
-    nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+    nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
     valueList->AppendCSSValue(val);
     val->SetIdent(nsCSSProps::ValueToKeywordEnum(bg->mLayers[i].*aMember,
                                                  aTable));
@@ -1386,7 +1697,7 @@ nsComputedDOMStyle::DoGetBackgroundClip()
 CSSValue*
 nsComputedDOMStyle::DoGetBackgroundColor()
 {
-  nsROCSSPrimitiveValue* val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue* val = new nsROCSSPrimitiveValue;
   SetToRGBAColor(val, StyleBackground()->mBackgroundColor);
   return val;
 }
@@ -1489,7 +1800,7 @@ nsComputedDOMStyle::GetCSSGradientString(const nsStyleGradient* aGradient,
 
   bool needSep = false;
   nsAutoString tokenString;
-  nsROCSSPrimitiveValue *tmpVal = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *tmpVal = new nsROCSSPrimitiveValue;
 
   if (isRadial && !aGradient->mLegacySyntax) {
     if (aGradient->mSize != NS_STYLE_GRADIENT_SIZE_EXPLICIT_SIZE) {
@@ -1544,16 +1855,7 @@ nsComputedDOMStyle::GetCSSGradientString(const nsStyleGradient* aGradient,
     if (needSep) {
       aString.AppendLiteral(" ");
     }
-    tmpVal->SetNumber(aGradient->mAngle.GetAngleValue());
-    tmpVal->GetCssText(tokenString);
-    aString.Append(tokenString);
-    switch (aGradient->mAngle.GetUnit()) {
-    case eStyleUnit_Degree: aString.AppendLiteral("deg"); break;
-    case eStyleUnit_Grad: aString.AppendLiteral("grad"); break;
-    case eStyleUnit_Radian: aString.AppendLiteral("rad"); break;
-    case eStyleUnit_Turn: aString.AppendLiteral("turn"); break;
-    default: NS_NOTREACHED("unrecognized angle unit");
-    }
+    nsStyleUtil::AppendAngleValue(aGradient->mAngle, aString);
     needSep = true;
   }
 
@@ -1611,13 +1913,13 @@ nsComputedDOMStyle::GetImageRectString(nsIURI* aURI,
   nsDOMCSSValueList* valueList = GetROCSSValueList(true);
 
   // <uri>
-  nsROCSSPrimitiveValue *valURI = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *valURI = new nsROCSSPrimitiveValue;
   valueList->AppendCSSValue(valURI);
   valURI->SetURI(aURI);
 
   // <top>, <right>, <bottom>, <left>
   NS_FOR_CSS_SIDES(side) {
-    nsROCSSPrimitiveValue *valSide = GetROCSSPrimitiveValue();
+    nsROCSSPrimitiveValue *valSide = new nsROCSSPrimitiveValue;
     valueList->AppendCSSValue(valSide);
     SetValueToCoord(valSide, aCropRect.Get(side), false);
   }
@@ -1688,7 +1990,7 @@ nsComputedDOMStyle::DoGetBackgroundImage()
   nsDOMCSSValueList *valueList = GetROCSSValueList(true);
 
   for (uint32_t i = 0, i_end = bg->mImageCount; i < i_end; ++i) {
-    nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+    nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
     valueList->AppendCSSValue(val);
 
     const nsStyleImage& image = bg->mLayers[i].mImage;
@@ -1701,7 +2003,7 @@ nsComputedDOMStyle::DoGetBackgroundImage()
 CSSValue*
 nsComputedDOMStyle::DoGetBackgroundInlinePolicy()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   val->SetIdent(nsCSSProps::ValueToKeywordEnum(
                   StyleBackground()->mBackgroundInlinePolicy,
                   nsCSSProps::kBackgroundInlinePolicyKTable));
@@ -1727,10 +2029,10 @@ nsComputedDOMStyle::DoGetBackgroundPosition()
     nsDOMCSSValueList *itemList = GetROCSSValueList(false);
     valueList->AppendCSSValue(itemList);
 
-    nsROCSSPrimitiveValue *valX = GetROCSSPrimitiveValue();
+    nsROCSSPrimitiveValue *valX = new nsROCSSPrimitiveValue;
     itemList->AppendCSSValue(valX);
 
-    nsROCSSPrimitiveValue *valY = GetROCSSPrimitiveValue();
+    nsROCSSPrimitiveValue *valY = new nsROCSSPrimitiveValue;
     itemList->AppendCSSValue(valY);
 
     const nsStyleBackground::Position &pos = bg->mLayers[i].mPosition;
@@ -1770,7 +2072,7 @@ nsComputedDOMStyle::DoGetBackgroundRepeat()
     nsDOMCSSValueList *itemList = GetROCSSValueList(false);
     valueList->AppendCSSValue(itemList);
 
-    nsROCSSPrimitiveValue *valX = GetROCSSPrimitiveValue();
+    nsROCSSPrimitiveValue *valX = new nsROCSSPrimitiveValue;
     itemList->AppendCSSValue(valX);
 
     const uint8_t& xRepeat = bg->mLayers[i].mRepeat.mXRepeat;
@@ -1794,7 +2096,7 @@ nsComputedDOMStyle::DoGetBackgroundRepeat()
       valX->SetIdent(nsCSSProps::ValueToKeywordEnum(contraction,
                                          nsCSSProps::kBackgroundRepeatKTable));
     } else {
-      nsROCSSPrimitiveValue *valY = GetROCSSPrimitiveValue();
+      nsROCSSPrimitiveValue *valY = new nsROCSSPrimitiveValue;
       itemList->AppendCSSValue(valY);
       
       valX->SetIdent(nsCSSProps::ValueToKeywordEnum(xRepeat,
@@ -1825,7 +2127,7 @@ nsComputedDOMStyle::DoGetBackgroundSize()
         nsCSSKeyword keyword = size.mWidthType == nsStyleBackground::Size::eContain
                              ? eCSSKeyword_contain
                              : eCSSKeyword_cover;
-        nsROCSSPrimitiveValue* val = GetROCSSPrimitiveValue();
+        nsROCSSPrimitiveValue* val = new nsROCSSPrimitiveValue;
         valueList->AppendCSSValue(val);
         val->SetIdent(keyword);
         break;
@@ -1834,9 +2136,9 @@ nsComputedDOMStyle::DoGetBackgroundSize()
         nsDOMCSSValueList *itemList = GetROCSSValueList(false);
         valueList->AppendCSSValue(itemList);
 
-        nsROCSSPrimitiveValue* valX = GetROCSSPrimitiveValue();
+        nsROCSSPrimitiveValue* valX = new nsROCSSPrimitiveValue;
         itemList->AppendCSSValue(valX);
-        nsROCSSPrimitiveValue* valY = GetROCSSPrimitiveValue();
+        nsROCSSPrimitiveValue* valY = new nsROCSSPrimitiveValue;
         itemList->AppendCSSValue(valY);
 
         if (size.mWidthType == nsStyleBackground::Size::eAuto) {
@@ -1915,7 +2217,7 @@ nsComputedDOMStyle::DoGetPaddingRight()
 CSSValue*
 nsComputedDOMStyle::DoGetBorderCollapse()
 {
-  nsROCSSPrimitiveValue* val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue* val = new nsROCSSPrimitiveValue;
   val->SetIdent(
     nsCSSProps::ValueToKeywordEnum(StyleTableBorder()->mBorderCollapse,
                                    nsCSSProps::kBorderCollapseKTable));
@@ -1927,10 +2229,10 @@ nsComputedDOMStyle::DoGetBorderSpacing()
 {
   nsDOMCSSValueList *valueList = GetROCSSValueList(false);
 
-  nsROCSSPrimitiveValue* xSpacing = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue* xSpacing = new nsROCSSPrimitiveValue;
   valueList->AppendCSSValue(xSpacing);
 
-  nsROCSSPrimitiveValue* ySpacing = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue* ySpacing = new nsROCSSPrimitiveValue;
   valueList->AppendCSSValue(ySpacing);
 
   const nsStyleTableBorder *border = StyleTableBorder();
@@ -1943,7 +2245,7 @@ nsComputedDOMStyle::DoGetBorderSpacing()
 CSSValue*
 nsComputedDOMStyle::DoGetCaptionSide()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   val->SetIdent(
     nsCSSProps::ValueToKeywordEnum(StyleTableBorder()->mCaptionSide,
                                    nsCSSProps::kCaptionSideKTable));
@@ -1953,7 +2255,7 @@ nsComputedDOMStyle::DoGetCaptionSide()
 CSSValue*
 nsComputedDOMStyle::DoGetEmptyCells()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   val->SetIdent(
     nsCSSProps::ValueToKeywordEnum(StyleTableBorder()->mEmptyCells,
                                    nsCSSProps::kEmptyCellsKTable));
@@ -1963,7 +2265,7 @@ nsComputedDOMStyle::DoGetEmptyCells()
 CSSValue*
 nsComputedDOMStyle::DoGetTableLayout()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   val->SetIdent(
     nsCSSProps::ValueToKeywordEnum(StyleTable()->mLayoutStrategy,
                                    nsCSSProps::kTableLayoutKTable));
@@ -2122,7 +2424,7 @@ nsComputedDOMStyle::DoGetMarginRightWidth()
 CSSValue*
 nsComputedDOMStyle::DoGetMarkerOffset()
 {
-  nsROCSSPrimitiveValue* val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue* val = new nsROCSSPrimitiveValue;
   SetValueToCoord(val, StyleContent()->mMarkerOffset, false);
   return val;
 }
@@ -2130,7 +2432,7 @@ nsComputedDOMStyle::DoGetMarkerOffset()
 CSSValue*
 nsComputedDOMStyle::DoGetOrient()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   val->SetIdent(
     nsCSSProps::ValueToKeywordEnum(StyleDisplay()->mOrient,
                                    nsCSSProps::kOrientKTable));
@@ -2140,7 +2442,7 @@ nsComputedDOMStyle::DoGetOrient()
 CSSValue*
 nsComputedDOMStyle::DoGetOutlineWidth()
 {
-  nsROCSSPrimitiveValue* val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue* val = new nsROCSSPrimitiveValue;
 
   const nsStyleOutline* outline = StyleOutline();
 
@@ -2164,7 +2466,7 @@ nsComputedDOMStyle::DoGetOutlineWidth()
 CSSValue*
 nsComputedDOMStyle::DoGetOutlineStyle()
 {
-  nsROCSSPrimitiveValue* val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue* val = new nsROCSSPrimitiveValue;
   val->SetIdent(
     nsCSSProps::ValueToKeywordEnum(StyleOutline()->GetOutlineStyle(),
                                    nsCSSProps::kOutlineStyleKTable));
@@ -2174,7 +2476,7 @@ nsComputedDOMStyle::DoGetOutlineStyle()
 CSSValue*
 nsComputedDOMStyle::DoGetOutlineOffset()
 {
-  nsROCSSPrimitiveValue* val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue* val = new nsROCSSPrimitiveValue;
   val->SetAppUnits(StyleOutline()->mOutlineOffset);
   return val;
 }
@@ -2210,7 +2512,7 @@ nsComputedDOMStyle::DoGetOutlineRadiusTopRight()
 CSSValue*
 nsComputedDOMStyle::DoGetOutlineColor()
 {
-  nsROCSSPrimitiveValue* val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue* val = new nsROCSSPrimitiveValue;
 
   nscolor color;
   if (!StyleOutline()->GetOutlineColor(color))
@@ -2254,7 +2556,7 @@ nsComputedDOMStyle::GetEllipseRadii(const nsStyleCorners& aRadius,
 
   // for compatibility, return a single value if X and Y are equal
   if (radiusX == radiusY) {
-    nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+    nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
 
     SetValueToCoord(val, radiusX, true);
 
@@ -2263,10 +2565,10 @@ nsComputedDOMStyle::GetEllipseRadii(const nsStyleCorners& aRadius,
 
   nsDOMCSSValueList *valueList = GetROCSSValueList(false);
 
-  nsROCSSPrimitiveValue *valX = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *valX = new nsROCSSPrimitiveValue;
   valueList->AppendCSSValue(valX);
 
-  nsROCSSPrimitiveValue *valY = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *valY = new nsROCSSPrimitiveValue;
   valueList->AppendCSSValue(valY);
 
   SetValueToCoord(valX, radiusX, true);
@@ -2281,7 +2583,7 @@ nsComputedDOMStyle::GetCSSShadowArray(nsCSSShadowArray* aArray,
                                       bool aIsBoxShadow)
 {
   if (!aArray) {
-    nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+    nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
     val->SetIdent(eCSSKeyword_none);
     return val;
   }
@@ -2318,7 +2620,7 @@ nsComputedDOMStyle::GetCSSShadowArray(nsCSSShadowArray* aArray,
     valueList->AppendCSSValue(itemList);
 
     // Color is either the specified shadow color or the foreground color
-    nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+    nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
     itemList->AppendCSSValue(val);
     nscolor shadowColor;
     if (item->mHasColor) {
@@ -2330,14 +2632,14 @@ nsComputedDOMStyle::GetCSSShadowArray(nsCSSShadowArray* aArray,
 
     // Set the offsets, blur radius, and spread if available
     for (uint32_t i = 0; i < shadowValuesLength; ++i) {
-      val = GetROCSSPrimitiveValue();
+      val = new nsROCSSPrimitiveValue;
       itemList->AppendCSSValue(val);
       val->SetAppUnits(item->*(shadowValues[i]));
     }
 
     if (item->mInset && aIsBoxShadow) {
       // This is an inset box-shadow
-      val = GetROCSSPrimitiveValue();
+      val = new nsROCSSPrimitiveValue;
       itemList->AppendCSSValue(val);
       val->SetIdent(
         nsCSSProps::ValueToKeywordEnum(NS_STYLE_BOX_SHADOW_INSET,
@@ -2359,7 +2661,7 @@ nsComputedDOMStyle::DoGetBoxShadow()
 CSSValue*
 nsComputedDOMStyle::DoGetZIndex()
 {
-  nsROCSSPrimitiveValue* val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue* val = new nsROCSSPrimitiveValue;
   SetValueToCoord(val, StylePosition()->mZIndex, false);
   return val;
 }
@@ -2367,7 +2669,7 @@ nsComputedDOMStyle::DoGetZIndex()
 CSSValue*
 nsComputedDOMStyle::DoGetListStyleImage()
 {
-  nsROCSSPrimitiveValue* val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue* val = new nsROCSSPrimitiveValue;
 
   const nsStyleList* list = StyleList();
 
@@ -2387,7 +2689,7 @@ nsComputedDOMStyle::DoGetListStyleImage()
 CSSValue*
 nsComputedDOMStyle::DoGetListStylePosition()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   val->SetIdent(
     nsCSSProps::ValueToKeywordEnum(StyleList()->mListStylePosition,
                                    nsCSSProps::kListStylePositionKTable));
@@ -2397,7 +2699,7 @@ nsComputedDOMStyle::DoGetListStylePosition()
 CSSValue*
 nsComputedDOMStyle::DoGetListStyleType()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   val->SetIdent(
     nsCSSProps::ValueToKeywordEnum(StyleList()->mListStyleType,
                                    nsCSSProps::kListStyleKTable));
@@ -2407,7 +2709,7 @@ nsComputedDOMStyle::DoGetListStyleType()
 CSSValue*
 nsComputedDOMStyle::DoGetImageRegion()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
 
   const nsStyleList* list = StyleList();
 
@@ -2415,10 +2717,10 @@ nsComputedDOMStyle::DoGetImageRegion()
     val->SetIdent(eCSSKeyword_auto);
   } else {
     // create the cssvalues for the sides, stick them in the rect object
-    nsROCSSPrimitiveValue *topVal    = GetROCSSPrimitiveValue();
-    nsROCSSPrimitiveValue *rightVal  = GetROCSSPrimitiveValue();
-    nsROCSSPrimitiveValue *bottomVal = GetROCSSPrimitiveValue();
-    nsROCSSPrimitiveValue *leftVal   = GetROCSSPrimitiveValue();
+    nsROCSSPrimitiveValue *topVal    = new nsROCSSPrimitiveValue;
+    nsROCSSPrimitiveValue *rightVal  = new nsROCSSPrimitiveValue;
+    nsROCSSPrimitiveValue *bottomVal = new nsROCSSPrimitiveValue;
+    nsROCSSPrimitiveValue *leftVal   = new nsROCSSPrimitiveValue;
     nsDOMCSSRect * domRect = new nsDOMCSSRect(topVal, rightVal,
                                               bottomVal, leftVal);
     topVal->SetAppUnits(list->mImageRegion.y);
@@ -2434,7 +2736,7 @@ nsComputedDOMStyle::DoGetImageRegion()
 CSSValue*
 nsComputedDOMStyle::DoGetLineHeight()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
 
   nscoord lineHeight;
   if (GetLineHeightCoord(lineHeight)) {
@@ -2450,7 +2752,7 @@ nsComputedDOMStyle::DoGetLineHeight()
 CSSValue*
 nsComputedDOMStyle::DoGetVerticalAlign()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   SetValueToCoord(val, StyleTextReset()->mVerticalAlign, false,
                   &nsComputedDOMStyle::GetLineHeightCoord,
                   nsCSSProps::kVerticalAlignKTable);
@@ -2458,33 +2760,57 @@ nsComputedDOMStyle::DoGetVerticalAlign()
 }
 
 CSSValue*
+nsComputedDOMStyle::CreateTextAlignValue(uint8_t aAlign, bool aAlignTrue,
+                                         const int32_t aTable[])
+{
+  nsROCSSPrimitiveValue* val = new nsROCSSPrimitiveValue;
+  val->SetIdent(nsCSSProps::ValueToKeywordEnum(aAlign, aTable));
+  if (!aAlignTrue) {
+    return val;
+  }
+
+  nsROCSSPrimitiveValue* first = new nsROCSSPrimitiveValue;
+  first->SetIdent(eCSSKeyword_true);
+
+  nsDOMCSSValueList* valueList = GetROCSSValueList(false);
+  valueList->AppendCSSValue(first);
+  valueList->AppendCSSValue(val);
+  return valueList;
+}
+
+CSSValue*
 nsComputedDOMStyle::DoGetTextAlign()
 {
-  nsROCSSPrimitiveValue* val = GetROCSSPrimitiveValue();
-  val->SetIdent(
-    nsCSSProps::ValueToKeywordEnum(StyleText()->mTextAlign,
-                                   nsCSSProps::kTextAlignKTable));
-  return val;
+  const nsStyleText* style = StyleText();
+  return CreateTextAlignValue(style->mTextAlign, style->mTextAlignTrue,
+                              nsCSSProps::kTextAlignKTable);
 }
 
 CSSValue*
 nsComputedDOMStyle::DoGetTextAlignLast()
 {
-  nsROCSSPrimitiveValue* val = GetROCSSPrimitiveValue();
-  val->SetIdent(
-    nsCSSProps::ValueToKeywordEnum(StyleText()->mTextAlignLast,
-                                   nsCSSProps::kTextAlignLastKTable));
-  return val;
+  const nsStyleText* style = StyleText();
+  return CreateTextAlignValue(style->mTextAlignLast, style->mTextAlignLastTrue,
+                              nsCSSProps::kTextAlignLastKTable);
 }
 
 CSSValue*
-nsComputedDOMStyle::DoGetMozTextBlink()
+nsComputedDOMStyle::DoGetTextCombineHorizontal()
 {
-  nsROCSSPrimitiveValue* val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
+  uint8_t tch = StyleText()->mTextCombineHorizontal;
 
-  val->SetIdent(
-    nsCSSProps::ValueToKeywordEnum(StyleTextReset()->mTextBlink,
-                                   nsCSSProps::kTextBlinkKTable));
+  if (tch <= NS_STYLE_TEXT_COMBINE_HORIZ_ALL) {
+    val->SetIdent(
+      nsCSSProps::ValueToKeywordEnum(tch,
+                                     nsCSSProps::kTextCombineHorizontalKTable));
+  } else if (tch <= NS_STYLE_TEXT_COMBINE_HORIZ_DIGITS_2) {
+    val->SetString(NS_LITERAL_STRING("digits 2"));
+  } else if (tch <= NS_STYLE_TEXT_COMBINE_HORIZ_DIGITS_3) {
+    val->SetString(NS_LITERAL_STRING("digits 3"));
+  } else {
+    val->SetString(NS_LITERAL_STRING("digits 4"));
+  }
 
   return val;
 }
@@ -2492,13 +2818,13 @@ nsComputedDOMStyle::DoGetMozTextBlink()
 CSSValue*
 nsComputedDOMStyle::DoGetTextDecoration()
 {
-  nsROCSSPrimitiveValue* val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue* val = new nsROCSSPrimitiveValue;
 
   const nsStyleTextReset* textReset = StyleTextReset();
 
   // If decoration style or color wasn't initial value, the author knew the
   // text-decoration is a shorthand property in CSS 3.
-  // Return NULL in such cases.
+  // Return nullptr in such cases.
   if (textReset->GetDecorationStyle() != NS_STYLE_TEXT_DECORATION_STYLE_SOLID) {
     return nullptr;
   }
@@ -2519,25 +2845,14 @@ nsComputedDOMStyle::DoGetTextDecoration()
   // don't want these to appear in the computed style.
   line &= ~(NS_STYLE_TEXT_DECORATION_LINE_PREF_ANCHORS |
             NS_STYLE_TEXT_DECORATION_LINE_OVERRIDE_ALL);
-  uint8_t blink = textReset->mTextBlink;
 
-  if (blink == NS_STYLE_TEXT_BLINK_NONE &&
-      line == NS_STYLE_TEXT_DECORATION_LINE_NONE) {
+  if (line == NS_STYLE_TEXT_DECORATION_LINE_NONE) {
     val->SetIdent(eCSSKeyword_none);
   } else {
     nsAutoString str;
-    if (line != NS_STYLE_TEXT_DECORATION_LINE_NONE) {
-      nsStyleUtil::AppendBitmaskCSSValue(eCSSProperty_text_decoration_line,
-        line, NS_STYLE_TEXT_DECORATION_LINE_UNDERLINE,
-        NS_STYLE_TEXT_DECORATION_LINE_LINE_THROUGH, str);
-    }
-    if (blink != NS_STYLE_TEXT_BLINK_NONE) {
-      if (!str.IsEmpty()) {
-        str.Append(PRUnichar(' '));
-      }
-      nsStyleUtil::AppendBitmaskCSSValue(eCSSProperty_text_blink, blink,
-        NS_STYLE_TEXT_BLINK_BLINK, NS_STYLE_TEXT_BLINK_BLINK, str);
-    }
+    nsStyleUtil::AppendBitmaskCSSValue(eCSSProperty_text_decoration_line,
+      line, NS_STYLE_TEXT_DECORATION_LINE_UNDERLINE,
+      NS_STYLE_TEXT_DECORATION_LINE_BLINK, str);
     val->SetString(str);
   }
 
@@ -2547,7 +2862,7 @@ nsComputedDOMStyle::DoGetTextDecoration()
 CSSValue*
 nsComputedDOMStyle::DoGetTextDecorationColor()
 {
-  nsROCSSPrimitiveValue* val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue* val = new nsROCSSPrimitiveValue;
 
   nscolor color;
   bool isForeground;
@@ -2564,7 +2879,7 @@ nsComputedDOMStyle::DoGetTextDecorationColor()
 CSSValue*
 nsComputedDOMStyle::DoGetTextDecorationLine()
 {
-  nsROCSSPrimitiveValue* val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue* val = new nsROCSSPrimitiveValue;
 
   int32_t intValue = StyleTextReset()->mTextDecorationLine;
 
@@ -2578,7 +2893,7 @@ nsComputedDOMStyle::DoGetTextDecorationLine()
                   NS_STYLE_TEXT_DECORATION_LINE_OVERRIDE_ALL);
     nsStyleUtil::AppendBitmaskCSSValue(eCSSProperty_text_decoration_line,
       intValue, NS_STYLE_TEXT_DECORATION_LINE_UNDERLINE,
-      NS_STYLE_TEXT_DECORATION_LINE_LINE_THROUGH, decorationLineString);
+      NS_STYLE_TEXT_DECORATION_LINE_BLINK, decorationLineString);
     val->SetString(decorationLineString);
   }
 
@@ -2588,7 +2903,7 @@ nsComputedDOMStyle::DoGetTextDecorationLine()
 CSSValue*
 nsComputedDOMStyle::DoGetTextDecorationStyle()
 {
-  nsROCSSPrimitiveValue* val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue* val = new nsROCSSPrimitiveValue;
 
   val->SetIdent(
     nsCSSProps::ValueToKeywordEnum(StyleTextReset()->GetDecorationStyle(),
@@ -2600,9 +2915,19 @@ nsComputedDOMStyle::DoGetTextDecorationStyle()
 CSSValue*
 nsComputedDOMStyle::DoGetTextIndent()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   SetValueToCoord(val, StyleText()->mTextIndent, false,
                   &nsComputedDOMStyle::GetCBContentWidth);
+  return val;
+}
+
+CSSValue*
+nsComputedDOMStyle::DoGetTextOrientation()
+{
+  nsROCSSPrimitiveValue* val = new nsROCSSPrimitiveValue;
+  val->SetIdent(
+    nsCSSProps::ValueToKeywordEnum(StyleText()->mTextOrientation,
+                                   nsCSSProps::kTextOrientationKTable));
   return val;
 }
 
@@ -2610,7 +2935,7 @@ CSSValue*
 nsComputedDOMStyle::DoGetTextOverflow()
 {
   const nsStyleTextReset *style = StyleTextReset();
-  nsROCSSPrimitiveValue *first = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *first = new nsROCSSPrimitiveValue;
   const nsStyleTextOverflowSide *side = style->mTextOverflow.GetFirstValue();
   if (side->mType == NS_STYLE_TEXT_OVERFLOW_STRING) {
     nsString str;
@@ -2625,7 +2950,7 @@ nsComputedDOMStyle::DoGetTextOverflow()
   if (!side) {
     return first;
   }
-  nsROCSSPrimitiveValue *second = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *second = new nsROCSSPrimitiveValue;
   if (side->mType == NS_STYLE_TEXT_OVERFLOW_STRING) {
     nsString str;
     nsStyleUtil::AppendEscapedCSSString(side->mString, str);
@@ -2653,7 +2978,7 @@ nsComputedDOMStyle::DoGetTextShadow()
 CSSValue*
 nsComputedDOMStyle::DoGetTextTransform()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   val->SetIdent(
     nsCSSProps::ValueToKeywordEnum(StyleText()->mTextTransform,
                                    nsCSSProps::kTextTransformKTable));
@@ -2663,7 +2988,7 @@ nsComputedDOMStyle::DoGetTextTransform()
 CSSValue*
 nsComputedDOMStyle::DoGetTabSize()
 {
-  nsROCSSPrimitiveValue* val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue* val = new nsROCSSPrimitiveValue;
   val->SetNumber(StyleText()->mTabSize);
   return val;
 }
@@ -2671,7 +2996,7 @@ nsComputedDOMStyle::DoGetTabSize()
 CSSValue*
 nsComputedDOMStyle::DoGetLetterSpacing()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   SetValueToCoord(val, StyleText()->mLetterSpacing, false);
   return val;
 }
@@ -2679,7 +3004,7 @@ nsComputedDOMStyle::DoGetLetterSpacing()
 CSSValue*
 nsComputedDOMStyle::DoGetWordSpacing()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   val->SetAppUnits(StyleText()->mWordSpacing);
   return val;
 }
@@ -2687,7 +3012,7 @@ nsComputedDOMStyle::DoGetWordSpacing()
 CSSValue*
 nsComputedDOMStyle::DoGetWhiteSpace()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   val->SetIdent(
     nsCSSProps::ValueToKeywordEnum(StyleText()->mWhiteSpace,
                                    nsCSSProps::kWhitespaceKTable));
@@ -2697,7 +3022,7 @@ nsComputedDOMStyle::DoGetWhiteSpace()
 CSSValue*
 nsComputedDOMStyle::DoGetWindowShadow()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   val->SetIdent(
     nsCSSProps::ValueToKeywordEnum(StyleUIReset()->mWindowShadow,
                                    nsCSSProps::kWindowShadowKTable));
@@ -2707,7 +3032,7 @@ nsComputedDOMStyle::DoGetWindowShadow()
 CSSValue*
 nsComputedDOMStyle::DoGetWordBreak()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   val->SetIdent(
     nsCSSProps::ValueToKeywordEnum(StyleText()->mWordBreak,
                                    nsCSSProps::kWordBreakKTable));
@@ -2717,7 +3042,7 @@ nsComputedDOMStyle::DoGetWordBreak()
 CSSValue*
 nsComputedDOMStyle::DoGetWordWrap()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   val->SetIdent(
     nsCSSProps::ValueToKeywordEnum(StyleText()->mWordWrap,
                                    nsCSSProps::kWordWrapKTable));
@@ -2727,7 +3052,7 @@ nsComputedDOMStyle::DoGetWordWrap()
 CSSValue*
 nsComputedDOMStyle::DoGetHyphens()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   val->SetIdent(
     nsCSSProps::ValueToKeywordEnum(StyleText()->mHyphens,
                                    nsCSSProps::kHyphensKTable));
@@ -2737,7 +3062,7 @@ nsComputedDOMStyle::DoGetHyphens()
 CSSValue*
 nsComputedDOMStyle::DoGetTextSizeAdjust()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   switch (StyleText()->mTextSizeAdjust) {
     default:
       NS_NOTREACHED("unexpected value");
@@ -2755,7 +3080,7 @@ nsComputedDOMStyle::DoGetTextSizeAdjust()
 CSSValue*
 nsComputedDOMStyle::DoGetPointerEvents()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   val->SetIdent(
     nsCSSProps::ValueToKeywordEnum(StyleVisibility()->mPointerEvents,
                                    nsCSSProps::kPointerEventsKTable));
@@ -2765,29 +3090,39 @@ nsComputedDOMStyle::DoGetPointerEvents()
 CSSValue*
 nsComputedDOMStyle::DoGetVisibility()
 {
-  nsROCSSPrimitiveValue* val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue* val = new nsROCSSPrimitiveValue;
   val->SetIdent(nsCSSProps::ValueToKeywordEnum(StyleVisibility()->mVisible,
                                                nsCSSProps::kVisibilityKTable));
   return val;
 }
 
 CSSValue*
+nsComputedDOMStyle::DoGetWritingMode()
+{
+  nsROCSSPrimitiveValue* val = new nsROCSSPrimitiveValue;
+  val->SetIdent(
+    nsCSSProps::ValueToKeywordEnum(StyleVisibility()->mWritingMode,
+                                   nsCSSProps::kWritingModeKTable));
+  return val;
+}
+
+CSSValue*
 nsComputedDOMStyle::DoGetDirection()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   val->SetIdent(
     nsCSSProps::ValueToKeywordEnum(StyleVisibility()->mDirection,
                                    nsCSSProps::kDirectionKTable));
   return val;
 }
 
-MOZ_STATIC_ASSERT(NS_STYLE_UNICODE_BIDI_NORMAL == 0,
-                  "unicode-bidi style constants not as expected");
+static_assert(NS_STYLE_UNICODE_BIDI_NORMAL == 0,
+              "unicode-bidi style constants not as expected");
 
 CSSValue*
 nsComputedDOMStyle::DoGetUnicodeBidi()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   val->SetIdent(
     nsCSSProps::ValueToKeywordEnum(StyleTextReset()->mUnicodeBidi,
                                    nsCSSProps::kUnicodeBidiKTable));
@@ -2810,14 +3145,14 @@ nsComputedDOMStyle::DoGetCursor()
     nsCOMPtr<nsIURI> uri;
     item->GetImage()->GetURI(getter_AddRefs(uri));
 
-    nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+    nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
     itemList->AppendCSSValue(val);
     val->SetURI(uri);
 
     if (item->mHaveHotspot) {
-      nsROCSSPrimitiveValue *valX = GetROCSSPrimitiveValue();
+      nsROCSSPrimitiveValue *valX = new nsROCSSPrimitiveValue;
       itemList->AppendCSSValue(valX);
-      nsROCSSPrimitiveValue *valY = GetROCSSPrimitiveValue();
+      nsROCSSPrimitiveValue *valY = new nsROCSSPrimitiveValue;
       itemList->AppendCSSValue(valY);
 
       valX->SetNumber(item->mHotspotX);
@@ -2825,7 +3160,7 @@ nsComputedDOMStyle::DoGetCursor()
     }
   }
 
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   val->SetIdent(nsCSSProps::ValueToKeywordEnum(ui->mCursor,
                                                nsCSSProps::kCursorKTable));
   valueList->AppendCSSValue(val);
@@ -2835,7 +3170,7 @@ nsComputedDOMStyle::DoGetCursor()
 CSSValue*
 nsComputedDOMStyle::DoGetAppearance()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   val->SetIdent(nsCSSProps::ValueToKeywordEnum(StyleDisplay()->mAppearance,
                                                nsCSSProps::kAppearanceKTable));
   return val;
@@ -2845,7 +3180,7 @@ nsComputedDOMStyle::DoGetAppearance()
 CSSValue*
 nsComputedDOMStyle::DoGetBoxAlign()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   val->SetIdent(nsCSSProps::ValueToKeywordEnum(StyleXUL()->mBoxAlign,
                                                nsCSSProps::kBoxAlignKTable));
   return val;
@@ -2854,7 +3189,7 @@ nsComputedDOMStyle::DoGetBoxAlign()
 CSSValue*
 nsComputedDOMStyle::DoGetBoxDirection()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   val->SetIdent(
     nsCSSProps::ValueToKeywordEnum(StyleXUL()->mBoxDirection,
                                    nsCSSProps::kBoxDirectionKTable));
@@ -2864,7 +3199,7 @@ nsComputedDOMStyle::DoGetBoxDirection()
 CSSValue*
 nsComputedDOMStyle::DoGetBoxFlex()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   val->SetNumber(StyleXUL()->mBoxFlex);
   return val;
 }
@@ -2872,7 +3207,7 @@ nsComputedDOMStyle::DoGetBoxFlex()
 CSSValue*
 nsComputedDOMStyle::DoGetBoxOrdinalGroup()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   val->SetNumber(StyleXUL()->mBoxOrdinal);
   return val;
 }
@@ -2880,7 +3215,7 @@ nsComputedDOMStyle::DoGetBoxOrdinalGroup()
 CSSValue*
 nsComputedDOMStyle::DoGetBoxOrient()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   val->SetIdent(
     nsCSSProps::ValueToKeywordEnum(StyleXUL()->mBoxOrient,
                                    nsCSSProps::kBoxOrientKTable));
@@ -2890,7 +3225,7 @@ nsComputedDOMStyle::DoGetBoxOrient()
 CSSValue*
 nsComputedDOMStyle::DoGetBoxPack()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   val->SetIdent(nsCSSProps::ValueToKeywordEnum(StyleXUL()->mBoxPack,
                                                nsCSSProps::kBoxPackKTable));
   return val;
@@ -2899,7 +3234,7 @@ nsComputedDOMStyle::DoGetBoxPack()
 CSSValue*
 nsComputedDOMStyle::DoGetBoxSizing()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   val->SetIdent(
     nsCSSProps::ValueToKeywordEnum(StylePosition()->mBoxSizing,
                                    nsCSSProps::kBoxSizingKTable));
@@ -2914,7 +3249,7 @@ nsComputedDOMStyle::DoGetBorderImageSource()
   const nsStyleBorder* border = StyleBorder();
 
   imgIRequest* imgSrc = border->GetBorderImage();
-  nsROCSSPrimitiveValue* val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue* val = new nsROCSSPrimitiveValue;
   if (imgSrc) {
     nsCOMPtr<nsIURI> uri;
     imgSrc->GetURI(getter_AddRefs(uri));
@@ -2934,14 +3269,14 @@ nsComputedDOMStyle::DoGetBorderImageSlice()
   const nsStyleBorder* border = StyleBorder();
   // Four slice numbers.
   NS_FOR_CSS_SIDES (side) {
-    nsROCSSPrimitiveValue* val = GetROCSSPrimitiveValue();
+    nsROCSSPrimitiveValue* val = new nsROCSSPrimitiveValue;
     valueList->AppendCSSValue(val);
     SetValueToCoord(val, border->mBorderImageSlice.Get(side), true, nullptr);
   }
 
   // Fill keyword.
   if (NS_STYLE_BORDER_IMAGE_SLICE_FILL == border->mBorderImageFill) {
-    nsROCSSPrimitiveValue* val = GetROCSSPrimitiveValue();
+    nsROCSSPrimitiveValue* val = new nsROCSSPrimitiveValue;
     valueList->AppendCSSValue(val);
     val->SetIdent(eCSSKeyword_fill);
   }
@@ -2955,7 +3290,7 @@ nsComputedDOMStyle::DoGetBorderImageWidth()
   const nsStyleBorder* border = StyleBorder();
   nsDOMCSSValueList* valueList = GetROCSSValueList(false);
   NS_FOR_CSS_SIDES (side) {
-    nsROCSSPrimitiveValue* val = GetROCSSPrimitiveValue();
+    nsROCSSPrimitiveValue* val = new nsROCSSPrimitiveValue;
     valueList->AppendCSSValue(val);
     SetValueToCoord(val, border->mBorderImageWidth.Get(side),
                     true, nullptr);
@@ -2972,7 +3307,7 @@ nsComputedDOMStyle::DoGetBorderImageOutset()
   const nsStyleBorder* border = StyleBorder();
   // four slice numbers
   NS_FOR_CSS_SIDES (side) {
-    nsROCSSPrimitiveValue* val = GetROCSSPrimitiveValue();
+    nsROCSSPrimitiveValue* val = new nsROCSSPrimitiveValue;
     valueList->AppendCSSValue(val);
     SetValueToCoord(val, border->mBorderImageOutset.Get(side),
                     true, nullptr);
@@ -2989,14 +3324,14 @@ nsComputedDOMStyle::DoGetBorderImageRepeat()
   const nsStyleBorder* border = StyleBorder();
 
   // horizontal repeat
-  nsROCSSPrimitiveValue* valX = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue* valX = new nsROCSSPrimitiveValue;
   valueList->AppendCSSValue(valX);
   valX->SetIdent(
     nsCSSProps::ValueToKeywordEnum(border->mBorderImageRepeatH,
                                    nsCSSProps::kBorderImageRepeatKTable));
 
   // vertical repeat
-  nsROCSSPrimitiveValue* valY = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue* valY = new nsROCSSPrimitiveValue;
   valueList->AppendCSSValue(valY);
   valY->SetIdent(
     nsCSSProps::ValueToKeywordEnum(border->mBorderImageRepeatV,
@@ -3004,11 +3339,10 @@ nsComputedDOMStyle::DoGetBorderImageRepeat()
   return valueList;
 }
 
-#ifdef MOZ_FLEXBOX
 CSSValue*
 nsComputedDOMStyle::DoGetAlignItems()
 {
-  nsROCSSPrimitiveValue* val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue* val = new nsROCSSPrimitiveValue;
   val->SetIdent(
     nsCSSProps::ValueToKeywordEnum(StylePosition()->mAlignItems,
                                    nsCSSProps::kAlignItemsKTable));
@@ -3018,7 +3352,7 @@ nsComputedDOMStyle::DoGetAlignItems()
 CSSValue*
 nsComputedDOMStyle::DoGetAlignSelf()
 {
-  nsROCSSPrimitiveValue* val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue* val = new nsROCSSPrimitiveValue;
   uint8_t computedAlignSelf = StylePosition()->mAlignSelf;
 
   if (computedAlignSelf == NS_STYLE_ALIGN_SELF_AUTO) {
@@ -3044,7 +3378,7 @@ nsComputedDOMStyle::DoGetAlignSelf()
 CSSValue*
 nsComputedDOMStyle::DoGetFlexBasis()
 {
-  nsROCSSPrimitiveValue* val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue* val = new nsROCSSPrimitiveValue;
 
   // XXXdholbert We could make this more automagic and resolve percentages
   // if we wanted, by passing in a PercentageBaseGetter instead of nullptr
@@ -3065,7 +3399,7 @@ nsComputedDOMStyle::DoGetFlexBasis()
 CSSValue*
 nsComputedDOMStyle::DoGetFlexDirection()
 {
-  nsROCSSPrimitiveValue* val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue* val = new nsROCSSPrimitiveValue;
   val->SetIdent(
     nsCSSProps::ValueToKeywordEnum(StylePosition()->mFlexDirection,
                                    nsCSSProps::kFlexDirectionKTable));
@@ -3075,7 +3409,7 @@ nsComputedDOMStyle::DoGetFlexDirection()
 CSSValue*
 nsComputedDOMStyle::DoGetFlexGrow()
 {
-  nsROCSSPrimitiveValue* val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue* val = new nsROCSSPrimitiveValue;
   val->SetNumber(StylePosition()->mFlexGrow);
   return val;
 }
@@ -3083,7 +3417,7 @@ nsComputedDOMStyle::DoGetFlexGrow()
 CSSValue*
 nsComputedDOMStyle::DoGetFlexShrink()
 {
-  nsROCSSPrimitiveValue* val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue* val = new nsROCSSPrimitiveValue;
   val->SetNumber(StylePosition()->mFlexShrink);
   return val;
 }
@@ -3091,7 +3425,7 @@ nsComputedDOMStyle::DoGetFlexShrink()
 CSSValue*
 nsComputedDOMStyle::DoGetOrder()
 {
-  nsROCSSPrimitiveValue* val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue* val = new nsROCSSPrimitiveValue;
   val->SetNumber(StylePosition()->mOrder);
   return val;
 }
@@ -3099,18 +3433,17 @@ nsComputedDOMStyle::DoGetOrder()
 CSSValue*
 nsComputedDOMStyle::DoGetJustifyContent()
 {
-  nsROCSSPrimitiveValue* val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue* val = new nsROCSSPrimitiveValue;
   val->SetIdent(
     nsCSSProps::ValueToKeywordEnum(StylePosition()->mJustifyContent,
                                    nsCSSProps::kJustifyContentKTable));
   return val;
 }
-#endif // MOZ_FLEXBOX
 
 CSSValue*
 nsComputedDOMStyle::DoGetFloatEdge()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   val->SetIdent(
     nsCSSProps::ValueToKeywordEnum(StyleBorder()->mFloatEdge,
                                    nsCSSProps::kFloatEdgeKTable));
@@ -3120,15 +3453,36 @@ nsComputedDOMStyle::DoGetFloatEdge()
 CSSValue*
 nsComputedDOMStyle::DoGetForceBrokenImageIcon()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   val->SetNumber(StyleUIReset()->mForceBrokenImageIcon);
+  return val;
+}
+
+CSSValue*
+nsComputedDOMStyle::DoGetImageOrientation()
+{
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
+  nsAutoString string;
+  nsStyleImageOrientation orientation = StyleVisibility()->mImageOrientation;
+
+  if (orientation.IsFromImage()) {
+    string.AppendLiteral("from-image");
+  } else {
+    nsStyleUtil::AppendAngleValue(orientation.AngleAsCoord(), string);
+
+    if (orientation.IsFlipped()) {
+      string.AppendLiteral(" flip");
+    }
+  }
+
+  val->SetString(string);
   return val;
 }
 
 CSSValue*
 nsComputedDOMStyle::DoGetIMEMode()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   val->SetIdent(
     nsCSSProps::ValueToKeywordEnum(StyleUIReset()->mIMEMode,
                                    nsCSSProps::kIMEModeKTable));
@@ -3138,7 +3492,7 @@ nsComputedDOMStyle::DoGetIMEMode()
 CSSValue*
 nsComputedDOMStyle::DoGetUserFocus()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   val->SetIdent(
     nsCSSProps::ValueToKeywordEnum(StyleUserInterface()->mUserFocus,
                                    nsCSSProps::kUserFocusKTable));
@@ -3148,7 +3502,7 @@ nsComputedDOMStyle::DoGetUserFocus()
 CSSValue*
 nsComputedDOMStyle::DoGetUserInput()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   val->SetIdent(
     nsCSSProps::ValueToKeywordEnum(StyleUserInterface()->mUserInput,
                                    nsCSSProps::kUserInputKTable));
@@ -3158,7 +3512,7 @@ nsComputedDOMStyle::DoGetUserInput()
 CSSValue*
 nsComputedDOMStyle::DoGetUserModify()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   val->SetIdent(
     nsCSSProps::ValueToKeywordEnum(StyleUserInterface()->mUserModify,
                                    nsCSSProps::kUserModifyKTable));
@@ -3168,7 +3522,7 @@ nsComputedDOMStyle::DoGetUserModify()
 CSSValue*
 nsComputedDOMStyle::DoGetUserSelect()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   val->SetIdent(
     nsCSSProps::ValueToKeywordEnum(StyleUIReset()->mUserSelect,
                                    nsCSSProps::kUserSelectKTable));
@@ -3178,7 +3532,7 @@ nsComputedDOMStyle::DoGetUserSelect()
 CSSValue*
 nsComputedDOMStyle::DoGetDisplay()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   val->SetIdent(nsCSSProps::ValueToKeywordEnum(StyleDisplay()->mDisplay,
                                                nsCSSProps::kDisplayKTable));
   return val;
@@ -3187,7 +3541,7 @@ nsComputedDOMStyle::DoGetDisplay()
 CSSValue*
 nsComputedDOMStyle::DoGetPosition()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   val->SetIdent(nsCSSProps::ValueToKeywordEnum(StyleDisplay()->mPosition,
                                                nsCSSProps::kPositionKTable));
   return val;
@@ -3196,7 +3550,7 @@ nsComputedDOMStyle::DoGetPosition()
 CSSValue*
 nsComputedDOMStyle::DoGetClip()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
 
   const nsStyleDisplay* display = StyleDisplay();
 
@@ -3204,10 +3558,10 @@ nsComputedDOMStyle::DoGetClip()
     val->SetIdent(eCSSKeyword_auto);
   } else {
     // create the cssvalues for the sides, stick them in the rect object
-    nsROCSSPrimitiveValue *topVal    = GetROCSSPrimitiveValue();
-    nsROCSSPrimitiveValue *rightVal  = GetROCSSPrimitiveValue();
-    nsROCSSPrimitiveValue *bottomVal = GetROCSSPrimitiveValue();
-    nsROCSSPrimitiveValue *leftVal   = GetROCSSPrimitiveValue();
+    nsROCSSPrimitiveValue *topVal    = new nsROCSSPrimitiveValue;
+    nsROCSSPrimitiveValue *rightVal  = new nsROCSSPrimitiveValue;
+    nsROCSSPrimitiveValue *bottomVal = new nsROCSSPrimitiveValue;
+    nsROCSSPrimitiveValue *leftVal   = new nsROCSSPrimitiveValue;
     nsDOMCSSRect * domRect = new nsDOMCSSRect(topVal, rightVal,
                                               bottomVal, leftVal);
     if (display->mClipFlags & NS_STYLE_CLIP_TOP_AUTO) {
@@ -3250,7 +3604,7 @@ nsComputedDOMStyle::DoGetOverflow()
     return nullptr;
   }
 
-  nsROCSSPrimitiveValue* val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue* val = new nsROCSSPrimitiveValue;
   val->SetIdent(nsCSSProps::ValueToKeywordEnum(display->mOverflowX,
                                                nsCSSProps::kOverflowKTable));
   return val;
@@ -3259,7 +3613,7 @@ nsComputedDOMStyle::DoGetOverflow()
 CSSValue*
 nsComputedDOMStyle::DoGetOverflowX()
 {
-  nsROCSSPrimitiveValue* val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue* val = new nsROCSSPrimitiveValue;
   val->SetIdent(
     nsCSSProps::ValueToKeywordEnum(StyleDisplay()->mOverflowX,
                                    nsCSSProps::kOverflowSubKTable));
@@ -3269,7 +3623,7 @@ nsComputedDOMStyle::DoGetOverflowX()
 CSSValue*
 nsComputedDOMStyle::DoGetOverflowY()
 {
-  nsROCSSPrimitiveValue* val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue* val = new nsROCSSPrimitiveValue;
   val->SetIdent(
     nsCSSProps::ValueToKeywordEnum(StyleDisplay()->mOverflowY,
                                    nsCSSProps::kOverflowSubKTable));
@@ -3279,7 +3633,7 @@ nsComputedDOMStyle::DoGetOverflowY()
 CSSValue*
 nsComputedDOMStyle::DoGetResize()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   val->SetIdent(nsCSSProps::ValueToKeywordEnum(StyleDisplay()->mResize,
                                                nsCSSProps::kResizeKTable));
   return val;
@@ -3289,7 +3643,7 @@ nsComputedDOMStyle::DoGetResize()
 CSSValue*
 nsComputedDOMStyle::DoGetPageBreakAfter()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
 
   const nsStyleDisplay *display = StyleDisplay();
 
@@ -3305,7 +3659,7 @@ nsComputedDOMStyle::DoGetPageBreakAfter()
 CSSValue*
 nsComputedDOMStyle::DoGetPageBreakBefore()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
 
   const nsStyleDisplay *display = StyleDisplay();
 
@@ -3321,7 +3675,7 @@ nsComputedDOMStyle::DoGetPageBreakBefore()
 CSSValue*
 nsComputedDOMStyle::DoGetPageBreakInside()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   val->SetIdent(nsCSSProps::ValueToKeywordEnum(StyleDisplay()->mBreakInside,
                                                nsCSSProps::kPageBreakInsideKTable));
   return val;
@@ -3330,7 +3684,7 @@ nsComputedDOMStyle::DoGetPageBreakInside()
 CSSValue*
 nsComputedDOMStyle::DoGetHeight()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
 
   bool calcHeight = false;
 
@@ -3371,7 +3725,7 @@ nsComputedDOMStyle::DoGetHeight()
 CSSValue*
 nsComputedDOMStyle::DoGetWidth()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
 
   bool calcWidth = false;
 
@@ -3412,7 +3766,7 @@ nsComputedDOMStyle::DoGetWidth()
 CSSValue*
 nsComputedDOMStyle::DoGetMaxHeight()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   SetValueToCoord(val, StylePosition()->mMaxHeight, true,
                   &nsComputedDOMStyle::GetCBContentHeight);
   return val;
@@ -3421,7 +3775,7 @@ nsComputedDOMStyle::DoGetMaxHeight()
 CSSValue*
 nsComputedDOMStyle::DoGetMaxWidth()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   SetValueToCoord(val, StylePosition()->mMaxWidth, true,
                   &nsComputedDOMStyle::GetCBContentWidth,
                   nsCSSProps::kWidthKTable);
@@ -3431,7 +3785,7 @@ nsComputedDOMStyle::DoGetMaxWidth()
 CSSValue*
 nsComputedDOMStyle::DoGetMinHeight()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   SetValueToCoord(val, StylePosition()->mMinHeight, true,
                   &nsComputedDOMStyle::GetCBContentHeight);
   return val;
@@ -3440,11 +3794,20 @@ nsComputedDOMStyle::DoGetMinHeight()
 CSSValue*
 nsComputedDOMStyle::DoGetMinWidth()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   SetValueToCoord(val, StylePosition()->mMinWidth, true,
                   &nsComputedDOMStyle::GetCBContentWidth,
                   nsCSSProps::kWidthKTable);
   return val;
+}
+
+CSSValue*
+nsComputedDOMStyle::DoGetMixBlendMode()
+{
+    nsROCSSPrimitiveValue* val = new nsROCSSPrimitiveValue;
+    val->SetIdent(nsCSSProps::ValueToKeywordEnum(StyleDisplay()->mMixBlendMode,
+                  nsCSSProps::kBlendModeKTable));
+    return val;
 }
 
 CSSValue*
@@ -3463,16 +3826,6 @@ CSSValue*
 nsComputedDOMStyle::DoGetTop()
 {
   return GetOffsetWidthFor(NS_SIDE_TOP);
-}
-
-nsROCSSPrimitiveValue*
-nsComputedDOMStyle::GetROCSSPrimitiveValue()
-{
-  nsROCSSPrimitiveValue *primitiveValue = new nsROCSSPrimitiveValue;
-
-  NS_ASSERTION(primitiveValue != 0, "ran out of memory");
-
-  return primitiveValue;
 }
 
 nsDOMCSSValueList*
@@ -3504,6 +3857,8 @@ nsComputedDOMStyle::GetOffsetWidthFor(mozilla::css::Side aSide)
       return GetStaticOffset(aSide);
     case NS_STYLE_POSITION_RELATIVE:
       return GetRelativeOffset(aSide);
+    case NS_STYLE_POSITION_STICKY:
+      return GetStickyOffset(aSide);
     case NS_STYLE_POSITION_ABSOLUTE:
     case NS_STYLE_POSITION_FIXED:
       return GetAbsoluteOffset(aSide);
@@ -3564,20 +3919,20 @@ nsComputedDOMStyle::GetAbsoluteOffset(mozilla::css::Side aSide)
       break;
   }
 
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   val->SetAppUnits(offset);
   return val;
 }
 
-MOZ_STATIC_ASSERT(NS_SIDE_TOP == 0 && NS_SIDE_RIGHT == 1 &&
-                  NS_SIDE_BOTTOM == 2 && NS_SIDE_LEFT == 3,
-                  "box side constants not as expected for NS_OPPOSITE_SIDE");
+static_assert(NS_SIDE_TOP == 0 && NS_SIDE_RIGHT == 1 &&
+              NS_SIDE_BOTTOM == 2 && NS_SIDE_LEFT == 3,
+              "box side constants not as expected for NS_OPPOSITE_SIDE");
 #define NS_OPPOSITE_SIDE(s_) mozilla::css::Side(((s_) + 2) & 3)
 
 CSSValue*
 nsComputedDOMStyle::GetRelativeOffset(mozilla::css::Side aSide)
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
 
   const nsStylePosition* positionData = StylePosition();
   int32_t sign = 1;
@@ -3605,10 +3960,40 @@ nsComputedDOMStyle::GetRelativeOffset(mozilla::css::Side aSide)
 }
 
 CSSValue*
+nsComputedDOMStyle::GetStickyOffset(mozilla::css::Side aSide)
+{
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
+
+  const nsStylePosition* positionData = StylePosition();
+  nsStyleCoord coord = positionData->mOffset.Get(aSide);
+
+  NS_ASSERTION(coord.GetUnit() == eStyleUnit_Coord ||
+               coord.GetUnit() == eStyleUnit_Percent ||
+               coord.GetUnit() == eStyleUnit_Auto ||
+               coord.IsCalcUnit(),
+               "Unexpected unit");
+
+  if (coord.GetUnit() == eStyleUnit_Auto) {
+    val->SetIdent(eCSSKeyword_auto);
+    return val;
+  }
+  PercentageBaseGetter baseGetter;
+  if (aSide == NS_SIDE_LEFT || aSide == NS_SIDE_RIGHT) {
+    baseGetter = &nsComputedDOMStyle::GetScrollFrameContentWidth;
+  } else {
+    baseGetter = &nsComputedDOMStyle::GetScrollFrameContentHeight;
+  }
+
+  val->SetAppUnits(StyleCoordToNSCoord(coord, baseGetter, 0, false));
+  return val;
+}
+
+
+CSSValue*
 nsComputedDOMStyle::GetStaticOffset(mozilla::css::Side aSide)
 
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   SetValueToCoord(val, StylePosition()->mOffset.Get(aSide), false);
   return val;
 }
@@ -3616,7 +4001,7 @@ nsComputedDOMStyle::GetStaticOffset(mozilla::css::Side aSide)
 CSSValue*
 nsComputedDOMStyle::GetPaddingWidthFor(mozilla::css::Side aSide)
 {
-  nsROCSSPrimitiveValue* val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue* val = new nsROCSSPrimitiveValue;
 
   if (!mInnerFrame) {
     SetValueToCoord(val, StylePadding()->mPadding.Get(aSide), true);
@@ -3655,7 +4040,10 @@ nsComputedDOMStyle::GetLineHeightCoord(nscoord& aCoord)
   // font->mSize as the font size.  Adjust for that.  Also adjust for
   // the text zoom, if any.
   const nsStyleFont* font = StyleFont();
-  float fCoord = float(aCoord) / mPresShell->GetPresContext()->TextZoom();
+  float fCoord = float(aCoord);
+  if (font->mAllowZoom) {
+    fCoord /= mPresShell->GetPresContext()->TextZoom();
+  }
   if (font->mFont.size != font->mSize) {
     fCoord = fCoord * (float(font->mSize) / float(font->mFont.size));
   }
@@ -3675,7 +4063,7 @@ nsComputedDOMStyle::GetBorderColorsFor(mozilla::css::Side aSide)
       nsDOMCSSValueList *valueList = GetROCSSValueList(false);
 
       do {
-        nsROCSSPrimitiveValue *primitive = GetROCSSPrimitiveValue();
+        nsROCSSPrimitiveValue *primitive = new nsROCSSPrimitiveValue;
 
         SetToRGBAColor(primitive, borderColors->mColor);
 
@@ -3687,7 +4075,7 @@ nsComputedDOMStyle::GetBorderColorsFor(mozilla::css::Side aSide)
     }
   }
 
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   val->SetIdent(eCSSKeyword_none);
   return val;
 }
@@ -3695,7 +4083,7 @@ nsComputedDOMStyle::GetBorderColorsFor(mozilla::css::Side aSide)
 CSSValue*
 nsComputedDOMStyle::GetBorderWidthFor(mozilla::css::Side aSide)
 {
-  nsROCSSPrimitiveValue* val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue* val = new nsROCSSPrimitiveValue;
 
   nscoord width;
   if (mInnerFrame) {
@@ -3712,7 +4100,7 @@ nsComputedDOMStyle::GetBorderWidthFor(mozilla::css::Side aSide)
 CSSValue*
 nsComputedDOMStyle::GetBorderColorFor(mozilla::css::Side aSide)
 {
-  nsROCSSPrimitiveValue* val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue* val = new nsROCSSPrimitiveValue;
 
   nscolor color;
   bool foreground;
@@ -3728,7 +4116,7 @@ nsComputedDOMStyle::GetBorderColorFor(mozilla::css::Side aSide)
 CSSValue*
 nsComputedDOMStyle::GetMarginWidthFor(mozilla::css::Side aSide)
 {
-  nsROCSSPrimitiveValue* val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue* val = new nsROCSSPrimitiveValue;
 
   if (!mInnerFrame) {
     SetValueToCoord(val, StyleMargin()->mMargin.Get(aSide), false);
@@ -3749,7 +4137,7 @@ nsComputedDOMStyle::GetMarginWidthFor(mozilla::css::Side aSide)
 CSSValue*
 nsComputedDOMStyle::GetBorderStyleFor(mozilla::css::Side aSide)
 {
-  nsROCSSPrimitiveValue* val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue* val = new nsROCSSPrimitiveValue;
   val->SetIdent(
     nsCSSProps::ValueToKeywordEnum(StyleBorder()->GetBorderStyle(aSide),
                                    nsCSSProps::kBorderStyleKTable));
@@ -3840,6 +4228,23 @@ nsComputedDOMStyle::SetValueToCoord(nsROCSSPrimitiveValue* aValue,
         SetValueToCalc(calc, aValue);
       }
       break;
+
+    case eStyleUnit_Degree:
+      aValue->SetDegree(aCoord.GetAngleValue());
+      break;
+
+    case eStyleUnit_Grad:
+      aValue->SetGrad(aCoord.GetAngleValue());
+      break;
+
+    case eStyleUnit_Radian:
+      aValue->SetRadian(aCoord.GetAngleValue());
+      break;
+
+    case eStyleUnit_Turn:
+      aValue->SetTurn(aCoord.GetAngleValue());
+      break;
+
     default:
       NS_ERROR("Can't handle this unit");
       break;
@@ -3903,6 +4308,50 @@ nsComputedDOMStyle::GetCBContentHeight(nscoord& aHeight)
 }
 
 bool
+nsComputedDOMStyle::GetScrollFrameContentWidth(nscoord& aWidth)
+{
+  if (!mOuterFrame) {
+    return false;
+  }
+
+  AssertFlushedPendingReflows();
+
+  nsIScrollableFrame* scrollableFrame =
+    nsLayoutUtils::GetNearestScrollableFrame(mOuterFrame->GetParent(),
+      nsLayoutUtils::SCROLLABLE_SAME_DOC |
+      nsLayoutUtils::SCROLLABLE_INCLUDE_HIDDEN);
+
+  if (!scrollableFrame) {
+    return false;
+  }
+  aWidth =
+    scrollableFrame->GetScrolledFrame()->GetContentRectRelativeToSelf().width;
+  return true;
+}
+
+bool
+nsComputedDOMStyle::GetScrollFrameContentHeight(nscoord& aHeight)
+{
+  if (!mOuterFrame) {
+    return false;
+  }
+
+  AssertFlushedPendingReflows();
+
+  nsIScrollableFrame* scrollableFrame =
+    nsLayoutUtils::GetNearestScrollableFrame(mOuterFrame->GetParent(),
+      nsLayoutUtils::SCROLLABLE_SAME_DOC |
+      nsLayoutUtils::SCROLLABLE_INCLUDE_HIDDEN);
+
+  if (!scrollableFrame) {
+    return false;
+  }
+  aHeight =
+    scrollableFrame->GetScrolledFrame()->GetContentRectRelativeToSelf().height;
+  return true;
+}
+
+bool
 nsComputedDOMStyle::GetFrameBorderRectWidth(nscoord& aWidth)
 {
   if (!mInnerFrame) {
@@ -3959,7 +4408,7 @@ nsComputedDOMStyle::GetFrameBoundsHeightForTransform(nscoord& aHeight)
 CSSValue*
 nsComputedDOMStyle::GetSVGPaintFor(bool aFill)
 {
-  nsROCSSPrimitiveValue* val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue* val = new nsROCSSPrimitiveValue;
 
   const nsStyleSVG* svg = StyleSVG();
   const nsStyleSVGPaint* paint = nullptr;
@@ -3987,21 +4436,21 @@ nsComputedDOMStyle::GetSVGPaintFor(bool aFill)
       nsDOMCSSValueList *valueList = GetROCSSValueList(false);
       valueList->AppendCSSValue(val);
 
-      nsROCSSPrimitiveValue* fallback = GetROCSSPrimitiveValue();
+      nsROCSSPrimitiveValue* fallback = new nsROCSSPrimitiveValue;
       valueList->AppendCSSValue(fallback);
 
       val->SetURI(paint->mPaint.mPaintServer);
       SetToRGBAColor(fallback, paint->mFallbackColor);
       return valueList;
     }
-    case eStyleSVGPaintType_ObjectFill:
+    case eStyleSVGPaintType_ContextFill:
     {
-      val->SetIdent(eCSSKeyword__moz_objectfill);
+      val->SetIdent(eCSSKeyword_context_fill);
       break;
     }
-    case eStyleSVGPaintType_ObjectStroke:
+    case eStyleSVGPaintType_ContextStroke:
     {
-      val->SetIdent(eCSSKeyword__moz_objectstroke);
+      val->SetIdent(eCSSKeyword_context_stroke);
       break;
     }
   }
@@ -4024,7 +4473,7 @@ nsComputedDOMStyle::DoGetStroke()
 CSSValue*
 nsComputedDOMStyle::DoGetMarkerEnd()
 {
-  nsROCSSPrimitiveValue* val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue* val = new nsROCSSPrimitiveValue;
 
   const nsStyleSVG* svg = StyleSVG();
 
@@ -4039,7 +4488,7 @@ nsComputedDOMStyle::DoGetMarkerEnd()
 CSSValue*
 nsComputedDOMStyle::DoGetMarkerMid()
 {
-  nsROCSSPrimitiveValue* val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue* val = new nsROCSSPrimitiveValue;
 
   const nsStyleSVG* svg = StyleSVG();
 
@@ -4054,7 +4503,7 @@ nsComputedDOMStyle::DoGetMarkerMid()
 CSSValue*
 nsComputedDOMStyle::DoGetMarkerStart()
 {
-  nsROCSSPrimitiveValue* val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue* val = new nsROCSSPrimitiveValue;
 
   const nsStyleSVG* svg = StyleSVG();
 
@@ -4072,7 +4521,7 @@ nsComputedDOMStyle::DoGetStrokeDasharray()
   const nsStyleSVG* svg = StyleSVG();
 
   if (!svg->mStrokeDasharrayLength || !svg->mStrokeDasharray) {
-    nsROCSSPrimitiveValue* val = GetROCSSPrimitiveValue();
+    nsROCSSPrimitiveValue* val = new nsROCSSPrimitiveValue;
     val->SetIdent(eCSSKeyword_none);
     return val;
   }
@@ -4080,7 +4529,7 @@ nsComputedDOMStyle::DoGetStrokeDasharray()
   nsDOMCSSValueList *valueList = GetROCSSValueList(true);
 
   for (uint32_t i = 0; i < svg->mStrokeDasharrayLength; i++) {
-    nsROCSSPrimitiveValue* dash = GetROCSSPrimitiveValue();
+    nsROCSSPrimitiveValue* dash = new nsROCSSPrimitiveValue;
     valueList->AppendCSSValue(dash);
 
     SetValueToCoord(dash, svg->mStrokeDasharray[i], true);
@@ -4092,7 +4541,7 @@ nsComputedDOMStyle::DoGetStrokeDasharray()
 CSSValue*
 nsComputedDOMStyle::DoGetStrokeDashoffset()
 {
-  nsROCSSPrimitiveValue* val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue* val = new nsROCSSPrimitiveValue;
   SetValueToCoord(val, StyleSVG()->mStrokeDashoffset, false);
   return val;
 }
@@ -4100,7 +4549,7 @@ nsComputedDOMStyle::DoGetStrokeDashoffset()
 CSSValue*
 nsComputedDOMStyle::DoGetStrokeWidth()
 {
-  nsROCSSPrimitiveValue* val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue* val = new nsROCSSPrimitiveValue;
   SetValueToCoord(val, StyleSVG()->mStrokeWidth, true);
   return val;
 }
@@ -4108,7 +4557,7 @@ nsComputedDOMStyle::DoGetStrokeWidth()
 CSSValue*
 nsComputedDOMStyle::DoGetVectorEffect()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   val->SetIdent(nsCSSProps::ValueToKeywordEnum(StyleSVGReset()->mVectorEffect,
                                                nsCSSProps::kVectorEffectKTable));
   return val;
@@ -4117,7 +4566,7 @@ nsComputedDOMStyle::DoGetVectorEffect()
 CSSValue*
 nsComputedDOMStyle::DoGetFillOpacity()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   val->SetNumber(StyleSVG()->mFillOpacity);
   return val;
 }
@@ -4125,7 +4574,7 @@ nsComputedDOMStyle::DoGetFillOpacity()
 CSSValue*
 nsComputedDOMStyle::DoGetFloodOpacity()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   val->SetNumber(StyleSVGReset()->mFloodOpacity);
   return val;
 }
@@ -4133,7 +4582,7 @@ nsComputedDOMStyle::DoGetFloodOpacity()
 CSSValue*
 nsComputedDOMStyle::DoGetStopOpacity()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   val->SetNumber(StyleSVGReset()->mStopOpacity);
   return val;
 }
@@ -4141,7 +4590,7 @@ nsComputedDOMStyle::DoGetStopOpacity()
 CSSValue*
 nsComputedDOMStyle::DoGetStrokeMiterlimit()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   val->SetNumber(StyleSVG()->mStrokeMiterlimit);
   return val;
 }
@@ -4149,7 +4598,7 @@ nsComputedDOMStyle::DoGetStrokeMiterlimit()
 CSSValue*
 nsComputedDOMStyle::DoGetStrokeOpacity()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   val->SetNumber(StyleSVG()->mStrokeOpacity);
   return val;
 }
@@ -4157,7 +4606,7 @@ nsComputedDOMStyle::DoGetStrokeOpacity()
 CSSValue*
 nsComputedDOMStyle::DoGetClipRule()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   val->SetIdent(nsCSSProps::ValueToKeywordEnum(
                   StyleSVG()->mClipRule, nsCSSProps::kFillRuleKTable));
   return val;
@@ -4166,7 +4615,7 @@ nsComputedDOMStyle::DoGetClipRule()
 CSSValue*
 nsComputedDOMStyle::DoGetFillRule()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   val->SetIdent(nsCSSProps::ValueToKeywordEnum(
                   StyleSVG()->mFillRule, nsCSSProps::kFillRuleKTable));
   return val;
@@ -4175,7 +4624,7 @@ nsComputedDOMStyle::DoGetFillRule()
 CSSValue*
 nsComputedDOMStyle::DoGetStrokeLinecap()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   val->SetIdent(
     nsCSSProps::ValueToKeywordEnum(StyleSVG()->mStrokeLinecap,
                                    nsCSSProps::kStrokeLinecapKTable));
@@ -4185,7 +4634,7 @@ nsComputedDOMStyle::DoGetStrokeLinecap()
 CSSValue*
 nsComputedDOMStyle::DoGetStrokeLinejoin()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   val->SetIdent(
     nsCSSProps::ValueToKeywordEnum(StyleSVG()->mStrokeLinejoin,
                                    nsCSSProps::kStrokeLinejoinKTable));
@@ -4195,7 +4644,7 @@ nsComputedDOMStyle::DoGetStrokeLinejoin()
 CSSValue*
 nsComputedDOMStyle::DoGetTextAnchor()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   val->SetIdent(
     nsCSSProps::ValueToKeywordEnum(StyleSVG()->mTextAnchor,
                                    nsCSSProps::kTextAnchorKTable));
@@ -4205,7 +4654,7 @@ nsComputedDOMStyle::DoGetTextAnchor()
 CSSValue*
 nsComputedDOMStyle::DoGetColorInterpolation()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   val->SetIdent(
     nsCSSProps::ValueToKeywordEnum(StyleSVG()->mColorInterpolation,
                                    nsCSSProps::kColorInterpolationKTable));
@@ -4215,7 +4664,7 @@ nsComputedDOMStyle::DoGetColorInterpolation()
 CSSValue*
 nsComputedDOMStyle::DoGetColorInterpolationFilters()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   val->SetIdent(
     nsCSSProps::ValueToKeywordEnum(StyleSVG()->mColorInterpolationFilters,
                                    nsCSSProps::kColorInterpolationKTable));
@@ -4225,7 +4674,7 @@ nsComputedDOMStyle::DoGetColorInterpolationFilters()
 CSSValue*
 nsComputedDOMStyle::DoGetDominantBaseline()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   val->SetIdent(
     nsCSSProps::ValueToKeywordEnum(StyleSVGReset()->mDominantBaseline,
                                    nsCSSProps::kDominantBaselineKTable));
@@ -4235,7 +4684,7 @@ nsComputedDOMStyle::DoGetDominantBaseline()
 CSSValue*
 nsComputedDOMStyle::DoGetImageRendering()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   val->SetIdent(
     nsCSSProps::ValueToKeywordEnum(StyleSVG()->mImageRendering,
                                    nsCSSProps::kImageRenderingKTable));
@@ -4245,7 +4694,7 @@ nsComputedDOMStyle::DoGetImageRendering()
 CSSValue*
 nsComputedDOMStyle::DoGetShapeRendering()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   val->SetIdent(
     nsCSSProps::ValueToKeywordEnum(StyleSVG()->mShapeRendering,
                                    nsCSSProps::kShapeRenderingKTable));
@@ -4255,7 +4704,7 @@ nsComputedDOMStyle::DoGetShapeRendering()
 CSSValue*
 nsComputedDOMStyle::DoGetTextRendering()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   val->SetIdent(
     nsCSSProps::ValueToKeywordEnum(StyleSVG()->mTextRendering,
                                    nsCSSProps::kTextRenderingKTable));
@@ -4265,7 +4714,7 @@ nsComputedDOMStyle::DoGetTextRendering()
 CSSValue*
 nsComputedDOMStyle::DoGetFloodColor()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   SetToRGBAColor(val, StyleSVGReset()->mFloodColor);
   return val;
 }
@@ -4273,7 +4722,7 @@ nsComputedDOMStyle::DoGetFloodColor()
 CSSValue*
 nsComputedDOMStyle::DoGetLightingColor()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   SetToRGBAColor(val, StyleSVGReset()->mLightingColor);
   return val;
 }
@@ -4281,7 +4730,7 @@ nsComputedDOMStyle::DoGetLightingColor()
 CSSValue*
 nsComputedDOMStyle::DoGetStopColor()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   SetToRGBAColor(val, StyleSVGReset()->mStopColor);
   return val;
 }
@@ -4289,7 +4738,7 @@ nsComputedDOMStyle::DoGetStopColor()
 CSSValue*
 nsComputedDOMStyle::DoGetClipPath()
 {
-  nsROCSSPrimitiveValue* val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue* val = new nsROCSSPrimitiveValue;
 
   const nsStyleSVGReset* svg = StyleSVGReset();
 
@@ -4301,25 +4750,81 @@ nsComputedDOMStyle::DoGetClipPath()
   return val;
 }
 
+void
+nsComputedDOMStyle::SetCssTextToCoord(nsAString& aCssText,
+                                      const nsStyleCoord& aCoord)
+{
+  nsROCSSPrimitiveValue* value = new nsROCSSPrimitiveValue;
+  bool clampNegativeCalc = true;
+  SetValueToCoord(value, aCoord, clampNegativeCalc);
+  value->GetCssText(aCssText);
+  delete value;
+}
+
+CSSValue*
+nsComputedDOMStyle::CreatePrimitiveValueForStyleFilter(
+  const nsStyleFilter& aStyleFilter)
+{
+  nsROCSSPrimitiveValue* value = new nsROCSSPrimitiveValue;
+  // Handle url().
+  if (aStyleFilter.GetType() == NS_STYLE_FILTER_URL) {
+    value->SetURI(aStyleFilter.GetURL());
+    return value;
+  }
+
+  // Filter function name and opening parenthesis.
+  nsAutoString filterFunctionString;
+  AppendASCIItoUTF16(
+    nsCSSProps::ValueToKeyword(aStyleFilter.GetType(),
+                               nsCSSProps::kFilterFunctionKTable),
+                               filterFunctionString);
+  filterFunctionString.AppendLiteral("(");
+
+  nsAutoString argumentString;
+  if (aStyleFilter.GetType() == NS_STYLE_FILTER_DROP_SHADOW) {
+    // Handle drop-shadow()
+    nsRefPtr<CSSValue> shadowValue =
+      GetCSSShadowArray(aStyleFilter.GetDropShadow(),
+                        StyleColor()->mColor,
+                        false);
+    ErrorResult dummy;
+    shadowValue->GetCssText(argumentString, dummy);
+  } else {
+    // Filter function argument.
+    SetCssTextToCoord(argumentString, aStyleFilter.GetFilterParameter());
+  }
+  filterFunctionString.Append(argumentString);
+
+  // Filter function closing parenthesis.
+  filterFunctionString.AppendLiteral(")");
+
+  value->SetString(filterFunctionString);
+  return value;
+}
+
 CSSValue*
 nsComputedDOMStyle::DoGetFilter()
 {
-  nsROCSSPrimitiveValue* val = GetROCSSPrimitiveValue();
+  const nsTArray<nsStyleFilter>& filters = StyleSVGReset()->mFilters;
 
-  const nsStyleSVGReset* svg = StyleSVGReset();
+  if (filters.IsEmpty()) {
+    nsROCSSPrimitiveValue* value = new nsROCSSPrimitiveValue;
+    value->SetIdent(eCSSKeyword_none);
+    return value;
+  }
 
-  if (svg->mFilter)
-    val->SetURI(svg->mFilter);
-  else
-    val->SetIdent(eCSSKeyword_none);
-
-  return val;
+  nsDOMCSSValueList* valueList = GetROCSSValueList(false);
+  for(uint32_t i = 0; i < filters.Length(); i++) {
+    CSSValue* value = CreatePrimitiveValueForStyleFilter(filters[i]);
+    valueList->AppendCSSValue(value);
+  }
+  return valueList;
 }
 
 CSSValue*
 nsComputedDOMStyle::DoGetMask()
 {
-  nsROCSSPrimitiveValue* val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue* val = new nsROCSSPrimitiveValue;
 
   const nsStyleSVGReset* svg = StyleSVGReset();
 
@@ -4334,7 +4839,7 @@ nsComputedDOMStyle::DoGetMask()
 CSSValue*
 nsComputedDOMStyle::DoGetMaskType()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   val->SetIdent(
     nsCSSProps::ValueToKeywordEnum(StyleSVGReset()->mMaskType,
                                    nsCSSProps::kMaskTypeKTable));
@@ -4344,7 +4849,7 @@ nsComputedDOMStyle::DoGetMaskType()
 CSSValue*
 nsComputedDOMStyle::DoGetPaintOrder()
 {
-  nsROCSSPrimitiveValue *val = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue *val = new nsROCSSPrimitiveValue;
   nsAutoString string;
   uint8_t paintOrder = StyleSVG()->mPaintOrder;
   nsStyleUtil::AppendPaintOrderValue(paintOrder, string);
@@ -4364,7 +4869,7 @@ nsComputedDOMStyle::DoGetTransitionDelay()
   uint32_t i = 0;
   do {
     const nsTransition *transition = &display->mTransitions[i];
-    nsROCSSPrimitiveValue* delay = GetROCSSPrimitiveValue();
+    nsROCSSPrimitiveValue* delay = new nsROCSSPrimitiveValue;
     valueList->AppendCSSValue(delay);
     delay->SetTime((float)transition->GetDelay() / (float)PR_MSEC_PER_SEC);
   } while (++i < display->mTransitionDelayCount);
@@ -4384,7 +4889,7 @@ nsComputedDOMStyle::DoGetTransitionDuration()
   uint32_t i = 0;
   do {
     const nsTransition *transition = &display->mTransitions[i];
-    nsROCSSPrimitiveValue* duration = GetROCSSPrimitiveValue();
+    nsROCSSPrimitiveValue* duration = new nsROCSSPrimitiveValue;
     valueList->AppendCSSValue(duration);
 
     duration->SetTime((float)transition->GetDuration() / (float)PR_MSEC_PER_SEC);
@@ -4405,7 +4910,7 @@ nsComputedDOMStyle::DoGetTransitionProperty()
   uint32_t i = 0;
   do {
     const nsTransition *transition = &display->mTransitions[i];
-    nsROCSSPrimitiveValue* property = GetROCSSPrimitiveValue();
+    nsROCSSPrimitiveValue* property = new nsROCSSPrimitiveValue;
     valueList->AppendCSSValue(property);
     nsCSSProperty cssprop = transition->GetProperty();
     if (cssprop == eCSSPropertyExtra_all_properties)
@@ -4430,7 +4935,7 @@ void
 nsComputedDOMStyle::AppendTimingFunction(nsDOMCSSValueList *aValueList,
                                          const nsTimingFunction& aTimingFunction)
 {
-  nsROCSSPrimitiveValue* timingFunction = GetROCSSPrimitiveValue();
+  nsROCSSPrimitiveValue* timingFunction = new nsROCSSPrimitiveValue;
   aValueList->AppendCSSValue(timingFunction);
 
   nsAutoString tmp;
@@ -4489,7 +4994,7 @@ nsComputedDOMStyle::DoGetAnimationName()
   uint32_t i = 0;
   do {
     const nsAnimation *animation = &display->mAnimations[i];
-    nsROCSSPrimitiveValue* property = GetROCSSPrimitiveValue();
+    nsROCSSPrimitiveValue* property = new nsROCSSPrimitiveValue;
     valueList->AppendCSSValue(property);
 
     const nsString& name = animation->GetName();
@@ -4517,7 +5022,7 @@ nsComputedDOMStyle::DoGetAnimationDelay()
   uint32_t i = 0;
   do {
     const nsAnimation *animation = &display->mAnimations[i];
-    nsROCSSPrimitiveValue* delay = GetROCSSPrimitiveValue();
+    nsROCSSPrimitiveValue* delay = new nsROCSSPrimitiveValue;
     valueList->AppendCSSValue(delay);
     delay->SetTime((float)animation->GetDelay() / (float)PR_MSEC_PER_SEC);
   } while (++i < display->mAnimationDelayCount);
@@ -4537,7 +5042,7 @@ nsComputedDOMStyle::DoGetAnimationDuration()
   uint32_t i = 0;
   do {
     const nsAnimation *animation = &display->mAnimations[i];
-    nsROCSSPrimitiveValue* duration = GetROCSSPrimitiveValue();
+    nsROCSSPrimitiveValue* duration = new nsROCSSPrimitiveValue;
     valueList->AppendCSSValue(duration);
 
     duration->SetTime((float)animation->GetDuration() / (float)PR_MSEC_PER_SEC);
@@ -4576,7 +5081,7 @@ nsComputedDOMStyle::DoGetAnimationDirection()
   uint32_t i = 0;
   do {
     const nsAnimation *animation = &display->mAnimations[i];
-    nsROCSSPrimitiveValue* direction = GetROCSSPrimitiveValue();
+    nsROCSSPrimitiveValue* direction = new nsROCSSPrimitiveValue;
     valueList->AppendCSSValue(direction);
     direction->SetIdent(
       nsCSSProps::ValueToKeywordEnum(animation->GetDirection(),
@@ -4598,7 +5103,7 @@ nsComputedDOMStyle::DoGetAnimationFillMode()
   uint32_t i = 0;
   do {
     const nsAnimation *animation = &display->mAnimations[i];
-    nsROCSSPrimitiveValue* fillMode = GetROCSSPrimitiveValue();
+    nsROCSSPrimitiveValue* fillMode = new nsROCSSPrimitiveValue;
     valueList->AppendCSSValue(fillMode);
     fillMode->SetIdent(
       nsCSSProps::ValueToKeywordEnum(animation->GetFillMode(),
@@ -4620,7 +5125,7 @@ nsComputedDOMStyle::DoGetAnimationIterationCount()
   uint32_t i = 0;
   do {
     const nsAnimation *animation = &display->mAnimations[i];
-    nsROCSSPrimitiveValue* iterationCount = GetROCSSPrimitiveValue();
+    nsROCSSPrimitiveValue* iterationCount = new nsROCSSPrimitiveValue;
     valueList->AppendCSSValue(iterationCount);
 
     float f = animation->GetIterationCount();
@@ -4654,7 +5159,7 @@ nsComputedDOMStyle::DoGetAnimationPlayState()
   uint32_t i = 0;
   do {
     const nsAnimation *animation = &display->mAnimations[i];
-    nsROCSSPrimitiveValue* playState = GetROCSSPrimitiveValue();
+    nsROCSSPrimitiveValue* playState = new nsROCSSPrimitiveValue;
     valueList->AppendCSSValue(playState);
     playState->SetIdent(
       nsCSSProps::ValueToKeywordEnum(animation->GetPlayState(),
@@ -4664,282 +5169,59 @@ nsComputedDOMStyle::DoGetAnimationPlayState()
   return valueList;
 }
 
-#define COMPUTED_STYLE_MAP_ENTRY(_prop, _method)              \
-  { eCSSProperty_##_prop, &nsComputedDOMStyle::DoGet##_method, false }
-#define COMPUTED_STYLE_MAP_ENTRY_LAYOUT(_prop, _method)       \
-  { eCSSProperty_##_prop, &nsComputedDOMStyle::DoGet##_method, true }
-
-const nsComputedDOMStyle::ComputedStyleMapEntry*
-nsComputedDOMStyle::GetQueryablePropertyMap(uint32_t* aLength)
+static int
+MarkComputedStyleMapDirty(const char* aPref, void* aData)
 {
-  /* ******************************************************************* *\
-   * Properties below are listed in alphabetical order.                  *
-   * Please keep them that way.                                          *
-   *                                                                     *
-   * Properties commented out with // are not yet implemented            *
-   * Properties commented out with //// are shorthands and not queryable *
-  \* ******************************************************************* */
-  static const ComputedStyleMapEntry map[] = {
-    /* ***************************** *\
-     * Implementations of CSS styles *
-    \* ***************************** */
-
-#ifdef MOZ_FLEXBOX
-    COMPUTED_STYLE_MAP_ENTRY(align_items,                   AlignItems),
-    COMPUTED_STYLE_MAP_ENTRY(align_self,                    AlignSelf),
-#endif // MOZ_FLEXBOX
-    //// COMPUTED_STYLE_MAP_ENTRY(animation,                Animation),
-    COMPUTED_STYLE_MAP_ENTRY(animation_delay,               AnimationDelay),
-    COMPUTED_STYLE_MAP_ENTRY(animation_direction,           AnimationDirection),
-    COMPUTED_STYLE_MAP_ENTRY(animation_duration,            AnimationDuration),
-    COMPUTED_STYLE_MAP_ENTRY(animation_fill_mode,           AnimationFillMode),
-    COMPUTED_STYLE_MAP_ENTRY(animation_iteration_count,     AnimationIterationCount),
-    COMPUTED_STYLE_MAP_ENTRY(animation_name,                AnimationName),
-    COMPUTED_STYLE_MAP_ENTRY(animation_play_state,          AnimationPlayState),
-    COMPUTED_STYLE_MAP_ENTRY(animation_timing_function,     AnimationTimingFunction),
-    COMPUTED_STYLE_MAP_ENTRY(backface_visibility,           BackfaceVisibility),
-    //// COMPUTED_STYLE_MAP_ENTRY(background,               Background),
-    COMPUTED_STYLE_MAP_ENTRY(background_attachment,         BackgroundAttachment),
-    COMPUTED_STYLE_MAP_ENTRY(background_clip,               BackgroundClip),
-    COMPUTED_STYLE_MAP_ENTRY(background_color,              BackgroundColor),
-    COMPUTED_STYLE_MAP_ENTRY(background_image,              BackgroundImage),
-    COMPUTED_STYLE_MAP_ENTRY(background_origin,             BackgroundOrigin),
-    COMPUTED_STYLE_MAP_ENTRY(background_position,           BackgroundPosition),
-    COMPUTED_STYLE_MAP_ENTRY(background_repeat,             BackgroundRepeat),
-    COMPUTED_STYLE_MAP_ENTRY(background_size,               BackgroundSize),
-    //// COMPUTED_STYLE_MAP_ENTRY(border,                   Border),
-    //// COMPUTED_STYLE_MAP_ENTRY(border_bottom,            BorderBottom),
-    COMPUTED_STYLE_MAP_ENTRY(border_bottom_color,           BorderBottomColor),
-    COMPUTED_STYLE_MAP_ENTRY_LAYOUT(border_bottom_left_radius, BorderBottomLeftRadius),
-    COMPUTED_STYLE_MAP_ENTRY_LAYOUT(border_bottom_right_radius,BorderBottomRightRadius),
-    COMPUTED_STYLE_MAP_ENTRY(border_bottom_style,           BorderBottomStyle),
-    COMPUTED_STYLE_MAP_ENTRY_LAYOUT(border_bottom_width,    BorderBottomWidth),
-    COMPUTED_STYLE_MAP_ENTRY(border_collapse,               BorderCollapse),
-    //// COMPUTED_STYLE_MAP_ENTRY(border_color,             BorderColor),
-    //// COMPUTED_STYLE_MAP_ENTRY(border_image,             BorderImage),
-    COMPUTED_STYLE_MAP_ENTRY(border_image_outset,           BorderImageOutset),
-    COMPUTED_STYLE_MAP_ENTRY(border_image_repeat,           BorderImageRepeat),
-    COMPUTED_STYLE_MAP_ENTRY(border_image_slice,            BorderImageSlice),
-    COMPUTED_STYLE_MAP_ENTRY(border_image_source,           BorderImageSource),
-    COMPUTED_STYLE_MAP_ENTRY(border_image_width,            BorderImageWidth),
-    //// COMPUTED_STYLE_MAP_ENTRY(border_left,              BorderLeft),
-    COMPUTED_STYLE_MAP_ENTRY(border_left_color,             BorderLeftColor),
-    COMPUTED_STYLE_MAP_ENTRY(border_left_style,             BorderLeftStyle),
-    COMPUTED_STYLE_MAP_ENTRY_LAYOUT(border_left_width,      BorderLeftWidth),
-    //// COMPUTED_STYLE_MAP_ENTRY(border_right,             BorderRight),
-    COMPUTED_STYLE_MAP_ENTRY(border_right_color,            BorderRightColor),
-    COMPUTED_STYLE_MAP_ENTRY(border_right_style,            BorderRightStyle),
-    COMPUTED_STYLE_MAP_ENTRY_LAYOUT(border_right_width,     BorderRightWidth),
-    COMPUTED_STYLE_MAP_ENTRY(border_spacing,                BorderSpacing),
-    //// COMPUTED_STYLE_MAP_ENTRY(border_style,             BorderStyle),
-    //// COMPUTED_STYLE_MAP_ENTRY(border_top,               BorderTop),
-    COMPUTED_STYLE_MAP_ENTRY(border_top_color,              BorderTopColor),
-    COMPUTED_STYLE_MAP_ENTRY_LAYOUT(border_top_left_radius,    BorderTopLeftRadius),
-    COMPUTED_STYLE_MAP_ENTRY_LAYOUT(border_top_right_radius,   BorderTopRightRadius),
-    COMPUTED_STYLE_MAP_ENTRY(border_top_style,              BorderTopStyle),
-    COMPUTED_STYLE_MAP_ENTRY_LAYOUT(border_top_width,       BorderTopWidth),
-    //// COMPUTED_STYLE_MAP_ENTRY(border_width,             BorderWidth),
-    COMPUTED_STYLE_MAP_ENTRY_LAYOUT(bottom,                 Bottom),
-    COMPUTED_STYLE_MAP_ENTRY(box_shadow,                    BoxShadow),
-    COMPUTED_STYLE_MAP_ENTRY(caption_side,                  CaptionSide),
-    COMPUTED_STYLE_MAP_ENTRY(clear,                         Clear),
-    COMPUTED_STYLE_MAP_ENTRY(clip,                          Clip),
-    COMPUTED_STYLE_MAP_ENTRY(color,                         Color),
-    COMPUTED_STYLE_MAP_ENTRY(content,                       Content),
-    COMPUTED_STYLE_MAP_ENTRY(counter_increment,             CounterIncrement),
-    COMPUTED_STYLE_MAP_ENTRY(counter_reset,                 CounterReset),
-    COMPUTED_STYLE_MAP_ENTRY(cursor,                        Cursor),
-    COMPUTED_STYLE_MAP_ENTRY(direction,                     Direction),
-    COMPUTED_STYLE_MAP_ENTRY(display,                       Display),
-    COMPUTED_STYLE_MAP_ENTRY(empty_cells,                   EmptyCells),
-#ifdef MOZ_FLEXBOX
-    COMPUTED_STYLE_MAP_ENTRY(flex_basis,                    FlexBasis),
-    COMPUTED_STYLE_MAP_ENTRY(flex_direction,                FlexDirection),
-    COMPUTED_STYLE_MAP_ENTRY(flex_grow,                     FlexGrow),
-    COMPUTED_STYLE_MAP_ENTRY(flex_shrink,                   FlexShrink),
-#endif // MOZ_FLEXBOX
-    COMPUTED_STYLE_MAP_ENTRY(float,                         Float),
-    //// COMPUTED_STYLE_MAP_ENTRY(font,                     Font),
-    COMPUTED_STYLE_MAP_ENTRY(font_family,                   FontFamily),
-    COMPUTED_STYLE_MAP_ENTRY(font_size,                     FontSize),
-    COMPUTED_STYLE_MAP_ENTRY(font_size_adjust,              FontSizeAdjust),
-    COMPUTED_STYLE_MAP_ENTRY(font_stretch,                  FontStretch),
-    COMPUTED_STYLE_MAP_ENTRY(font_style,                    FontStyle),
-    COMPUTED_STYLE_MAP_ENTRY(font_variant,                  FontVariant),
-    COMPUTED_STYLE_MAP_ENTRY(font_weight,                   FontWeight),
-    COMPUTED_STYLE_MAP_ENTRY_LAYOUT(height,                 Height),
-    COMPUTED_STYLE_MAP_ENTRY(ime_mode,                      IMEMode),
-#ifdef MOZ_FLEXBOX
-    COMPUTED_STYLE_MAP_ENTRY(justify_content,               JustifyContent),
-#endif // MOZ_FLEXBOX
-    COMPUTED_STYLE_MAP_ENTRY_LAYOUT(left,                   Left),
-    COMPUTED_STYLE_MAP_ENTRY(letter_spacing,                LetterSpacing),
-    COMPUTED_STYLE_MAP_ENTRY_LAYOUT(line_height,            LineHeight),
-    //// COMPUTED_STYLE_MAP_ENTRY(list_style,               ListStyle),
-    COMPUTED_STYLE_MAP_ENTRY(list_style_image,              ListStyleImage),
-    COMPUTED_STYLE_MAP_ENTRY(list_style_position,           ListStylePosition),
-    COMPUTED_STYLE_MAP_ENTRY(list_style_type,               ListStyleType),
-    //// COMPUTED_STYLE_MAP_ENTRY(margin,                   Margin),
-    COMPUTED_STYLE_MAP_ENTRY_LAYOUT(margin_bottom,          MarginBottomWidth),
-    COMPUTED_STYLE_MAP_ENTRY_LAYOUT(margin_left,            MarginLeftWidth),
-    COMPUTED_STYLE_MAP_ENTRY_LAYOUT(margin_right,           MarginRightWidth),
-    COMPUTED_STYLE_MAP_ENTRY_LAYOUT(margin_top,             MarginTopWidth),
-    COMPUTED_STYLE_MAP_ENTRY(marker_offset,                 MarkerOffset),
-    // COMPUTED_STYLE_MAP_ENTRY(marks,                      Marks),
-    COMPUTED_STYLE_MAP_ENTRY_LAYOUT(max_height,             MaxHeight),
-    COMPUTED_STYLE_MAP_ENTRY_LAYOUT(max_width,              MaxWidth),
-    COMPUTED_STYLE_MAP_ENTRY_LAYOUT(min_height,             MinHeight),
-    COMPUTED_STYLE_MAP_ENTRY_LAYOUT(min_width,              MinWidth),
-    COMPUTED_STYLE_MAP_ENTRY(opacity,                       Opacity),
-    // COMPUTED_STYLE_MAP_ENTRY(orphans,                    Orphans),
-    //// COMPUTED_STYLE_MAP_ENTRY(outline,                  Outline),
-#ifdef MOZ_FLEXBOX
-    COMPUTED_STYLE_MAP_ENTRY(order,                         Order),
-#endif // MOZ_FLEXBOX
-    COMPUTED_STYLE_MAP_ENTRY(outline_color,                 OutlineColor),
-    COMPUTED_STYLE_MAP_ENTRY(outline_offset,                OutlineOffset),
-    COMPUTED_STYLE_MAP_ENTRY(outline_style,                 OutlineStyle),
-    COMPUTED_STYLE_MAP_ENTRY(outline_width,                 OutlineWidth),
-    COMPUTED_STYLE_MAP_ENTRY(overflow,                      Overflow),
-    COMPUTED_STYLE_MAP_ENTRY(overflow_x,                    OverflowX),
-    COMPUTED_STYLE_MAP_ENTRY(overflow_y,                    OverflowY),
-    //// COMPUTED_STYLE_MAP_ENTRY(padding,                  Padding),
-    COMPUTED_STYLE_MAP_ENTRY_LAYOUT(padding_bottom,         PaddingBottom),
-    COMPUTED_STYLE_MAP_ENTRY_LAYOUT(padding_left,           PaddingLeft),
-    COMPUTED_STYLE_MAP_ENTRY_LAYOUT(padding_right,          PaddingRight),
-    COMPUTED_STYLE_MAP_ENTRY_LAYOUT(padding_top,            PaddingTop),
-    // COMPUTED_STYLE_MAP_ENTRY(page,                       Page),
-    COMPUTED_STYLE_MAP_ENTRY(page_break_after,              PageBreakAfter),
-    COMPUTED_STYLE_MAP_ENTRY(page_break_before,             PageBreakBefore),
-    COMPUTED_STYLE_MAP_ENTRY(page_break_inside,             PageBreakInside),
-    COMPUTED_STYLE_MAP_ENTRY(perspective,                   Perspective),
-    COMPUTED_STYLE_MAP_ENTRY_LAYOUT(perspective_origin,     PerspectiveOrigin),
-    COMPUTED_STYLE_MAP_ENTRY(pointer_events,                PointerEvents),
-    COMPUTED_STYLE_MAP_ENTRY(position,                      Position),
-    COMPUTED_STYLE_MAP_ENTRY(quotes,                        Quotes),
-    COMPUTED_STYLE_MAP_ENTRY(resize,                        Resize),
-    COMPUTED_STYLE_MAP_ENTRY_LAYOUT(right,                  Right),
-    //// COMPUTED_STYLE_MAP_ENTRY(size,                     Size),
-    COMPUTED_STYLE_MAP_ENTRY(table_layout,                  TableLayout),
-    COMPUTED_STYLE_MAP_ENTRY(text_align,                    TextAlign),
-    COMPUTED_STYLE_MAP_ENTRY(text_decoration,               TextDecoration),
-    COMPUTED_STYLE_MAP_ENTRY_LAYOUT(text_indent,            TextIndent),
-    COMPUTED_STYLE_MAP_ENTRY(text_overflow,                 TextOverflow),
-    COMPUTED_STYLE_MAP_ENTRY(text_shadow,                   TextShadow),
-    COMPUTED_STYLE_MAP_ENTRY(text_transform,                TextTransform),
-    COMPUTED_STYLE_MAP_ENTRY_LAYOUT(top,                    Top),
-    COMPUTED_STYLE_MAP_ENTRY_LAYOUT(transform,              Transform),
-    COMPUTED_STYLE_MAP_ENTRY_LAYOUT(transform_origin,       TransformOrigin),
-    COMPUTED_STYLE_MAP_ENTRY(transform_style,               TransformStyle),
-    //// COMPUTED_STYLE_MAP_ENTRY(transition,               Transition),
-    COMPUTED_STYLE_MAP_ENTRY(transition_delay,              TransitionDelay),
-    COMPUTED_STYLE_MAP_ENTRY(transition_duration,           TransitionDuration),
-    COMPUTED_STYLE_MAP_ENTRY(transition_property,           TransitionProperty),
-    COMPUTED_STYLE_MAP_ENTRY(transition_timing_function,    TransitionTimingFunction),
-    COMPUTED_STYLE_MAP_ENTRY(unicode_bidi,                  UnicodeBidi),
-    COMPUTED_STYLE_MAP_ENTRY_LAYOUT(vertical_align,         VerticalAlign),
-    COMPUTED_STYLE_MAP_ENTRY(visibility,                    Visibility),
-    COMPUTED_STYLE_MAP_ENTRY(white_space,                   WhiteSpace),
-    // COMPUTED_STYLE_MAP_ENTRY(widows,                     Widows),
-    COMPUTED_STYLE_MAP_ENTRY_LAYOUT(width,                  Width),
-    COMPUTED_STYLE_MAP_ENTRY(word_break,                    WordBreak),
-    COMPUTED_STYLE_MAP_ENTRY(word_spacing,                  WordSpacing),
-    COMPUTED_STYLE_MAP_ENTRY(word_wrap,                     WordWrap),
-    COMPUTED_STYLE_MAP_ENTRY(z_index,                       ZIndex),
-
-    /* ******************************* *\
-     * Implementations of -moz- styles *
-    \* ******************************* */
-
-    COMPUTED_STYLE_MAP_ENTRY(appearance,                    Appearance),
-    COMPUTED_STYLE_MAP_ENTRY(_moz_background_inline_policy, BackgroundInlinePolicy),
-    COMPUTED_STYLE_MAP_ENTRY(binding,                       Binding),
-    COMPUTED_STYLE_MAP_ENTRY(border_bottom_colors,          BorderBottomColors),
-    COMPUTED_STYLE_MAP_ENTRY(border_left_colors,            BorderLeftColors),
-    COMPUTED_STYLE_MAP_ENTRY(border_right_colors,           BorderRightColors),
-    COMPUTED_STYLE_MAP_ENTRY(border_top_colors,             BorderTopColors),
-    COMPUTED_STYLE_MAP_ENTRY(box_align,                     BoxAlign),
-    COMPUTED_STYLE_MAP_ENTRY(box_direction,                 BoxDirection),
-    COMPUTED_STYLE_MAP_ENTRY(box_flex,                      BoxFlex),
-    COMPUTED_STYLE_MAP_ENTRY(box_ordinal_group,             BoxOrdinalGroup),
-    COMPUTED_STYLE_MAP_ENTRY(box_orient,                    BoxOrient),
-    COMPUTED_STYLE_MAP_ENTRY(box_pack,                      BoxPack),
-    COMPUTED_STYLE_MAP_ENTRY(box_sizing,                    BoxSizing),
-    COMPUTED_STYLE_MAP_ENTRY(_moz_column_count,             ColumnCount),
-    COMPUTED_STYLE_MAP_ENTRY(_moz_column_fill,              ColumnFill),
-    COMPUTED_STYLE_MAP_ENTRY(_moz_column_gap,               ColumnGap),
-    //// COMPUTED_STYLE_MAP_ENTRY(_moz_column_rule,         ColumnRule),
-    COMPUTED_STYLE_MAP_ENTRY(_moz_column_rule_color,        ColumnRuleColor),
-    COMPUTED_STYLE_MAP_ENTRY(_moz_column_rule_style,        ColumnRuleStyle),
-    COMPUTED_STYLE_MAP_ENTRY(_moz_column_rule_width,        ColumnRuleWidth),
-    COMPUTED_STYLE_MAP_ENTRY(_moz_column_width,             ColumnWidth),
-    COMPUTED_STYLE_MAP_ENTRY(float_edge,                    FloatEdge),
-    COMPUTED_STYLE_MAP_ENTRY(font_feature_settings,         FontFeatureSettings),
-    COMPUTED_STYLE_MAP_ENTRY(font_language_override,        FontLanguageOverride),
-    COMPUTED_STYLE_MAP_ENTRY(force_broken_image_icon,       ForceBrokenImageIcon),
-    COMPUTED_STYLE_MAP_ENTRY(hyphens,                       Hyphens),
-    COMPUTED_STYLE_MAP_ENTRY(image_region,                  ImageRegion),
-    COMPUTED_STYLE_MAP_ENTRY(orient,                        Orient),
-    COMPUTED_STYLE_MAP_ENTRY_LAYOUT(_moz_outline_radius_bottomLeft, OutlineRadiusBottomLeft),
-    COMPUTED_STYLE_MAP_ENTRY_LAYOUT(_moz_outline_radius_bottomRight,OutlineRadiusBottomRight),
-    COMPUTED_STYLE_MAP_ENTRY_LAYOUT(_moz_outline_radius_topLeft,    OutlineRadiusTopLeft),
-    COMPUTED_STYLE_MAP_ENTRY_LAYOUT(_moz_outline_radius_topRight,   OutlineRadiusTopRight),
-    COMPUTED_STYLE_MAP_ENTRY(stack_sizing,                  StackSizing),
-    COMPUTED_STYLE_MAP_ENTRY(_moz_tab_size,                 TabSize),
-    COMPUTED_STYLE_MAP_ENTRY(text_align_last,               TextAlignLast),
-    COMPUTED_STYLE_MAP_ENTRY(text_blink,                    MozTextBlink),
-    COMPUTED_STYLE_MAP_ENTRY(text_decoration_color,         TextDecorationColor),
-    COMPUTED_STYLE_MAP_ENTRY(text_decoration_line,          TextDecorationLine),
-    COMPUTED_STYLE_MAP_ENTRY(text_decoration_style,         TextDecorationStyle),
-    COMPUTED_STYLE_MAP_ENTRY(text_size_adjust,              TextSizeAdjust),
-    COMPUTED_STYLE_MAP_ENTRY(user_focus,                    UserFocus),
-    COMPUTED_STYLE_MAP_ENTRY(user_input,                    UserInput),
-    COMPUTED_STYLE_MAP_ENTRY(user_modify,                   UserModify),
-    COMPUTED_STYLE_MAP_ENTRY(user_select,                   UserSelect),
-    COMPUTED_STYLE_MAP_ENTRY(_moz_window_shadow,            WindowShadow),
-
-    /* ***************************** *\
-     * Implementations of SVG styles *
-    \* ***************************** */
-
-    COMPUTED_STYLE_MAP_ENTRY(clip_path,                     ClipPath),
-    COMPUTED_STYLE_MAP_ENTRY(clip_rule,                     ClipRule),
-    COMPUTED_STYLE_MAP_ENTRY(color_interpolation,           ColorInterpolation),
-    COMPUTED_STYLE_MAP_ENTRY(color_interpolation_filters,   ColorInterpolationFilters),
-    COMPUTED_STYLE_MAP_ENTRY(dominant_baseline,             DominantBaseline),
-    COMPUTED_STYLE_MAP_ENTRY(fill,                          Fill),
-    COMPUTED_STYLE_MAP_ENTRY(fill_opacity,                  FillOpacity),
-    COMPUTED_STYLE_MAP_ENTRY(fill_rule,                     FillRule),
-    COMPUTED_STYLE_MAP_ENTRY(filter,                        Filter),
-    COMPUTED_STYLE_MAP_ENTRY(flood_color,                   FloodColor),
-    COMPUTED_STYLE_MAP_ENTRY(flood_opacity,                 FloodOpacity),
-    COMPUTED_STYLE_MAP_ENTRY(image_rendering,               ImageRendering),
-    COMPUTED_STYLE_MAP_ENTRY(lighting_color,                LightingColor),
-    COMPUTED_STYLE_MAP_ENTRY(marker_end,                    MarkerEnd),
-    COMPUTED_STYLE_MAP_ENTRY(marker_mid,                    MarkerMid),
-    COMPUTED_STYLE_MAP_ENTRY(marker_start,                  MarkerStart),
-    COMPUTED_STYLE_MAP_ENTRY(mask,                          Mask),
-    COMPUTED_STYLE_MAP_ENTRY(mask_type,                     MaskType),
-    COMPUTED_STYLE_MAP_ENTRY(paint_order,                   PaintOrder),
-    COMPUTED_STYLE_MAP_ENTRY(shape_rendering,               ShapeRendering),
-    COMPUTED_STYLE_MAP_ENTRY(stop_color,                    StopColor),
-    COMPUTED_STYLE_MAP_ENTRY(stop_opacity,                  StopOpacity),
-    COMPUTED_STYLE_MAP_ENTRY(stroke,                        Stroke),
-    COMPUTED_STYLE_MAP_ENTRY(stroke_dasharray,              StrokeDasharray),
-    COMPUTED_STYLE_MAP_ENTRY(stroke_dashoffset,             StrokeDashoffset),
-    COMPUTED_STYLE_MAP_ENTRY(stroke_linecap,                StrokeLinecap),
-    COMPUTED_STYLE_MAP_ENTRY(stroke_linejoin,               StrokeLinejoin),
-    COMPUTED_STYLE_MAP_ENTRY(stroke_miterlimit,             StrokeMiterlimit),
-    COMPUTED_STYLE_MAP_ENTRY(stroke_opacity,                StrokeOpacity),
-    COMPUTED_STYLE_MAP_ENTRY(stroke_width,                  StrokeWidth),
-    COMPUTED_STYLE_MAP_ENTRY(text_anchor,                   TextAnchor),
-    COMPUTED_STYLE_MAP_ENTRY(text_rendering,                TextRendering),
-    COMPUTED_STYLE_MAP_ENTRY(vector_effect,                 VectorEffect)
-
-  };
-
-  *aLength = ArrayLength(map);
-
-  return map;
+  static_cast<nsComputedStyleMap*>(aData)->MarkDirty();
+  return 0;
 }
 
+/* static */ nsComputedStyleMap*
+nsComputedDOMStyle::GetComputedStyleMap()
+{
+  static nsComputedStyleMap map = {
+    {
+#define COMPUTED_STYLE_PROP(prop_, method_) \
+  { eCSSProperty_##prop_, &nsComputedDOMStyle::DoGet##method_ },
+#include "nsComputedDOMStylePropertyList.h"
+#undef COMPUTED_STYLE_PROP
+    }
+  };
+  return &map;
+}
+
+/* static */ void
+nsComputedDOMStyle::RegisterPrefChangeCallbacks()
+{
+  // Note that this will register callbacks for all properties with prefs, not
+  // just those that are implemented on computed style objects, as it's not
+  // easy to grab specific property data from nsCSSPropList.h based on the
+  // entries iterated in nsComputedDOMStylePropertyList.h.
+  nsComputedStyleMap* data = GetComputedStyleMap();
+#define REGISTER_CALLBACK(pref_)                                             \
+  if (pref_[0]) {                                                            \
+    Preferences::RegisterCallback(MarkComputedStyleMapDirty, pref_, data);   \
+  }
+#define CSS_PROP(prop_, id_, method_, flags_, pref_, parsevariant_,          \
+                 kwtable_, stylestruct_, stylestructoffset_, animtype_)      \
+  REGISTER_CALLBACK(pref_)
+#include "nsCSSPropList.h"
+#undef CSS_PROP
+#undef REGISTER_CALLBACK
+}
+
+/* static */ void
+nsComputedDOMStyle::UnregisterPrefChangeCallbacks()
+{
+  nsComputedStyleMap* data = GetComputedStyleMap();
+#define UNREGISTER_CALLBACK(pref_)                                             \
+  if (pref_[0]) {                                                              \
+    Preferences::UnregisterCallback(MarkComputedStyleMapDirty, pref_, data);   \
+  }
+#define CSS_PROP(prop_, id_, method_, flags_, pref_, parsevariant_,            \
+                 kwtable_, stylestruct_, stylestructoffset_, animtype_)        \
+  UNREGISTER_CALLBACK(pref_)
+#include "nsCSSPropList.h"
+#undef CSS_PROP
+#undef UNREGISTER_CALLBACK
+}

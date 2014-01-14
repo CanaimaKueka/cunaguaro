@@ -2,13 +2,22 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-"use stirct";
+"use strict";
+
+// Skipping due to window creation being unsupported in Fennec
+module.metadata = {
+  engines: {
+    'Firefox': '*'
+  }
+};
 
 const { Cc, Ci } = require("chrome");
 const { setTimeout } = require("sdk/timers");
 const { LoaderWithHookedConsole } = require("sdk/test/loader");
 const { Worker } = require("sdk/content/worker");
 const { close } = require("sdk/window/helpers");
+const { set: setPref } = require("sdk/preferences/service");
+const DEPRECATE_PREF = "devtools.errorconsole.deprecation_warnings";
 
 const DEFAULT_CONTENT_URL = "data:text/html;charset=utf-8,foo";
 
@@ -651,6 +660,7 @@ exports["test:global postMessage"] = WorkerTest(
   DEFAULT_CONTENT_URL,
   function(assert, browser, done) {
     let { loader } = LoaderWithHookedConsole(module, onMessage);
+    setPref(DEPRECATE_PREF, true);
 
     // Intercept all console method calls
     let seenMessages = 0;
@@ -689,15 +699,5 @@ exports["test:global postMessage"] = WorkerTest(
     worker.postMessage("hi!");
   }
 );
-
-if (require("sdk/system/xul-app").is("Fennec")) {
-  module.exports = {
-    "test Unsupported Test": function UnsupportedTest (assert) {
-        assert.pass(
-          "Skipping this test until Fennec support is implemented." +
-          "See bug 806817");
-    }
-  }
-}
 
 require("test").run(exports);

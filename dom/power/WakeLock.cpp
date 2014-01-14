@@ -8,11 +8,13 @@
 #include "mozilla/Hal.h"
 #include "mozilla/HalWakeLock.h"
 #include "nsDOMClassInfoID.h"
+#include "nsDOMEvent.h"
 #include "nsError.h"
+#include "nsIDocument.h"
 #include "nsIDOMWindow.h"
 #include "nsIDOMEvent.h"
 #include "nsPIDOMWindow.h"
-#include "PowerManager.h"
+#include "nsIPropertyBag2.h"
 
 DOMCI_DATA(MozWakeLock, mozilla::dom::power::WakeLock)
 

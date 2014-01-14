@@ -310,7 +310,7 @@
 <!ENTITY calendarproperties.firealarms.label "Zobrazovat upozornění">
 <!ENTITY calendarproperties.cache3.label "Podpora režimu offline">
 <!ENTITY calendarproperties.enabled.label "Zapnout kalendář">
-<!ENTITY calendarproperties.forceDisabled.label "The provider for this calendar could not be found. This often happens if you have disabled or uninstalled certain addons.">
+<!ENTITY calendarproperties.forceDisabled.label "Poskytovatel tohoto kalendáře nemohl být nalezen. To často nastává tehdy, když jste zakázal(a) nebo odinstaloval(a) konkrétní doplňky.">
 <!ENTITY calendarproperties.unsubscribe.label "Neodebírat">
 <!ENTITY calendarproperties.unsubscribe.accesskey "N">
 
@@ -348,3 +348,9 @@
 <!ENTITY calendar.error.code "Kód chyby:">
 <!ENTITY calendar.error.description "Popis:">
 <!ENTITY calendar.error.title "Vyskytla se chyba">
+
+<!-- Extract buttons in message header -->
+<!ENTITY calendar.extract.event.button         "Přidat jako událost">
+<!ENTITY calendar.extract.task.button          "Přidat jako úkol">
+<!ENTITY calendar.extract.event.button.tooltip "Vezme kalendářní informace ze zprávy a přidá je do vašeho kalendáře jako událost">
+<!ENTITY calendar.extract.task.button.tooltip  "Vezme kalendářní informace ze zprávy a přidá je do vašeho kalendáře jako úkol">

@@ -10,6 +10,7 @@
 #include "nsIPrefService.h"
 #include "nsIPrefBranch.h"
 #include "nsIServiceManager.h"
+#include "nsIXPConnect.h"
 #include "nsProxyRelease.h"
 #include "nsReadableUtils.h"
 #include "nsString.h"
@@ -28,6 +29,7 @@
 #include "nsCharSeparatedTokenizer.h"
 #include "nsNetAddr.h"
 #include "nsProxyRelease.h"
+#include "nsIObserverService.h"
 
 #include "mozilla/Attributes.h"
 #include "mozilla/VisualEventTracer.h"
@@ -48,7 +50,7 @@ static const char kPrefDnsLocalDomains[]    = "network.dns.localDomains";
 class nsDNSRecord : public nsIDNSRecord
 {
 public:
-    NS_DECL_ISUPPORTS
+    NS_DECL_THREADSAFE_ISUPPORTS
     NS_DECL_NSIDNSRECORD
 
     nsDNSRecord(nsHostRecord *hostRecord)
@@ -68,7 +70,7 @@ private:
     bool                    mDone;
 };
 
-NS_IMPL_THREADSAFE_ISUPPORTS1(nsDNSRecord, nsIDNSRecord)
+NS_IMPL_ISUPPORTS1(nsDNSRecord, nsIDNSRecord)
 
 NS_IMETHODIMP
 nsDNSRecord::GetCanonicalName(nsACString &result)
@@ -231,7 +233,8 @@ nsDNSRecord::ReportUnusable(uint16_t aPort)
     // ignore the report.
 
     if (mHostRecord->addr_info &&
-        mIterGenCnt == mHostRecord->addr_info_gencnt) {
+        mIterGenCnt == mHostRecord->addr_info_gencnt &&
+        mIter) {
         mHostRecord->ReportUnusable(&mIter->mAddress);
     }
 
@@ -244,7 +247,7 @@ class nsDNSAsyncRequest MOZ_FINAL : public nsResolveHostCallback
                                   , public nsICancelable
 {
 public:
-    NS_DECL_ISUPPORTS
+    NS_DECL_THREADSAFE_ISUPPORTS
     NS_DECL_NSICANCELABLE
 
     nsDNSAsyncRequest(nsHostResolver   *res,
@@ -304,7 +307,7 @@ nsDNSAsyncRequest::EqualsAsyncListener(nsIDNSListener *aListener)
     return (aListener == mListener);
 }
 
-NS_IMPL_THREADSAFE_ISUPPORTS1(nsDNSAsyncRequest, nsICancelable)
+NS_IMPL_ISUPPORTS1(nsDNSAsyncRequest, nsICancelable)
 
 NS_IMETHODIMP
 nsDNSAsyncRequest::Cancel(nsresult reason)
@@ -370,7 +373,7 @@ nsDNSService::~nsDNSService()
 {
 }
 
-NS_IMPL_THREADSAFE_ISUPPORTS3(nsDNSService, nsIDNSService, nsPIDNSService,
+NS_IMPL_ISUPPORTS3(nsDNSService, nsIDNSService, nsPIDNSService,
                               nsIObserver)
 
 NS_IMETHODIMP
@@ -415,8 +418,6 @@ nsDNSService::Init()
     if (mFirstTime) {
         mFirstTime = false;
 
-        mLocalDomains.Init();
-
         // register as prefs observer
         if (prefs) {
             prefs->AddObserver(kPrefDnsCacheEntries, this, false);
@@ -430,6 +431,13 @@ nsDNSService::Init()
             // Monitor these to see if there is a change in proxy configuration
             // If a manual proxy is in use, disable prefetch implicitly
             prefs->AddObserver("network.proxy.type", this, false);
+        }
+
+        nsresult rv;
+        nsCOMPtr<nsIObserverService> observerService =
+            do_GetService("@mozilla.org/observer-service;1", &rv);
+        if (NS_SUCCEEDED(rv)) {
+            observerService->AddObserver(this, "last-pb-context-exited", false);
         }
     }
 
@@ -530,13 +538,13 @@ public:
     , mTargetThread(aTargetThread)
   { }
 
-  NS_DECL_ISUPPORTS
+  NS_DECL_THREADSAFE_ISUPPORTS
   NS_DECL_NSIDNSLISTENER
 
   class OnLookupCompleteRunnable : public nsRunnable
   {
   public:
-    OnLookupCompleteRunnable(nsMainThreadPtrHolder<nsIDNSListener>* aListener,
+    OnLookupCompleteRunnable(const nsMainThreadPtrHandle<nsIDNSListener>& aListener,
                              nsICancelable* aRequest,
                              nsIDNSRecord* aRecord,
                              nsresult aStatus)
@@ -560,7 +568,7 @@ private:
   nsCOMPtr<nsIEventTarget> mTargetThread;
 };
 
-NS_IMPL_THREADSAFE_ISUPPORTS1(DNSListenerProxy, nsIDNSListener)
+NS_IMPL_ISUPPORTS1(DNSListenerProxy, nsIDNSListener)
 
 NS_IMETHODIMP
 DNSListenerProxy::OnLookupComplete(nsICancelable* aRequest,
@@ -585,13 +593,14 @@ NS_IMETHODIMP
 nsDNSService::AsyncResolve(const nsACString  &hostname,
                            uint32_t           flags,
                            nsIDNSListener    *listener,
-                           nsIEventTarget    *target,
+                           nsIEventTarget    *target_,
                            nsICancelable    **result)
 {
     // grab reference to global host resolver and IDN service.  beware
     // simultaneous shutdown!!
     nsRefPtr<nsHostResolver> res;
     nsCOMPtr<nsIIDNService> idn;
+    nsCOMPtr<nsIEventTarget> target = target_;
     bool localDomain = false;
     {
         MutexAutoLock lock(mLock);
@@ -620,6 +629,13 @@ nsDNSService::AsyncResolve(const nsACString  &hostname,
     if (idn && !IsASCII(*hostPtr)) {
         if (NS_SUCCEEDED(idn->ConvertUTF8toACE(*hostPtr, hostACE)))
             hostPtr = &hostACE;
+    }
+
+    nsCOMPtr<nsIXPConnectWrappedJS> wrappedListener = do_QueryInterface(listener);
+    if (wrappedListener && !target) {
+        nsCOMPtr<nsIThread> mainThread;
+        NS_GetMainThread(getter_AddRefs(mainThread));
+        target = do_QueryInterface(mainThread);
     }
 
     if (target) {
@@ -772,7 +788,8 @@ NS_IMETHODIMP
 nsDNSService::Observe(nsISupports *subject, const char *topic, const PRUnichar *data)
 {
     // we are only getting called if a preference has changed. 
-    NS_ASSERTION(strcmp(topic, NS_PREFBRANCH_PREFCHANGE_TOPIC_ID) == 0,
+    NS_ASSERTION(strcmp(topic, NS_PREFBRANCH_PREFCHANGE_TOPIC_ID) == 0 ||
+        strcmp(topic, "last-pb-context-exited") == 0,
         "unexpected observe call");
 
     //

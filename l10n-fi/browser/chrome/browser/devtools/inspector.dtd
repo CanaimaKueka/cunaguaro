@@ -1,16 +1,19 @@
-<!ENTITY inspectorHTMLCopyInner.label       "Kopioi sisäinen HTML">
-<!ENTITY inspectorHTMLCopyInner.accesskey   "s">
+<!ENTITY inspectorHTMLEdit.label       "Edit As HTML">
+<!ENTITY inspectorHTMLEdit.accesskey   "E">
 
-<!ENTITY inspectorHTMLCopyOuter.label       "Kopioi ulkoinen HTML">
-<!ENTITY inspectorHTMLCopyOuter.accesskey   "u">
+<!ENTITY inspectorHTMLCopyInner.label       "Copy Inner HTML">
+<!ENTITY inspectorHTMLCopyInner.accesskey   "I">
 
-<!ENTITY inspectorCopyUniqueSelector.label       "Kopioi uniikki valitsin">
-<!ENTITY inspectorCopyUniqueSelector.accesskey   "n">
+<!ENTITY inspectorHTMLCopyOuter.label       "Copy Outer HTML">
+<!ENTITY inspectorHTMLCopyOuter.accesskey   "O">
 
-<!ENTITY inspectorHTMLDelete.label          "Poista solmu">
-<!ENTITY inspectorHTMLDelete.accesskey      "P">
+<!ENTITY inspectorCopyUniqueSelector.label       "Copy Unique Selector">
+<!ENTITY inspectorCopyUniqueSelector.accesskey   "U">
 
-<!ENTITY inspector.selectButton.tooltip     "Valitse elementti hiirellä">
+<!ENTITY inspectorHTMLDelete.label          "Delete Node">
+<!ENTITY inspectorHTMLDelete.accesskey      "D">
 
-<!ENTITY inspectorSearchHTML.label          "Etsi HTML:stä">
+<!ENTITY inspector.selectButton.tooltip     "Select element with mouse">
+
+<!ENTITY inspectorSearchHTML.label          "Search HTML">
 <!ENTITY inspectorSearchHTML.key            "F">

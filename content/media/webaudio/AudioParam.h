@@ -10,16 +10,12 @@
 #include "AudioParamTimeline.h"
 #include "nsWrapperCache.h"
 #include "nsCycleCollectionParticipant.h"
-#include "nsCOMPtr.h"
 #include "EnableWebAudioCheck.h"
 #include "nsAutoPtr.h"
 #include "AudioNode.h"
 #include "mozilla/dom/TypedArray.h"
-#include "mozilla/Util.h"
 #include "WebAudioUtils.h"
-
-struct JSContext;
-class nsIDOMWindow;
+#include "js/TypeDecls.h"
 
 namespace mozilla {
 
@@ -53,6 +49,10 @@ public:
   // object.
   void SetValueCurveAtTime(const Float32Array& aValues, double aStartTime, double aDuration, ErrorResult& aRv)
   {
+    if (!WebAudioUtils::IsTimeValid(aStartTime)) {
+      aRv.Throw(NS_ERROR_DOM_NOT_SUPPORTED_ERR);
+      return;
+    }
     AudioParamTimeline::SetValueCurveAtTime(aValues.Data(), aValues.Length(),
                                             aStartTime, aDuration, aRv);
     mCallback(mNode);
@@ -72,21 +72,38 @@ public:
   }
   void SetValueAtTime(float aValue, double aStartTime, ErrorResult& aRv)
   {
+    if (!WebAudioUtils::IsTimeValid(aStartTime)) {
+      aRv.Throw(NS_ERROR_DOM_NOT_SUPPORTED_ERR);
+      return;
+    }
     AudioParamTimeline::SetValueAtTime(aValue, aStartTime, aRv);
     mCallback(mNode);
   }
   void LinearRampToValueAtTime(float aValue, double aEndTime, ErrorResult& aRv)
   {
+    if (!WebAudioUtils::IsTimeValid(aEndTime)) {
+      aRv.Throw(NS_ERROR_DOM_NOT_SUPPORTED_ERR);
+      return;
+    }
     AudioParamTimeline::LinearRampToValueAtTime(aValue, aEndTime, aRv);
     mCallback(mNode);
   }
   void ExponentialRampToValueAtTime(float aValue, double aEndTime, ErrorResult& aRv)
   {
+    if (!WebAudioUtils::IsTimeValid(aEndTime)) {
+      aRv.Throw(NS_ERROR_DOM_NOT_SUPPORTED_ERR);
+      return;
+    }
     AudioParamTimeline::ExponentialRampToValueAtTime(aValue, aEndTime, aRv);
     mCallback(mNode);
   }
   void SetTargetAtTime(float aTarget, double aStartTime, double aTimeConstant, ErrorResult& aRv)
   {
+    if (!WebAudioUtils::IsTimeValid(aStartTime) ||
+        !WebAudioUtils::IsTimeValid(aTimeConstant)) {
+      aRv.Throw(NS_ERROR_DOM_NOT_SUPPORTED_ERR);
+      return;
+    }
     AudioParamTimeline::SetTargetAtTime(aTarget, aStartTime, aTimeConstant, aRv);
     mCallback(mNode);
   }
@@ -94,8 +111,12 @@ public:
   {
     SetTargetAtTime(aTarget, aStartTime, aTimeConstant, aRv);
   }
-  void CancelScheduledValues(double aStartTime)
+  void CancelScheduledValues(double aStartTime, ErrorResult& aRv)
   {
+    if (!WebAudioUtils::IsTimeValid(aStartTime)) {
+      aRv.Throw(NS_ERROR_DOM_NOT_SUPPORTED_ERR);
+      return;
+    }
     AudioParamTimeline::CancelScheduledValues(aStartTime);
     mCallback(mNode);
   }

@@ -30,8 +30,8 @@ namespace dom {
 //----------------------------------------------------------------------
 
 BodyRule::BodyRule(HTMLBodyElement* aPart)
+  : mPart(aPart)
 {
-  mPart = aPart;
 }
 
 BodyRule::~BodyRule()
@@ -199,15 +199,8 @@ HTMLBodyElement::WrapNode(JSContext *aCx, JS::Handle<JSObject*> aScope)
   return HTMLBodyElementBinding::Wrap(aCx, aScope, this);
 }
 
-NS_IMPL_ADDREF_INHERITED(HTMLBodyElement, Element)
-NS_IMPL_RELEASE_INHERITED(HTMLBodyElement, Element)
-
-// QueryInterface implementation for HTMLBodyElement
-NS_INTERFACE_TABLE_HEAD(HTMLBodyElement)
-  NS_HTML_CONTENT_INTERFACE_TABLE1(HTMLBodyElement, nsIDOMHTMLBodyElement)
-  NS_HTML_CONTENT_INTERFACE_TABLE_TO_MAP_SEGUE(HTMLBodyElement,
-                                               nsGenericHTMLElement)
-NS_HTML_CONTENT_INTERFACE_MAP_END
+NS_IMPL_ISUPPORTS_INHERITED1(HTMLBodyElement, nsGenericHTMLElement,
+                             nsIDOMHTMLBodyElement)
 
 NS_IMPL_ELEMENT_CLONE(HTMLBodyElement)
 
@@ -349,9 +342,7 @@ HTMLBodyElement::UnbindFromTree(bool aDeep, bool aNullParent)
 {
   if (mContentStyleRule) {
     mContentStyleRule->mPart = nullptr;
-
-    // destroy old style rule
-    NS_RELEASE(mContentStyleRule);
+    mContentStyleRule = nullptr;
   }
 
   nsGenericHTMLElement::UnbindFromTree(aDeep, aNullParent);  
@@ -420,7 +411,6 @@ HTMLBodyElement::WalkContentStyleRules(nsRuleWalker* aRuleWalker)
     // XXXbz should this use OwnerDoc() or GetCurrentDoc()?
     // sXBL/XBL2 issue!
     mContentStyleRule = new BodyRule(this);
-    NS_IF_ADDREF(mContentStyleRule);
   }
   if (aRuleWalker && mContentStyleRule) {
     aRuleWalker->Forward(mContentStyleRule);
@@ -500,7 +490,7 @@ HTMLBodyElement::IsEventAttributeName(nsIAtom *aName)
   HTMLBodyElement::GetOn##name_(JSContext *cx, JS::Value *vp)                  \
   {                                                                            \
     getter_type_ h = forwardto_::GetOn##name_();                               \
-    vp->setObjectOrNull(h ? h->Callable() : nullptr);                          \
+    vp->setObjectOrNull(h ? h->Callable().get() : nullptr);                    \
     return NS_OK;                                                              \
   }                                                                            \
   NS_IMETHODIMP                                                                \
@@ -512,9 +502,8 @@ HTMLBodyElement::IsEventAttributeName(nsIAtom *aName)
         JS_ObjectIsCallable(cx, callable = &v.toObject())) {                   \
       handler = new type_(callable);                                           \
     }                                                                          \
-    ErrorResult rv;                                                            \
-    forwardto_::SetOn##name_(handler, rv);                                     \
-    return rv.ErrorCode();                                                     \
+    forwardto_::SetOn##name_(handler);                                         \
+    return NS_OK;                                                              \
   }
 #define FORWARDED_EVENT(name_, id_, type_, struct_)                            \
   FORWARDED_EVENT_HELPER(name_, nsGenericHTMLElement, EventHandlerNonNull,     \
@@ -535,7 +524,7 @@ HTMLBodyElement::IsEventAttributeName(nsIAtom *aName)
     return nullptr;                                                            \
   }                                                                            \
   void                                                                         \
-  HTMLBodyElement::SetOn##name_(type_* handler, ErrorResult& error)            \
+  HTMLBodyElement::SetOn##name_(type_* handler)                                \
   {                                                                            \
     nsPIDOMWindow* win = OwnerDoc()->GetInnerWindow();                         \
     if (!win) {                                                                \
@@ -544,14 +533,14 @@ HTMLBodyElement::IsEventAttributeName(nsIAtom *aName)
                                                                                \
     nsCOMPtr<nsISupports> supports = do_QueryInterface(win);                   \
     nsGlobalWindow* globalWin = nsGlobalWindow::FromSupports(supports);        \
-    return globalWin->SetOn##name_(handler, error);                            \
+    return globalWin->SetOn##name_(handler);                                   \
   }                                                                            \
   FORWARDED_EVENT_HELPER(name_, HTMLBodyElement, type_, type_*)
 #define WINDOW_EVENT(name_, id_, type_, struct_)                               \
   WINDOW_EVENT_HELPER(name_, EventHandlerNonNull)
 #define BEFOREUNLOAD_EVENT(name_, id_, type_, struct_)                         \
-  WINDOW_EVENT_HELPER(name_, BeforeUnloadEventHandlerNonNull)
-#include "nsEventNameList.h"
+  WINDOW_EVENT_HELPER(name_, OnBeforeUnloadEventHandlerNonNull)
+#include "nsEventNameList.h" // IWYU pragma: keep
 #undef BEFOREUNLOAD_EVENT
 #undef WINDOW_EVENT
 #undef WINDOW_EVENT_HELPER

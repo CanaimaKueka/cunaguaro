@@ -9,13 +9,19 @@ const kProgressMarginStart = 30;
 const kProgressMarginEnd = 70;
 
 const WebProgress = {
-  _progressActive: false,
+  get _identityBox() { return document.getElementById("identity-box"); },
 
   init: function init() {
     messageManager.addMessageListener("Content:StateChange", this);
     messageManager.addMessageListener("Content:LocationChange", this);
     messageManager.addMessageListener("Content:SecurityChange", this);
-    Elements.progress.addEventListener("transitionend", this._progressTransEnd, true);
+
+    Elements.progress.addEventListener("transitionend", this, true);
+    Elements.tabList.addEventListener("TabSelect", this, true);
+
+    let urlBar = document.getElementById("urlbar-edit");
+    urlBar.addEventListener("input", this, false);
+
     return this;
   },
 
@@ -39,45 +45,67 @@ const WebProgress = {
             this._networkStop(json, tab);
         }
 
-        this._progressStep();
+        this._progressStep(tab);
         break;
       }
 
       case "Content:LocationChange": {
         this._locationChange(json, tab);
-        this._progressStep();
+        this._progressStep(tab);
         break;
       }
 
       case "Content:SecurityChange": {
         this._securityChange(json, tab);
-        this._progressStep();
+        this._progressStep(tab);
         break;
       }
     }
   },
 
-  _securityChange: function _securityChange(aJson, aTab) {
-    // Don't need to do anything if the data we use to update the UI hasn't changed
-    if (aTab.state == aJson.state && !aTab.hostChanged)
-      return;
+  handleEvent: function handleEvent(aEvent) {
+    switch (aEvent.type) {
+      case "transitionend":
+        this._progressTransEnd(aEvent);
+        break;
+      case "TabSelect":
+        this._onTabSelect(aEvent);
+        break;
+      case "input":
+        this._onUrlBarInput(aEvent);
+        break;
+    }
+  },
 
-    aTab.hostChanged = false;
-    aTab.state = aJson.state;
+  _securityChange: function _securityChange(aJson, aTab) {
+    let state = aJson.state;
+    let nsIWebProgressListener = Ci.nsIWebProgressListener;
+
+    if (state & nsIWebProgressListener.STATE_IDENTITY_EV_TOPLEVEL) {
+      aTab._identityState = "verifiedIdentity";
+    } else if (state & nsIWebProgressListener.STATE_IS_SECURE) {
+      aTab._identityState = "verifiedDomain";
+    } else {
+      aTab._identityState = "";
+    }
+
+    if (aTab == Browser.selectedTab) {
+      this._identityBox.className = aTab._identityState;
+    }
   },
 
   _locationChange: function _locationChange(aJson, aTab) {
     let spec = aJson.location;
     let location = spec.split("#")[0]; // Ignore fragment identifier changes.
 
-    if (aTab == Browser.selectedTab)
+    if (aTab == Browser.selectedTab) {
       BrowserUI.updateURI();
+      BrowserUI.update();
+    }
 
     let locationHasChanged = (location != aTab.browser.lastLocation);
     if (locationHasChanged) {
       Browser.getNotificationBox(aTab.browser).removeTransientNotifications();
-      aTab.resetZoomLevel();
-      aTab.hostChanged = true;
       aTab.browser.lastLocation = location;
       aTab.browser.userTypedValue = "";
       aTab.browser.appIcon = { href: null, size:-1 };
@@ -86,7 +114,6 @@ const WebProgress = {
       if (CrashReporter.enabled)
         CrashReporter.annotateCrashReport("URL", spec);
 #endif
-      this._waitForLoad(aTab);
     }
 
     let event = document.createEvent("UIEvents");
@@ -94,29 +121,14 @@ const WebProgress = {
     aTab.browser.dispatchEvent(event);
   },
 
-  _waitForLoad: function _waitForLoad(aTab) {
-    let browser = aTab.browser;
-
-    aTab._firstPaint = false;
-
-    browser.messageManager.addMessageListener("Browser:FirstPaint", function firstPaintListener(aMessage) {
-      browser.messageManager.removeMessageListener(aMessage.name, arguments.callee);
-      aTab._firstPaint = true;
-      aTab.scrolledAreaChanged(true);
-      aTab.updateThumbnailSource();
-    });
-  },
-
   _networkStart: function _networkStart(aJson, aTab) {
     aTab.startLoading();
 
     if (aTab == Browser.selectedTab) {
-      BrowserUI.update(TOOLBARSTATE_LOADING);
-
-      // We should at least show something in the URLBar until
-      // the load has progressed further along
-      if (aTab.browser.currentURI.spec == "about:blank")
-        BrowserUI.updateURI({ captionOnly: true });
+      // NO_STARTUI_VISIBILITY since the current uri for the tab has not
+      // been updated yet. If we're coming off of the start page, this
+      // would briefly show StartUI until _locationChange is called.
+      BrowserUI.update(BrowserUI.NO_STARTUI_VISIBILITY);
     }
   },
 
@@ -124,7 +136,7 @@ const WebProgress = {
     aTab.endLoading();
 
     if (aTab == Browser.selectedTab) {
-      BrowserUI.update(TOOLBARSTATE_LOADED);
+      BrowserUI.update();
     }
   },
 
@@ -139,67 +151,87 @@ const WebProgress = {
   _progressStart: function _progressStart(aJson, aTab) {
     // We will get multiple calls from _windowStart, so
     // only process once.
-    if (this._progressActive)
+    if (aTab._progressActive)
       return;
 
-    this._progressActive = true;
+    aTab._progressActive = true;
 
     // 'Whoosh' in
-    this._progressCount = kProgressMarginStart;
-    Elements.progress.style.width = this._progressCount + "%"; 
+    aTab._progressCount = kProgressMarginStart;
+    this._showProgressBar(aTab);
+  },
+
+  _showProgressBar: function (aTab) {
+    // display the track
+    Elements.progressContainer.removeAttribute("collapsed");
+    Elements.progress.style.width = aTab._progressCount + "%";
     Elements.progress.removeAttribute("fade");
 
     // Create a pulse timer to keep things moving even if we don't
     // collect any state changes.
     setTimeout(function() {
-      WebProgress._progressStepTimer();
+      WebProgress._progressStepTimer(aTab);
     }, kHeartbeatDuration, this);
   },
 
-  _stepProgressCount: function _stepProgressCount() {
+  _stepProgressCount: function _stepProgressCount(aTab) {
     // Step toward the end margin in smaller slices as we get closer
-    let left = kProgressMarginEnd - this._progressCount;
+    let left = kProgressMarginEnd - aTab._progressCount;
     let step = left * .05;
-    this._progressCount += Math.ceil(step);
+    aTab._progressCount += Math.ceil(step);
 
     // Don't go past the 'whoosh out' margin.
-    if (this._progressCount > kProgressMarginEnd) {
-      this._progressCount = kProgressMarginEnd;
+    if (aTab._progressCount > kProgressMarginEnd) {
+      aTab._progressCount = kProgressMarginEnd;
     }
   },
 
-  _progressStep: function _progressStep() {
-    if (!this._progressActive)
+  _progressStep: function _progressStep(aTab) {
+    if (!aTab._progressActive)
       return;
-    this._stepProgressCount();
-    Elements.progress.style.width = this._progressCount + "%";
+    this._stepProgressCount(aTab);
+    Elements.progress.style.width = aTab._progressCount + "%";
   },
 
-  _progressStepTimer: function _progressStepTimer() {
-    if (!this._progressActive)
+  _progressStepTimer: function _progressStepTimer(aTab) {
+    if (!aTab._progressActive)
       return;
-    this._progressStep();
+    this._progressStep(aTab);
 
     setTimeout(function() {
-      WebProgress._progressStepTimer();
+      WebProgress._progressStepTimer(aTab);
     }, kHeartbeatDuration, this);
   },
 
   _progressStop: function _progressStop(aJson, aTab) {
-    this._progressActive = false;
+    aTab._progressActive = false;
     // 'Whoosh out' and fade
-    Elements.progress.style.width = "100%"; 
+    Elements.progress.style.width = "100%";
     Elements.progress.setAttribute("fade", true);
   },
 
-  _progressTransEnd: function _progressTransEnd(data) {
+  _progressTransEnd: function _progressTransEnd(aEvent) {
     if (!Elements.progress.hasAttribute("fade"))
       return;
     // Close out fade finished, reset
-    if (data.propertyName == "opacity") {
-      Elements.progress.style.width = "0px"; 
+    if (aEvent.propertyName == "opacity") {
+      Elements.progress.style.width = "0px";
+      Elements.progressContainer.setAttribute("collapsed", true);
     }
   },
+
+  _onTabSelect: function(aEvent) {
+    let tab = Browser.getTabFromChrome(aEvent.originalTarget);
+    this._identityBox.className = tab._identityState || "";
+    if (tab._progressActive) {
+      this._showProgressBar(tab);
+    } else {
+      Elements.progress.setAttribute("fade", true);
+      Elements.progressContainer.setAttribute("collapsed", true);
+    }
+  },
+
+  _onUrlBarInput: function(aEvent) {
+    Browser.selectedTab._identityState = this._identityBox.className = "";
+  },
 };
-
-

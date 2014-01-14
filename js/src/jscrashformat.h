@@ -4,16 +4,14 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef jscrashformat_h___
-#define jscrashformat_h___
-
-#include <string.h>
+#ifndef jscrashformat_h
+#define jscrashformat_h
 
 namespace js {
 namespace crash {
 
-const static int crash_cookie_len = 16;
-const static char crash_cookie[crash_cookie_len] = "*J*S*CRASHDATA*";
+static const int crash_cookie_len = 16;
+static const char crash_cookie[crash_cookie_len] = "*J*S*CRASHDATA*";
 
 /* These values are used for CrashHeader::id. */
 enum {
@@ -43,7 +41,7 @@ struct CrashRegisters
     uint64_t ip, sp, bp;
 };
 
-const static int crash_buffer_size = 32 * 1024;
+static const int crash_buffer_size = 32 * 1024;
 
 struct CrashStack
 {
@@ -74,4 +72,4 @@ enum {
 } /* namespace crash */
 } /* namespace js */
 
-#endif
+#endif /* jscrashformat_h */

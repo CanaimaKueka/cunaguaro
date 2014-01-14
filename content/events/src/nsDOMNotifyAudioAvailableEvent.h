@@ -9,16 +9,18 @@
 
 #include "nsIDOMNotifyAudioAvailableEvent.h"
 #include "nsDOMEvent.h"
-#include "nsPresContext.h"
 #include "nsCycleCollectionParticipant.h"
 #include "mozilla/dom/NotifyAudioAvailableEventBinding.h"
+
+class nsPresContext;
 
 class nsDOMNotifyAudioAvailableEvent : public nsDOMEvent,
                                        public nsIDOMNotifyAudioAvailableEvent
 {
 public:
   nsDOMNotifyAudioAvailableEvent(mozilla::dom::EventTarget* aOwner,
-                                 nsPresContext* aPresContext, nsEvent* aEvent,
+                                 nsPresContext* aPresContext,
+                                 mozilla::WidgetEvent* aEvent,
                                  uint32_t aEventType, float * aFrameBuffer,
                                  uint32_t aFrameBufferLength, float aTime);
 
@@ -32,7 +34,7 @@ public:
   nsresult NS_NewDOMAudioAvailableEvent(nsIDOMEvent** aInstancePtrResult,
                                         mozilla::dom::EventTarget* aOwner,
                                         nsPresContext* aPresContext,
-                                        nsEvent *aEvent,
+                                        mozilla::WidgetEvent* aEvent,
                                         uint32_t aEventType,
                                         float * aFrameBuffer,
                                         uint32_t aFrameBufferLength,
@@ -48,8 +50,8 @@ public:
 
   JSObject* GetFrameBuffer(JSContext* aCx, mozilla::ErrorResult& aRv)
   {
-    JS::Value dummy;
-    aRv = GetFrameBuffer(aCx, &dummy);
+    JS::Rooted<JS::Value> dummy(aCx);
+    aRv = GetFrameBuffer(aCx, dummy.address());
     return mCachedArray;
   }
 
@@ -70,7 +72,7 @@ private:
   nsAutoArrayPtr<float> mFrameBuffer;
   uint32_t mFrameBufferLength;
   float mTime;
-  JSObject* mCachedArray;
+  JS::Heap<JSObject*> mCachedArray;
   bool mAllowAudioData;
 };
 

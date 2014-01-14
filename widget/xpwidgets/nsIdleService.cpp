@@ -13,6 +13,7 @@
 #include "nsCOMArray.h"
 #include "prinrval.h"
 #include "prlog.h"
+#include "prtime.h"
 #include "mozilla/Services.h"
 #include "mozilla/Preferences.h"
 #include "mozilla/Telemetry.h"
@@ -104,7 +105,8 @@ nsIdleServiceDaily::Observe(nsISupports *,
                                          nullptr);
 
   // Notify the category observers.
-  const nsCOMArray<nsIObserver> &entries = mCategoryObservers.GetEntries();
+  nsCOMArray<nsIObserver> entries;
+  mCategoryObservers.GetEntries(entries);
   for (int32_t i = 0; i < entries.Count(); ++i) {
     (void)entries[i]->Observe(nullptr, OBSERVER_TOPIC_IDLE_DAILY, nullptr);
   }

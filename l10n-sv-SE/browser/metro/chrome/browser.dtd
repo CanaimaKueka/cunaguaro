@@ -2,27 +2,39 @@
    - License, v. 2.0. If a copy of the MPL was not distributed with this
    - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
 
+<!-- NAVBAR AND AUTOCOMPLETE -->
+
 <!ENTITY urlbar.emptytext      "Ange sökning eller adress">
-<!ENTITY urlbar.accesskey      "d">
 
 <!ENTITY back.label            "Bakåt">
 <!ENTITY forward.label         "Framåt">
 <!ENTITY newtab.label          "Ny flik">
 <!ENTITY closetab.label        "Stäng flik">
 
+<!ENTITY autocompleteResultsHeader.label  "Dina resultat">
+
+<!ENTITY appbarErrorConsole.label   "Öppna felkonsol">
+<!ENTITY appbarJSShell.label        "Öppna JavaScript-skal">
 <!ENTITY appbarFindInPage2.label    "Sök på sidan">
 <!ENTITY appbarViewOnDesktop2.label "Visa på skrivbordet">
+<!ENTITY appbarMSMetaData2.label    "Hämta app för denna plats">
 
-<!ENTITY startTopSitesHeader.label        "Mest besökta">
-<!ENTITY startBookmarksHeader.label       "Bokmärken">
-<!ENTITY startHistoryHeader.label         "Nyligen besökta">
-<!ENTITY startRemoteTabsHeader.label      "Flikar från andra enheter">
-<!-- LOCALIZATION NOTE (snappedRemoteTabsHeader.label): shortened version of startRemoteTabsHeader.label.
-     Needs to be two words or shorter to fit in narrow vertical space.-->
-<!ENTITY snappedRemoteTabsHeader.label    "Fjärrflikar">
+<!ENTITY topSitesHeader.label        "Mest besökta">
+<!ENTITY bookmarksHeader.label       "Bokmärken">
+<!ENTITY recentHistoryHeader.label   "Nyligen besökta">
+<!ENTITY remoteTabsHeader.label      "Flikar från andra enheter">
 
-<!ENTITY autocompleteResultsHeader.label  "Dina resultat">
-<!ENTITY autocompleteSearchesHeader.label "Internetsökningar"> 
+<!-- LOCALIZATION NOTE (narrowTopSitesHeader.label,
+                        narrowBookmarksHeader.label,
+                        narrowHistoryHeader.label,
+                        narrowRemoteTabsHeader.label )
+     are shortened versions of topSitesHeader.label, bookmarksHeader.label, recentHistoryHeader.label
+     and remoteTabsHeader.label. Need to be two words or shorter to fit in narrow vertical space.
+      -->
+<!ENTITY narrowTopSitesHeader.label      "Mest besökta">
+<!ENTITY narrowBookmarksHeader.label     "Bokmärken">
+<!ENTITY narrowRecentHistoryHeader.label "Nyligen besökta">
+<!ENTITY narrowRemoteTabsHeader.label    "Fjärrflikar">
 
 <!ENTITY downloadsHeader.label     "Filhämtningar">
 <!ENTITY downloadShowPage.label    "Gå till sida">
@@ -36,7 +48,6 @@
 <!ENTITY downloadDelete.label      "Ta bort">
 <!ENTITY downloadFailed.label      "Misslyckad">
 
-<!ENTITY bookmarksHeader.label     "Bokmärken">
 <!ENTITY allBookmarks.label        "Se alla bokmärken">
 
 <!ENTITY consoleHeader.label       "Felkonsol">
@@ -77,3 +88,23 @@
 <!ENTITY contextSaveVideoLib.label         "Spara till filmbiblioteket">
 <!ENTITY contextCopyVideoLocation.label    "Kopiera videoadress">
 <!ENTITY contextOpenVideoTab.label         "Öppna video i ny flik">
+
+<!-- KEYBOARD SHORTCUTS -->
+<!ENTITY reload.key "r">
+<!ENTITY focusURL.key "l">
+<!ENTITY urlbar.accesskey "d">
+<!ENTITY openFile.key "o">
+<!ENTITY savePage.key "s">
+<!ENTITY find.key "f">
+<!ENTITY findNext.key "g">
+<!ENTITY quit.key "q">
+<!ENTITY addBookmark.key "d">
+<!ENTITY newTab.key "t">
+<!ENTITY newTab2.key "n">
+<!ENTITY closeTab.key "w">
+
+<!-- DEVELOPER SHORTCUTS (control+shift+key) -->
+<!ENTITY jsConsole.key "j">
+<!ENTITY optionsFlyout.key "o">
+<!ENTITY syncFlyout.key "s">
+<!ENTITY aboutFlyout.key "a">

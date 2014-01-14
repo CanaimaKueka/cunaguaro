@@ -10,7 +10,7 @@ const Ci = Components.interfaces;
 
 Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
-Cu.import("resource:///modules/source-editor-ui.jsm");
+Cu.import("resource:///modules/devtools/sourceeditor/source-editor-ui.jsm");
 
 XPCOMUtils.defineLazyServiceGetter(this, "clipboardHelper",
                                    "@mozilla.org/widget/clipboardhelper;1",
@@ -123,11 +123,13 @@ const DEFAULT_KEYBINDINGS = [
     action: "Move to Bracket Opening",
     code: Ci.nsIDOMKeyEvent.DOM_VK_OPEN_BRACKET,
     accel: true,
+    alt: true,
   },
   {
     action: "Move to Bracket Closing",
     code: Ci.nsIDOMKeyEvent.DOM_VK_CLOSE_BRACKET,
     accel: true,
+    alt: true,
   },
 ];
 

@@ -8,12 +8,13 @@
 #include "jsapi.h" // For OBJECT_TO_JSVAL and JS_NewDateObjectMsec
 #include "jsfriendapi.h" // For js_DateGetMsecSinceEpoch
 #include "nsJSUtils.h"
-#include "Constants.h"
 #include "nsContentUtils.h"
 #include "nsIDOMFile.h"
 #include "nsTArrayHelpers.h"
 #include "mozilla/dom/ContentParent.h"
+#include "mozilla/dom/mobilemessage/Constants.h" // For MessageType
 #include "mozilla/dom/mobilemessage/SmsTypes.h"
+#include "nsDOMFile.h"
 
 using namespace mozilla::idl;
 using namespace mozilla::dom::mobilemessage;
@@ -61,6 +62,7 @@ MmsMessage::MmsMessage(int32_t                         aId,
 
 MmsMessage::MmsMessage(const mobilemessage::MmsMessageData& aData)
   : mId(aData.id())
+  , mThreadId(aData.threadId())
   , mDelivery(aData.delivery())
   , mDeliveryStatus(aData.deliveryStatus())
   , mSender(aData.sender())
@@ -171,7 +173,7 @@ MmsMessage::Create(int32_t               aId,
   nsTArray<DeliveryStatus> deliveryStatus;
   JS::Rooted<JS::Value> statusJsVal(aCx);
   for (uint32_t i = 0; i < length; ++i) {
-    if (!JS_GetElement(aCx, deliveryStatusObj, i, statusJsVal.address()) ||
+    if (!JS_GetElement(aCx, deliveryStatusObj, i, &statusJsVal) ||
         !statusJsVal.isString()) {
       return NS_ERROR_INVALID_ARG;
     }
@@ -213,7 +215,7 @@ MmsMessage::Create(int32_t               aId,
   nsTArray<nsString> receivers;
   JS::Rooted<JS::Value> receiverJsVal(aCx);
   for (uint32_t i = 0; i < length; ++i) {
-    if (!JS_GetElement(aCx, receiversObj, i, receiverJsVal.address()) ||
+    if (!JS_GetElement(aCx, receiversObj, i, &receiverJsVal) ||
         !receiverJsVal.isString()) {
       return NS_ERROR_INVALID_ARG;
     }
@@ -242,7 +244,7 @@ MmsMessage::Create(int32_t               aId,
 
   JS::Rooted<JS::Value> attachmentJsVal(aCx);
   for (uint32_t i = 0; i < length; ++i) {
-    if (!JS_GetElement(aCx, attachmentsObj, i, attachmentJsVal.address())) {
+    if (!JS_GetElement(aCx, attachmentsObj, i, &attachmentJsVal)) {
       return NS_ERROR_INVALID_ARG;
     }
 
@@ -281,6 +283,7 @@ MmsMessage::GetData(ContentParent* aParent,
   NS_ASSERTION(aParent, "aParent is null");
 
   aData.id() = mId;
+  aData.threadId() = mThreadId;
   aData.delivery() = mDelivery;
   aData.deliveryStatus() = mDeliveryStatus;
   aData.sender().Assign(mSender);
@@ -297,6 +300,19 @@ MmsMessage::GetData(ContentParent* aParent,
     const MmsAttachment &element = mAttachments[i];
     mma.id().Assign(element.id);
     mma.location().Assign(element.location);
+
+    // This is a workaround. Sometimes the blob we get from the database
+    // doesn't have a valid last modified date, making the ContentParent
+    // send a "Mystery Blob" to the ContentChild. Attempting to get the
+    // last modified date of blob can force that value to be initialized.
+    nsDOMFileBase* file = static_cast<nsDOMFileBase*>(element.content.get());
+    if (file->IsDateUnknown()) {
+      uint64_t date;
+      if (NS_FAILED(file->GetMozLastModifiedDate(&date))) {
+        NS_WARNING("Failed to get last modified date!");
+      }
+    }
+
     mma.contentParent() = aParent->GetOrCreateActorForBlob(element.content);
     if (!mma.contentParent()) {
       return false;
@@ -350,8 +366,7 @@ MmsMessage::GetDelivery(nsAString& aDelivery)
     case eDeliveryState_Unknown:
     case eDeliveryState_EndGuard:
     default:
-      MOZ_NOT_REACHED("We shouldn't get any other delivery state!");
-      return NS_ERROR_UNEXPECTED;
+      MOZ_CRASH("We shouldn't get any other delivery state!");
   }
 
   return NS_OK;
@@ -393,8 +408,7 @@ MmsMessage::GetDeliveryStatus(JSContext* aCx, JS::Value* aDeliveryStatus)
         break;
       case eDeliveryStatus_EndGuard:
       default:
-        MOZ_NOT_REACHED("We shouldn't get any other delivery status!");
-        return NS_ERROR_UNEXPECTED;
+        MOZ_CRASH("We shouldn't get any other delivery status!");
     }
     tempStrArray.AppendElement(statusStr);
   }
@@ -459,13 +473,7 @@ MmsMessage::GetSmil(nsAString& aSmil)
 NS_IMETHODIMP
 MmsMessage::GetAttachments(JSContext* aCx, JS::Value* aAttachments)
 {
-  // TODO Bug 850529 We should return an empty array (or null)
-  // when it has no attachments? Need to further check this.
   uint32_t length = mAttachments.Length();
-  if (length == 0) {
-    *aAttachments = JSVAL_NULL;
-    return NS_OK;
-  }
 
   JS::Rooted<JSObject*> attachments(aCx, JS_NewArrayObject(aCx, length, nullptr));
   NS_ENSURE_TRUE(attachments, NS_ERROR_OUT_OF_MEMORY);
@@ -504,12 +512,12 @@ MmsMessage::GetAttachments(JSContext* aCx, JS::Value* aAttachments)
     }
 
     // Get |attachment.mContent|.
-    JS::Rooted<JSObject*> global(aCx, JS_GetGlobalForScopeChain(aCx));
+    JS::Rooted<JSObject*> global(aCx, JS::CurrentGlobalOrNull(aCx));
     nsresult rv = nsContentUtils::WrapNative(aCx,
                                              global,
                                              attachment.content,
                                              &NS_GET_IID(nsIDOMBlob),
-                                             tmpJsVal.address());
+                                             &tmpJsVal);
     NS_ENSURE_SUCCESS(rv, rv);
 
     if (!JS_DefineProperty(aCx, attachmentObj, "content", tmpJsVal,
@@ -518,7 +526,7 @@ MmsMessage::GetAttachments(JSContext* aCx, JS::Value* aAttachments)
     }
 
     tmpJsVal = OBJECT_TO_JSVAL(attachmentObj);
-    if (!JS_SetElement(aCx, attachments, i, tmpJsVal.address())) {
+    if (!JS_SetElement(aCx, attachments, i, &tmpJsVal)) {
       return NS_ERROR_FAILURE;
     }
   }

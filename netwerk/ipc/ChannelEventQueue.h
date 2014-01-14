@@ -35,10 +35,13 @@ class AutoEventEnqueuerBase;
 
 class ChannelEventQueue
 {
+  NS_INLINE_DECL_REFCOUNTING(ChannelEventQueue)
+
  public:
   ChannelEventQueue(nsISupports *owner)
-    : mForced(false)
+    : mSuspendCount(0)
     , mSuspended(false)
+    , mForced(false)
     , mFlushing(false)
     , mOwner(owner) {}
 
@@ -63,22 +66,21 @@ class ChannelEventQueue
   // Suspend/resume event queue.  ShouldEnqueue() will return true and no events
   // will be run/flushed until resume is called.  These should be called when
   // the channel owning the event queue is suspended/resumed.
-  // - Note: these suspend/resume functions are NOT meant to be called
-  //   recursively: call them only at initial suspend, and actual resume).
-  // - Note: Resume flushes the queue and invokes any pending callbacks
-  //   immediately--caller must arrange any needed asynchronicity vis a vis
-  //   the channel's own Resume() method.
   inline void Suspend();
-  inline void Resume();
+  // Resume flushes the queue asynchronously, i.e. items in queue will be
+  // dispatched in a new event on the current thread.
+  void Resume();
 
  private:
   inline void MaybeFlushQueue();
   void FlushQueue();
+  inline void CompleteResume();
 
   nsTArray<nsAutoPtr<ChannelEvent> > mEventQueue;
 
+  uint32_t mSuspendCount;
+  bool     mSuspended;
   bool mForced;
-  bool mSuspended;
   bool mFlushing;
 
   // Keep ptr to avoid refcount cycle: only grab ref during flushing.
@@ -120,20 +122,21 @@ ChannelEventQueue::EndForcedQueueing()
 inline void
 ChannelEventQueue::Suspend()
 {
-  NS_ABORT_IF_FALSE(!mSuspended,
-                    "ChannelEventQueue::Suspend called recursively");
-
   mSuspended = true;
+  mSuspendCount++;
 }
 
 inline void
-ChannelEventQueue::Resume()
+ChannelEventQueue::CompleteResume()
 {
-  NS_ABORT_IF_FALSE(mSuspended,
-                    "ChannelEventQueue::Resume called when not suspended!");
-
-  mSuspended = false;
-  MaybeFlushQueue();
+  // channel may have been suspended again since Resume fired event to call this.
+  if (!mSuspendCount) {
+    // we need to remain logically suspended (for purposes of queuing incoming
+    // messages) until this point, else new incoming messages could run before
+    // queued ones.
+    mSuspended = false;
+    MaybeFlushQueue();
+  }
 }
 
 inline void
@@ -151,14 +154,14 @@ ChannelEventQueue::MaybeFlushQueue()
 class AutoEventEnqueuer
 {
  public:
-  AutoEventEnqueuer(ChannelEventQueue &queue) : mEventQueue(queue) {
-    mEventQueue.StartForcedQueueing();
+  AutoEventEnqueuer(ChannelEventQueue *queue) : mEventQueue(queue) {
+    mEventQueue->StartForcedQueueing();
   }
   ~AutoEventEnqueuer() {
-    mEventQueue.EndForcedQueueing();
+    mEventQueue->EndForcedQueueing();
   }
  private:
-  ChannelEventQueue &mEventQueue;
+  ChannelEventQueue* mEventQueue;
 };
 
 }

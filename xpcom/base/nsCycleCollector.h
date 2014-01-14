@@ -6,18 +6,32 @@
 #ifndef nsCycleCollector_h__
 #define nsCycleCollector_h__
 
-class nsCycleCollectionJSRuntime;
 class nsICycleCollectorListener;
 class nsISupports;
+
+#include "nsError.h"
+#include "nsID.h"
+
+namespace mozilla {
+
+class CycleCollectedJSRuntime;
+
+// See the comments in nsContentUtils.h for explanations of these functions.
+typedef void* (*DeferredFinalizeAppendFunction)(void* pointers, void* thing);
+typedef bool (*DeferredFinalizeFunction)(uint32_t slice, void* data);
+
+}
 
 // Contains various stats about the cycle collection.
 class nsCycleCollectorResults
 {
 public:
     nsCycleCollectorResults() :
-        mForcedGC(false), mVisitedRefCounted(0), mVisitedGCed(0),
+        mForcedGC(false), mMergedZones(false),
+        mVisitedRefCounted(0), mVisitedGCed(0),
         mFreedRefCounted(0), mFreedGCed(0) {}
     bool mForcedGC;
+    bool mMergedZones;
     uint32_t mVisitedRefCounted;
     uint32_t mVisitedGCed;
     uint32_t mFreedRefCounted;
@@ -26,12 +40,7 @@ public:
 
 bool nsCycleCollector_init();
 
-enum CCThreadingModel {
-    CCSingleThread,
-    CCWithTraverseThread
-};
-
-nsresult nsCycleCollector_startup(CCThreadingModel aThreadingModel);
+void nsCycleCollector_startup();
 
 typedef void (*CC_BeforeUnlinkCallback)(void);
 void nsCycleCollector_setBeforeUnlinkCallback(CC_BeforeUnlinkCallback aCB);
@@ -39,17 +48,20 @@ void nsCycleCollector_setBeforeUnlinkCallback(CC_BeforeUnlinkCallback aCB);
 typedef void (*CC_ForgetSkippableCallback)(void);
 void nsCycleCollector_setForgetSkippableCallback(CC_ForgetSkippableCallback aCB);
 
-void nsCycleCollector_forgetSkippable(bool aRemoveChildlessNodes = false);
+void nsCycleCollector_forgetSkippable(bool aRemoveChildlessNodes = false,
+                                      bool aAsyncSnowWhiteFreeing = false);
 
-void nsCycleCollector_collect(bool aMergeCompartments,
+void nsCycleCollector_dispatchDeferredDeletion(bool aContinuation = false);
+bool nsCycleCollector_doDeferredDeletion();
+
+void nsCycleCollector_collect(bool aManuallyTriggered,
                               nsCycleCollectorResults *aResults,
-                              nsICycleCollectorListener *aListener);
+                              nsICycleCollectorListener *aManualListener);
 uint32_t nsCycleCollector_suspectedCount();
-void nsCycleCollector_shutdownThreads();
 void nsCycleCollector_shutdown();
 
 // Helpers for interacting with JS
-void nsCycleCollector_registerJSRuntime(nsCycleCollectionJSRuntime *aRt);
+void nsCycleCollector_registerJSRuntime(mozilla::CycleCollectedJSRuntime *aRt);
 void nsCycleCollector_forgetJSRuntime();
 
 #define NS_CYCLE_COLLECTOR_LOGGER_CID \
@@ -60,5 +72,21 @@ extern nsresult
 nsCycleCollectorLoggerConstructor(nsISupports* outer,
                                   const nsIID& aIID,
                                   void* *aInstancePtr);
+
+namespace mozilla {
+namespace cyclecollector {
+
+#ifdef DEBUG
+bool IsJSHolder(void* aHolder);
+#endif
+
+void DeferredFinalize(DeferredFinalizeAppendFunction aAppendFunc,
+                      DeferredFinalizeFunction aFunc,
+                      void* aThing);
+void DeferredFinalize(nsISupports* aSupports);
+
+
+} // namespace cyclecollector
+} // namespace mozilla
 
 #endif // nsCycleCollector_h__

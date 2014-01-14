@@ -11,10 +11,8 @@
  */
 
 interface Blob;
-interface FileCallback;
 interface nsIInputStreamCallback;
 interface nsISupports;
-interface PrintCallback;
 interface Variant;
 
 interface HTMLCanvasElement : HTMLElement {
@@ -24,13 +22,15 @@ interface HTMLCanvasElement : HTMLElement {
            attribute unsigned long height;
 
   [Throws]
-  nsISupports? getContext(DOMString contextId, optional any contextOptions);
+  nsISupports? getContext(DOMString contextId, optional any contextOptions = null);
 
   [Throws]
   DOMString toDataURL(optional DOMString type = "",
                       optional any encoderOptions);
   [Throws]
-  void toBlob(FileCallback _callback, optional DOMString type = "");
+  void toBlob(FileCallback _callback,
+              optional DOMString type = "",
+              optional any encoderOptions);
 };
 
 // Mozilla specific bits
@@ -45,3 +45,17 @@ partial interface HTMLCanvasElement {
   void mozFetchAsStream(nsIInputStreamCallback callback, optional DOMString? type = null);
            attribute PrintCallback? mozPrintCallback;
 };
+
+[ChromeOnly]
+interface MozCanvasPrintState
+{
+  // A canvas rendering context.
+  readonly attribute nsISupports context;
+
+  // To be called when rendering to the context is done.
+  void done();
+};
+
+callback PrintCallback = void(MozCanvasPrintState ctx);
+
+callback FileCallback = void(Blob file);

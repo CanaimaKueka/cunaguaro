@@ -6,6 +6,7 @@
 #ifndef GFX_WINDOWSDWRITEFONTS_H
 #define GFX_WINDOWSDWRITEFONTS_H
 
+#include "mozilla/MemoryReporting.h"
 #include <dwrite.h>
 
 #include "gfxFont.h"
@@ -52,20 +53,16 @@ public:
                                gfxContext *aContextForTightBoundingBox,
                                Spacing *aSpacing);
 
-    // override gfxFont table access function to bypass gfxFontEntry cache,
-    // use DWrite API to get direct access to system font data
-    virtual hb_blob_t *GetFontTable(uint32_t aTag);
-
     virtual bool ProvidesGlyphWidths();
 
     virtual int32_t GetGlyphWidth(gfxContext *aCtx, uint16_t aGID);
 
     virtual mozilla::TemporaryRef<mozilla::gfx::GlyphRenderingOptions> GetGlyphRenderingOptions();
 
-    virtual void SizeOfExcludingThis(nsMallocSizeOfFun aMallocSizeOf,
-                                     FontCacheSizes*   aSizes) const;
-    virtual void SizeOfIncludingThis(nsMallocSizeOfFun aMallocSizeOf,
-                                     FontCacheSizes*   aSizes) const;
+    virtual void AddSizeOfExcludingThis(mozilla::MallocSizeOf aMallocSizeOf,
+                                        FontCacheSizes* aSizes) const;
+    virtual void AddSizeOfIncludingThis(mozilla::MallocSizeOf aMallocSizeOf,
+                                        FontCacheSizes* aSizes) const;
 
     virtual FontType GetType() const { return FONT_TYPE_DWRITE; }
 
@@ -88,8 +85,6 @@ protected:
 
     gfxFloat MeasureGlyphWidth(uint16_t aGlyph);
 
-    static void DestroyBlobFunc(void* userArg);
-
     DWRITE_MEASURING_MODE GetMeasuringMode();
     bool GetForceGDIClassic();
 
@@ -99,7 +94,7 @@ protected:
     gfxFont::Metrics          *mMetrics;
 
     // cache of glyph widths in 16.16 fixed-point pixels
-    nsDataHashtable<nsUint32HashKey,int32_t>    mGlyphWidths;
+    nsAutoPtr<nsDataHashtable<nsUint32HashKey,int32_t> > mGlyphWidths;
 
     bool mNeedsOblique;
     bool mNeedsBold;

@@ -2,7 +2,7 @@
    - License, v. 2.0. If a copy of the MPL was not distributed with this
    - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
 
-<!ENTITY sanitizeDialog2.title         "Garbitu azkenaldiko historia">
+<!ENTITY sanitizeDialog2.title         "Garbitu azken historia">
 <!-- XXX rearrange entities to match physical layout when l10n isn't an issue -->
 <!-- LOCALIZATION NOTE (clearTimeDuration.*): "Time range to clear" dropdown.
      See UI mockup at bug 480169 -->
@@ -24,9 +24,9 @@ that require it.  -->
 <!ENTITY detailsProgressiveDisclosure.label     "Xehetasunak">
 <!ENTITY detailsProgressiveDisclosure.accesskey "e">
 
-<!ENTITY itemCookies.label                 "Cookie-ak">
+<!ENTITY itemCookies.label                 "Cookieak">
 <!ENTITY itemCookies.accesskey             "C">
-<!ENTITY itemCache.label                   "Cache-a">
+<!ENTITY itemCache.label                   "Cachea">
 <!ENTITY itemCache.accesskey               "a">
 <!-- LOCALIZATION NOTE (sanitizeEverythingUndoWarning): Second warning paragraph
      that appears when "Time range to clear" is set to "Everything".  See UI

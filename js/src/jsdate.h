@@ -8,23 +8,16 @@
  * JS Date class interface.
  */
 
-#ifndef jsdate_h___
-#define jsdate_h___
+#ifndef jsdate_h
+#define jsdate_h
 
-#include "mozilla/FloatingPoint.h"
-
-#include <math.h>
-
-#include "jsapi.h"
 #include "jstypes.h"
 
-extern "C" {
-class JSObject;
-struct JSContext;
-}
+#include "js/RootingAPI.h"
+#include "js/TypeDecls.h"
 
 extern JSObject *
-js_InitDateClass(JSContext *cx, js::HandleObject obj);
+js_InitDateClass(JSContext *cx, JS::HandleObject obj);
 
 /*
  * These functions provide a C interface to the date/time object
@@ -67,7 +60,7 @@ extern JS_FRIEND_API(int)
 js_DateGetSeconds(JSObject *obj);
 
 /* Date constructor native. Exposed only so the JIT can know its address. */
-JSBool
-js_Date(JSContext *cx, unsigned argc, js::Value *vp);
+bool
+js_Date(JSContext *cx, unsigned argc, JS::Value *vp);
 
-#endif /* jsdate_h___ */
+#endif /* jsdate_h */

@@ -20,29 +20,30 @@
 #include "mozilla/dom/ExternalHelperAppChild.h"
 #include "mozilla/dom/PCrashReporterChild.h"
 #include "mozilla/dom/DOMStorageIPC.h"
-#include "mozilla/Hal.h"
 #include "mozilla/hal_sandbox/PHalChild.h"
 #include "mozilla/ipc/GeckoChildProcessHost.h"
 #include "mozilla/ipc/TestShellChild.h"
-#include "mozilla/ipc/XPCShellEnvironment.h"
-#include "mozilla/jsipc/PContextWrapperChild.h"
 #include "mozilla/layers/CompositorChild.h"
 #include "mozilla/layers/ImageBridgeChild.h"
 #include "mozilla/layers/PCompositorChild.h"
 #include "mozilla/net/NeckoChild.h"
 #include "mozilla/Preferences.h"
+#ifdef MOZ_CONTENT_SANDBOX
+#include "mozilla/Sandbox.h"
+#endif
 #include "mozilla/unused.h"
 
+#include "nsIConsoleListener.h"
+#include "nsIInterfaceRequestorUtils.h"
 #include "nsIMemoryReporter.h"
 #include "nsIMemoryInfoDumper.h"
 #include "nsIMutable.h"
 #include "nsIObserverService.h"
-#include "nsTObserverArray.h"
 #include "nsIObserver.h"
 #include "nsIScriptSecurityManager.h"
 #include "nsServiceManagerUtils.h"
+#include "nsStyleSheetService.h"
 #include "nsXULAppAPI.h"
-#include "nsWeakReference.h"
 #include "nsIScriptError.h"
 #include "nsIConsoleService.h"
 #include "nsJSEnvironment.h"
@@ -50,9 +51,9 @@
 #include "nsDebugImpl.h"
 #include "nsHashPropertyBag.h"
 #include "nsLayoutStylesheetCache.h"
+#include "nsIJSRuntimeService.h"
 
 #include "IHistory.h"
-#include "nsDocShellCID.h"
 #include "nsNetUtil.h"
 
 #include "base/message_loop.h"
@@ -60,13 +61,13 @@
 #include "base/task.h"
 
 #include "nsChromeRegistryContent.h"
-#include "mozilla/chrome/RegistryMessageUtils.h"
 #include "nsFrameMessageManager.h"
 
 #include "nsIGeolocationProvider.h"
 #include "mozilla/dom/PMemoryReportRequestChild.h"
 
 #ifdef MOZ_PERMISSIONS
+#include "nsIScriptSecurityManager.h"
 #include "nsPermission.h"
 #include "nsPermissionManager.h"
 #endif
@@ -77,6 +78,7 @@
 
 #if defined(MOZ_WIDGET_GONK)
 #include "nsVolume.h"
+#include "nsVolumeService.h"
 #endif
 
 #ifdef XP_WIN
@@ -88,10 +90,16 @@
 #include "nsIAccessibilityService.h"
 #endif
 
+#ifdef MOZ_NUWA_PROCESS
+#include <setjmp.h>
+#include "ipc/Nuwa.h"
+#endif
+
 #include "mozilla/dom/indexedDB/PIndexedDBChild.h"
 #include "mozilla/dom/mobilemessage/SmsChild.h"
 #include "mozilla/dom/devicestorage/DeviceStorageRequestChild.h"
 #include "mozilla/dom/bluetooth/PBluetoothChild.h"
+#include "mozilla/dom/PFMRadioChild.h"
 #include "mozilla/ipc/InputStreamUtils.h"
 
 #ifdef MOZ_WEBSPEECH
@@ -103,12 +111,12 @@
 #include "ProcessUtils.h"
 #include "StructuredCloneUtils.h"
 #include "URIUtils.h"
-#include "nsIScriptSecurityManager.h"
 #include "nsContentUtils.h"
 #include "nsIPrincipal.h"
 #include "nsDeviceStorage.h"
 #include "AudioChannelService.h"
-#include "ProcessPriorityManager.h"
+#include "JavaScriptChild.h"
+#include "mozilla/dom/telephony/PTelephonyChild.h"
 
 using namespace base;
 using namespace mozilla;
@@ -118,12 +126,27 @@ using namespace mozilla::dom::devicestorage;
 using namespace mozilla::dom::ipc;
 using namespace mozilla::dom::mobilemessage;
 using namespace mozilla::dom::indexedDB;
+using namespace mozilla::dom::telephony;
 using namespace mozilla::hal_sandbox;
 using namespace mozilla::ipc;
 using namespace mozilla::layers;
 using namespace mozilla::net;
+using namespace mozilla::jsipc;
 #if defined(MOZ_WIDGET_GONK)
 using namespace mozilla::system;
+#endif
+
+#ifdef MOZ_NUWA_PROCESS
+static bool sNuwaForking = false;
+
+// The size of the reserved stack (in unsigned ints). It's used to reserve space
+// to push sigsetjmp() in NuwaCheckpointCurrentThread() to higher in the stack
+// so that after it returns and do other work we don't garble the stack we want
+// to preserve in NuwaCheckpointCurrentThread().
+#define RESERVED_INT_STACK 128
+
+// A sentinel value for checking whether RESERVED_INT_STACK is large enough.
+#define STACK_SENTINEL_VALUE 0xdeadbeef
 #endif
 
 namespace mozilla {
@@ -250,7 +273,7 @@ void SystemMessageHandledObserver::Init()
         mozilla::services::GetObserverService();
 
     if (os) {
-        os->AddObserver(this, "SystemMessageManager:HandleMessageDone",
+        os->AddObserver(this, "handle-system-messages-done",
                         /* ownsWeak */ false);
     }
 }
@@ -305,6 +328,10 @@ ContentChild::Init(MessageLoop* aIOLoop,
     XRE_InstallX11ErrorHandler();
 #endif
 
+#ifdef MOZ_NUWA_PROCESS
+    SetTransport(aChannel);
+#endif
+
     NS_ASSERTION(!sSingleton, "only one ContentChild per child");
 
     Open(aChannel, aParentHandle, aIOLoop);
@@ -317,6 +344,14 @@ ContentChild::Init(MessageLoop* aIOLoop,
 
     SendGetProcessAttributes(&mID, &mIsForApp, &mIsForBrowser);
 
+    GetCPOWManager();
+
+#ifdef MOZ_NUWA_PROCESS
+    if (IsNuwaProcess()) {
+        SetProcessName(NS_LITERAL_STRING("(Nuwa)"));
+        return true;
+    }
+#endif
     if (mIsForApp && !mIsForBrowser) {
         SetProcessName(NS_LITERAL_STRING("(Preallocated app)"));
     } else {
@@ -336,8 +371,11 @@ ContentChild::SetProcessName(const nsAString& aName)
         printf_stderr("\n\nCHILDCHILDCHILDCHILD\n  [%s] debug me @%d\n\n", name, getpid());
         sleep(30);
 #elif defined(OS_WIN)
-        printf_stderr("\n\nCHILDCHILDCHILDCHILD\n  [%s] debug me @%d\n\n", name, _getpid());
-        Sleep(30000);
+        // Windows has a decent JIT debugging story, so NS_DebugBreak does the
+        // right thing.
+        NS_DebugBreak(NS_DEBUG_BREAK,
+                      "Invoking NS_DebugBreak() to debug child process",
+                      nullptr, __FILE__, __LINE__);
 #endif
     }
 
@@ -378,13 +416,13 @@ ContentChild::InitXPCOM()
 }
 
 PMemoryReportRequestChild*
-ContentChild::AllocPMemoryReportRequest()
+ContentChild::AllocPMemoryReportRequestChild()
 {
     return new MemoryReportRequestChild();
 }
 
 // This is just a wrapper for InfallibleTArray<MemoryReport> that implements
-// nsISupports, so it can be passed to nsIMemoryMultiReporter::CollectReports.
+// nsISupports, so it can be passed to nsIMemoryReporter::CollectReports.
 class MemoryReportsWrapper MOZ_FINAL : public nsISupports {
 public:
     NS_DECL_ISUPPORTS
@@ -393,7 +431,7 @@ public:
 };
 NS_IMPL_ISUPPORTS0(MemoryReportsWrapper)
 
-class MemoryReportCallback MOZ_FINAL : public nsIMemoryMultiReporterCallback
+class MemoryReportCallback MOZ_FINAL : public nsIMemoryReporterCallback
 {
 public:
     NS_DECL_ISUPPORTS
@@ -421,53 +459,28 @@ private:
 };
 NS_IMPL_ISUPPORTS1(
   MemoryReportCallback
-, nsIMemoryMultiReporterCallback
+, nsIMemoryReporterCallback
 )
 
 bool
 ContentChild::RecvPMemoryReportRequestConstructor(PMemoryReportRequestChild* child)
 {
-    
     nsCOMPtr<nsIMemoryReporterManager> mgr = do_GetService("@mozilla.org/memory-reporter-manager;1");
 
     InfallibleTArray<MemoryReport> reports;
 
     nsPrintfCString process("Content (%d)", getpid());
 
-    // First do the vanilla memory reporters.
+    // Run each reporter.  The callback will turn each measurement into a
+    // MemoryReport.
     nsCOMPtr<nsISimpleEnumerator> e;
     mgr->EnumerateReporters(getter_AddRefs(e));
-    bool more;
-    while (NS_SUCCEEDED(e->HasMoreElements(&more)) && more) {
-      nsCOMPtr<nsIMemoryReporter> r;
-      e->GetNext(getter_AddRefs(r));
-
-      nsCString path;
-      int32_t kind;
-      int32_t units;
-      int64_t amount;
-      nsCString desc;
-
-      if (NS_SUCCEEDED(r->GetPath(path)) &&
-          NS_SUCCEEDED(r->GetKind(&kind)) &&
-          NS_SUCCEEDED(r->GetUnits(&units)) &&
-          NS_SUCCEEDED(r->GetAmount(&amount)) &&
-          NS_SUCCEEDED(r->GetDescription(desc)))
-      {
-        MemoryReport memreport(process, path, kind, units, amount, desc);
-        reports.AppendElement(memreport);
-      }
-    }
-
-    // Then do the memory multi-reporters, by calling CollectReports on each
-    // one, whereupon the callback will turn each measurement into a
-    // MemoryReport.
-    mgr->EnumerateMultiReporters(getter_AddRefs(e));
     nsRefPtr<MemoryReportsWrapper> wrappedReports =
         new MemoryReportsWrapper(&reports);
     nsRefPtr<MemoryReportCallback> cb = new MemoryReportCallback(process);
+    bool more;
     while (NS_SUCCEEDED(e->HasMoreElements(&more)) && more) {
-      nsCOMPtr<nsIMemoryMultiReporter> r;
+      nsCOMPtr<nsIMemoryReporter> r;
       e->GetNext(getter_AddRefs(r));
       r->CollectReports(cb, wrappedReports);
     }
@@ -488,7 +501,7 @@ ContentChild::RecvAudioChannelNotify()
 }
 
 bool
-ContentChild::DeallocPMemoryReportRequest(PMemoryReportRequestChild* actor)
+ContentChild::DeallocPMemoryReportRequestChild(PMemoryReportRequestChild* actor)
 {
     delete actor;
     return true;
@@ -508,25 +521,26 @@ ContentChild::RecvDumpMemoryInfoToTempDir(const nsString& aIdentifier,
 
 bool
 ContentChild::RecvDumpGCAndCCLogsToFile(const nsString& aIdentifier,
+                                        const bool& aDumpAllTraces,
                                         const bool& aDumpChildProcesses)
 {
     nsCOMPtr<nsIMemoryInfoDumper> dumper = do_GetService("@mozilla.org/memory-info-dumper;1");
 
-    dumper->DumpGCAndCCLogsToFile(
-        aIdentifier, aDumpChildProcesses);
+    dumper->DumpGCAndCCLogsToFile(aIdentifier, aDumpAllTraces,
+                                  aDumpChildProcesses);
     return true;
 }
 
 PCompositorChild*
-ContentChild::AllocPCompositor(mozilla::ipc::Transport* aTransport,
-                               base::ProcessId aOtherProcess)
+ContentChild::AllocPCompositorChild(mozilla::ipc::Transport* aTransport,
+                                    base::ProcessId aOtherProcess)
 {
     return CompositorChild::Create(aTransport, aOtherProcess);
 }
 
 PImageBridgeChild*
-ContentChild::AllocPImageBridge(mozilla::ipc::Transport* aTransport,
-                                base::ProcessId aOtherProcess)
+ContentChild::AllocPImageBridgeChild(mozilla::ipc::Transport* aTransport,
+                                     base::ProcessId aOtherProcess)
 {
     return ImageBridgeChild::StartUpInChildProcess(aTransport, aOtherProcess);
 }
@@ -539,6 +553,13 @@ ContentChild::RecvSetProcessPrivileges(const ChildPrivileges& aPrivs)
                           aPrivs;
   // If this fails, we die.
   SetCurrentProcessPrivileges(privs);
+#ifdef MOZ_CONTENT_SANDBOX
+  // SetCurrentProcessSandbox should be moved close to process initialization
+  // time if/when possible. SetCurrentProcessPrivileges should probably be
+  // moved as well. Right now this is set ONLY if we receive the
+  // RecvSetProcessPrivileges message. See bug 880808.
+  SetCurrentProcessSandbox();
+#endif
   return true;
 }
 
@@ -551,17 +572,50 @@ static void FirstIdle(void)
     ContentChild::GetSingleton()->SendFirstIdle();
 }
 
+mozilla::jsipc::PJavaScriptChild *
+ContentChild::AllocPJavaScriptChild()
+{
+    nsCOMPtr<nsIJSRuntimeService> svc = do_GetService("@mozilla.org/js/xpc/RuntimeService;1");
+    NS_ENSURE_TRUE(svc, NULL);
+
+    JSRuntime *rt;
+    svc->GetRuntime(&rt);
+    NS_ENSURE_TRUE(svc, NULL);
+
+    mozilla::jsipc::JavaScriptChild *child = new mozilla::jsipc::JavaScriptChild(rt);
+    if (!child->init()) {
+        delete child;
+        return NULL;
+    }
+    return child;
+}
+
+bool
+ContentChild::DeallocPJavaScriptChild(PJavaScriptChild *child)
+{
+    delete child;
+    return true;
+}
+
 PBrowserChild*
-ContentChild::AllocPBrowser(const IPCTabContext& aContext,
-                            const uint32_t& aChromeFlags)
+ContentChild::AllocPBrowserChild(const IPCTabContext& aContext,
+                                 const uint32_t& aChromeFlags)
 {
     // We'll happily accept any kind of IPCTabContext here; we don't need to
     // check that it's of a certain type for security purposes, because we
     // believe whatever the parent process tells us.
 
-    nsRefPtr<TabChild> child = TabChild::Create(TabContext(aContext), aChromeFlags);
+    MaybeInvalidTabContext tc(aContext);
+    if (!tc.IsValid()) {
+        NS_ERROR(nsPrintfCString("Received an invalid TabContext from "
+                                 "the parent process. (%s)  Crashing...",
+                                 tc.GetInvalidReason()).get());
+        MOZ_CRASH("Invalid TabContext received from the parent process.");
+    }
 
-    // The ref here is released in DeallocPBrowser.
+    nsRefPtr<TabChild> child = TabChild::Create(this, tc.GetTabContext(), aChromeFlags);
+
+    // The ref here is released in DeallocPBrowserChild.
     return child.forget().get();
 }
 
@@ -570,7 +624,7 @@ ContentChild::RecvPBrowserConstructor(PBrowserChild* actor,
                                       const IPCTabContext& context,
                                       const uint32_t& chromeFlags)
 {
-    // This runs after AllocPBrowser() returns and the IPC machinery for this
+    // This runs after AllocPBrowserChild() returns and the IPC machinery for this
     // PBrowserChild has been set up.
 
     nsCOMPtr<nsIObserverService> os = services::GetObserverService();
@@ -594,7 +648,7 @@ ContentChild::RecvPBrowserConstructor(PBrowserChild* actor,
 
 
 bool
-ContentChild::DeallocPBrowser(PBrowserChild* iframe)
+ContentChild::DeallocPBrowserChild(PBrowserChild* iframe)
 {
     TabChild* child = static_cast<TabChild*>(iframe);
     NS_RELEASE(child);
@@ -602,13 +656,13 @@ ContentChild::DeallocPBrowser(PBrowserChild* iframe)
 }
 
 PBlobChild*
-ContentChild::AllocPBlob(const BlobConstructorParams& aParams)
+ContentChild::AllocPBlobChild(const BlobConstructorParams& aParams)
 {
-  return BlobChild::Create(aParams);
+  return BlobChild::Create(this, aParams);
 }
 
 bool
-ContentChild::DeallocPBlob(PBlobChild* aActor)
+ContentChild::DeallocPBlobChild(PBlobChild* aActor)
 {
   delete aActor;
   return true;
@@ -617,28 +671,61 @@ ContentChild::DeallocPBlob(PBlobChild* aActor)
 BlobChild*
 ContentChild::GetOrCreateActorForBlob(nsIDOMBlob* aBlob)
 {
-  NS_ASSERTION(NS_IsMainThread(), "Wrong thread!");
-  NS_ASSERTION(aBlob, "Null pointer!");
+  MOZ_ASSERT(NS_IsMainThread());
+  MOZ_ASSERT(aBlob);
+
+  // If the blob represents a remote blob then we can simply pass its actor back
+  // here.
+  if (nsCOMPtr<nsIRemoteBlob> remoteBlob = do_QueryInterface(aBlob)) {
+    BlobChild* actor =
+      static_cast<BlobChild*>(
+        static_cast<PBlobChild*>(remoteBlob->GetPBlob()));
+    MOZ_ASSERT(actor);
+    return actor;
+  }
 
   // XXX This is only safe so long as all blob implementations in our tree
   //     inherit nsDOMFileBase. If that ever changes then this will need to grow
   //     a real interface or something.
   const nsDOMFileBase* blob = static_cast<nsDOMFileBase*>(aBlob);
 
+  // We often pass blobs that are multipart but that only contain one sub-blob
+  // (WebActivities does this a bunch). Unwrap to reduce the number of actors
+  // that we have to maintain.
+  const nsTArray<nsCOMPtr<nsIDOMBlob> >* subBlobs = blob->GetSubBlobs();
+  if (subBlobs && subBlobs->Length() == 1) {
+    const nsCOMPtr<nsIDOMBlob>& subBlob = subBlobs->ElementAt(0);
+    MOZ_ASSERT(subBlob);
+
+    // We can only take this shortcut if the multipart and the sub-blob are both
+    // Blob objects or both File objects.
+    nsCOMPtr<nsIDOMFile> multipartBlobAsFile = do_QueryInterface(aBlob);
+    nsCOMPtr<nsIDOMFile> subBlobAsFile = do_QueryInterface(subBlob);
+    if (!multipartBlobAsFile == !subBlobAsFile) {
+      // The wrapping was unnecessary, see if we can simply pass an existing
+      // remote blob.
+      if (nsCOMPtr<nsIRemoteBlob> remoteBlob = do_QueryInterface(subBlob)) {
+        BlobChild* actor =
+          static_cast<BlobChild*>(
+            static_cast<PBlobChild*>(remoteBlob->GetPBlob()));
+        MOZ_ASSERT(actor);
+        return actor;
+      }
+
+      // No need to add a reference here since the original blob must have a
+      // strong reference in the caller and it must also have a strong reference
+      // to this sub-blob.
+      aBlob = subBlob;
+      blob = static_cast<nsDOMFileBase*>(aBlob);
+      subBlobs = blob->GetSubBlobs();
+    }
+  }
+
   // All blobs shared between processes must be immutable.
   nsCOMPtr<nsIMutable> mutableBlob = do_QueryInterface(aBlob);
   if (!mutableBlob || NS_FAILED(mutableBlob->SetMutable(false))) {
     NS_WARNING("Failed to make blob immutable!");
     return nullptr;
-  }
-
-  nsCOMPtr<nsIRemoteBlob> remoteBlob = do_QueryInterface(aBlob);
-  if (remoteBlob) {
-    BlobChild* actor =
-      static_cast<BlobChild*>(static_cast<PBlobChild*>(remoteBlob->GetPBlob()));
-    NS_ASSERTION(actor, "Null actor?!");
-
-    return actor;
   }
 
   ParentBlobConstructorParams params;
@@ -689,21 +776,17 @@ ContentChild::GetOrCreateActorForBlob(nsIDOMBlob* aBlob)
       blobParams.length() = length;
       params.blobParams() = blobParams;
     }
-    }
+  }
 
-  BlobChild* actor = BlobChild::Create(aBlob);
+  BlobChild* actor = BlobChild::Create(this, aBlob);
   NS_ENSURE_TRUE(actor, nullptr);
 
-  if (!SendPBlobConstructor(actor, params)) {
-        return nullptr;
-      }
-
-  return actor;
+  return SendPBlobConstructor(actor, params) ? actor : nullptr;
 }
 
 PCrashReporterChild*
-ContentChild::AllocPCrashReporter(const mozilla::dom::NativeThreadId& id,
-                                  const uint32_t& processType)
+ContentChild::AllocPCrashReporterChild(const mozilla::dom::NativeThreadId& id,
+                                       const uint32_t& processType)
 {
 #ifdef MOZ_CRASHREPORTER
     return new CrashReporterChild();
@@ -713,92 +796,102 @@ ContentChild::AllocPCrashReporter(const mozilla::dom::NativeThreadId& id,
 }
 
 bool
-ContentChild::DeallocPCrashReporter(PCrashReporterChild* crashreporter)
+ContentChild::DeallocPCrashReporterChild(PCrashReporterChild* crashreporter)
 {
     delete crashreporter;
     return true;
 }
 
 PHalChild*
-ContentChild::AllocPHal()
+ContentChild::AllocPHalChild()
 {
     return CreateHalChild();
 }
 
 bool
-ContentChild::DeallocPHal(PHalChild* aHal)
+ContentChild::DeallocPHalChild(PHalChild* aHal)
 {
     delete aHal;
     return true;
 }
 
 PIndexedDBChild*
-ContentChild::AllocPIndexedDB()
+ContentChild::AllocPIndexedDBChild()
 {
   NS_NOTREACHED("Should never get here!");
   return NULL;
 }
 
 bool
-ContentChild::DeallocPIndexedDB(PIndexedDBChild* aActor)
+ContentChild::DeallocPIndexedDBChild(PIndexedDBChild* aActor)
 {
   delete aActor;
   return true;
 }
 
 PTestShellChild*
-ContentChild::AllocPTestShell()
+ContentChild::AllocPTestShellChild()
 {
     return new TestShellChild();
 }
 
 bool
-ContentChild::DeallocPTestShell(PTestShellChild* shell)
+ContentChild::DeallocPTestShellChild(PTestShellChild* shell)
 {
     delete shell;
     return true;
 }
 
+jsipc::JavaScriptChild *
+ContentChild::GetCPOWManager()
+{
+    if (ManagedPJavaScriptChild().Length()) {
+        return static_cast<JavaScriptChild*>(ManagedPJavaScriptChild()[0]);
+    }
+    JavaScriptChild* actor = static_cast<JavaScriptChild*>(SendPJavaScriptConstructor());
+    return actor;
+}
+
 bool
 ContentChild::RecvPTestShellConstructor(PTestShellChild* actor)
 {
-    actor->SendPContextWrapperConstructor()->SendPObjectWrapperConstructor(true);
     return true;
 }
 
 PDeviceStorageRequestChild*
-ContentChild::AllocPDeviceStorageRequest(const DeviceStorageParams& aParams)
+ContentChild::AllocPDeviceStorageRequestChild(const DeviceStorageParams& aParams)
 {
     return new DeviceStorageRequestChild();
 }
 
 bool
-ContentChild::DeallocPDeviceStorageRequest(PDeviceStorageRequestChild* aDeviceStorage)
+ContentChild::DeallocPDeviceStorageRequestChild(PDeviceStorageRequestChild* aDeviceStorage)
 {
     delete aDeviceStorage;
     return true;
 }
 
-PNeckoChild* 
-ContentChild::AllocPNecko()
+PNeckoChild*
+ContentChild::AllocPNeckoChild()
 {
     return new NeckoChild();
 }
 
-bool 
-ContentChild::DeallocPNecko(PNeckoChild* necko)
+bool
+ContentChild::DeallocPNeckoChild(PNeckoChild* necko)
 {
     delete necko;
     return true;
 }
 
 PExternalHelperAppChild*
-ContentChild::AllocPExternalHelperApp(const OptionalURIParams& uri,
-                                      const nsCString& aMimeContentType,
-                                      const nsCString& aContentDisposition,
-                                      const bool& aForceSave,
-                                      const int64_t& aContentLength,
-                                      const OptionalURIParams& aReferrer)
+ContentChild::AllocPExternalHelperAppChild(const OptionalURIParams& uri,
+                                           const nsCString& aMimeContentType,
+                                           const nsCString& aContentDisposition,
+                                           const bool& aForceSave,
+                                           const int64_t& aContentLength,
+                                           const OptionalURIParams& aReferrer,
+                                           PBrowserChild* aBrowser)
 {
     ExternalHelperAppChild *child = new ExternalHelperAppChild();
     child->AddRef();
@@ -806,7 +899,7 @@ ContentChild::AllocPExternalHelperApp(const OptionalURIParams& uri,
 }
 
 bool
-ContentChild::DeallocPExternalHelperApp(PExternalHelperAppChild* aService)
+ContentChild::DeallocPExternalHelperAppChild(PExternalHelperAppChild* aService)
 {
     ExternalHelperAppChild *child = static_cast<ExternalHelperAppChild*>(aService);
     child->Release();
@@ -814,27 +907,40 @@ ContentChild::DeallocPExternalHelperApp(PExternalHelperAppChild* aService)
 }
 
 PSmsChild*
-ContentChild::AllocPSms()
+ContentChild::AllocPSmsChild()
 {
     return new SmsChild();
 }
 
 bool
-ContentChild::DeallocPSms(PSmsChild* aSms)
+ContentChild::DeallocPSmsChild(PSmsChild* aSms)
 {
     delete aSms;
     return true;
 }
 
+PTelephonyChild*
+ContentChild::AllocPTelephonyChild()
+{
+    MOZ_CRASH("No one should be allocating PTelephonyChild actors");
+}
+
+bool
+ContentChild::DeallocPTelephonyChild(PTelephonyChild* aActor)
+{
+    delete aActor;
+    return true;
+}
+
 PStorageChild*
-ContentChild::AllocPStorage()
+ContentChild::AllocPStorageChild()
 {
     NS_NOTREACHED("We should never be manually allocating PStorageChild actors");
     return nullptr;
 }
 
 bool
-ContentChild::DeallocPStorage(PStorageChild* aActor)
+ContentChild::DeallocPStorageChild(PStorageChild* aActor)
 {
     DOMStorageDBChild* child = static_cast<DOMStorageDBChild*>(aActor);
     child->ReleaseIPDLReference();
@@ -842,42 +948,62 @@ ContentChild::DeallocPStorage(PStorageChild* aActor)
 }
 
 PBluetoothChild*
-ContentChild::AllocPBluetooth()
+ContentChild::AllocPBluetoothChild()
 {
 #ifdef MOZ_B2G_BT
-    MOZ_NOT_REACHED("No one should be allocating PBluetoothChild actors");
-    return nullptr;
+    MOZ_CRASH("No one should be allocating PBluetoothChild actors");
 #else
-    MOZ_NOT_REACHED("No support for bluetooth on this platform!");
-    return nullptr;
+    MOZ_CRASH("No support for bluetooth on this platform!");
 #endif
 }
 
 bool
-ContentChild::DeallocPBluetooth(PBluetoothChild* aActor)
+ContentChild::DeallocPBluetoothChild(PBluetoothChild* aActor)
 {
 #ifdef MOZ_B2G_BT
     delete aActor;
     return true;
 #else
-    MOZ_NOT_REACHED("No support for bluetooth on this platform!");
+    MOZ_CRASH("No support for bluetooth on this platform!");
+#endif
+}
+
+PFMRadioChild*
+ContentChild::AllocPFMRadioChild()
+{
+#ifdef MOZ_B2G_FM
+    NS_RUNTIMEABORT("No one should be allocating PFMRadioChild actors");
+    return nullptr;
+#else
+    NS_RUNTIMEABORT("No support for FMRadio on this platform!");
+    return nullptr;
+#endif
+}
+
+bool
+ContentChild::DeallocPFMRadioChild(PFMRadioChild* aActor)
+{
+#ifdef MOZ_B2G_FM
+    delete aActor;
+    return true;
+#else
+    NS_RUNTIMEABORT("No support for FMRadio on this platform!");
     return false;
 #endif
 }
 
 PSpeechSynthesisChild*
-ContentChild::AllocPSpeechSynthesis()
+ContentChild::AllocPSpeechSynthesisChild()
 {
 #ifdef MOZ_WEBSPEECH
-    MOZ_NOT_REACHED("No one should be allocating PSpeechSynthesisChild actors");
-    return nullptr;
+    MOZ_CRASH("No one should be allocating PSpeechSynthesisChild actors");
 #else
     return nullptr;
 #endif
 }
 
 bool
-ContentChild::DeallocPSpeechSynthesis(PSpeechSynthesisChild* aActor)
+ContentChild::DeallocPSpeechSynthesisChild(PSpeechSynthesisChild* aActor)
 {
 #ifdef MOZ_WEBSPEECH
     delete aActor;
@@ -949,12 +1075,17 @@ ContentChild::ProcessingError(Result what)
         QuickExit();
 
     case MsgNotKnown:
+        NS_RUNTIMEABORT("aborting because of MsgNotKnown");
     case MsgNotAllowed:
+        NS_RUNTIMEABORT("aborting because of MsgNotAllowed");
     case MsgPayloadError:
+        NS_RUNTIMEABORT("aborting because of MsgPayloadError");
     case MsgProcessingError:
+        NS_RUNTIMEABORT("aborting because of MsgProcessingError");
     case MsgRouteError:
+        NS_RUNTIMEABORT("aborting because of MsgRouteError");
     case MsgValueError:
-        NS_RUNTIMEABORT("aborting because of fatal error");
+        NS_RUNTIMEABORT("aborting because of MsgValueError");
 
     default:
         NS_RUNTIMEABORT("not reached");
@@ -1019,13 +1150,15 @@ ContentChild::RecvNotifyVisited(const URIParams& aURI)
 
 bool
 ContentChild::RecvAsyncMessage(const nsString& aMsg,
-                                     const ClonedMessageData& aData)
+                               const ClonedMessageData& aData,
+                               const InfallibleTArray<CpowEntry>& aCpows)
 {
   nsRefPtr<nsFrameMessageManager> cpm = nsFrameMessageManager::sChildProcessManager;
   if (cpm) {
     StructuredCloneData cloneData = ipc::UnpackClonedMessageDataForChild(aData);
+    CpowIdHolder cpows(GetCPOWManager(), aCpows);
     cpm->ReceiveMessage(static_cast<nsIContentFrameMessageManager*>(cpm.get()),
-                        aMsg, false, &cloneData, nullptr, nullptr);
+                        aMsg, false, &cloneData, &cpows, nullptr);
   }
   return true;
 }
@@ -1093,6 +1226,12 @@ ContentChild::RecvScreenSizeChanged(const gfxIntSize& size)
 bool
 ContentChild::RecvFlushMemory(const nsString& reason)
 {
+#ifdef MOZ_NUWA_PROCESS
+    if (IsNuwaProcess()) {
+        // Don't flush memory in the nuwa process: the GC thread could be frozen.
+        return true;
+    }
+#endif
     nsCOMPtr<nsIObserverService> os =
         mozilla::services::GetObserverService();
     if (os)
@@ -1137,10 +1276,13 @@ PreloadSlowThings()
 }
 
 bool
-ContentChild::RecvAppInfo(const nsCString& version, const nsCString& buildID)
+ContentChild::RecvAppInfo(const nsCString& version, const nsCString& buildID,
+                          const nsCString& name, const nsCString& UAName)
 {
     mAppInfo.version.Assign(version);
     mAppInfo.buildID.Assign(buildID);
+    mAppInfo.name.Assign(name);
+    mAppInfo.UAName.Assign(UAName);
     // If we're part of the mozbrowser machinery, go ahead and start
     // preloading things.  We can only do this for mozbrowser because
     // PreloadSlowThings() may set the docshell of the first TabChild
@@ -1180,21 +1322,27 @@ bool
 ContentChild::RecvFileSystemUpdate(const nsString& aFsName,
                                    const nsString& aVolumeName,
                                    const int32_t& aState,
-                                   const int32_t& aMountGeneration)
+                                   const int32_t& aMountGeneration,
+                                   const bool& aIsMediaPresent,
+                                   const bool& aIsSharing)
 {
 #ifdef MOZ_WIDGET_GONK
     nsRefPtr<nsVolume> volume = new nsVolume(aFsName, aVolumeName, aState,
-                                             aMountGeneration);
+                                             aMountGeneration, aIsMediaPresent,
+                                             aIsSharing);
 
-    nsCOMPtr<nsIObserverService> obs = mozilla::services::GetObserverService();
-    NS_ConvertUTF8toUTF16 stateStr(volume->StateStr());
-    obs->NotifyObservers(volume, NS_VOLUME_STATE_CHANGED, stateStr.get());
+    nsRefPtr<nsVolumeService> vs = nsVolumeService::GetSingleton();
+    if (vs) {
+        vs->UpdateVolume(volume);
+    }
 #else
     // Remove warnings about unused arguments
     unused << aFsName;
     unused << aVolumeName;
     unused << aState;
     unused << aMountGeneration;
+    unused << aIsMediaPresent;
+    unused << aIsSharing;
 #endif
     return true;
 }
@@ -1207,7 +1355,6 @@ ContentChild::RecvNotifyProcessPriorityChanged(
     NS_ENSURE_TRUE(os, true);
 
     nsRefPtr<nsHashPropertyBag> props = new nsHashPropertyBag();
-    props->Init();
     props->SetPropertyAsInt32(NS_LITERAL_STRING("priority"),
                               static_cast<int32_t>(aPriority));
 
@@ -1219,6 +1366,13 @@ ContentChild::RecvNotifyProcessPriorityChanged(
 bool
 ContentChild::RecvMinimizeMemoryUsage()
 {
+#ifdef MOZ_NUWA_PROCESS
+    if (IsNuwaProcess()) {
+        // Don't minimize memory in the nuwa process: it will perform GC, but the
+        // GC thread could be frozen.
+        return true;
+    }
+#endif
     nsCOMPtr<nsIMemoryReporterManager> mgr =
         do_GetService("@mozilla.org/memory-reporter-manager;1");
     NS_ENSURE_TRUE(mgr, true);
@@ -1251,5 +1405,222 @@ ContentChild::RecvCancelMinimizeMemoryUsage()
     return true;
 }
 
+bool
+ContentChild::RecvNotifyPhoneStateChange(const nsString& aState)
+{
+  nsCOMPtr<nsIObserverService> os = services::GetObserverService();
+  if (os) {
+    os->NotifyObservers(nullptr, "phone-state-changed", aState.get());
+  }
+  return true;
+}
+
+bool
+ContentChild::RecvLoadAndRegisterSheet(const URIParams& aURI, const uint32_t& aType)
+{
+    nsCOMPtr<nsIURI> uri = DeserializeURI(aURI);
+    if (!uri) {
+        return true;
+    }
+
+    nsStyleSheetService *sheetService = nsStyleSheetService::GetInstance();
+    if (sheetService) {
+        sheetService->LoadAndRegisterSheet(uri, aType);
+    }
+
+    return true;
+}
+
+bool
+ContentChild::RecvUnregisterSheet(const URIParams& aURI, const uint32_t& aType)
+{
+    nsCOMPtr<nsIURI> uri = DeserializeURI(aURI);
+    if (!uri) {
+        return true;
+    }
+
+    nsStyleSheetService *sheetService = nsStyleSheetService::GetInstance();
+    if (sheetService) {
+        sheetService->UnregisterSheet(uri, aType);
+    }
+
+    return true;
+}
+
+#ifdef MOZ_NUWA_PROCESS
+class CallNuwaSpawn : public nsRunnable
+{
+public:
+    NS_IMETHOD Run()
+    {
+        NuwaSpawn();
+        if (IsNuwaProcess()) {
+            return NS_OK;
+        }
+
+        // In the new process.
+        ContentChild* child = ContentChild::GetSingleton();
+        child->SetProcessName(NS_LITERAL_STRING("(Preallocated app)"));
+        mozilla::ipc::Transport* transport = child->GetTransport();
+        int fd = transport->GetFileDescriptor();
+        transport->ResetFileDescriptor(fd);
+
+        IToplevelProtocol* toplevel = child->GetFirstOpenedActors();
+        while (toplevel != nullptr) {
+            transport = toplevel->GetTransport();
+            fd = transport->GetFileDescriptor();
+            transport->ResetFileDescriptor(fd);
+
+            toplevel = toplevel->getNext();
+        }
+        return NS_OK;
+    }
+};
+
+static void
+DoNuwaFork()
+{
+    NS_ASSERTION(NuwaSpawnPrepare != nullptr,
+                 "NuwaSpawnPrepare() is not available!");
+    NuwaSpawnPrepare();       // NuwaSpawn will be blocked.
+
+    {
+        nsCOMPtr<nsIRunnable> callSpawn(new CallNuwaSpawn());
+        NS_DispatchToMainThread(callSpawn);
+    }
+
+    // IOThread should be blocked here for waiting NuwaSpawn().
+    NS_ASSERTION(NuwaSpawnWait != nullptr,
+                 "NuwaSpawnWait() is not available!");
+    NuwaSpawnWait();        // Now! NuwaSpawn can go.
+    // Here, we can make sure the spawning was finished.
+}
+
+/**
+ * This function should keep IO thread in a stable state and freeze it
+ * until the spawning is finished.
+ */
+static void
+RunNuwaFork()
+{
+    if (NuwaCheckpointCurrentThread()) {
+      DoNuwaFork();
+    }
+}
+#endif
+
+bool
+ContentChild::RecvNuwaFork()
+{
+#ifdef MOZ_NUWA_PROCESS
+    if (sNuwaForking) {           // No reentry.
+        return true;
+    }
+    sNuwaForking = true;
+
+    MessageLoop* ioloop = XRE_GetIOMessageLoop();
+    ioloop->PostTask(FROM_HERE, NewRunnableFunction(RunNuwaFork));
+    return true;
+#else
+    return false; // Makes the underlying IPC channel abort.
+#endif
+}
+
 } // namespace dom
 } // namespace mozilla
+
+extern "C" {
+
+#if defined(MOZ_NUWA_PROCESS)
+NS_EXPORT void
+GetProtoFdInfos(NuwaProtoFdInfo* aInfoList,
+                size_t aInfoListSize,
+                size_t* aInfoSize)
+{
+    size_t i = 0;
+
+    mozilla::dom::ContentChild* content =
+        mozilla::dom::ContentChild::GetSingleton();
+    aInfoList[i].protoId = content->GetProtocolId();
+    aInfoList[i].originFd =
+        content->GetTransport()->GetFileDescriptor();
+    i++;
+
+    for (IToplevelProtocol* actor = content->GetFirstOpenedActors();
+         actor != nullptr;
+         actor = actor->getNext()) {
+        if (i >= aInfoListSize) {
+            NS_RUNTIMEABORT("Too many top level protocols!");
+        }
+
+        aInfoList[i].protoId = actor->GetProtocolId();
+        aInfoList[i].originFd =
+            actor->GetTransport()->GetFileDescriptor();
+        i++;
+    }
+
+    if (i > NUWA_TOPLEVEL_MAX) {
+        NS_RUNTIMEABORT("Too many top level protocols!");
+    }
+    *aInfoSize = i;
+}
+
+class RunAddNewIPCProcess : public nsRunnable
+{
+public:
+    RunAddNewIPCProcess(pid_t aPid,
+                        nsTArray<mozilla::ipc::ProtocolFdMapping>& aMaps)
+        : mPid(aPid)
+    {
+        mMaps.SwapElements(aMaps);
+    }
+
+    NS_IMETHOD Run()
+    {
+        mozilla::dom::ContentChild::GetSingleton()->
+            SendAddNewProcess(mPid, mMaps);
+
+        MOZ_ASSERT(sNuwaForking);
+        sNuwaForking = false;
+
+        return NS_OK;
+    }
+
+private:
+    pid_t mPid;
+    nsTArray<mozilla::ipc::ProtocolFdMapping> mMaps;
+};
+
+/**
+ * AddNewIPCProcess() is called by Nuwa process to tell the parent
+ * process that a new process is created.
+ *
+ * In the newly created process, ResetContentChildTransport() is called to
+ * reset fd for the IPC Channel and the session.
+ */
+NS_EXPORT void
+AddNewIPCProcess(pid_t aPid, NuwaProtoFdInfo* aInfoList, size_t aInfoListSize)
+{
+    nsTArray<mozilla::ipc::ProtocolFdMapping> maps;
+
+    for (size_t i = 0; i < aInfoListSize; i++) {
+        int _fd = aInfoList[i].newFds[NUWA_NEWFD_PARENT];
+        mozilla::ipc::FileDescriptor fd(_fd);
+        mozilla::ipc::ProtocolFdMapping map(aInfoList[i].protoId, fd);
+        maps.AppendElement(map);
+    }
+
+    nsRefPtr<RunAddNewIPCProcess> runner = new RunAddNewIPCProcess(aPid, maps);
+    NS_DispatchToMainThread(runner);
+}
+
+NS_EXPORT void
+OnNuwaProcessReady()
+{
+    mozilla::dom::ContentChild* content =
+        mozilla::dom::ContentChild::GetSingleton();
+    content->SendNuwaReady();
+}
+#endif // MOZ_NUWA_PROCESS
+
+}

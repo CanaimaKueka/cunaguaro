@@ -1,7 +1,10 @@
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
 <!ENTITY updateWizard.title              "Tarkvara uuendamine">
 
 <!ENTITY checking.title                  "Uuenduste kontrollimine">
-<!ENTITY updateCheck.label               "Uuritakse, kas leidub uut versiooni &brandShortName;ist...">
+<!ENTITY updateCheck.label               "Uuritakse, kas leidub &brandShortName;i uus versioon...">
 
 <!ENTITY  pluginupdatesfound.title       "Leiti uuendusi pluginatele">
 <!ENTITY  pluginupdatesfound.label       "Leiti ühe või enama plugina uus versioon.">
@@ -21,8 +24,14 @@
                                            selle paigaldamiseks.">
 <!ENTITY  manualUpdateGetMsg.label        "&brandShortName;i uusima versiooni saad alati järgnevalt aadressilt:">
 
+<!ENTITY  unsupported.title              "Süsteem pole toetatud">
+<!ENTITY  unsupported.label              "&brandShortName; on iganenud, aga uusim versioon pole sinu süsteemi peal toetatud.
+                                          Palun uuenda oma süsteem uuele versioonile ja proovi siis uuesti.
+                                          Seda teavitust uuesti ei kuvata, kuid rohkem teavet on võimalik leida">
+<!ENTITY  unsupportedLink.label          "siit.">
+
 <!ENTITY incompatibleCheck.title         "Kontrollitakse ühilduvust lisadega">
-<!ENTITY  incompatibleCheck.label        "Uuritakse, kas leidub uusi versioone sinu lisadest...">
+<!ENTITY  incompatibleCheck.label        "Uuritakse, kas leidub sinu lisade uusi versioone...">
 
 <!ENTITY clickHere.label                 "Rohkem teavet uuenduse kohta">
 

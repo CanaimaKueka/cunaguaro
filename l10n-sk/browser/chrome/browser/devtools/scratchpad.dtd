@@ -20,7 +20,7 @@
   -  "Scratchpad" in your locale. You should feel free to find a close
   -  approximation to it or choose a word (or words) that means
   -  "simple discardable text editor". -->
-<!ENTITY window.title                 "Editor JavaScriptu - ScratchPad">
+<!ENTITY window.title                 "Editor JavaScriptu - Scratchpad">
 
 <!ENTITY fileMenu.label               "Súbor">
 <!ENTITY fileMenu.accesskey           "S">
@@ -64,6 +64,9 @@
 <!ENTITY display.label                "Zobraziť">
 <!ENTITY display.accesskey            "Z">
 <!ENTITY display.key                  "l">
+
+<!ENTITY pprint.label                 "Tlačiť s použitím štýlov">
+<!ENTITY pprint.key                   "p">
 
 <!-- LOCALIZATION NOTE (environmentMenu.label, accesskey): This menu item was
   -  renamed from "Context" to avoid confusion with the right-click context

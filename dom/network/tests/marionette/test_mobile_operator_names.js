@@ -8,15 +8,28 @@ SpecialPowers.addPermission("mobileconnection", true, document);
 const OPERATOR_HOME = 0;
 const OPERATOR_ROAMING = 1;
 
-let connection = navigator.mozMobileConnection;
-ok(connection instanceof MozMobileConnection,
-   "connection is instanceof " + connection.constructor);
+// Permission changes can't change existing Navigator.prototype
+// objects, so grab our objects from a new Navigator
+let ifr = document.createElement("iframe");
+let connection;
+let voice;
+let network;
+ifr.onload = function() {
+  connection = ifr.contentWindow.navigator.mozMobileConnection;
+  ok(connection instanceof ifr.contentWindow.MozMobileConnection,
+     "connection is instanceof " + connection.constructor);
 
-let voice = connection.voice;
-ok(voice, "voice connection valid");
+  voice = connection.voice;
+  ok(voice, "voice connection valid");
 
-let network = voice.network;
-ok(network, "voice network info valid");
+  network = voice.network;
+  ok(network, "voice network info valid");
+
+  waitFor(testMobileOperatorNames, function () {
+    return voice.connected;
+  });
+};
+document.body.appendChild(ifr);
 
 let emulatorCmdPendingCount = 0;
 function sendEmulatorCommand(cmd, callback) {
@@ -27,6 +40,21 @@ function sendEmulatorCommand(cmd, callback) {
     is(result[result.length - 1], "OK");
 
     callback(result);
+  });
+}
+
+function setEmulatorOperatorNamesAndMccMnc(which, longName, shortName,
+                                           mcc, mnc, callback) {
+  let cmd = "operator set " + which + " " + longName + "," +
+            shortName + "," + mcc + mnc;
+  sendEmulatorCommand(cmd, function (result) {
+    let re = new RegExp("^" + longName + "," +
+                        shortName + "," + mcc + mnc);
+    ok(result[which].match(re), "Long/short name and mcc/mnc should be changed.");
+
+    if (callback) {
+      window.setTimeout(callback, 0);
+    }
   });
 }
 
@@ -87,9 +115,32 @@ function testMobileOperatorNames() {
     doTestMobileOperatorNames("Mozilla", "", function () {
       doTestMobileOperatorNames("", "B2G", function () {
         doTestMobileOperatorNames("", "", function () {
-          doTestMobileOperatorNames("Android", "Android", testRoamingCheck);
+          doTestMobileOperatorNames("Android", "Android", testOperatorPLMNList);
         });
       });
+    });
+  });
+}
+
+function doTestOperatorPLMNList(mcc, mnc, expectedLongName,
+                                expectedShortName, callback) {
+  log("Testing mcc = " + mcc + ", mnc = " + mnc + ":");
+
+  waitForVoiceChange(function () {
+    is(network.longName, expectedLongName, "network.longName");
+    is(network.shortName, expectedShortName, "network.shortName");
+    is(network.mcc, mcc, "network.mcc");
+    is(network.mnc, mnc, "network.mnc");
+    window.setTimeout(callback, 0);
+  });
+
+  setEmulatorOperatorNamesAndMccMnc(OPERATOR_HOME, "Android", "Android", mcc, mnc);
+}
+
+function testOperatorPLMNList() {
+  doTestOperatorPLMNList("123", "456", "Android", "Android", function() {
+    doTestOperatorPLMNList("310", "070", "AT&T", "", function() {
+      doTestOperatorPLMNList("310", "260", "Android", "Android", testRoamingCheck);
     });
   });
 }
@@ -165,7 +216,3 @@ function cleanUp() {
   SpecialPowers.removePermission("mobileconnection", document);
   finish();
 }
-
-waitFor(testMobileOperatorNames, function () {
-  return voice.connected;
-});

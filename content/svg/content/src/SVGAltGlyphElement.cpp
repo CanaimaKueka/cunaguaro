@@ -5,7 +5,6 @@
 
 #include "mozilla/dom/SVGAltGlyphElement.h"
 #include "mozilla/dom/SVGAltGlyphElementBinding.h"
-#include "nsContentUtils.h"
 
 NS_IMPL_NS_NEW_NAMESPACED_SVG_ELEMENT(AltGlyph)
 
@@ -32,12 +31,26 @@ SVGAltGlyphElement::SVGAltGlyphElement(already_AddRefed<nsINodeInfo> aNodeInfo)
 {
 }
 
+nsSVGElement::EnumAttributesInfo
+SVGAltGlyphElement::GetEnumInfo()
+{
+  return EnumAttributesInfo(mEnumAttributes, sEnumInfo,
+                            ArrayLength(sEnumInfo));
+}
+
+nsSVGElement::LengthAttributesInfo
+SVGAltGlyphElement::GetLengthInfo()
+{
+  return LengthAttributesInfo(mLengthAttributes, sLengthInfo,
+                              ArrayLength(sLengthInfo));
+}
+
 //----------------------------------------------------------------------
 // nsIDOMNode methods
 
 NS_IMPL_ELEMENT_CLONE_WITH_INIT(SVGAltGlyphElement)
 
-already_AddRefed<nsIDOMSVGAnimatedString>
+already_AddRefed<SVGAnimatedString>
 SVGAltGlyphElement::Href()
 {
   return mStringAttributes[HREF].ToDOMAnimatedString(this);
@@ -83,12 +96,6 @@ SVGAltGlyphElement::IsAttributeMapped(const nsIAtom* name) const
 
   return FindAttributeDependence(name, map) ||
     SVGAltGlyphElementBase::IsAttributeMapped(name);
-}
-
-bool
-SVGAltGlyphElement::IsEventAttributeName(nsIAtom* aName)
-{
-  return nsContentUtils::IsEventAttributeName(aName, EventNameType_SVGGraphic);
 }
 
 //----------------------------------------------------------------------

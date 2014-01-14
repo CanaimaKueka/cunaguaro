@@ -12,8 +12,9 @@
 // Need this for XMLHttpRequestResponseType.
 #include "mozilla/dom/XMLHttpRequestBinding.h"
 
-#include "mozilla/dom/BindingUtils.h"
 #include "mozilla/dom/TypedArray.h"
+
+#include "js/StructuredClone.h"
 
 BEGIN_WORKERS_NAMESPACE
 
@@ -29,9 +30,9 @@ public:
   {
     nsString mResponseText;
     uint32_t mStatus;
-    nsString mStatusText;
+    nsCString mStatusText;
     uint16_t mReadyState;
-    jsval mResponse;
+    JS::Heap<JS::Value> mResponse;
     nsresult mResponseTextResult;
     nsresult mStatusResult;
     nsresult mResponseResult;
@@ -44,7 +45,7 @@ public:
   };
 
 private:
-  JSObject* mJSObject;
+  JS::Heap<JSObject*> mJSObject;
   XMLHttpRequestUpload* mUpload;
   WorkerPrivate* mWorkerPrivate;
   nsRefPtr<Proxy> mProxy;
@@ -73,16 +74,16 @@ public:
   _finalize(JSFreeOp* aFop) MOZ_OVERRIDE;
 
   static XMLHttpRequest*
-  Constructor(const WorkerGlobalObject& aGlobal,
-              const MozXMLHttpRequestParametersWorkers& aParams,
+  Constructor(const GlobalObject& aGlobal,
+              const MozXMLHttpRequestParameters& aParams,
               ErrorResult& aRv);
 
   static XMLHttpRequest*
-  Constructor(const WorkerGlobalObject& aGlobal, const nsAString& ignored,
+  Constructor(const GlobalObject& aGlobal, const nsAString& ignored,
               ErrorResult& aRv)
   {
     // Pretend like someone passed null, so we can pick up the default values
-    MozXMLHttpRequestParametersWorkers params;
+    MozXMLHttpRequestParameters params;
     if (!params.Init(aGlobal.GetContext(), JS::NullHandleValue)) {
       aRv.Throw(NS_ERROR_UNEXPECTED);
       return nullptr;
@@ -98,14 +99,14 @@ public:
   Notify(JSContext* aCx, Status aStatus) MOZ_OVERRIDE;
 
 #define IMPL_GETTER_AND_SETTER(_type)                                          \
-  JSObject*                                                                    \
-  GetOn##_type(JSContext* /* unused */, ErrorResult& aRv)                      \
+  already_AddRefed<EventHandlerNonNull>                                        \
+  GetOn##_type(ErrorResult& aRv)                                               \
   {                                                                            \
     return GetEventListener(NS_LITERAL_STRING(#_type), aRv);                   \
   }                                                                            \
                                                                                \
   void                                                                         \
-  SetOn##_type(JSContext* /* unused */, JSObject* aListener, ErrorResult& aRv) \
+  SetOn##_type(EventHandlerNonNull* aListener,  ErrorResult& aRv)              \
   {                                                                            \
     SetEventListener(NS_LITERAL_STRING(#_type), aListener, aRv);               \
   }
@@ -121,12 +122,12 @@ public:
   }
 
   void
-  Open(const nsAString& aMethod, const nsAString& aUrl, bool aAsync,
+  Open(const nsACString& aMethod, const nsAString& aUrl, bool aAsync,
        const Optional<nsAString>& aUser, const Optional<nsAString>& aPassword,
        ErrorResult& aRv);
 
   void
-  SetRequestHeader(const nsAString& aHeader, const nsAString& aValue,
+  SetRequestHeader(const nsACString& aHeader, const nsACString& aValue,
                    ErrorResult& aRv);
 
   uint32_t
@@ -175,12 +176,12 @@ public:
   }
 
   void
-  Send(ArrayBuffer& aBody, ErrorResult& aRv) {
+  Send(const ArrayBuffer& aBody, ErrorResult& aRv) {
     return Send(aBody.Obj(), aRv);
   }
 
   void
-  Send(ArrayBufferView& aBody, ErrorResult& aRv) {
+  Send(const ArrayBufferView& aBody, ErrorResult& aRv) {
     return Send(aBody.Obj(), aRv);
   }
 
@@ -198,17 +199,17 @@ public:
   }
 
   void
-  GetStatusText(nsAString& aStatusText) const
+  GetStatusText(nsACString& aStatusText) const
   {
     aStatusText = mStateData.mStatusText;
   }
 
   void
-  GetResponseHeader(const nsAString& aHeader, nsAString& aResponseHeader,
+  GetResponseHeader(const nsACString& aHeader, nsACString& aResponseHeader,
                     ErrorResult& aRv);
 
   void
-  GetAllResponseHeaders(nsAString& aResponseHeaders, ErrorResult& aRv);
+  GetAllResponseHeaders(nsACString& aResponseHeaders, ErrorResult& aRv);
 
   void
   OverrideMimeType(const nsAString& aMimeType, ErrorResult& aRv);

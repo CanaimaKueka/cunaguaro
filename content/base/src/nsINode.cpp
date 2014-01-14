@@ -15,13 +15,14 @@
 #include "mozAutoDocUpdate.h"
 #include "mozilla/CORSMode.h"
 #include "mozilla/Likely.h"
+#include "mozilla/MemoryReporting.h"
+#include "mozilla/MutationEvent.h"
 #include "mozilla/Telemetry.h"
 #include "mozilla/Util.h"
 #include "nsAsyncDOMEvent.h"
 #include "nsAttrValueOrString.h"
 #include "nsBindingManager.h"
 #include "nsCCUncollectableMarker.h"
-#include "nsClientRect.h"
 #include "nsContentCreatorFunctions.h"
 #include "nsContentList.h"
 #include "nsContentUtils.h"
@@ -60,7 +61,6 @@
 #include "nsIDOMUserDataHandler.h"
 #include "nsIEditor.h"
 #include "nsIEditorIMESupport.h"
-#include "nsIFrame.h"
 #include "nsILinkHandler.h"
 #include "nsINameSpaceManager.h"
 #include "nsINodeInfo.h"
@@ -75,9 +75,7 @@
 #include "nsViewManager.h"
 #include "nsIWebNavigation.h"
 #include "nsIWidget.h"
-#include "nsLayoutStatics.h"
 #include "nsLayoutUtils.h"
-#include "nsMutationEvent.h"
 #include "nsNetUtil.h"
 #include "nsNodeInfoManager.h"
 #include "nsNodeUtils.h"
@@ -92,7 +90,6 @@
 #include "nsTextNode.h"
 #include "nsUnicharUtils.h"
 #include "nsXBLBinding.h"
-#include "nsXBLInsertionPoint.h"
 #include "nsXBLPrototypeBinding.h"
 #include "prprf.h"
 #include "xpcpublic.h"
@@ -104,6 +101,8 @@
 #include "DocumentType.h"
 #include <algorithm>
 #include "nsDOMEvent.h"
+#include "nsGlobalWindow.h"
+#include "nsDOMMutationObserver.h"
 
 using namespace mozilla;
 using namespace mozilla::dom;
@@ -140,8 +139,8 @@ nsINode::nsSlots::Unlink()
 
 nsINode::~nsINode()
 {
-  NS_ASSERTION(!HasSlots(), "nsNodeUtils::LastRelease was not called?");
-  NS_ASSERTION(mSubtreeRoot == this, "Didn't restore state properly?");
+  MOZ_ASSERT(!HasSlots(), "nsNodeUtils::LastRelease was not called?");
+  MOZ_ASSERT(mSubtreeRoot == this, "Didn't restore state properly?");
 }
 
 void*
@@ -636,6 +635,7 @@ nsresult
 nsINode::SetUserData(const nsAString &aKey, nsIVariant *aData,
                      nsIDOMUserDataHandler *aHandler, nsIVariant **aResult)
 {
+  OwnerDoc()->WarnOnceAbout(nsIDocument::eGetSetUserData);
   *aResult = nullptr;
 
   nsCOMPtr<nsIAtom> key = do_GetAtom(aKey);
@@ -677,11 +677,13 @@ nsINode::SetUserData(const nsAString &aKey, nsIVariant *aData,
 }
 
 JS::Value
-nsINode::SetUserData(JSContext* aCx, const nsAString& aKey, JS::Value aData,
+nsINode::SetUserData(JSContext* aCx, const nsAString& aKey,
+                     JS::Handle<JS::Value> aData,
                      nsIDOMUserDataHandler* aHandler, ErrorResult& aError)
 {
   nsCOMPtr<nsIVariant> data;
-  aError = nsContentUtils::XPConnect()->JSValToVariant(aCx, &aData,
+  JS::Rooted<JS::Value> dataVal(aCx, aData);
+  aError = nsContentUtils::XPConnect()->JSValToVariant(aCx, dataVal.address(),
                                                        getter_AddRefs(data));
   if (aError.Failed()) {
     return JS::UndefinedValue();
@@ -704,6 +706,18 @@ nsINode::SetUserData(JSContext* aCx, const nsAString& aKey, JS::Value aData,
   return result;
 }
 
+nsIVariant*
+nsINode::GetUserData(const nsAString& aKey)
+{
+  OwnerDoc()->WarnOnceAbout(nsIDocument::eGetSetUserData);
+  nsCOMPtr<nsIAtom> key = do_GetAtom(aKey);
+  if (!key) {
+    return nullptr;
+  }
+
+  return static_cast<nsIVariant*>(GetProperty(DOM_USER_DATA, key));
+}
+
 JS::Value
 nsINode::GetUserData(JSContext* aCx, const nsAString& aKey, ErrorResult& aError)
 {
@@ -717,15 +731,6 @@ nsINode::GetUserData(JSContext* aCx, const nsAString& aKey, ErrorResult& aError)
   aError = nsContentUtils::XPConnect()->VariantToJS(aCx, GetWrapper(), data,
                                                     result.address());
   return result;
-}
-
-//static
-bool
-nsINode::IsChromeOrXBL(JSContext* aCx, JSObject* /* unused */)
-{
-  JSCompartment* compartment = js::GetContextCompartment(aCx);
-  return xpc::AccessCheck::isChrome(compartment) ||
-         xpc::IsXBLScope(compartment);
 }
 
 uint16_t
@@ -1033,7 +1038,7 @@ nsINode::AddEventListener(const nsAString& aType,
     aWantsUntrusted = true;
   }
 
-  nsEventListenerManager* listener_manager = GetListenerManager(true);
+  nsEventListenerManager* listener_manager = GetOrCreateListenerManager();
   NS_ENSURE_STATE(listener_manager);
   listener_manager->AddEventListener(aType, aListener, aUseCapture,
                                      aWantsUntrusted);
@@ -1042,7 +1047,7 @@ nsINode::AddEventListener(const nsAString& aType,
 
 void
 nsINode::AddEventListener(const nsAString& aType,
-                          nsIDOMEventListener* aListener,
+                          EventListener* aListener,
                           bool aUseCapture,
                           const Nullable<bool>& aWantsUntrusted,
                           ErrorResult& aRv)
@@ -1054,7 +1059,7 @@ nsINode::AddEventListener(const nsAString& aType,
     wantsUntrusted = aWantsUntrusted.Value();
   }
 
-  nsEventListenerManager* listener_manager = GetListenerManager(true);
+  nsEventListenerManager* listener_manager = GetOrCreateListenerManager();
   if (!listener_manager) {
     aRv.Throw(NS_ERROR_UNEXPECTED);
     return;
@@ -1090,7 +1095,7 @@ nsINode::RemoveEventListener(const nsAString& aType,
                              nsIDOMEventListener* aListener,
                              bool aUseCapture)
 {
-  nsEventListenerManager* elm = GetListenerManager(false);
+  nsEventListenerManager* elm = GetExistingListenerManager();
   if (elm) {
     elm->RemoveEventListener(aType, aListener, aUseCapture);
   }
@@ -1142,7 +1147,7 @@ nsINode::PostHandleEvent(nsEventChainPostVisitor& /*aVisitor*/)
 }
 
 nsresult
-nsINode::DispatchDOMEvent(nsEvent* aEvent,
+nsINode::DispatchDOMEvent(WidgetEvent* aEvent,
                           nsIDOMEvent* aDOMEvent,
                           nsPresContext* aPresContext,
                           nsEventStatus* aEventStatus)
@@ -1152,9 +1157,15 @@ nsINode::DispatchDOMEvent(nsEvent* aEvent,
 }
 
 nsEventListenerManager*
-nsINode::GetListenerManager(bool aCreateIfNotFound)
+nsINode::GetOrCreateListenerManager()
 {
-  return nsContentUtils::GetListenerManager(this, aCreateIfNotFound);
+  return nsContentUtils::GetListenerManagerForNode(this);
+}
+
+nsEventListenerManager*
+nsINode::GetExistingListenerManager() const
+{
+  return nsContentUtils::GetExistingListenerManagerForNode(this);
 }
 
 nsIScriptContext*
@@ -1163,22 +1174,21 @@ nsINode::GetContextForEventHandlers(nsresult* aRv)
   return nsContentUtils::GetContextForEventHandlers(this, aRv);
 }
 
-/* static */
-void
-nsINode::Trace(nsINode *tmp, TraceCallback cb, void *closure)
+nsIDOMWindow*
+nsINode::GetOwnerGlobal()
 {
-  nsContentUtils::TraceWrapper(tmp, cb, closure);
+  bool dummy;
+  return nsPIDOMWindow::GetOuterFromCurrentInner(
+    static_cast<nsGlobalWindow*>(OwnerDoc()->GetScriptHandlingObject(dummy)));
 }
-
 
 bool
 nsINode::UnoptimizableCCNode() const
 {
-  const uintptr_t problematicFlags = (NODE_IS_ANONYMOUS |
+  const uintptr_t problematicFlags = (NODE_IS_ANONYMOUS_ROOT |
                                       NODE_IS_IN_ANONYMOUS_SUBTREE |
                                       NODE_IS_NATIVE_ANONYMOUS_ROOT |
-                                      NODE_MAY_BE_IN_BINDING_MNGR |
-                                      NODE_IS_INSERTION_PARENT);
+                                      NODE_MAY_BE_IN_BINDING_MNGR);
   return HasFlag(problematicFlags) ||
          NodeType() == nsIDOMNode::ATTRIBUTE_NODE ||
          // For strange cases like xbl:content/xbl:children
@@ -1248,9 +1258,9 @@ nsINode::Traverse(nsINode *tmp, nsCycleCollectionTraversalCallback &cb)
 
 /* static */
 void
-nsINode::Unlink(nsINode *tmp)
+nsINode::Unlink(nsINode* tmp)
 {
-  nsContentUtils::ReleaseWrapper(tmp, tmp);
+  tmp->ReleaseWrapper(tmp);
 
   nsSlots *slots = tmp->GetExistingSlots();
   if (slots) {
@@ -1312,8 +1322,27 @@ AdoptNodeIntoOwnerDoc(nsINode *aParent, nsINode *aNode)
   NS_ASSERTION(aParent->OwnerDoc() == doc,
                "ownerDoc chainged while adopting");
   NS_ASSERTION(adoptedNode == node, "Uh, adopt node changed nodes?");
-  NS_ASSERTION(aParent->HasSameOwnerDoc(aNode),
+  NS_ASSERTION(aParent->OwnerDoc() == aNode->OwnerDoc(),
                "ownerDocument changed again after adopting!");
+
+  return NS_OK;
+}
+
+static nsresult
+CheckForOutdatedParent(nsINode* aParent, nsINode* aNode)
+{
+  if (JSObject* existingObj = aNode->GetWrapper()) {
+    nsIGlobalObject* global = aParent->OwnerDoc()->GetScopeObject();
+    MOZ_ASSERT(global);
+
+    if (js::GetGlobalForObjectCrossCompartment(existingObj) !=
+        global->GetGlobalJSObject()) {
+      AutoJSContext cx;
+      JS::Rooted<JSObject*> rooted(cx, existingObj);
+      nsresult rv = ReparentWrapper(cx, rooted);
+      NS_ENSURE_SUCCESS(rv, rv);
+    }
+  }
 
   return NS_OK;
 }
@@ -1334,8 +1363,11 @@ nsINode::doInsertChildAt(nsIContent* aKid, uint32_t aIndex,
   nsIDocument* doc = GetCurrentDoc();
   mozAutoDocUpdate updateBatch(doc, UPDATE_CONTENT_MODEL, aNotify);
 
-  if (!HasSameOwnerDoc(aKid)) {
+  if (OwnerDoc() != aKid->OwnerDoc()) {
     rv = AdoptNodeIntoOwnerDoc(this, aKid);
+    NS_ENSURE_SUCCESS(rv, rv);
+  } else if (OwnerDoc()->DidDocumentOpen()) {
+    rv = CheckForOutdatedParent(this, aKid);
     NS_ENSURE_SUCCESS(rv, rv);
   }
 
@@ -1378,7 +1410,7 @@ nsINode::doInsertChildAt(nsIContent* aKid, uint32_t aIndex,
 
     if (nsContentUtils::HasMutationListeners(aKid,
           NS_EVENT_BITS_MUTATION_NODEINSERTED, this)) {
-      nsMutationEvent mutation(true, NS_MUTATION_NODEINSERTED);
+      InternalMutationEvent mutation(true, NS_MUTATION_NODEINSERTED);
       mutation.mRelatedNode = do_QueryInterface(this);
 
       mozAutoSubtreeModified subtree(OwnerDoc(), this);
@@ -1387,6 +1419,34 @@ nsINode::doInsertChildAt(nsIContent* aKid, uint32_t aIndex,
   }
 
   return NS_OK;
+}
+
+Element*
+nsINode::GetPreviousElementSibling() const
+{
+  nsIContent* previousSibling = GetPreviousSibling();
+  while (previousSibling) {
+    if (previousSibling->IsElement()) {
+      return previousSibling->AsElement();
+    }
+    previousSibling = previousSibling->GetPreviousSibling();
+  }
+
+  return nullptr;
+}
+
+Element*
+nsINode::GetNextElementSibling() const
+{
+  nsIContent* nextSibling = GetNextSibling();
+  while (nextSibling) {
+    if (nextSibling->IsElement()) {
+      return nextSibling->AsElement();
+    }
+    nextSibling = nextSibling->GetNextSibling();
+  }
+
+  return nullptr;
 }
 
 void
@@ -1402,6 +1462,34 @@ nsINode::Remove()
     return;
   }
   parent->RemoveChildAt(uint32_t(index), true);
+}
+
+Element*
+nsINode::GetFirstElementChild() const
+{
+  for (nsIContent* child = GetFirstChild();
+       child;
+       child = child->GetNextSibling()) {
+    if (child->IsElement()) {
+      return child->AsElement();
+    }
+  }
+
+  return nullptr;
+}
+
+Element*
+nsINode::GetLastElementChild() const
+{
+  for (nsIContent* child = GetLastChild();
+       child;
+       child = child->GetPreviousSibling()) {
+    if (child->IsElement()) {
+      return child->AsElement();
+    }
+  }
+
+  return nullptr;
 }
 
 void
@@ -1724,7 +1812,7 @@ nsINode::ReplaceOrInsertBefore(bool aReplace, nsINode* aNewChild,
       }
 
       // Verify that newContent has no parent.
-      if (newContent->GetParent()) {
+      if (newContent->GetParentNode()) {
         aError.Throw(NS_ERROR_DOM_HIERARCHY_REQUEST_ERR);
         return nullptr;
       }
@@ -1801,7 +1889,7 @@ nsINode::ReplaceOrInsertBefore(bool aReplace, nsINode* aNewChild,
 
       // Verify that all the things in fragChildren have no parent.
       for (uint32_t i = 0; i < count; ++i) {
-        if (fragChildren.ref().ElementAt(i)->GetParent()) {
+        if (fragChildren.ref().ElementAt(i)->GetParentNode()) {
           aError.Throw(NS_ERROR_DOM_HIERARCHY_REQUEST_ERR);
           return nullptr;
         }
@@ -1891,8 +1979,13 @@ nsINode::ReplaceOrInsertBefore(bool aReplace, nsINode* aNewChild,
   // DocumentType nodes are the only nodes that can have a null
   // ownerDocument according to the DOM spec, and we need to allow
   // inserting them w/o calling AdoptNode().
-  if (!HasSameOwnerDoc(newContent)) {
+  if (doc != newContent->OwnerDoc()) {
     aError = AdoptNodeIntoOwnerDoc(this, aNewChild);
+    if (aError.Failed()) {
+      return nullptr;
+    }
+  } else if (doc->DidDocumentOpen()) {
+    aError = CheckForOutdatedParent(this, aNewChild);
     if (aError.Failed()) {
       return nullptr;
     }
@@ -2057,12 +2150,27 @@ nsINode::UnbindObject(nsISupports* aObject)
   }
 }
 
+void
+nsINode::GetBoundMutationObservers(nsTArray<nsRefPtr<nsDOMMutationObserver> >& aResult)
+{
+  nsCOMArray<nsISupports>* objects =
+    static_cast<nsCOMArray<nsISupports>*>(GetProperty(nsGkAtoms::keepobjectsalive));
+  if (objects) {
+    for (int32_t i = 0; i < objects->Count(); ++i) {
+      nsCOMPtr<nsDOMMutationObserver> mo = do_QueryInterface(objects->ObjectAt(i));
+      if (mo) {
+        MOZ_ASSERT(!aResult.Contains(mo));
+        aResult.AppendElement(mo.forget());
+      }
+    }
+  }
+}
+
 size_t
-nsINode::SizeOfExcludingThis(nsMallocSizeOfFun aMallocSizeOf) const
+nsINode::SizeOfExcludingThis(MallocSizeOf aMallocSizeOf) const
 {
   size_t n = 0;
-  nsEventListenerManager* elm =
-    const_cast<nsINode*>(this)->GetListenerManager(false);
+  nsEventListenerManager* elm = GetExistingListenerManager();
   if (elm) {
     n += elm->SizeOfIncludingThis(aMallocSizeOf);
   }
@@ -2080,21 +2188,20 @@ nsINode::SizeOfExcludingThis(nsMallocSizeOfFun aMallocSizeOf) const
 
 #define EVENT(name_, id_, type_, struct_)                                    \
   EventHandlerNonNull* nsINode::GetOn##name_() {                             \
-    nsEventListenerManager *elm = GetListenerManager(false);                 \
-    return elm ? elm->GetEventHandler(nsGkAtoms::on##name_) : nullptr;       \
+    nsEventListenerManager *elm = GetExistingListenerManager();              \
+    return elm ? elm->GetEventHandler(nsGkAtoms::on##name_, EmptyString())   \
+               : nullptr;                                                    \
   }                                                                          \
-  void nsINode::SetOn##name_(EventHandlerNonNull* handler,                   \
-                             ErrorResult& error) {                           \
-    nsEventListenerManager *elm = GetListenerManager(true);                  \
+  void nsINode::SetOn##name_(EventHandlerNonNull* handler)                   \
+  {                                                                          \
+    nsEventListenerManager *elm = GetOrCreateListenerManager();              \
     if (elm) {                                                               \
-      error = elm->SetEventHandler(nsGkAtoms::on##name_, handler);           \
-    } else {                                                                 \
-      error.Throw(NS_ERROR_OUT_OF_MEMORY);                                   \
+      elm->SetEventHandler(nsGkAtoms::on##name_, EmptyString(), handler);    \
     }                                                                        \
   }                                                                          \
   NS_IMETHODIMP nsINode::GetOn##name_(JSContext *cx, JS::Value *vp) {        \
     EventHandlerNonNull* h = GetOn##name_();                                 \
-    vp->setObjectOrNull(h ? h->Callable() : nullptr);                        \
+    vp->setObjectOrNull(h ? h->Callable().get() : nullptr);                  \
     return NS_OK;                                                            \
   }                                                                          \
   NS_IMETHODIMP nsINode::SetOn##name_(JSContext *cx, const JS::Value &v) {   \
@@ -2104,9 +2211,8 @@ nsINode::SizeOfExcludingThis(nsMallocSizeOfFun aMallocSizeOf) const
         JS_ObjectIsCallable(cx, callable = &v.toObject())) {                 \
       handler = new EventHandlerNonNull(callable);                           \
     }                                                                        \
-    ErrorResult rv;                                                          \
-    SetOn##name_(handler, rv);                                               \
-    return rv.ErrorCode();                                                   \
+    SetOn##name_(handler);                                                   \
+    return NS_OK;                                                            \
   }
 #define TOUCH_EVENT EVENT
 #define DOCUMENT_ONLY_EVENT EVENT
@@ -2177,33 +2283,6 @@ nsINode::Length() const
   }
 }
 
-NS_IMPL_CYCLE_COLLECTION_1(nsNodeSelectorTearoff, mNode)
-
-NS_INTERFACE_MAP_BEGIN_CYCLE_COLLECTION(nsNodeSelectorTearoff)
-  NS_INTERFACE_MAP_ENTRY(nsIDOMNodeSelector)
-NS_INTERFACE_MAP_END_AGGREGATED(mNode)
-
-NS_IMPL_CYCLE_COLLECTING_ADDREF(nsNodeSelectorTearoff)
-NS_IMPL_CYCLE_COLLECTING_RELEASE(nsNodeSelectorTearoff)
-
-NS_IMETHODIMP
-nsNodeSelectorTearoff::QuerySelector(const nsAString& aSelector,
-                                     nsIDOMElement **aReturn)
-{
-  ErrorResult rv;
-  nsIContent* result = mNode->QuerySelector(aSelector, rv);
-  return result ? CallQueryInterface(result, aReturn) : rv.ErrorCode();
-}
-
-NS_IMETHODIMP
-nsNodeSelectorTearoff::QuerySelectorAll(const nsAString& aSelector,
-                                        nsIDOMNodeList **aReturn)
-{
-  ErrorResult rv;
-  *aReturn = mNode->QuerySelectorAll(aSelector, rv).get();
-  return rv.ErrorCode();
-}
-
 // NOTE: The aPresContext pointer is NOT addrefed.
 // *aSelectorList might be null even if NS_OK is returned; this
 // happens when all the selectors were pseudo-element selectors.
@@ -2263,21 +2342,30 @@ template<bool onlyFirstMatch, class T>
 inline static nsresult
 FindMatchingElements(nsINode* aRoot, const nsAString& aSelector, T &aList)
 {
-  nsAutoPtr<nsCSSSelectorList> selectorList;
-  nsresult rv = ParseSelectorList(aRoot, aSelector,
-                                  getter_Transfers(selectorList));
-  if (NS_FAILED(rv)) {
-    // We hit this for syntax errors, which are quite common, so don't
-    // use NS_ENSURE_SUCCESS.  (For example, jQuery has an extended set
-    // of selectors, but it sees if we can parse them first.)
-    return rv;
+
+  nsIDocument* doc = aRoot->OwnerDoc();
+  nsIDocument::SelectorCache& cache = doc->GetSelectorCache();
+  nsCSSSelectorList* selectorList = cache.GetList(aSelector);
+
+  if (!selectorList) {
+    nsresult rv = ParseSelectorList(aRoot, aSelector,
+                                    &selectorList);
+    if (NS_FAILED(rv)) {
+      delete selectorList;
+      // We hit this for syntax errors, which are quite common, so don't
+      // use NS_ENSURE_SUCCESS.  (For example, jQuery has an extended set
+      // of selectors, but it sees if we can parse them first.)
+      return rv;
+    }
+
+    NS_ENSURE_TRUE(selectorList, NS_OK);
+
+    cache.CacheList(aSelector, selectorList);
   }
-  NS_ENSURE_TRUE(selectorList, NS_OK);
 
   NS_ASSERTION(selectorList->mSelectors,
                "How can we not have any selectors?");
 
-  nsIDocument* doc = aRoot->OwnerDoc();
   TreeMatchContext matchingContext(false, nsRuleWalker::eRelevantLinkUnvisited,
                                    doc, TreeMatchContext::eNeverMatchVisited);
   doc->FlushPendingLinkUpdates();
@@ -2372,6 +2460,27 @@ nsINode::QuerySelectorAll(const nsAString& aSelector, ErrorResult& aResult)
   return contentList.forget();
 }
 
+nsresult
+nsINode::QuerySelector(const nsAString& aSelector, nsIDOMElement **aReturn)
+{
+  ErrorResult rv;
+  Element* result = nsINode::QuerySelector(aSelector, rv);
+  if (rv.Failed()) {
+    return rv.ErrorCode();
+  }
+  nsCOMPtr<nsIDOMElement> elt = do_QueryInterface(result);
+  elt.forget(aReturn);
+  return NS_OK;
+}
+
+nsresult
+nsINode::QuerySelectorAll(const nsAString& aSelector, nsIDOMNodeList **aReturn)
+{
+  ErrorResult rv;
+  *aReturn = nsINode::QuerySelectorAll(aSelector, rv).get();
+  return rv.ErrorCode();
+}
+
 JSObject*
 nsINode::WrapObject(JSContext *aCx, JS::Handle<JSObject*> aScope)
 {
@@ -2390,14 +2499,14 @@ nsINode::WrapObject(JSContext *aCx, JS::Handle<JSObject*> aScope)
   if (!OwnerDoc()->GetScriptHandlingObject(hasHadScriptHandlingObject) &&
       !hasHadScriptHandlingObject &&
       !nsContentUtils::IsCallerChrome()) {
-    Throw<true>(aCx, NS_ERROR_UNEXPECTED);
+    Throw(aCx, NS_ERROR_UNEXPECTED);
     return nullptr;
   }
 
   JS::Rooted<JSObject*> obj(aCx, WrapNode(aCx, aScope));
   if (obj && ChromeOnlyAccess() &&
       !nsContentUtils::IsSystemPrincipal(NodePrincipal()) &&
-      xpc::AllowXBLScope(js::GetContextCompartment(aCx)))
+      xpc::AllowXBLScope(js::GetObjectCompartment(obj)))
   {
     // Create a new wrapper and cache it.
     JSAutoCompartment ac(aCx, obj);

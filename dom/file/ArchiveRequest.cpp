@@ -8,9 +8,8 @@
 
 #include "mozilla/dom/ArchiveRequestBinding.h"
 #include "nsContentUtils.h"
-#include "nsLayoutStatics.h"
+#include "nsCxPusher.h"
 #include "nsEventDispatcher.h"
-#include "nsDOMClassInfoID.h"
 
 USING_FILE_NAMESPACE
 
@@ -55,7 +54,6 @@ ArchiveRequest::ArchiveRequest(nsIDOMWindow* aWindow,
   MOZ_ASSERT(aReader);
 
   MOZ_COUNT_CTOR(ArchiveRequest);
-  nsLayoutStatics::AddRef();
 
   /* An event to make this request asynchronous: */
   nsRefPtr<ArchiveRequestEvent> event = new ArchiveRequestEvent(this);
@@ -65,7 +63,6 @@ ArchiveRequest::ArchiveRequest(nsIDOMWindow* aWindow,
 ArchiveRequest::~ArchiveRequest()
 {
   MOZ_COUNT_DTOR(ArchiveRequest);
-  nsLayoutStatics::Release();
 }
 
 nsresult
@@ -138,10 +135,9 @@ ArchiveRequest::ReaderReady(nsTArray<nsCOMPtr<nsIDOMFile> >& aFileList,
   AutoPushJSContext cx(sc->GetNativeContext());
   NS_ASSERTION(cx, "Failed to get a context!");
 
-  JS::Rooted<JSObject*> global(cx, sc->GetNativeGlobal());
+  JS::Rooted<JSObject*> global(cx, sc->GetWindowProxy());
   NS_ASSERTION(global, "Failed to get global object!");
 
-  JSAutoRequest ar(cx);
   JSAutoCompartment ac(cx, global);
 
   JS::Rooted<JS::Value> result(cx);
@@ -151,11 +147,11 @@ ArchiveRequest::ReaderReady(nsTArray<nsCOMPtr<nsIDOMFile> >& aFileList,
       break;
 
     case GetFile:
-      rv = GetFileResult(cx, result.address(), aFileList);
+      rv = GetFileResult(cx, &result, aFileList);
       break;
 
       case GetFiles:
-        rv = GetFilesResult(cx, result.address(), aFileList);
+        rv = GetFilesResult(cx, &result, aFileList);
         break;
   }
 
@@ -195,7 +191,7 @@ ArchiveRequest::GetFilenamesResult(JSContext* aCx,
     JSString* str = JS_NewUCStringCopyZ(aCx, filename.get());
     NS_ENSURE_TRUE(str, NS_ERROR_OUT_OF_MEMORY);
 
-    JS::Value item = STRING_TO_JSVAL(str);
+    JS::Rooted<JS::Value> item(aCx, STRING_TO_JSVAL(str));
 
     if (NS_FAILED(rv) || !JS_SetElement(aCx, array, i, &item)) {
       return NS_ERROR_FAILURE;
@@ -212,7 +208,7 @@ ArchiveRequest::GetFilenamesResult(JSContext* aCx,
 
 nsresult
 ArchiveRequest::GetFileResult(JSContext* aCx,
-                              JS::Value* aValue,
+                              JS::MutableHandle<JS::Value> aValue,
                               nsTArray<nsCOMPtr<nsIDOMFile> >& aFileList)
 {
   for (uint32_t i = 0; i < aFileList.Length(); ++i) {
@@ -223,7 +219,7 @@ ArchiveRequest::GetFileResult(JSContext* aCx,
     NS_ENSURE_SUCCESS(rv, rv);
 
     if (filename == mFilename) {
-      JS::Rooted<JSObject*> global(aCx, JS_GetGlobalForScopeChain(aCx));
+      JS::Rooted<JSObject*> global(aCx, JS::CurrentGlobalOrNull(aCx));
       return nsContentUtils::WrapNative(aCx, global, file,
                                         &NS_GET_IID(nsIDOMFile), aValue);
     }
@@ -234,7 +230,7 @@ ArchiveRequest::GetFileResult(JSContext* aCx,
 
 nsresult
 ArchiveRequest::GetFilesResult(JSContext* aCx,
-                               JS::Value* aValue,
+                               JS::MutableHandle<JS::Value> aValue,
                                nsTArray<nsCOMPtr<nsIDOMFile> >& aFileList)
 {
   JS::Rooted<JSObject*> array(aCx, JS_NewArrayObject(aCx, aFileList.Length(), nullptr));
@@ -246,16 +242,16 @@ ArchiveRequest::GetFilesResult(JSContext* aCx,
     nsCOMPtr<nsIDOMFile> file = aFileList[i];
 
     JS::Rooted<JS::Value> value(aCx);
-    JS::Rooted<JSObject*> global(aCx, JS_GetGlobalForScopeChain(aCx));
+    JS::Rooted<JSObject*> global(aCx, JS::CurrentGlobalOrNull(aCx));
     nsresult rv = nsContentUtils::WrapNative(aCx, global, file,
                                              &NS_GET_IID(nsIDOMFile),
-                                             value.address());
-    if (NS_FAILED(rv) || !JS_SetElement(aCx, array, i, value.address())) {
+                                             &value);
+    if (NS_FAILED(rv) || !JS_SetElement(aCx, array, i, &value)) {
       return NS_ERROR_FAILURE;
     }
   }
 
-  aValue->setObject(*array);
+  aValue.setObject(*array);
   return NS_OK;
 }
 
@@ -279,5 +275,3 @@ NS_INTERFACE_MAP_END_INHERITING(DOMRequest)
 
 NS_IMPL_ADDREF_INHERITED(ArchiveRequest, DOMRequest)
 NS_IMPL_RELEASE_INHERITED(ArchiveRequest, DOMRequest)
-
-DOMCI_DATA(ArchiveRequest, ArchiveRequest)

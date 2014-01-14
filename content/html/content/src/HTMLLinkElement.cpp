@@ -5,24 +5,24 @@
 
 #include "mozilla/dom/HTMLLinkElement.h"
 
+#include "mozilla/Attributes.h"
 #include "mozilla/dom/HTMLLinkElementBinding.h"
-#include "base/compiler_specific.h"
+#include "mozilla/MemoryReporting.h"
+#include "nsAsyncDOMEvent.h"
+#include "nsContentUtils.h"
 #include "nsGenericHTMLElement.h"
-#include "nsILink.h"
 #include "nsGkAtoms.h"
-#include "nsStyleConsts.h"
+#include "nsIDocument.h"
+#include "nsIDOMEvent.h"
 #include "nsIDOMStyleSheet.h"
 #include "nsIStyleSheet.h"
 #include "nsIStyleSheetLinkingElement.h"
-#include "nsReadableUtils.h"
-#include "nsUnicharUtils.h"
 #include "nsIURL.h"
 #include "nsNetUtil.h"
-#include "nsIDocument.h"
-#include "nsIDOMEvent.h"
-#include "nsContentUtils.h"
 #include "nsPIDOMWindow.h"
-#include "nsAsyncDOMEvent.h"
+#include "nsReadableUtils.h"
+#include "nsStyleConsts.h"
+#include "nsUnicharUtils.h"
 
 NS_IMPL_NS_NEW_HTML_ELEMENT(Link)
 
@@ -30,20 +30,22 @@ namespace mozilla {
 namespace dom {
 
 HTMLLinkElement::HTMLLinkElement(already_AddRefed<nsINodeInfo> aNodeInfo)
-  : nsGenericHTMLElement(aNodeInfo),
-    ALLOW_THIS_IN_INITIALIZER_LIST(Link(this))
+  : nsGenericHTMLElement(aNodeInfo)
+  , Link(MOZ_THIS_IN_INITIALIZER_LIST())
 {
-  SetIsDOMBinding();
 }
 
 HTMLLinkElement::~HTMLLinkElement()
 {
 }
 
+NS_IMPL_CYCLE_COLLECTION_CLASS(HTMLLinkElement)
+
 NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN_INHERITED(HTMLLinkElement,
                                                   nsGenericHTMLElement)
   tmp->nsStyleLinkElement::Traverse(cb);
 NS_IMPL_CYCLE_COLLECTION_TRAVERSE_END
+
 NS_IMPL_CYCLE_COLLECTION_UNLINK_BEGIN_INHERITED(HTMLLinkElement,
                                                 nsGenericHTMLElement)
   tmp->nsStyleLinkElement::Unlink();
@@ -55,15 +57,11 @@ NS_IMPL_RELEASE_INHERITED(HTMLLinkElement, Element)
 
 // QueryInterface implementation for HTMLLinkElement
 NS_INTERFACE_TABLE_HEAD_CYCLE_COLLECTION_INHERITED(HTMLLinkElement)
-  NS_HTML_CONTENT_INTERFACE_TABLE5(HTMLLinkElement,
-                                   nsIDOMHTMLLinkElement,
-                                   nsIDOMLinkStyle,
-                                   nsILink,
-                                   nsIStyleSheetLinkingElement,
-                                   Link)
-  NS_HTML_CONTENT_INTERFACE_TABLE_TO_MAP_SEGUE(HTMLLinkElement,
-                                               nsGenericHTMLElement)
-NS_HTML_CONTENT_INTERFACE_MAP_END
+  NS_INTERFACE_TABLE_INHERITED3(HTMLLinkElement,
+                                nsIDOMHTMLLinkElement,
+                                nsIStyleSheetLinkingElement,
+                                Link)
+NS_INTERFACE_TABLE_TAIL_INHERITING(nsGenericHTMLElement)
 
 
 NS_IMPL_ELEMENT_CLONE(HTMLLinkElement)
@@ -146,18 +144,16 @@ HTMLLinkElement::BindToTree(nsIDocument* aDocument, nsIContent* aParent,
   return rv;
 }
 
-NS_IMETHODIMP
+void
 HTMLLinkElement::LinkAdded()
 {
   CreateAndDispatchEvent(OwnerDoc(), NS_LITERAL_STRING("DOMLinkAdded"));
-  return NS_OK;
 }
 
-NS_IMETHODIMP
+void
 HTMLLinkElement::LinkRemoved()
 {
   CreateAndDispatchEvent(OwnerDoc(), NS_LITERAL_STRING("DOMLinkRemoved"));
-  return NS_OK;
 }
 
 void
@@ -318,12 +314,6 @@ HTMLLinkElement::GetLinkTarget(nsAString& aTarget)
   }
 }
 
-nsLinkState
-HTMLLinkElement::GetLinkState() const
-{
-  return Link::GetLinkState();
-}
-
 already_AddRefed<nsIURI>
 HTMLLinkElement::GetHrefURI() const
 {
@@ -339,7 +329,8 @@ HTMLLinkElement::GetStyleSheetURL(bool* aIsInline)
   if (href.IsEmpty()) {
     return nullptr;
   }
-  return Link::GetURI();
+  nsCOMPtr<nsIURI> uri = Link::GetURI();
+  return uri.forget();
 }
 
 void
@@ -410,7 +401,7 @@ HTMLLinkElement::IntrinsicState() const
 }
 
 size_t
-HTMLLinkElement::SizeOfExcludingThis(nsMallocSizeOfFun aMallocSizeOf) const
+HTMLLinkElement::SizeOfExcludingThis(mozilla::MallocSizeOf aMallocSizeOf) const
 {
   return nsGenericHTMLElement::SizeOfExcludingThis(aMallocSizeOf) +
          Link::SizeOfExcludingThis(aMallocSizeOf);

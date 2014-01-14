@@ -26,14 +26,14 @@
  * layer manager fall back on full GPU composition.
  */
 
-class gfxMatrix;
+struct gfxMatrix;
 
 namespace mozilla {
 namespace layers {
 
 class Layer;
 
-class THEBES_API Composer2D {
+class Composer2D {
   NS_INLINE_DECL_REFCOUNTING(Composer2D)
 
 public:

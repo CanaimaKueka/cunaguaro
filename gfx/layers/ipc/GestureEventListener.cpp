@@ -4,13 +4,17 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include "base/basictypes.h"
-#include "base/thread.h"
-
 #include "GestureEventListener.h"
-#include "AsyncPanZoomController.h"
-
-#include "mozilla/Preferences.h"
+#include <math.h>                       // for fabsf
+#include <stddef.h>                     // for size_t
+#include "AsyncPanZoomController.h"     // for AsyncPanZoomController
+#include "mozilla/layers/APZCTreeManager.h"  // for APZCTreeManager
+#include "base/task.h"                  // for CancelableTask, etc
+#include "mozilla/Preferences.h"        // for Preferences
+#include "mozilla/gfx/BasePoint.h"      // for BasePoint
+#include "mozilla/mozalloc.h"           // for operator new
+#include "nsDebug.h"                    // for NS_WARN_IF_FALSE
+#include "nsMathUtils.h"                // for NS_hypot
 
 namespace mozilla {
 namespace layers {
@@ -65,6 +69,7 @@ nsEventStatus GestureEventListener::HandleInputEvent(const InputData& aEvent)
       for (size_t j = 0; j < mTouches.Length(); j++) {
         if (mTouches[j].mIdentifier == event.mTouches[i].mIdentifier) {
           foundAlreadyExistingTouch = true;
+          break;
         }
       }
 
@@ -101,25 +106,32 @@ nsEventStatus GestureEventListener::HandleInputEvent(const InputData& aEvent)
   }
   case MultiTouchInput::MULTITOUCH_MOVE: {
     // If we move too much, bail out of the tap.
-    nsIntPoint touch = (nsIntPoint&)event.mTouches[0].mScreenPoint;
+    ScreenIntPoint delta = event.mTouches[0].mScreenPoint - mTouchStartPosition;
     if (mTouches.Length() == 1 &&
-        NS_hypot(mTouchStartPosition.x - touch.x, mTouchStartPosition.y - touch.y) >
-          mAsyncPanZoomController->GetDPI() * mAsyncPanZoomController->GetTouchStartTolerance())
+        NS_hypot(delta.x, delta.y) >
+          APZCTreeManager::GetDPI() * mAsyncPanZoomController->GetTouchStartTolerance())
     {
       HandleTapCancel(event);
     }
 
-    bool foundAlreadyExistingTouch = false;
+    size_t eventTouchesMatched = 0;
     for (size_t i = 0; i < mTouches.Length(); i++) {
+      bool isTouchRemoved = true;
       for (size_t j = 0; j < event.mTouches.Length(); j++) {
         if (mTouches[i].mIdentifier == event.mTouches[j].mIdentifier) {
-          foundAlreadyExistingTouch = true;
+          eventTouchesMatched++;
+          isTouchRemoved = false;
           mTouches[i] = event.mTouches[j];
         }
       }
+      if (isTouchRemoved) {
+        // this touch point was lifted, so remove it from our list
+        mTouches.RemoveElementAt(i);
+        i--;
+      }
     }
 
-    NS_WARN_IF_FALSE(foundAlreadyExistingTouch, "Touch moved, but not in list");
+    NS_WARN_IF_FALSE(eventTouchesMatched == event.mTouches.Length(), "Touch moved, but not in list");
 
     break;
   }
@@ -200,14 +212,11 @@ nsEventStatus GestureEventListener::HandlePinchGestureEvent(const MultiTouchInpu
   nsEventStatus rv = nsEventStatus_eIgnore;
 
   if (mTouches.Length() > 1 && !aClearTouches) {
-    const nsIntPoint& firstTouch = mTouches[0].mScreenPoint,
-                      secondTouch = mTouches[mTouches.Length() - 1].mScreenPoint;
-    nsIntPoint focusPoint =
-      nsIntPoint((firstTouch.x + secondTouch.x)/2,
-                 (firstTouch.y + secondTouch.y)/2);
-    float currentSpan =
-      float(NS_hypot(firstTouch.x - secondTouch.x,
-                     firstTouch.y - secondTouch.y));
+    const ScreenIntPoint& firstTouch = mTouches[0].mScreenPoint,
+                         secondTouch = mTouches[mTouches.Length() - 1].mScreenPoint;
+    ScreenPoint focusPoint = ScreenPoint(firstTouch + secondTouch) / 2;
+    ScreenIntPoint delta = secondTouch - firstTouch;
+    float currentSpan = float(NS_hypot(delta.x, delta.y));
 
     switch (mState) {
     case GESTURE_NONE:

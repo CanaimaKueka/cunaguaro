@@ -51,14 +51,24 @@ XPCOMUtils.defineLazyModuleGetter(this, "NetUtil",
                                   "resource://gre/modules/NetUtil.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "PluralForm",
                                   "resource://gre/modules/PluralForm.jsm");
+XPCOMUtils.defineLazyModuleGetter(this, "Downloads",
+                                  "resource://gre/modules/Downloads.jsm");
+XPCOMUtils.defineLazyModuleGetter(this, "DownloadUIHelper",
+                                  "resource://gre/modules/DownloadUIHelper.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "DownloadUtils",
                                   "resource://gre/modules/DownloadUtils.jsm");
+XPCOMUtils.defineLazyModuleGetter(this, "OS",
+                                  "resource://gre/modules/osfile.jsm")
+XPCOMUtils.defineLazyModuleGetter(this, "PlacesUtils",
+                                  "resource://gre/modules/PlacesUtils.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "PrivateBrowsingUtils",
                                   "resource://gre/modules/PrivateBrowsingUtils.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "RecentWindow",
                                   "resource:///modules/RecentWindow.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "PlacesUtils",
                                   "resource://gre/modules/PlacesUtils.jsm");
+XPCOMUtils.defineLazyModuleGetter(this, "Promise",
+                                  "resource://gre/modules/Promise.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "DownloadsLogger",
                                   "resource:///modules/DownloadsLogger.jsm");
 
@@ -92,19 +102,41 @@ XPCOMUtils.defineLazyGetter(this, "DownloadsLocalFileCtor", function () {
 
 const kPartialDownloadSuffix = ".part";
 
-const kPrefDebug = "browser.download.debug";
+const kPrefBranch = Services.prefs.getBranch("browser.download.");
 
-let DebugPrefObserver = {
+let PrefObserver = {
   QueryInterface: XPCOMUtils.generateQI([Ci.nsIObserver,
                                          Ci.nsISupportsWeakReference]),
-  observe: function PDO_observe(aSubject, aTopic, aData) {
-    this.debugEnabled = Services.prefs.getBoolPref(kPrefDebug);
-  }
-}
+  getPref: function PO_getPref(name) {
+    try {
+      switch (typeof this.prefs[name]) {
+        case "boolean":
+          return kPrefBranch.getBoolPref(name);
+      }
+    } catch (ex) { }
+    return this.prefs[name];
+  },
+  observe: function PO_observe(aSubject, aTopic, aData) {
+    if (this.prefs.hasOwnProperty(aData)) {
+      return this[aData] = this.getPref(aData);
+    }
+  },
+  register: function PO_register(prefs) {
+    this.prefs = prefs;
+    kPrefBranch.addObserver("", this, true);
+    for (let key in prefs) {
+      let name = key;
+      XPCOMUtils.defineLazyGetter(this, name, function () {
+        return PrefObserver.getPref(name);
+      });
+    }
+  },
+};
 
-XPCOMUtils.defineLazyGetter(DebugPrefObserver, "debugEnabled", function () {
-  Services.prefs.addObserver(kPrefDebug, DebugPrefObserver, true);
-  return Services.prefs.getBoolPref(kPrefDebug);
+PrefObserver.register({
+  // prefName: defaultValue
+  debug: false,
+  animateNotifications: true
 });
 
 
@@ -119,7 +151,7 @@ this.DownloadsCommon = {
   log: function DC_log(...aMessageArgs) {
     delete this.log;
     this.log = function DC_log(...aMessageArgs) {
-      if (!DebugPrefObserver.debugEnabled) {
+      if (!PrefObserver.debug) {
         return;
       }
       DownloadsLogger.log.apply(DownloadsLogger, aMessageArgs);
@@ -130,7 +162,7 @@ this.DownloadsCommon = {
   error: function DC_error(...aMessageArgs) {
     delete this.error;
     this.error = function DC_error(...aMessageArgs) {
-      if (!DebugPrefObserver.debugEnabled) {
+      if (!PrefObserver.debug) {
         return;
       }
       DownloadsLogger.reportError.apply(DownloadsLogger, aMessageArgs);
@@ -205,16 +237,22 @@ this.DownloadsCommon = {
   },
 
   /**
-   * Indicates whether we should show the full Download Manager window interface
-   * instead of the simplified panel interface.  The behavior of downloads
-   * across browsing session is consistent with the selected interface.
+   * Indicates that we should show the simplified panel interface instead of the
+   * full Download Manager window interface.  The code associated with the
+   * Download Manager window interface will be removed in bug 899110.
    */
   get useToolkitUI()
   {
-    try {
-      return Services.prefs.getBoolPref("browser.download.useToolkitUI");
-    } catch (ex) { }
     return false;
+  },
+
+  /**
+   * Indicates whether we should show visual notification on the indicator
+   * when a download event is triggered.
+   */
+  get animateNotifications()
+  {
+    return PrefObserver.animateNotifications;
   },
 
   /**
@@ -445,65 +483,44 @@ this.DownloadsCommon = {
     if (!(aOwnerWindow instanceof Ci.nsIDOMWindow))
       throw new Error("aOwnerWindow must be a dom-window object");
 
-    // Confirm opening executable files if required.
+    let promiseShouldLaunch;
     if (aFile.isExecutable()) {
-      let showAlert = true;
-      try {
-        showAlert = Services.prefs.getBoolPref(kPrefBdmAlertOnExeOpen);
-      } catch (ex) { }
-
-      // On Vista and above, we rely on native security prompting for
-      // downloaded content unless it's disabled.
-      if (DownloadsCommon.isWinVistaOrHigher) {
-        try {
-          if (Services.prefs.getBoolPref(kPrefBdmScanWhenDone)) {
-            showAlert = false;
-          }
-        } catch (ex) { }
-      }
-
-      if (showAlert) {
-        let name = aFile.leafName;
-        let message =
-          DownloadsCommon.strings.fileExecutableSecurityWarning(name, name);
-        let title =
-          DownloadsCommon.strings.fileExecutableSecurityWarningTitle;
-        let dontAsk =
-          DownloadsCommon.strings.fileExecutableSecurityWarningDontAsk;
-
-        let checkbox = { value: false };
-        let open = Services.prompt.confirmCheck(aOwnerWindow, title, message,
-                                                dontAsk, checkbox);
-        if (!open) {
-          return;
-        }
-
-        Services.prefs.setBoolPref(kPrefBdmAlertOnExeOpen,
-                                   !checkbox.value);
-      }
+      // We get a prompter for the provided window here, even though anchoring
+      // to the most recently active window should work as well.
+      promiseShouldLaunch =
+        DownloadUIHelper.getPrompter(aOwnerWindow)
+                        .confirmLaunchExecutable(aFile.path);
+    } else {
+      promiseShouldLaunch = Promise.resolve(true);
     }
 
-    // Actually open the file.
-    try {
-      if (aMimeInfo && aMimeInfo.preferredAction == aMimeInfo.useHelperApp) {
-        aMimeInfo.launchWithFile(aFile);
+    promiseShouldLaunch.then(shouldLaunch => {
+      if (!shouldLaunch) {
         return;
       }
-    }
-    catch(ex) { }
-
-    // If either we don't have the mime info, or the preferred action failed,
-    // attempt to launch the file directly.
-    try {
-      aFile.launch();
-    }
-    catch(ex) {
-      // If launch fails, try sending it through the system's external "file:"
-      // URL handler.
-      Cc["@mozilla.org/uriloader/external-protocol-service;1"]
-        .getService(Ci.nsIExternalProtocolService)
-        .loadUrl(NetUtil.newURI(aFile));
-    }
+  
+      // Actually open the file.
+      try {
+        if (aMimeInfo && aMimeInfo.preferredAction == aMimeInfo.useHelperApp) {
+          aMimeInfo.launchWithFile(aFile);
+          return;
+        }
+      }
+      catch(ex) { }
+  
+      // If either we don't have the mime info, or the preferred action failed,
+      // attempt to launch the file directly.
+      try {
+        aFile.launch();
+      }
+      catch(ex) {
+        // If launch fails, try sending it through the system's external "file:"
+        // URL handler.
+        Cc["@mozilla.org/uriloader/external-protocol-service;1"]
+          .getService(Ci.nsIExternalProtocolService)
+          .loadUrl(NetUtil.newURI(aFile));
+      }
+    }).then(null, Cu.reportError);
   },
 
   /**
@@ -551,6 +568,15 @@ XPCOMUtils.defineLazyGetter(DownloadsCommon, "isWinVistaOrHigher", function () {
   return parseFloat(sysInfo.getProperty("version")) >= 6;
 });
 
+/**
+ * Returns true to indicate that we should hook the panel to the JavaScript API
+ * for downloads instead of the nsIDownloadManager back-end.  The code
+ * associated with nsIDownloadManager will be removed in bug 899110.
+ */
+XPCOMUtils.defineLazyGetter(DownloadsCommon, "useJSTransfer", function () {
+  return true;
+});
+
 ////////////////////////////////////////////////////////////////////////////////
 //// DownloadsData
 
@@ -586,6 +612,11 @@ function DownloadsDataCtor(aPrivate) {
   // Array of view objects that should be notified when the available download
   // data changes.
   this._views = [];
+
+  if (DownloadsCommon.useJSTransfer) {
+    // Maps Download objects to DownloadDataItem objects.
+    this._downloadToDataItemMap = new Map();
+  }
 }
 
 DownloadsDataCtor.prototype = {
@@ -601,20 +632,178 @@ DownloadsDataCtor.prototype = {
   initializeDataLink: function DD_initializeDataLink(aDownloadManagerService)
   {
     // Start receiving real-time events.
-    aDownloadManagerService.addPrivacyAwareListener(this);
-    Services.obs.addObserver(this, "download-manager-remove-download-guid", false);
+    if (DownloadsCommon.useJSTransfer) {
+      if (!this._dataLinkInitialized) {
+        let promiseList = Downloads.getList(this._isPrivate ? Downloads.PRIVATE
+                                                            : Downloads.PUBLIC);
+        promiseList.then(list => list.addView(this)).then(null, Cu.reportError);
+        this._dataLinkInitialized = true;
+      }
+    } else {
+      aDownloadManagerService.addPrivacyAwareListener(this);
+      Services.obs.addObserver(this, "download-manager-remove-download-guid",
+                               false);
+    }
   },
+  _dataLinkInitialized: false,
 
   /**
    * Stops receiving events for current downloads and cancels any pending read.
    */
   terminateDataLink: function DD_terminateDataLink()
   {
+    if (DownloadsCommon.useJSTransfer) {
+      Cu.reportError("terminateDataLink not applicable with useJSTransfer");
+      return;
+    }
+
     this._terminateDataAccess();
 
     // Stop receiving real-time events.
     Services.obs.removeObserver(this, "download-manager-remove-download-guid");
     Services.downloads.removeListener(this);
+  },
+
+  /**
+   * True if there are finished downloads that can be removed from the list.
+   */
+  get canRemoveFinished()
+  {
+    if (DownloadsCommon.useJSTransfer) {
+      for (let [, dataItem] of Iterator(this.dataItems)) {
+        if (dataItem && !dataItem.inProgress) {
+          return true;
+        }
+      }
+      return false;
+    } else {
+      if (this._isPrivate) {
+        return Services.downloads.canCleanUpPrivate;
+      } else {
+        return Services.downloads.canCleanUp;
+      }
+    }
+  },
+
+  /**
+   * Asks the back-end to remove finished downloads from the list.
+   */
+  removeFinished: function DD_removeFinished()
+  {
+    if (DownloadsCommon.useJSTransfer) {
+      let promiseList = Downloads.getList(this._isPrivate ? Downloads.PRIVATE
+                                                          : Downloads.PUBLIC);
+      promiseList.then(list => list.removeFinished())
+                 .then(null, Cu.reportError);
+    } else {
+      if (this._isPrivate) {
+        Services.downloads.cleanUpPrivate();
+      } else {
+        Services.downloads.cleanUp();
+      }
+    }
+  },
+
+  //////////////////////////////////////////////////////////////////////////////
+  //// Integration with the asynchronous Downloads back-end
+
+  onDownloadAdded: function (aDownload)
+  {
+    let dataItem = new DownloadsDataItem(aDownload);
+    this._downloadToDataItemMap.set(aDownload, dataItem);
+    this.dataItems[dataItem.downloadGuid] = dataItem;
+
+    for (let view of this._views) {
+      view.onDataItemAdded(dataItem, true);
+    }
+
+    this._updateDataItemState(dataItem);
+  },
+
+  onDownloadChanged: function (aDownload)
+  {
+    let dataItem = this._downloadToDataItemMap.get(aDownload);
+    if (!dataItem) {
+      Cu.reportError("Download doesn't exist.");
+      return;
+    }
+
+    this._updateDataItemState(dataItem);
+  },
+
+  onDownloadRemoved: function (aDownload)
+  {
+    let dataItem = this._downloadToDataItemMap.get(aDownload);
+    if (!dataItem) {
+      Cu.reportError("Download doesn't exist.");
+      return;
+    }
+
+    this._downloadToDataItemMap.delete(aDownload);
+    this.dataItems[dataItem.downloadGuid] = null;
+    for (let view of this._views) {
+      view.onDataItemRemoved(dataItem);
+    }
+  },
+
+  /**
+   * Updates the given data item and sends related notifications.
+   */
+  _updateDataItemState: function (aDataItem)
+  {
+    let oldState = aDataItem.state;
+    let wasInProgress = aDataItem.inProgress;
+    let wasDone = aDataItem.done;
+
+    aDataItem.updateFromJSDownload();
+
+    if (wasInProgress && !aDataItem.inProgress) {
+      aDataItem.endTime = Date.now();
+    }
+
+    if (oldState != aDataItem.state) {
+      for (let view of this._views) {
+        try {
+          view.getViewItem(aDataItem).onStateChange(oldState);
+        } catch (ex) {
+          Cu.reportError(ex);
+        }
+      }
+
+      // This state transition code should actually be located in a Downloads
+      // API module (bug 941009).  Moreover, the fact that state is stored as
+      // annotations should be ideally hidden behind methods of
+      // nsIDownloadHistory (bug 830415).
+      if (!this._isPrivate && !aDataItem.inProgress) {
+        try {
+          let downloadMetaData = { state: aDataItem.state,
+                                   endTime: aDataItem.endTime };
+          if (aDataItem.done) {
+            downloadMetaData.fileSize = aDataItem.maxBytes;
+          }
+
+          PlacesUtils.annotations.setPageAnnotation(
+                        NetUtil.newURI(aDataItem.uri), "downloads/metaData",
+                        JSON.stringify(downloadMetaData), 0,
+                        PlacesUtils.annotations.EXPIRE_WITH_HISTORY);
+        } catch (ex) {
+          Cu.reportError(ex);
+        }
+      }
+    }
+
+    if (!aDataItem.newDownloadNotified) {
+      aDataItem.newDownloadNotified = true;
+      this._notifyDownloadEvent("start");
+    }
+
+    if (!wasDone && aDataItem.done) {
+      this._notifyDownloadEvent("finish");
+    }
+
+    for (let view of this._views) {
+      view.getViewItem(aDataItem).onProgressChange();
+    }
   },
 
   //////////////////////////////////////////////////////////////////////////////
@@ -1129,11 +1318,14 @@ XPCOMUtils.defineLazyGetter(this, "DownloadsData", function() {
  *
  * @param aSource
  *        Object containing the data with which the item should be initialized.
- *        This should implement either nsIDownload or mozIStorageRow.
+ *        This should implement either nsIDownload or mozIStorageRow.  If the
+ *        JavaScript API for downloads is enabled, this is a Download object.
  */
 function DownloadsDataItem(aSource)
 {
-  if (aSource instanceof Ci.nsIDownload) {
+  if (DownloadsCommon.useJSTransfer) {
+    this._initFromJSDownload(aSource);
+  } else if (aSource instanceof Ci.nsIDownload) {
     this._initFromDownload(aSource);
   } else {
     this._initFromDataRow(aSource);
@@ -1141,6 +1333,82 @@ function DownloadsDataItem(aSource)
 }
 
 DownloadsDataItem.prototype = {
+  /**
+   * The JavaScript API does not need identifiers for Download objects, so they
+   * are generated sequentially for the corresponding DownloadDataItem.
+   */
+  get _autoIncrementId() ++DownloadsDataItem.prototype.__lastId,
+  __lastId: 0,
+
+  /**
+   * Initializes this object from the JavaScript API for downloads.
+   *
+   * The endTime property is initialized to the current date and time.
+   *
+   * @param aDownload
+   *        The Download object with the current state.
+   */
+  _initFromJSDownload: function (aDownload)
+  {
+    this._download = aDownload;
+
+    this.downloadGuid = "id:" + this._autoIncrementId;
+    this.file = aDownload.target.path;
+    this.target = OS.Path.basename(aDownload.target.path);
+    this.uri = aDownload.source.url;
+    this.endTime = Date.now();
+
+    this.updateFromJSDownload();
+  },
+
+  /**
+   * Updates this object from the JavaScript API for downloads.
+   */
+  updateFromJSDownload: function ()
+  {
+    // Collapse state using the correct priority.
+    if (this._download.succeeded) {
+      this.state = nsIDM.DOWNLOAD_FINISHED;
+    } else if (this._download.error &&
+               this._download.error.becauseBlockedByParentalControls) {
+      this.state = nsIDM.DOWNLOAD_BLOCKED_PARENTAL;
+    } else if (this._download.error) {
+      this.state = nsIDM.DOWNLOAD_FAILED;
+    } else if (this._download.canceled && this._download.hasPartialData) {
+      this.state = nsIDM.DOWNLOAD_PAUSED;
+    } else if (this._download.canceled) {
+      this.state = nsIDM.DOWNLOAD_CANCELED;
+    } else if (this._download.stopped) {
+      this.state = nsIDM.DOWNLOAD_NOTSTARTED;
+    } else {
+      this.state = nsIDM.DOWNLOAD_DOWNLOADING;
+    }
+
+    this.referrer = this._download.source.referrer;
+    this.startTime = this._download.startTime;
+    this.currBytes = this._download.currentBytes;
+    this.resumable = this._download.hasPartialData;
+    this.speed = this._download.speed;
+
+    if (this._download.succeeded) {
+      // If the download succeeded, show the final size if available, otherwise
+      // use the last known number of bytes transferred.  The final size on disk
+      // will be available when bug 941063 is resolved.
+      this.maxBytes = this._download.hasProgress ?
+                             this._download.totalBytes :
+                             this._download.currentBytes;
+      this.percentComplete = 100;
+    } else if (this._download.hasProgress) {
+      // If the final size and progress are known, use them.
+      this.maxBytes = this._download.totalBytes;
+      this.percentComplete = this._download.progress;
+    } else {
+      // The download final size and progress percentage is unknown.
+      this.maxBytes = -1;
+      this.percentComplete = -1;
+    }
+  },
+
   /**
    * Initializes this object from a download object of the Download Manager.
    *
@@ -1377,6 +1645,11 @@ DownloadsDataItem.prototype = {
    * @throws if the file cannot be opened.
    */
   openLocalFile: function DDI_openLocalFile(aOwnerWindow) {
+    if (DownloadsCommon.useJSTransfer) {
+      this._download.launch().then(null, Cu.reportError);
+      return;
+    }
+
     this.getDownload(function(aDownload) {
       DownloadsCommon.openDownloadedFile(this.localFile,
                                          aDownload.MIMEInfo,
@@ -1396,6 +1669,15 @@ DownloadsDataItem.prototype = {
    * @throws if the download is not resumable or if has already done.
    */
   togglePauseResume: function DDI_togglePauseResume() {
+    if (DownloadsCommon.useJSTransfer) {
+      if (this._download.stopped) {
+        this._download.start();
+      } else {
+        this._download.cancel();
+      }
+      return;
+    }
+
     if (!this.inProgress || !this.resumable)
       throw new Error("The given download cannot be paused or resumed");
 
@@ -1414,8 +1696,13 @@ DownloadsDataItem.prototype = {
    * @throws if we cannot.
    */
   retry: function DDI_retry() {
+    if (DownloadsCommon.useJSTransfer) {
+      this._download.start();
+      return;
+    }
+
     if (!this.canRetry)
-      throw new Error("Cannot rerty this download");
+      throw new Error("Cannot retry this download");
 
     this.getDownload(function(aDownload) {
       aDownload.retry();
@@ -1442,6 +1729,12 @@ DownloadsDataItem.prototype = {
    * @throws if the download is already done.
    */
   cancel: function() {
+    if (DownloadsCommon.useJSTransfer) {
+      this._download.cancel();
+      this._download.removePartialData().then(null, Cu.reportError);
+      return;
+    }
+
     if (!this.inProgress)
       throw new Error("Cannot cancel this download");
 
@@ -1455,6 +1748,14 @@ DownloadsDataItem.prototype = {
    * Remove the download.
    */
   remove: function DDI_remove() {
+    if (DownloadsCommon.useJSTransfer) {
+      Downloads.getList(Downloads.ALL)
+               .then(list => list.remove(this._download))
+               .then(() => this._download.finalize(true))
+               .then(null, Cu.reportError);
+      return;
+    }
+
     this.getDownload(function (aDownload) {
       if (this.inProgress) {
         aDownload.cancel();

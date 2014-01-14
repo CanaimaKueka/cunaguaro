@@ -24,6 +24,13 @@ function indirectCallCannotGC(caller, name)
     if (name == "params" && caller == "PR_ExplodeTime")
         return true;
 
+    if (name == "op" && /GetWeakmapKeyDelegate/.test(caller))
+        return true;
+
+    var CheckCallArgs = "AsmJS.cpp:uint8 CheckCallArgs(FunctionCompiler*, js::frontend::ParseNode*, (uint8)(FunctionCompiler*,js::frontend::ParseNode*,Type)*, FunctionCompiler::Call*)";
+    if (name == "checkArg" && caller == CheckCallArgs)
+        return true;
+
     // hook called during script finalization which cannot GC.
     if (/CallDestroyScriptHook/.test(caller))
         return true;
@@ -59,10 +66,14 @@ var ignoreCallees = {
     "nsISupports.AddRef" : true,
     "nsISupports.Release" : true, // makes me a bit nervous; this is a bug but can happen
     "nsAXPCNativeCallContext.GetJSContext" : true,
-    "js::ion::MDefinition.op" : true, // macro generated virtuals just return a constant
-    "js::ion::MDefinition.opName" : true, // macro generated virtuals just return a constant
-    "js::ion::LInstruction.getDef" : true, // virtual but no implementation can GC
-    "js::ion::IonCache.kind" : true, // macro generated virtuals just return a constant
+    "js::jit::MDefinition.op" : true, // macro generated virtuals just return a constant
+    "js::jit::MDefinition.opName" : true, // macro generated virtuals just return a constant
+    "js::jit::LInstruction.getDef" : true, // virtual but no implementation can GC
+    "js::jit::IonCache.kind" : true, // macro generated virtuals just return a constant
+    "icu_50::UObject.__deleting_dtor" : true, // destructors in ICU code can't cause GC
+    "mozilla::CycleCollectedJSRuntime.DescribeCustomObjects" : true, // During tracing, cannot GC.
+    "mozilla::CycleCollectedJSRuntime.NoteCustomGCThingXPCOMChildren" : true, // During tracing, cannot GC.
+    "nsIThreadManager.GetIsMainThread" : true,
 };
 
 function fieldCallCannotGC(csu, fullfield)
@@ -93,11 +104,27 @@ function ignoreEdgeUse(edge, variable)
             var name = callee.Variable.Name[0];
             if (/~Anchor/.test(name))
                 return true;
-            if (/::Unrooted\(\)/.test(name))
-                return true;
-            if (/::~Unrooted\(\)/.test(name))
-                return true;
             if (/~DebugOnly/.test(name))
+                return true;
+            if (/~ScopedThreadSafeStringInspector/.test(name))
+                return true;
+        }
+    }
+
+    return false;
+}
+
+function ignoreEdgeAddressTaken(edge)
+{
+    // Functions which may take indirect pointers to unrooted GC things,
+    // but will copy them into rooted locations before calling anything
+    // that can GC. These parameters should usually be replaced with
+    // handles or mutable handles.
+    if (edge.Kind == "Call") {
+        var callee = edge.Exp[0];
+        if (callee.Kind == "Var") {
+            var name = callee.Variable.Name[0];
+            if (/js::Invoke\(/.test(name))
                 return true;
         }
     }
@@ -112,6 +139,16 @@ var ignoreFunctions = {
     "PR_ErrorInstallTable" : true,
     "PR_SetThreadPrivate" : true,
     "JSObject* js::GetWeakmapKeyDelegate(JSObject*)" : true, // FIXME: mark with AutoAssertNoGC instead
+    "uint8 NS_IsMainThread()" : true,
+
+    // These are a little overzealous -- these destructors *can* GC if they end
+    // up wrapping a pending exception. See bug 898815 for the heavyweight fix.
+    "void js::AutoCompartment::~AutoCompartment(int32)" : true,
+    "void JSAutoCompartment::~JSAutoCompartment(int32)" : true,
+
+    // And these are workarounds to avoid even more analysis work,
+    // which would sadly still be needed even with bug 898815.
+    "void js::AutoCompartment::AutoCompartment(js::ExclusiveContext*, JSCompartment*)": true,
 };
 
 function ignoreGCFunction(fun)
@@ -133,7 +170,8 @@ function isRootedTypeName(name)
 {
     if (name == "mozilla::ErrorResult" ||
         name == "js::frontend::TokenStream" ||
-        name == "js::frontend::TokenStream::Position")
+        name == "js::frontend::TokenStream::Position" ||
+        name == "ModuleCompiler")
     {
         return true;
     }
@@ -154,6 +192,8 @@ function isRootedPointerTypeName(name)
         name = name.substr(4);
     if (name.startsWith('JS::'))
         name = name.substr(4);
+    if (name.startsWith('mozilla::dom::'))
+        name = name.substr(14);
 
     if (name.startsWith('MaybeRooted<'))
         return /\(js::AllowGC\)1u>::RootType/.test(name);

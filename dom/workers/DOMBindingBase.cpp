@@ -6,7 +6,6 @@
 #include "DOMBindingBase.h"
 
 #include "jsfriendapi.h"
-#include "mozilla/dom/DOMJSClass.h"
 #include "nsContentUtils.h"
 #include "nsWrapperCacheInlines.h"
 
@@ -60,8 +59,8 @@ DOMBindingBase::GetJSObject() const
 {
   // Make sure that the public method results in the same bits as our private
   // method.
-  MOZ_ASSERT(GetJSObjectFromBits() == GetWrapperPreserveColor());
-  return GetJSObjectFromBits();
+  MOZ_ASSERT(GetWrapperJSObject() == GetWrapperPreserveColor());
+  return GetWrapperJSObject();
 }
 
 void
@@ -71,10 +70,10 @@ DOMBindingBase::SetJSObject(JSObject* aObject)
   // method.
   SetWrapper(aObject);
 
-  uintptr_t oldWrapperPtrBits = mWrapperPtrBits;
+  uint8_t oldFlags = mFlags;
 
-  SetWrapperBits(aObject);
+  SetWrapperJSObject(aObject);
 
-  MOZ_ASSERT(oldWrapperPtrBits == mWrapperPtrBits);
+  MOZ_ASSERT(oldFlags == mFlags && aObject == mWrapper);
 }
 #endif

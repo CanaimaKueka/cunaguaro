@@ -24,6 +24,7 @@
 #include "mozStoragePrivateHelpers.h"
 #include "mozStorageStatementRow.h"
 #include "mozStorageStatement.h"
+#include "nsDOMClassInfo.h"
 
 #include "prlog.h"
 
@@ -262,8 +263,8 @@ AsyncStatement::cleanupJSHelpers()
 ////////////////////////////////////////////////////////////////////////////////
 //// nsISupports
 
-NS_IMPL_THREADSAFE_ADDREF(AsyncStatement)
-NS_IMPL_THREADSAFE_RELEASE(AsyncStatement)
+NS_IMPL_ADDREF(AsyncStatement)
+NS_IMPL_RELEASE(AsyncStatement)
 
 NS_INTERFACE_MAP_BEGIN(AsyncStatement)
   NS_INTERFACE_MAP_ENTRY(mozIStorageAsyncStatement)

@@ -1,3 +1,7 @@
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+
 <!ENTITY itemGeneral.label "Xeneral">
 <!ENTITY itemDisplay.label "Llectura y visualización">
 <!ENTITY itemUpdate.label "Anovamientu">
@@ -74,8 +78,6 @@
 <!ENTITY certs.ask.accesskey "E">
 <!ENTITY viewCertificates.label "Ver certificaos">
 <!ENTITY viewCertificates.accesskey "a">
-<!ENTITY viewCRLs.label "Llistes de revocación">
-<!ENTITY viewCRLs.accesskey "L">
 <!ENTITY validation.label "Validación">
 <!ENTITY validation.accesskey "V">
 <!ENTITY viewSecurityDevices.label "Preseos de seguridá">

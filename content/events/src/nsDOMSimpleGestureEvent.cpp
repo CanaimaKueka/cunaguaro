@@ -3,14 +3,19 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include "nsDOMClassInfoID.h"
 #include "nsDOMSimpleGestureEvent.h"
+#include "prtime.h"
+#include "mozilla/TouchEvents.h"
+
+using namespace mozilla;
 
 nsDOMSimpleGestureEvent::nsDOMSimpleGestureEvent(mozilla::dom::EventTarget* aOwner,
                                                  nsPresContext* aPresContext,
-                                                 nsSimpleGestureEvent* aEvent)
+                                                 WidgetSimpleGestureEvent* aEvent)
   : nsDOMMouseEvent(aOwner, aPresContext,
-                    aEvent ? aEvent : new nsSimpleGestureEvent(false, 0, nullptr, 0, 0.0))
+                    aEvent ? aEvent :
+                             new WidgetSimpleGestureEvent(false, 0, nullptr,
+                                                          0, 0.0))
 {
   NS_ASSERTION(mEvent->eventStructType == NS_SIMPLE_GESTURE_EVENT, "event type mismatch");
 
@@ -20,48 +25,47 @@ nsDOMSimpleGestureEvent::nsDOMSimpleGestureEvent(mozilla::dom::EventTarget* aOwn
     mEventIsInternal = true;
     mEvent->time = PR_Now();
     mEvent->refPoint.x = mEvent->refPoint.y = 0;
-    static_cast<nsMouseEvent*>(mEvent)->inputSource = nsIDOMMouseEvent::MOZ_SOURCE_UNKNOWN;
-  }
-  SetIsDOMBinding();
-}
-
-nsDOMSimpleGestureEvent::~nsDOMSimpleGestureEvent()
-{
-  if (mEventIsInternal) {
-    delete static_cast<nsSimpleGestureEvent*>(mEvent);
-    mEvent = nullptr;
+    static_cast<WidgetMouseEventBase*>(mEvent)->inputSource =
+      nsIDOMMouseEvent::MOZ_SOURCE_UNKNOWN;
   }
 }
 
 NS_IMPL_ADDREF_INHERITED(nsDOMSimpleGestureEvent, nsDOMUIEvent)
 NS_IMPL_RELEASE_INHERITED(nsDOMSimpleGestureEvent, nsDOMUIEvent)
 
-DOMCI_DATA(SimpleGestureEvent, nsDOMSimpleGestureEvent)
-
 NS_INTERFACE_MAP_BEGIN(nsDOMSimpleGestureEvent)
   NS_INTERFACE_MAP_ENTRY(nsIDOMSimpleGestureEvent)
-  NS_DOM_INTERFACE_MAP_ENTRY_CLASSINFO(SimpleGestureEvent)
 NS_INTERFACE_MAP_END_INHERITING(nsDOMMouseEvent)
 
 /* attribute unsigned long allowedDirections; */
+uint32_t
+nsDOMSimpleGestureEvent::AllowedDirections()
+{
+  return mEvent->AsSimpleGestureEvent()->allowedDirections;
+}
+
 NS_IMETHODIMP
-nsDOMSimpleGestureEvent::GetAllowedDirections(PRUint32 *aAllowedDirections)
+nsDOMSimpleGestureEvent::GetAllowedDirections(uint32_t *aAllowedDirections)
 {
   NS_ENSURE_ARG_POINTER(aAllowedDirections);
-  *aAllowedDirections =
-    static_cast<nsSimpleGestureEvent*>(mEvent)->allowedDirections;
+  *aAllowedDirections = AllowedDirections();
   return NS_OK;
 }
 
 NS_IMETHODIMP
-nsDOMSimpleGestureEvent::SetAllowedDirections(PRUint32 aAllowedDirections)
+nsDOMSimpleGestureEvent::SetAllowedDirections(uint32_t aAllowedDirections)
 {
-  static_cast<nsSimpleGestureEvent*>(mEvent)->allowedDirections =
-    aAllowedDirections;
+  mEvent->AsSimpleGestureEvent()->allowedDirections = aAllowedDirections;
   return NS_OK;
 }
 
 /* readonly attribute unsigned long direction; */
+uint32_t
+nsDOMSimpleGestureEvent::Direction()
+{
+  return mEvent->AsSimpleGestureEvent()->direction;
+}
+
 NS_IMETHODIMP
 nsDOMSimpleGestureEvent::GetDirection(uint32_t *aDirection)
 {
@@ -71,6 +75,12 @@ nsDOMSimpleGestureEvent::GetDirection(uint32_t *aDirection)
 }
 
 /* readonly attribute float delta; */
+double
+nsDOMSimpleGestureEvent::Delta()
+{
+  return mEvent->AsSimpleGestureEvent()->delta;
+}
+
 NS_IMETHODIMP
 nsDOMSimpleGestureEvent::GetDelta(double *aDelta)
 {
@@ -80,6 +90,12 @@ nsDOMSimpleGestureEvent::GetDelta(double *aDelta)
 }
 
 /* readonly attribute unsigned long clickCount; */
+uint32_t
+nsDOMSimpleGestureEvent::ClickCount()
+{
+  return mEvent->AsSimpleGestureEvent()->clickCount;
+}
+
 NS_IMETHODIMP
 nsDOMSimpleGestureEvent::GetClickCount(uint32_t *aClickCount)
 {
@@ -126,7 +142,7 @@ nsDOMSimpleGestureEvent::InitSimpleGestureEvent(const nsAString& aTypeArg,
                                                 aRelatedTarget);
   NS_ENSURE_SUCCESS(rv, rv);
 
-  nsSimpleGestureEvent* simpleGestureEvent = static_cast<nsSimpleGestureEvent*>(mEvent);
+  WidgetSimpleGestureEvent* simpleGestureEvent = mEvent->AsSimpleGestureEvent();
   simpleGestureEvent->allowedDirections = aAllowedDirectionsArg;
   simpleGestureEvent->direction = aDirectionArg;
   simpleGestureEvent->delta = aDeltaArg;
@@ -138,7 +154,7 @@ nsDOMSimpleGestureEvent::InitSimpleGestureEvent(const nsAString& aTypeArg,
 nsresult NS_NewDOMSimpleGestureEvent(nsIDOMEvent** aInstancePtrResult,
                                      mozilla::dom::EventTarget* aOwner,
                                      nsPresContext* aPresContext,
-                                     nsSimpleGestureEvent *aEvent)
+                                     WidgetSimpleGestureEvent* aEvent)
 {
   nsDOMSimpleGestureEvent* it =
     new nsDOMSimpleGestureEvent(aOwner, aPresContext, aEvent);

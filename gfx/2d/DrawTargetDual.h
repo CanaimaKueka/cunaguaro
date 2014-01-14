@@ -59,7 +59,12 @@ public:
 
   virtual void DrawSurface(SourceSurface *aSurface, const Rect &aDest, const Rect & aSource,
                            const DrawSurfaceOptions &aSurfOptions, const DrawOptions &aOptions);
-  
+
+  virtual void MaskSurface(const Pattern &aSource,
+                           SourceSurface *aMask,
+                           Point aOffset,
+                           const DrawOptions &aOptions = DrawOptions());
+
   virtual void DrawSurfaceWithShadow(SourceSurface *aSurface, const Point &aDest,
                                      const Color &aColor, const Point &aOffset,
                                      Float aSigma, CompositionOp aOp);
@@ -125,6 +130,11 @@ public:
   virtual void *GetNativeSurface(NativeSurfaceType aType)
   {
     return nullptr;
+  }
+
+  virtual bool IsDualDrawTarget()
+  {
+    return true;
   }
      
 private:

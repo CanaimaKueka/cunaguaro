@@ -11,6 +11,16 @@
   om &brandShortName; kan du besöka vår <a id='supportLink'>supportwebbplats</a>.
 ">
 
+<!ENTITY aboutSupport.crashes.title "Kraschrapporter">
+<!-- LOCALIZATION NOTE (aboutSupport.crashes.id):
+This is likely the same like id.heading in crashes.dtd. -->
+<!ENTITY aboutSupport.crashes.id "Rapport-ID">
+<!-- LOCALIZATION NOTE (aboutSupport.crashes.id):
+This is likely the same like date.heading in crashes.dtd. -->
+<!ENTITY aboutSupport.crashes.sendDate "Datum">
+<!ENTITY aboutSupport.crashes.allReports "Alla kraschrapporter">
+<!ENTITY aboutSupport.crashes.noConfig "Det här programmet är inte konfigurerat att visa kraschrapporter.">
+
 <!ENTITY aboutSupport.extensionsTitle "Tillägg">
 <!ENTITY aboutSupport.extensionName "Namn">
 <!ENTITY aboutSupport.extensionEnabled "Aktiverad">
@@ -21,6 +31,11 @@
 <!ENTITY aboutSupport.appBasicsName "Namn">
 <!ENTITY aboutSupport.appBasicsVersion "Version">
 
+<!-- LOCALIZATION NOTE (aboutSupport.appBasicsUpdateHistory, aboutSupport.appBasicsShowUpdateHistory):
+"Update" is a noun here, not a verb. -->
+<!ENTITY aboutSupport.appBasicsUpdateHistory "Uppdateringshistorik">
+<!ENTITY aboutSupport.appBasicsShowUpdateHistory "Visa uppdateringshistorik">
+
 <!ENTITY aboutSupport.appBasicsProfileDir "Profilmapp">
 <!-- LOCALIZATION NOTE (aboutSupport.appBasicsProfileDirWinMac):
 This is the Windows- and Mac-specific variant of aboutSupport.appBasicsProfileDir.
@@ -30,7 +45,6 @@ Windows/Mac use the term "Folder" instead of "Directory" -->
 <!ENTITY aboutSupport.appBasicsEnabledPlugins "Aktiva insticksmoduler">
 <!ENTITY aboutSupport.appBasicsBuildConfig "Byggkonfiguration">
 <!ENTITY aboutSupport.appBasicsUserAgent "Användaragent">
-<!ENTITY aboutSupport.appBasicsCrashIDs "Kraschrapporter">
 <!ENTITY aboutSupport.appBasicsMemoryUse "Minnesanvändning">
 
 <!ENTITY aboutSupport.showDir.label "Öppna katalog">

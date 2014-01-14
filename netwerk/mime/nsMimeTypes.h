@@ -102,7 +102,6 @@
 #define IMAGE_MNG                           "video/x-mng"
 #define IMAGE_JNG                           "image/x-jng"
 #define IMAGE_SVG_XML                       "image/svg+xml"
-#define IMAGE_WBMP                          "image/vnd.wap.wbmp"
 
 #define MESSAGE_EXTERNAL_BODY               "message/external-body"
 #define MESSAGE_NEWS                        "message/news"
@@ -127,7 +126,7 @@
 #define TEXT_MDL                            "text/mdl"
 #define TEXT_PLAIN                          "text/plain"
 #define TEXT_RICHTEXT                       "text/richtext"
-#define TEXT_VCARD                          "text/x-vcard"
+#define TEXT_VCARD                          "text/vcard"
 #define TEXT_CSS                            "text/css"
 #define TEXT_JSSS                           "text/jsss"
 #define TEXT_XML                            "text/xml"

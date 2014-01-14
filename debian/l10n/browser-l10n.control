@@ -14,6 +14,11 @@
 %undef L10N_RECOMMENDS
 %include @PRODUCT@-l10n.control.in
 
+%define L10N_LANG an
+%define L10N_LANGUAGE Aragonese
+%undef L10N_RECOMMENDS
+%include @PRODUCT@-l10n.control.in
+
 %define L10N_LANG ar
 %define L10N_LANGUAGE Arabic
 %undef L10N_RECOMMENDS
@@ -310,7 +315,7 @@
 %include @PRODUCT@-l10n.control.in
 
 %define L10N_LANG nso
-%define L10N_LANGUAGE Pedi
+%define L10N_LANGUAGE Northern Sotho
 %undef L10N_RECOMMENDS
 %include @PRODUCT@-l10n.control.in
 
@@ -389,6 +394,11 @@
 %define L10N_RECOMMENDS myspell-sv-se
 %include @PRODUCT@-l10n.control.in
 
+%define L10N_LANG sw
+%define L10N_LANGUAGE Swahili
+%undef L10N_RECOMMENDS
+%include @PRODUCT@-l10n.control.in
+
 %define L10N_LANG ta
 %define L10N_LANGUAGE Tamil
 %undef L10N_RECOMMENDS
@@ -421,6 +431,11 @@
 
 %define L10N_LANG vi
 %define L10N_LANGUAGE Vietnamese
+%undef L10N_RECOMMENDS
+%include @PRODUCT@-l10n.control.in
+
+%define L10N_LANG xh
+%define L10N_LANGUAGE Xhosa
 %undef L10N_RECOMMENDS
 %include @PRODUCT@-l10n.control.in
 

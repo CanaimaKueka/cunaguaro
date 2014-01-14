@@ -13,6 +13,7 @@
 #include "gfxWindowsPlatform.h"
 #include "WinUtils.h"
 #include "mozilla/Telemetry.h"
+#include "gfxFontConstants.h"
 
 using namespace mozilla::widget;
 using mozilla::LookAndFeel;
@@ -388,9 +389,32 @@ nsLookAndFeel::GetIntImpl(IntID aID, int32_t &aResult)
     case eIntID_WindowsThemeIdentifier:
         aResult = nsUXThemeData::GetNativeThemeId();
         break;
+
+    case eIntID_OperatingSystemVersionIdentifier:
+    {
+        switch(WinUtils::GetWindowsVersion()) {
+            case WinUtils::WINXP_VERSION:
+            case WinUtils::WIN2K3_VERSION:
+                aResult = LookAndFeel::eOperatingSystemVersion_WindowsXP;
+                break;
+            case WinUtils::VISTA_VERSION:
+                aResult = LookAndFeel::eOperatingSystemVersion_WindowsVista;
+                break;
+            case WinUtils::WIN7_VERSION:
+                aResult = LookAndFeel::eOperatingSystemVersion_Windows7;
+                break;
+            case WinUtils::WIN8_VERSION:
+                aResult = LookAndFeel::eOperatingSystemVersion_Windows8;
+                break;
+            default:
+                aResult = LookAndFeel::eOperatingSystemVersion_Unknown;
+                break;
+        }
+        break;
+    }
+
     case eIntID_MacGraphiteTheme:
     case eIntID_MacLionTheme:
-    case eIntID_MaemoClassic:
         aResult = 0;
         res = NS_ERROR_NOT_IMPLEMENTED;
         break;
@@ -406,9 +430,9 @@ nsLookAndFeel::GetIntImpl(IntID aID, int32_t &aResult)
         aResult = 0;
         {
           // Get task bar window handle
-          HWND shellWindow = FindWindowW(L"Shell_TrayWnd", NULL);
+          HWND shellWindow = FindWindowW(L"Shell_TrayWnd", nullptr);
 
-          if (shellWindow != NULL)
+          if (shellWindow != nullptr)
           {
             // Determine position
             APPBARDATA appBarData;
@@ -458,6 +482,21 @@ nsLookAndFeel::GetIntImpl(IntID aID, int32_t &aResult)
     case eIntID_SwipeAnimationEnabled:
         aResult = 0;
         break;
+    case eIntID_UseOverlayScrollbars:
+        aResult = (XRE_GetWindowsEnvironment() == WindowsEnvironmentType_Metro);
+        break;
+    case eIntID_AllowOverlayScrollbarsOverlap:
+        aResult = 0;
+        break;
+    case eIntID_ScrollbarDisplayOnMouseMove:
+        aResult = 1;
+        break;
+    case eIntID_ScrollbarFadeBeginDelay:
+        aResult = 2500;
+        break;
+    case eIntID_ScrollbarFadeDuration:
+        aResult = 350;
+        break;
     default:
         aResult = 0;
         res = NS_ERROR_FAILURE;
@@ -492,7 +531,7 @@ GetSysFontInfo(HDC aHDC, LookAndFeel::FontID anID,
                nsString &aFontName,
                gfxFontStyle &aFontStyle)
 {
-  LOGFONTW* ptrLogFont = NULL;
+  LOGFONTW* ptrLogFont = nullptr;
   LOGFONTW logFont;
   NONCLIENTMETRICSW ncm;
   HGDIOBJ hGDI;
@@ -621,9 +660,9 @@ nsLookAndFeel::GetFontImpl(FontID anID, nsString &aFontName,
                            gfxFontStyle &aFontStyle,
                            float aDevPixPerCSSPixel)
 {
-  HDC tdc = GetDC(NULL);
+  HDC tdc = GetDC(nullptr);
   bool status = GetSysFontInfo(tdc, anID, aFontName, aFontStyle);
-  ReleaseDC(NULL, tdc);
+  ReleaseDC(nullptr, tdc);
   // now convert the logical font size from GetSysFontInfo into device pixels for layout
   aFontStyle.size *= aDevPixPerCSSPixel;
   return status;

@@ -88,7 +88,11 @@ GonkCameraHardware::postData(int32_t aMsgType, const sp<IMemory>& aDataPtr, came
       break;
 
     case CAMERA_MSG_COMPRESSED_IMAGE:
-      ReceiveImage(mTarget, (uint8_t*)aDataPtr->pointer(), aDataPtr->size());
+      if (aDataPtr != nullptr) {
+        ReceiveImage(mTarget, (uint8_t*)aDataPtr->pointer(), aDataPtr->size());
+      } else {
+        ReceiveImageError(mTarget);
+      }
       break;
 
     default:
@@ -179,14 +183,24 @@ GonkCameraHardware::Init()
   mNativeWindow = new GonkNativeWindow();
   mNativeWindow->setNewFrameCallback(this);
   mCamera->setListener(this);
+#if defined(MOZ_WIDGET_GONK) && ANDROID_VERSION >= 17
+  mCamera->setPreviewTexture(mNativeWindow->getBufferQueue());
+#else
   mCamera->setPreviewTexture(mNativeWindow);
+#endif
   mInitialized = true;
 }
 
 sp<GonkCameraHardware>
 GonkCameraHardware::Connect(mozilla::nsGonkCameraControl* aTarget, uint32_t aCameraId)
 {
+#if defined(MOZ_WIDGET_GONK) && ANDROID_VERSION >= 18
+  sp<Camera> camera = Camera::connect(aCameraId, /* clientPackageName */String16("gonk.camera"), Camera::USE_CALLING_UID);
+#else
   sp<Camera> camera = Camera::connect(aCameraId);
+#endif
+
+
   if (camera.get() == nullptr) {
     return nullptr;
   }

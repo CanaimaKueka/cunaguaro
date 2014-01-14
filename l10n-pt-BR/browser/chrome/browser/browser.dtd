@@ -20,6 +20,11 @@
 <!ENTITY  reloadTab.accesskey                "R">
 <!ENTITY  reloadAllTabs.label                "Recarregar tudo">
 <!ENTITY  reloadAllTabs.accesskey            "t">
+<!-- LOCALIZATION NOTE (closeTabsToTheEnd.label): This should indicate the
+direction in which tabs are closed, i.e. locales that use RTL mode should say
+left instead of right. -->
+<!ENTITY  closeTabsToTheEnd.label            "Fechar abas à direita">
+<!ENTITY  closeTabsToTheEnd.accesskey        "e">
 <!ENTITY  closeOtherTabs.label               "Fechar as outras abas">
 <!ENTITY  closeOtherTabs.accesskey           "o">
 
@@ -28,10 +33,10 @@ used as a metaphor for expressing the fact that these tabs are "pinned" to the
 left edge of the tabstrip. Really we just want the string to express the idea
 that this is a lightweight and reversible action that keeps your tab where you
 can reach it easily. -->
-<!ENTITY  pinTab.label                       "Afixar aba">
-<!ENTITY  pinTab.accesskey                   "A">
+<!ENTITY  pinTab.label                       "Fixar aba">
+<!ENTITY  pinTab.accesskey                   "x">
 <!ENTITY  unpinTab.label                     "Desafixar aba">
-<!ENTITY  unpinTab.accesskey                 "D">
+<!ENTITY  unpinTab.accesskey                 "x">
 <!ENTITY  moveToGroup.label                  "Mover para o grupo">
 <!ENTITY  moveToGroup.accesskey              "M">
 <!ENTITY  moveToNewGroup.label               "Novo grupo">
@@ -41,6 +46,11 @@ can reach it easily. -->
 <!ENTITY  bookmarkAllTabs.accesskey          "c">
 <!ENTITY  undoCloseTab.label                 "Reabrir aba">
 <!ENTITY  undoCloseTab.accesskey             "b">
+<!-- LOCALIZATION NOTE (undoCloseTabs.label) : This label is used
+when the previous tab-closing operation closed more than one tab. It
+replaces the undoCloseTab.label and will use the same accesskey as the
+undoCloseTab.label so users will not need to learn new keyboard controls. -->
+<!ENTITY  undoCloseTabs.label                "Reabrir abas">
 <!ENTITY  closeTab.label                     "Fechar aba">
 <!ENTITY  closeTab.accesskey                 "F">
 
@@ -68,12 +78,9 @@ can reach it easily. -->
 <!ENTITY menubarCmd.label "Barra de menus">
 <!ENTITY menubarCmd.accesskey "m">
 <!ENTITY navbarCmd.label "Barra de navegação">
-<!ENTITY navbarCmd.accesskey "B">
 <!ENTITY personalbarCmd.label "Barra dos favoritos">
 <!ENTITY personalbarCmd.accesskey "r">
 <!ENTITY bookmarksToolbarItem.label "Barra dos favoritos">
-<!ENTITY addonBarCmd.label "Barra de extensões">
-<!ENTITY addonBarCmd.accesskey "x">
 
 <!ENTITY pageSourceCmd.label "Código-fonte">
 <!ENTITY pageSourceCmd.accesskey "f">
@@ -102,9 +109,8 @@ These should match what Safari and other Apple applications use on OS X Lion. --
 <!ENTITY fullScreenExit.accesskey "S">
 <!ENTITY fullscreenAllowButton.label "Permitir">
 <!ENTITY fullscreenExitButton.label "Negar">
-<!ENTITY fullscreenApproval.value "Permitir tela inteira?">
 
-<!ENTITY fullscreenExitHint.value "Tecle ESC quando quiser sair.">
+<!ENTITY fullscreenExitHint2.value "Tecle ESC quando quiser sair.">
 <!ENTITY leaveDOMFullScreen.label "Sair da tela inteira">
 <!ENTITY leaveDOMFullScreen.accesskey "t">
 
@@ -156,22 +162,15 @@ These should match what Safari and other Apple applications use on OS X Lion. --
 <!ENTITY backForwardItem.title        "Voltar/Avançar">
 <!ENTITY locationItem.title           "Endereço">
 <!ENTITY searchItem.title             "Barra de pesquisa">
-<!ENTITY throbberItem.title           "Indicador de atividade">
 <!ENTITY bookmarksItem.title          "Barra dos favoritos">
 
 <!-- Toolbar items --> 
-<!ENTITY appMenuButton.label          "Menu">
-<!ENTITY appMenuButton.tooltip        "Abrir o menu do &brandShortName;">
 <!ENTITY homeButton.label             "Página inicial">
 
 <!ENTITY tabGroupsButton.label        "Grupos de abas">
 <!ENTITY tabGroupsButton.tooltip      "Agrupar abas">
 
-<!ENTITY feedButton.label             "Inscrever">
-<!ENTITY feedButton.tooltip           "Inscrever RSS">
-
 <!ENTITY bookmarksButton.label          "Favoritos">
-<!ENTITY bookmarksButton.tooltip        "Exibir o painel com os favoritos">
 <!ENTITY bookmarksCmd.commandkey "B">
 
 <!ENTITY bookmarksMenuButton.label          "Favoritos">
@@ -187,7 +186,6 @@ These should match what Safari and other Apple applications use on OS X Lion. --
 <!ENTITY bookmarksWinCmd.commandkey "I">
 
 <!ENTITY historyButton.label            "Histórico">
-<!ENTITY historyButton.tooltip          "Exibir o painel com as páginas visitadas recentemente">
 <!ENTITY historySidebarCmd.commandKey   "H">
 
 <!ENTITY toolsMenu.label              "Ferramentas">
@@ -195,8 +193,7 @@ These should match what Safari and other Apple applications use on OS X Lion. --
 
 <!ENTITY keywordfield.label           "Criar palavra-chave da pesquisa…">
 <!ENTITY keywordfield.accesskey       "r">
-<!ENTITY search.label                 "Pesquisar na web">
-<!ENTITY search.accesskey             "e">
+
 <!ENTITY downloads.label              "Downloads">
 <!ENTITY downloads.tooltip            "Verificar o andamento dos downloads">
 <!ENTITY downloads.accesskey          "D">
@@ -209,16 +206,20 @@ These should match what Safari and other Apple applications use on OS X Lion. --
 <!ENTITY webDeveloperMenu.label       "Desenvolvedor web">
 <!ENTITY webDeveloperMenu.accesskey   "s">
 
+<!ENTITY devToolsCmd.keycode          "VK_F12">
+<!ENTITY devToolsCmd.keytext          "F12">
+
 <!ENTITY devtoolsConnect.label        "Conectar…">
 <!ENTITY devtoolsConnect.accesskey    "C">
 
 <!ENTITY errorConsoleCmd.label        "Console de erros">
 <!ENTITY errorConsoleCmd.accesskey    "C">
-<!ENTITY errorConsoleCmd.commandkey   "J">
 
 <!ENTITY remoteWebConsoleCmd.label    "Console remoto da web">
 
 <!ENTITY browserConsoleCmd.label      "Console do navegador">
+<!ENTITY browserConsoleCmd.commandkey "J">
+<!ENTITY browserConsoleCmd.accesskey  "o">
 
 <!ENTITY inspectContextMenu.label     "Inspecionar elemento">
 <!ENTITY inspectContextMenu.accesskey "I">
@@ -242,13 +243,22 @@ These should match what Safari and other Apple applications use on OS X Lion. --
 <!ENTITY scratchpad.keycode           "VK_F4">
 <!ENTITY scratchpad.keytext           "F4">
 
+<!-- LOCALIZATION NOTE (chromeDebuggerMenu.label): This is the label for the
+  -  application menu item that opens the browser debugger UI in the Tools menu. -->
+<!ENTITY chromeDebuggerMenu.label       "Depurador do navegador">
+<!ENTITY chromeDebuggerMenu.accesskey   "u">
+
 <!ENTITY devToolbarCloseButton.tooltiptext "Ocultar barra do desenvolvedor">
 <!ENTITY devToolbarMenu.label              "Barra do desenvolvedor">
 <!ENTITY devToolbarMenu.accesskey          "B">
+<!ENTITY devAppMgrMenu.label               "App Manager">
+<!ENTITY devAppMgrMenu.accesskey           "n">
 <!ENTITY devToolbar.keycode                "VK_F2">
 <!ENTITY devToolbar.keytext                "F2">
 <!ENTITY devToolboxMenuItem.label          "Exibir/ocultar ferramentas">
 <!ENTITY devToolboxMenuItem.accesskey      "x">
+<!ENTITY devToolboxMenuItem.keycode        "i">
+<!ENTITY devToolboxMenuItem.keytext        "I">
 
 <!ENTITY devToolbarToolsButton.tooltip     "Exibir/ocultar ferramentas do desenvolvedor">
 <!ENTITY devToolbarOtherToolsButton.label  "Mais ferramentas">
@@ -306,8 +316,6 @@ These should match what Safari and other Apple applications use on OS X Lion. --
 <!ENTITY viewSidebarMenu.accesskey "a">
 <!ENTITY viewCustomizeToolbar.label       "Personalizar…"> 
 <!ENTITY viewCustomizeToolbar.accesskey     "P">
-<!ENTITY viewTabsOnTop.label            "Abas em cima">
-<!ENTITY viewTabsOnTop.accesskey        "A">
 
 <!ENTITY historyMenu.label "Histórico">
 <!ENTITY historyMenu.accesskey "H">
@@ -316,23 +324,13 @@ These should match what Safari and other Apple applications use on OS X Lion. --
 <!ENTITY historyUndoWindowMenu.label "Reabrir janela">
 <!ENTITY historyRestoreLastSession.label "Restaurar sessão anterior">
 
-<!ENTITY historyHomeCmd.label "Página inicial">
 <!ENTITY showAllHistoryCmd2.label "Exibir todo o histórico">
 <!ENTITY showAllHistoryCmd.commandkey "h">
 
-<!ENTITY appMenuEdit.label "Editar">
 <!ENTITY appMenuCustomize.label "Personalizar">
-<!ENTITY appMenuToolbarLayout.label "Personalizar barras…">
-<!ENTITY appMenuSidebars.label "Painel">
-<!ENTITY appMenuFind.label "Localizar…">
-<!ENTITY appMenuUnsorted.label "Não organizados">
-<!ENTITY appMenuWebDeveloper.label "Desenvolvedor web">
-<!ENTITY appMenuGettingStarted.label "Primeiros passos">
-<!ENTITY appMenuSafeMode.label "Reiniciar com extensões desativadas…">
-<!ENTITY appMenuSafeMode.accesskey "R">
 
 <!ENTITY openCmd.commandkey           "L">
-<!ENTITY urlbar.placeholder2          "Forneça uma pesquisa ou endereço">
+<!ENTITY urlbar.placeholder2          "Pesquisar ou abrir endereço">
 <!ENTITY urlbar.accesskey             "D">
 <!ENTITY urlbar.switchToTab.label     "Selecionar a aba:">
 
@@ -398,6 +396,8 @@ These should match what Safari and other Apple applications use on OS X Lion. --
 <!ENTITY viewImageCmd.accesskey       "x">
 <!ENTITY viewImageInfoCmd.label       "Propriedades da imagem">
 <!ENTITY viewImageInfoCmd.accesskey   "P">
+<!ENTITY viewImageDescCmd.label       "Exibir descrição">
+<!ENTITY viewImageDescCmd.accesskey   "i">
 <!ENTITY viewVideoCmd.label           "Exibir vídeo">
 <!ENTITY viewVideoCmd.accesskey       "x">
 <!ENTITY viewBGImageCmd.label         "Exibir imagem de fundo">
@@ -532,15 +532,7 @@ you can use these alternative items. Otherwise, their values should be empty.  -
 <!ENTITY newWindowButton.tooltip        "Abrir uma janela">
 <!ENTITY sidebarCloseButton.tooltip     "Fechar painel">
 
-<!ENTITY cutButton.tooltip              "Recortar">
-<!ENTITY copyButton.tooltip             "Copiar">
-<!ENTITY pasteButton.tooltip            "Colar">
-
 <!ENTITY fullScreenButton.tooltip       "Exibir esta janela no modo tela inteira">
-
-<!ENTITY zoomOutButton.tooltip          "Diminuir zoom">
-<!ENTITY zoomInButton.tooltip           "Aumentar zoom">
-<!ENTITY zoomControls.label             "Controle do zoom">
 
 <!ENTITY quitApplicationCmdWin.label       "Sair"> 
 <!ENTITY quitApplicationCmdWin.accesskey   "S">
@@ -612,6 +604,13 @@ just addresses the organization to follow, e.g. "This site is run by " -->
 
 <!ENTITY identity.moreInfoLinkText "Mais informações…">
 
+<!ENTITY identity.permissions "Permissões">
+
+<!-- LOCALIZATION NOTE (identity.help.tooltip) : This string should be the
+     localized title of this SUMO article
+     https://support.mozilla.org/kb/how-do-i-tell-if-my-connection-is-secure -->
+<!ENTITY identity.help.tooltip "Como saber se minha conexão com um site é segura?">
+
 <!-- Name for the tabs toolbar as spoken by screen readers.
      The word "toolbar" is appended automatically and should not be contained below! -->
 <!ENTITY tabsToolbar.label "Abas do navegador">
@@ -626,9 +625,6 @@ just addresses the organization to follow, e.g. "This site is run by " -->
 <!ENTITY syncSyncNowItem.label        "Sincronizar agora">
 <!ENTITY syncSyncNowItem.accesskey    "n">
 <!ENTITY syncToolbarButton.label      "Sincronizar">
-
-<!ENTITY addonBarCloseButton.tooltip  "Ocultar barra de extensões">
-<!ENTITY toggleAddonBarCmd.key        "/">
 
 <!ENTITY socialToolbar.title        "Botão da barra de ferramentas social">
 <!ENTITY social.notLoggedIn.label   "Não identificado">
@@ -646,7 +642,7 @@ just addresses the organization to follow, e.g. "This site is run by " -->
 
 <!ENTITY social.activated.description "Os serviços do <label/> foram ativados. Você pode modificar suas configurações para eles pelo <label class='text-link'>gerenciador de complementos</label>.">
 <!ENTITY social.activated.undo.label "Epa, desfazer isso!">
-<!ENTITY social.activated.undo.accesskey "d">
+<!ENTITY social.activated.undo.accesskey "E">
 <!ENTITY social.learnMore.label "Saiba mais…">
 <!ENTITY social.learnMore.accesskey "S">
 <!ENTITY social.closeNotificationItem.label "Agora não">
@@ -655,9 +651,10 @@ just addresses the organization to follow, e.g. "This site is run by " -->
 <!ENTITY social.chatBar.label "Focar bate-papos">
 <!ENTITY social.chatBar.accesskey "F">
 
-<!-- labels are set dynamically, see browser.properties -->
-<!ENTITY social.markpage.accesskey "v">
-<!ENTITY social.marklink.accesskey "v">
+<!ENTITY social.markpageMenu.accesskey "p">
+<!ENTITY social.markpageMenu.label "Salvar página no…">
+<!ENTITY social.marklinkMenu.accesskey "l">
+<!ENTITY social.marklinkMenu.label "Salvar link no…">
 
 <!ENTITY getUserMedia.selectCamera.label "Câmera a compartilhar:">
 <!ENTITY getUserMedia.selectCamera.accesskey "C">
@@ -671,3 +668,60 @@ just addresses the organization to follow, e.g. "This site is run by " -->
 <!ENTITY mixedContentBlocked.moreinfo "A maioria dos sites ainda funcionará corretamente mesmo com este conteúdo bloqueado.">
 
 <!ENTITY pointerLock.notification.message "Tecle ESC quando quiser exibi-lo.">
+
+<!ENTITY pluginNotification.showAll.label "Exibir tudo">
+<!ENTITY pluginNotification.showAll.accesskey "x">
+
+<!-- LOCALIZATION NOTE (pluginActivateNow.label, pluginActivateAlways.label, pluginBlockNow.label): These should be the same as the matching strings in browser.properties -->
+<!ENTITY pluginActivateNow.label "Permitir agora">
+<!ENTITY pluginActivateAlways.label "Permitir e memorizar">
+<!ENTITY pluginBlockNow.label "Bloquear plugin">
+
+<!-- LOCALIZATION NOTE: (pluginNotification.width): This is used to determine the
+     width of the plugin popup notification that can appear if a plugin has been
+     blocked on a page. Should be wide enough to fit the pluginActivateNow.label
+     and pluginActivateAlways.label strings above on a single line. This must be
+     a CSS length value. -->
+<!ENTITY pluginNotification.width "28em">
+
+<!ENTITY tabCrashed.header "Aba travada">
+<!ENTITY tabCrashed.message "Bem, isto é constrangedor. Tentamos exibir esta página, mas ela não está respondendo.">
+<!ENTITY tabCrashed.checkSendReport "Notificar a &vendorShortName; sobre este travamento para que eles possam corrigi-lo.">
+<!ENTITY tabCrashed.tryAgain "Tentar de novo">
+
+<!-- LOCALIZATION NOTE: the following strings are unused in Australis, they're
+     kept here to avoid warnings from l10n tools like compare-locales on
+     l10n-central. They will be definitely removed when Australis is ready
+     for mozilla-aurora. -->
+
+<!ENTITY navbarCmd.accesskey           "B">
+<!ENTITY addonBarCmd.label             "Barra de extensões">
+<!ENTITY addonBarCmd.accesskey         "x">
+<!ENTITY throbberItem.title            "Indicador de atividade">
+<!ENTITY appMenuButton.label           "Menu">
+<!ENTITY appMenuButton.tooltip         "Abrir o menu do &brandShortName;">
+<!ENTITY feedButton.label              "Inscrever">
+<!ENTITY feedButton.tooltip            "Inscrever RSS">
+<!ENTITY bookmarksButton.tooltip       "Exibir o painel com os favoritos">
+<!ENTITY historyButton.tooltip         "Exibir o painel com as páginas visitadas recentemente">
+<!ENTITY viewTabsOnTop.label           "Abas em cima">
+<!ENTITY viewTabsOnTop.accesskey       "A">
+<!ENTITY appMenuEdit.label             "Editar">
+<!ENTITY appMenuToolbarLayout.label    "Personalizar barras…">
+<!ENTITY appMenuSidebars.label         "Painel">
+<!ENTITY appMenuFind.label             "Localizar…">
+<!ENTITY appMenuUnsorted.label         "Não organizados">
+<!ENTITY appMenuWebDeveloper.label     "Desenvolvedor web">
+<!ENTITY appMenuGettingStarted.label   "Primeiros passos">
+<!ENTITY appMenuSafeMode.label         "Reiniciar com extensões desativadas…">
+<!ENTITY appMenuSafeMode.accesskey     "R">
+<!ENTITY cutButton.tooltip             "Recortar">
+<!ENTITY copyButton.tooltip            "Copiar">
+<!ENTITY pasteButton.tooltip           "Colar">
+<!ENTITY zoomOutButton.tooltip         "Diminuir zoom">
+<!ENTITY zoomInButton.tooltip          "Aumentar zoom">
+<!ENTITY zoomControls.label            "Controle do zoom">
+<!ENTITY addonBarCloseButton.tooltip   "Ocultar barra de extensões">
+<!ENTITY toggleAddonBarCmd.key         "/">
+<!-- end of strings to be removed post-Australis -->
+

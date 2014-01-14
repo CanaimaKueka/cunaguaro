@@ -8,18 +8,16 @@
 #define mozilla_TextComposition_h
 
 #include "nsCOMPtr.h"
-#include "nsEvent.h"
 #include "nsINode.h"
-#include "nsString.h"
+#include "nsIWidget.h"
 #include "nsTArray.h"
 #include "nsThreadUtils.h"
 #include "mozilla/Attributes.h"
+#include "mozilla/EventForwards.h"
 
-class nsCompositionEvent;
 class nsDispatchingCallback;
 class nsIMEStateManager;
 class nsIWidget;
-class nsPresContext;
 
 namespace mozilla {
 
@@ -35,7 +33,7 @@ class TextComposition MOZ_FINAL
 public:
   TextComposition(nsPresContext* aPresContext,
                   nsINode* aNode,
-                  nsGUIEvent* aEvent);
+                  WidgetGUIEvent* aEvent);
 
   TextComposition(const TextComposition& aOther);
 
@@ -53,8 +51,6 @@ public:
   bool IsSynthesizedForTests() const { return mIsSynthesizedForTests; }
 
   bool MatchesNativeContext(nsIWidget* aWidget) const;
-  bool MatchesEventTarget(nsPresContext* aPresContext,
-                          nsINode* aNode) const;
 
   /**
    * SynthesizeCommit() dispatches compositionupdate, text and compositionend
@@ -96,7 +92,7 @@ private:
    * DispatchEvent() dispatches the aEvent to the mContent synchronously.
    * The caller must ensure that it's safe to dispatch the event.
    */
-  void DispatchEvent(nsGUIEvent* aEvent,
+  void DispatchEvent(WidgetGUIEvent* aEvent,
                      nsEventStatus* aStatus,
                      nsDispatchingCallback* aCallBack);
 
@@ -111,7 +107,7 @@ private:
                                nsINode* aEventTarget,
                                uint32_t aEventMessage,
                                const nsAString& aData);
-    NS_IMETHOD Run();
+    NS_IMETHOD Run() MOZ_OVERRIDE;
 
   private:
     nsRefPtr<nsPresContext> mPresContext;
@@ -158,7 +154,6 @@ public:
   index_type IndexOf(nsPresContext* aPresContext, nsINode* aNode);
 
   TextComposition* GetCompositionFor(nsIWidget* aWidget);
-  TextComposition* GetCompositionFor(nsPresContext* aPresContext);
   TextComposition* GetCompositionFor(nsPresContext* aPresContext,
                                      nsINode* aNode);
   TextComposition* GetCompositionInContent(nsPresContext* aPresContext,

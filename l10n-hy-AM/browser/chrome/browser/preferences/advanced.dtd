@@ -12,8 +12,8 @@
 <!ENTITY useCursorNavigation.accesskey   "կ">
 <!ENTITY searchStartTyping.label         "Տեքստ մուտքագրելու դեպքում փնտրել այն էջում">
 <!ENTITY searchStartTyping.accesskey     "ք">
-<!ENTITY blockAutoRefresh.label          "Զգուշացնել, երբ վեբկայքերը փորձում են վերահասցեավորել կամ վերբեռնել էջը">
-<!ENTITY blockAutoRefresh.accesskey      "կ">
+<!ENTITY blockAutoRefresh.label          "Զգուշացնել, երբ վեբ կայքերը փորձում են վերահասցեավորել կամ վերբեռնել էջը">
+<!ENTITY blockAutoRefresh.accesskey      "յ">
 
 <!ENTITY browsing.label                  "Դիտարկում">
 
@@ -37,20 +37,20 @@
 <!ENTITY dataChoicesTab.label            "Ընտրել տվյալները">
 
 <!ENTITY healthReportSection.label       "&brandShortName;-ի Վիճակի զեկույց">
-<!ENTITY healthReportDesc.label          "Օգնում է տեղեկանալ դիտարկիչի արագագործության մասին և կիսվել տվյալներով &vendorShortName;-ի հետ">
+<!ENTITY healthReportDesc.label          "Օգնում է տեղեկանալ դիտարկիչի արագագործությանը և տարածել տվյալները &vendorShortName;-ի համար">
 <!ENTITY enableHealthReport.label        "Միացնել &brandShortName;-ի Վիճակի Զեկույցը">
 <!ENTITY enableHealthReport.accesskey    "Զ">
 <!ENTITY healthReportLearnMore.label     "Մանրամասն">
 
 <!ENTITY telemetrySection.label          "Telemetry">
 <!ENTITY telemetryDesc.label             "Կիսվում է արագագործության, օգտագործման, սարքակազմի և ձեր դիտարկիչի կարգավորումներով &vendorShortName;-ի հետ՝ &brandShortName;-ը էլ ավելի լավարկելու համար">
-<!ENTITY enableTelemetry.label           "Միացնել Telemetry">
+<!ENTITY enableTelemetry.label           "Միացնել Telemetry-ին">
 <!ENTITY enableTelemetry.accesskey       "T">
 <!ENTITY telemetryLearnMore.label        "Մանրամասն">
 
-<!ENTITY crashReporterSection.label      "Վթարների Զեկուցող">
+<!ENTITY crashReporterSection.label      "Վթարի Զեկույց">
 <!ENTITY crashReporterDesc.label         "&brandShortName;-ը ուղարկում է Վթարների Զեկույց՝ օգնելու համար դարձնել &vendorShortName;-ը էլ ավելի կայուն և անվտանգ">
-<!ENTITY enableCrashReporter.label       "Միացնել Վթարների Զեկույցը">
+<!ENTITY enableCrashReporter.label       "Միացնել Վթարի Զեկույցը">
 <!ENTITY enableCrashReporter.accesskey   "Վ">
 <!ENTITY crashReporterLearnMore.label    "Մանրամասն">
 
@@ -85,8 +85,13 @@
 <!ENTITY updateTab.label                 "Թարմացնել">
 
 <!ENTITY updateApp.label                 "&brandShortName;-ի թարմացումներ.">
-<!ENTITY updateAuto.label                "Թարմացումների ինքնավար տեղակայում (խորհուրդ է տրվում. լավարկում է անվտանգությունը)">
-<!ENTITY updateAuto.accesskey            "Թ">
+<!-- Note either updateAuto1 is used or (updateAutoMetro and updateAutoDesktop),
+     so re-using accesss key in updateAuto1 is OK. updateAutoDesktop can be found
+     in preferences.properties -->
+<!ENTITY updateAuto1.label               "Թարմացումների ինքնավար տեղակայում (խորհուրդ է տրվում. լավարկում է անվտանգությունը)">
+<!ENTITY updateAuto1.accesskey           "Թ">
+<!ENTITY updateAutoMetro.label           "Ինքնավար թարմացնել աշխատաշրջանից և Windows 8 &brandShortName;-ի ոճից ">
+<!ENTITY updateAutoMetro.accesskey       "տ">
 <!ENTITY updateCheck.label               "Ստուգել թարմացումները, բայց տեղակայման ընտրությունը թողնել ինձ">
 <!ENTITY updateCheck.accesskey           "Ս">
 <!ENTITY updateManual.label              "Երբեք չստուգել թարմացումները (խուրհուրդ չի տրվում. անվտանգության վտանգ)">
@@ -94,6 +99,8 @@
 
 <!ENTITY updateAutoAddonWarn.label       "Զգուշացնել, եթե սա պետք է պասիվացնի որևէ հավելում">
 <!ENTITY updateAutoAddonWarn.accesskey   "Զ">
+
+<!ENTITY updateAutoMetroWarn.label       "(Windows 8 ոճի &brandShortName;-ը չի ստուգել հավելման համատեղելիությունը)">
 
 <!ENTITY updateHistory.label             "Ցուցադրել Թարմացումների Պատմությունը">
 <!ENTITY updateHistory.accesskey         "Ց">
@@ -103,12 +110,12 @@
 
 <!ENTITY updateOthers.label              "Ինքնաշխատ թարմացնել.">
 <!ENTITY enableSearchUpdate.label        "Փնտրամեքենաներ">
-<!ENTITY enableSearchUpdate.accesskey    "ե">
+<!ENTITY enableSearchUpdate.accesskey    "ք">
 
 <!ENTITY offlineNotify.label             "Տեղեկացնել, երբ վեբ կայքը խնդրում է պահպանել ֆայլեր՝ անցանց եղանակում աշխատելու համար">
 <!ENTITY offlineNotify.accesskey         "Տ">
 <!ENTITY offlineNotifyExceptions.label   "Բացառություններ…">
-<!ENTITY offlineNotifyExceptions.accesskey "ա">
+<!ENTITY offlineNotifyExceptions.accesskey "ց">
 
 <!ENTITY offlineAppsList2.label          "Տվյալ կայքերին արտոնված է տվյալներ պահել՝ անցանց աշխատելու համար.">
 <!ENTITY offlineAppsList.height          "7em">
@@ -119,13 +126,11 @@
 <!ENTITY certificateTab.label            "Վկայագրեր">
 <!ENTITY certSelection.description       "Երբ սպասարկիչը հարցնում է իմ սեփական վկայագիրը`">
 <!ENTITY certs.auto                      "Ընտրել ինքնաշխատ">
-<!ENTITY certs.auto.accesskey            "Ը">
+<!ENTITY certs.auto.accesskey            "l">
 <!ENTITY certs.ask                       "Ամեն անգամ հարցնել">
 <!ENTITY certs.ask.accesskey             "Ա">
 <!ENTITY viewCerts.label                 "Դիտել վկայագրերը">
-<!ENTITY viewCerts.accesskey             "ը">
-<!ENTITY viewCRLs.label                  "Վավերազրկման Ցանկեր">
-<!ENTITY viewCRLs.accesskey              "Վ">
+<!ENTITY viewCerts.accesskey             "գ">
 <!ENTITY verify2.label                   "Հավաստում">
 <!ENTITY verify2.accesskey               "Հ">
 <!ENTITY viewSecurityDevices.label       "Անվտանգության Սարքեր">

@@ -9,7 +9,7 @@
 <!ENTITY restorepage.errorTitle     "នេះ​គួរ​ឲ្យ​ខ្មាសអៀន​ណាស់ ។">
 <!ENTITY restorepage.problemDesc    "&brandShortName; មាន​បញ្ហា​ក្នុង​ការ​សង្គ្រោះ​បង្អួច និង​ផ្ទាំង​របស់​អ្នក ។ នេះ​អាច​បង្ក​ដោយ​ទំព័រ​តំបន់​បណ្ដាញ​ដែល​បើក​ថ្មីៗ ។">
 <!ENTITY restorepage.tryThis        "អ្នក​អាច​សាកល្បង ៖">
-<!ENTITY restorepage.restoreSome    "យក​ចេញ​ផ្ទាំង​មួយ ឬ​ច្រើន ដែល​អ្នក​គិត​ថា​អាច​បង្ក​បញ្ហា">
+<!ENTITY restorepage.restoreSome    "លុប​ចេញ​ផ្ទាំង​មួយ ឬ​ច្រើន ដែល​អ្នក​គិត​ថា​អាច​បង្ក​បញ្ហា">
 <!ENTITY restorepage.startNew       "ចាប់ផ្ដើម​សម័យ​រក​មើល​ថ្មី​មួយ​ទាំងស្រុង">
 
 <!ENTITY restorepage.tryagainButton "ស្ដារ">
@@ -21,3 +21,14 @@
 <!ENTITY restorepage.listHeader     "បង្អួច និង​ផ្ទាំង">
 <!-- LOCALIZATION NOTE: &#37;S will be replaced with a number. -->
 <!ENTITY restorepage.windowLabel    "បង្អួច &#037;S">
+<!-- LOCALIZATION NOTE: The following 'welcomeback' strings are for about:welcomeback,
+     not for about:sessionstore -->
+
+
+<!ENTITY welcomeback.tabtitle       "សូម​ស្វាគមន៍​ការ​ត្រឡប់​មកវិញ!">
+<!-- LOCALIZATION NOTE: The title is intended to be welcoming and congratulatory,
+     expressing joy that the user has successfully migrated their stuff and hope
+     that now they have a better experience.  -->
+
+<!ENTITY welcomeback.pageTitle      "សូម​ស្វាគមន៍​ការ​ត្រឡប់​មកវិញ!">
+<!ENTITY welcomeback.pageInfo       "&brandShortName; បាន​ស្ដារ​ប្រវត្តិរូប​របស់​អ្នក​ដោយ​ជោគជ័យ។ ខាងក្រោម​នេះ​ជា​បញ្ជី​បង្អួច និង​ផ្ទាំង​ដែល​អ្នក​បាន​បើក, អ្នក​អាច​ស្ដារ​វា ឬ​ចាប់ផ្ដើម​ជាមួយ​បន្ទះ​ទទេ។">

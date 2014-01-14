@@ -7,6 +7,7 @@
 #ifndef nsPluginInstanceOwner_h_
 #define nsPluginInstanceOwner_h_
 
+#include "mozilla/Attributes.h"
 #include "npapi.h"
 #include "nsCOMPtr.h"
 #include "nsIPluginInstanceOwner.h"
@@ -60,19 +61,19 @@ public:
   
   NS_IMETHOD GetURL(const char *aURL, const char *aTarget,
                     nsIInputStream *aPostStream, 
-                    void *aHeadersData, uint32_t aHeadersDataLen);
+                    void *aHeadersData, uint32_t aHeadersDataLen) MOZ_OVERRIDE;
   
-  NS_IMETHOD ShowStatus(const PRUnichar *aStatusMsg);
+  NS_IMETHOD ShowStatus(const PRUnichar *aStatusMsg) MOZ_OVERRIDE;
   
-  NPError    ShowNativeContextMenu(NPMenu* menu, void* event);
+  NPError    ShowNativeContextMenu(NPMenu* menu, void* event) MOZ_OVERRIDE;
   
   NPBool     ConvertPoint(double sourceX, double sourceY, NPCoordinateSpace sourceSpace,
-                          double *destX, double *destY, NPCoordinateSpace destSpace);
+                          double *destX, double *destY, NPCoordinateSpace destSpace) MOZ_OVERRIDE;
   
   virtual NPError InitAsyncSurface(NPSize *size, NPImageFormat format,
-                                   void *initData, NPAsyncSurface *surface);
-  virtual NPError FinalizeAsyncSurface(NPAsyncSurface *surface);
-  virtual void SetCurrentAsyncSurface(NPAsyncSurface *surface, NPRect *changed);
+                                   void *initData, NPAsyncSurface *surface) MOZ_OVERRIDE;
+  virtual NPError FinalizeAsyncSurface(NPAsyncSurface *surface) MOZ_OVERRIDE;
+  virtual void SetCurrentAsyncSurface(NPAsyncSurface *surface, NPRect *changed) MOZ_OVERRIDE;
 
   //nsIPluginTagInfo interface
   NS_DECL_NSIPLUGINTAGINFO
@@ -82,10 +83,6 @@ public:
   
   nsresult ProcessMouseDown(nsIDOMEvent* aKeyEvent);
   nsresult ProcessKeyPress(nsIDOMEvent* aKeyEvent);
-#if defined(MOZ_WIDGET_QT) && (MOZ_PLATFORM_MAEMO == 6)
-  nsresult Text(nsIDOMEvent* aTextEvent);
-#endif
-
   nsresult Destroy();  
 
 #ifdef XP_WIN
@@ -109,7 +106,7 @@ public:
   void* GetPluginPortFromWidget();
   void ReleasePluginPort(void* pluginPort);
 
-  nsEventStatus ProcessEvent(const nsGUIEvent & anEvent);
+  nsEventStatus ProcessEvent(const mozilla::WidgetGUIEvent& anEvent);
   
 #ifdef XP_MACOSX
   enum { ePluginPaintEnable, ePluginPaintDisable };
@@ -168,7 +165,7 @@ public:
   const char* GetPluginName()
   {
     if (mInstance && mPluginHost) {
-      const char* name = NULL;
+      const char* name = nullptr;
       if (NS_SUCCEEDED(mPluginHost->GetPluginName(mInstance, &name)) && name)
         return name;
     }
@@ -259,8 +256,8 @@ private:
   
   void FixUpURLS(const nsString &name, nsAString &value);
 #ifdef MOZ_WIDGET_ANDROID
-  gfxRect GetPluginRect();
-  bool AddPluginView(const gfxRect& aRect = gfxRect(0, 0, 0, 0));
+  mozilla::LayoutDeviceRect GetPluginRect();
+  bool AddPluginView(const mozilla::LayoutDeviceRect& aRect = mozilla::LayoutDeviceRect(0, 0, 0, 0));
   void RemovePluginView();
 
   bool mFullScreen;
@@ -323,6 +320,8 @@ private:
   nsresult DispatchKeyToPlugin(nsIDOMEvent* aKeyEvent);
   nsresult DispatchMouseToPlugin(nsIDOMEvent* aMouseEvent);
   nsresult DispatchFocusToPlugin(nsIDOMEvent* aFocusEvent);
+
+  int mLastMouseDownButtonType;
   
   nsresult EnsureCachedAttrParamArrays();
   

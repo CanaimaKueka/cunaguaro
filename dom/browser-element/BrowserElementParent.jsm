@@ -67,11 +67,34 @@ function defineAndExpose(obj, name, value) {
   obj.__exposedProps__[name] = 'r';
 }
 
+function visibilityChangeHandler(e) {
+  // The visibilitychange event's target is the document.
+  let win = e.target.defaultView;
+
+  if (!win._browserElementParents) {
+    return;
+  }
+
+  let beps = Cu.nondeterministicGetWeakMapKeys(win._browserElementParents);
+  if (beps.length == 0) {
+    win.removeEventListener('visibilitychange', visibilityChangeHandler);
+    return;
+  }
+
+  for (let i = 0; i < beps.length; i++) {
+    beps[i]._ownerVisibilityChange();
+  }
+}
+
 this.BrowserElementParentBuilder = {
   create: function create(frameLoader, hasRemoteFrame) {
     return new BrowserElementParent(frameLoader, hasRemoteFrame);
   }
 }
+
+
+// The active input method iframe.
+let activeInputFrame = null;
 
 function BrowserElementParent(frameLoader, hasRemoteFrame) {
   debug("Creating new BrowserElementParent object for " + frameLoader);
@@ -103,6 +126,9 @@ function BrowserElementParent(frameLoader, hasRemoteFrame) {
     "titlechange": this._fireEventFromMsg,
     "iconchange": this._fireEventFromMsg,
     "close": this._fireEventFromMsg,
+    "resize": this._fireEventFromMsg,
+    "activitydone": this._fireEventFromMsg,
+    "opensearch": this._fireEventFromMsg,
     "securitychange": this._fireEventFromMsg,
     "error": this._fireEventFromMsg,
     "scroll": this._fireEventFromMsg,
@@ -119,7 +145,8 @@ function BrowserElementParent(frameLoader, hasRemoteFrame) {
     "rollback-fullscreen": this._remoteFrameFullscreenReverted,
     "exit-fullscreen": this._exitFullscreen,
     "got-visible": this._gotDOMRequestResult,
-    "visibility-change": this._childVisibilityChange,
+    "visibilitychange": this._childVisibilityChange,
+    "got-set-input-method-active": this._gotDOMRequestResult
   }
 
   this._mm.addMessageListener('browser-element-api:call', function(aMsg) {
@@ -167,12 +194,32 @@ function BrowserElementParent(frameLoader, hasRemoteFrame) {
   defineDOMRequestMethod('getCanGoBack', 'get-can-go-back');
   defineDOMRequestMethod('getCanGoForward', 'get-can-go-forward');
 
-  // Listen to visibilitychange on the iframe's owner window, and forward it
-  // down to the child.
-  this._window.addEventListener('visibilitychange',
-                                this._ownerVisibilityChange.bind(this),
-                                /* useCapture = */ false,
-                                /* wantsUntrusted = */ false);
+  let principal = this._frameElement.ownerDocument.nodePrincipal;
+  let perm = Services.perms
+             .testExactPermissionFromPrincipal(principal, "inputmethod-manage");
+  if (perm === Ci.nsIPermissionManager.ALLOW_ACTION) {
+    defineMethod('setInputMethodActive', this._setInputMethodActive);
+  }
+
+  // Listen to visibilitychange on the iframe's owner window, and forward
+  // changes down to the child.  We want to do this while registering as few
+  // visibilitychange listeners on _window as possible, because such a listener
+  // may live longer than this BrowserElementParent object.
+  //
+  // To accomplish this, we register just one listener on the window, and have
+  // it reference a WeakMap whose keys are all the BrowserElementParent objects
+  // on the window.  Then when the listener fires, we iterate over the
+  // WeakMap's keys (which we can do, because we're chrome) to notify the
+  // BrowserElementParents.
+  if (!this._window._browserElementParents) {
+    this._window._browserElementParents = new WeakMap();
+    this._window.addEventListener('visibilitychange',
+                                  visibilityChangeHandler,
+                                  /* useCapture = */ false,
+                                  /* wantsUntrusted = */ false);
+  }
+
+  this._window._browserElementParents.set(this, null);
 
   // Insert ourself into the prompt service.
   BrowserElementPromptService.mapFrameToBrowserElementParent(this._frameElement, this);
@@ -294,7 +341,7 @@ BrowserElementParent.prototype = {
     let evtName = detail.msg_name;
 
     debug('fireCtxMenuEventFromMsg: ' + evtName + ' ' + detail);
-    let evt = this._createEvent(evtName, detail);
+    let evt = this._createEvent(evtName, detail, /* cancellable */ true);
 
     if (detail.contextmenu) {
       var self = this;
@@ -302,10 +349,11 @@ BrowserElementParent.prototype = {
         self._sendAsyncMsg('fire-ctx-callback', {menuitem: id});
       });
     }
+
     // The embedder may have default actions on context menu events, so
     // we fire a context menu event even if the child didn't define a
     // custom context menu
-    this._frameElement.dispatchEvent(evt);
+    return !this._frameElement.dispatchEvent(evt);
   },
 
   /**
@@ -546,6 +594,47 @@ BrowserElementParent.prototype = {
       this._sendAsyncMsg('deactivate-next-paint-listener');
   },
 
+  _setInputMethodActive: function(isActive) {
+    if (typeof isActive !== 'boolean') {
+      throw Components.Exception("Invalid argument",
+                                 Cr.NS_ERROR_INVALID_ARG);
+    }
+
+    let req = Services.DOMRequest.createRequest(this._window);
+
+    // Deactivate the old input method if needed.
+    if (activeInputFrame && isActive) {
+      let reqOld = XPCNativeWrapper.unwrap(activeInputFrame)
+                                   .setInputMethodActive(false);
+      reqOld.onsuccess = function() {
+        activeInputFrame = null;
+        this._sendSetInputMethodActiveDOMRequest(req, isActive);
+      }.bind(this);
+      reqOld.onerror = function() {
+        Services.DOMRequest.fireErrorAsync(req,
+          'Failed to deactivate the old input method: ' +
+          reqOld.error + '.');
+      };
+    } else {
+      this._sendSetInputMethodActiveDOMRequest(req, isActive);
+    }
+    return req;
+  },
+
+  _sendSetInputMethodActiveDOMRequest: function(req, isActive) {
+    let id = 'req_' + this._domRequestCounter++;
+    let data = {
+      id : id,
+      args: { isActive: isActive }
+    };
+    if (this._sendAsyncMsg('set-input-method-active', data)) {
+      activeInputFrame = this._frameElement;
+      this._pendingDOMRequests[id] = req;
+    } else {
+      Services.DOMRequest.fireErrorAsync(req, 'fail');
+    }
+  },
+
   _fireKeyEvent: function(data) {
     let evt = this._window.document.createEvent("KeyboardEvent");
     evt.initKeyEvent(data.json.type, true, true, this._window,
@@ -575,6 +664,8 @@ BrowserElementParent.prototype = {
   _childVisibilityChange: function(data) {
     debug("_childVisibilityChange(" + data.json.visible + ")");
     this._frameLoader.visible = data.json.visible;
+
+    this._fireEventFromMsg(data);
   },
 
   _exitFullscreen: function() {

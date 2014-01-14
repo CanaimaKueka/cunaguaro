@@ -38,6 +38,7 @@
 # include <process.h>
 # include <windows.h>
 # include <shlwapi.h>
+# include "nsWindowsHelpers.h"
 # define getcwd(path, size) _getcwd(path, size)
 # define getpid() GetCurrentProcessId()
 #elif defined(XP_OS2)
@@ -533,7 +534,13 @@ SwitchToUpdatedApp(nsIFile *greDir, nsIFile *updateDir, nsIFile *statusFile,
   // just needs to replace the update directory.
   pid.AppendLiteral("/replace");
 
-  int argc = appArgc + 5;
+  int immersiveArgc = 0;
+#ifdef XP_WIN
+  if (IsRunningInWindowsMetro()) {
+    immersiveArgc = 1;
+  }
+#endif
+  int argc = appArgc + 5 + immersiveArgc;
   char **argv = new char*[argc + 1];
   if (!argv)
     return;
@@ -546,11 +553,15 @@ SwitchToUpdatedApp(nsIFile *greDir, nsIFile *updateDir, nsIFile *statusFile,
     argv[5] = (char*) appFilePath.get();
     for (int i = 1; i < appArgc; ++i)
       argv[5 + i] = appArgv[i];
-    argc = 5 + appArgc;
-    argv[argc] = NULL;
+#ifdef XP_WIN
+    if (immersiveArgc) {
+      argv[argc - 1] = "-ServerName:DefaultBrowserServer";
+    }
+#endif
+    argv[argc] = nullptr;
   } else {
     argc = 4;
-    argv[4] = NULL;
+    argv[4] = nullptr;
   }
 
   if (gSafeMode) {
@@ -581,7 +592,7 @@ SwitchToUpdatedApp(nsIFile *greDir, nsIFile *updateDir, nsIFile *statusFile,
   LaunchChildMac(argc, argv);
   exit(0);
 #else
-  PR_CreateProcessDetached(updaterPath.get(), argv, NULL, NULL);
+  PR_CreateProcessDetached(updaterPath.get(), argv, nullptr, nullptr);
   exit(0);
 #endif
 }
@@ -807,8 +818,14 @@ ApplyUpdate(nsIFile *greDir, nsIFile *updateDir, nsIFile *statusFile,
 #endif
   }
 
-  int argc = appArgc + 5;
-  char **argv = new char*[argc + 1];
+  int immersiveArgc = 0;
+#ifdef XP_WIN
+  if (IsRunningInWindowsMetro()) {
+    immersiveArgc = 1;
+  }
+#endif
+  int argc = appArgc + 5 + immersiveArgc;
+  char **argv = new char*[argc + 1 ];
   if (!argv)
     return;
   argv[0] = (char*) updaterPath.get();
@@ -820,11 +837,15 @@ ApplyUpdate(nsIFile *greDir, nsIFile *updateDir, nsIFile *statusFile,
     argv[5] = (char*) appFilePath.get();
     for (int i = 1; i < appArgc; ++i)
       argv[5 + i] = appArgv[i];
-    argc = 5 + appArgc;
-    argv[argc] = NULL;
+#ifdef XP_WIN
+    if (immersiveArgc) {
+      argv[argc - 1] = "-ServerName:DefaultBrowserServer";
+    }
+#endif
+    argv[argc] = nullptr;
   } else {
     argc = 4;
-    argv[4] = NULL;
+    argv[4] = nullptr;
   }
 
   if (gSafeMode) {
@@ -859,11 +880,11 @@ ApplyUpdate(nsIFile *greDir, nsIFile *updateDir, nsIFile *statusFile,
   if (restart) {
     execv(updaterPath.get(), argv);
   } else {
-    *outpid = PR_CreateProcess(updaterPath.get(), argv, NULL, NULL);
+    *outpid = PR_CreateProcess(updaterPath.get(), argv, nullptr, nullptr);
   }
 #elif defined(XP_WIN)
   // Launch the update using updater.exe
-  if (!WinLaunchChild(updaterPathW.get(), argc, argv, NULL, outpid)) {
+  if (!WinLaunchChild(updaterPathW.get(), argc, argv, nullptr, outpid)) {
     return;
   }
 
@@ -881,7 +902,7 @@ ApplyUpdate(nsIFile *greDir, nsIFile *updateDir, nsIFile *statusFile,
     exit(0);
   }
 #else
-  *outpid = PR_CreateProcess(updaterPath.get(), argv, NULL, NULL);
+  *outpid = PR_CreateProcess(updaterPath.get(), argv, nullptr, nullptr);
   if (restart) {
     exit(0);
   }
@@ -998,7 +1019,7 @@ ProcessUpdates(nsIFile *greDir, nsIFile *appDir, nsIFile *updRootDir,
 
 
 
-NS_IMPL_THREADSAFE_ISUPPORTS1(nsUpdateProcessor, nsIUpdateProcessor)
+NS_IMPL_ISUPPORTS1(nsUpdateProcessor, nsIUpdateProcessor)
 
 nsUpdateProcessor::nsUpdateProcessor()
   : mUpdaterPID(0)
@@ -1012,8 +1033,6 @@ nsUpdateProcessor::ProcessUpdate(nsIUpdate* aUpdate)
   nsAutoCString appVersion;
   int argc;
   char **argv;
-
-  NS_ENSURE_ARG_POINTER(aUpdate);
 
   nsAutoCString binPath;
   nsXREDirProvider* dirProvider = nsXREDirProvider::GetSingleton();
@@ -1111,6 +1130,8 @@ nsUpdateProcessor::ProcessUpdate(nsIUpdate* aUpdate)
   mInfo.mAppVersion = appVersion;
 
 #if defined(MOZ_WIDGET_GONK)
+  NS_ENSURE_ARG_POINTER(aUpdate);
+
   bool isOSUpdate;
   if (NS_SUCCEEDED(aUpdate->GetIsOSUpdate(&isOSUpdate)) &&
       isOSUpdate) {
@@ -1193,7 +1214,7 @@ nsUpdateProcessor::UpdateDone()
 
   nsCOMPtr<nsIUpdateManager> um =
     do_GetService("@mozilla.org/updates/update-manager;1");
-  if (um) {
+  if (um && mUpdate) {
     um->RefreshUpdateStatus(mUpdate);
   }
 

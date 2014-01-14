@@ -1,39 +1,6 @@
-<!-- ***** BEGIN LICENSE BLOCK *****
-   - Version: MPL 1.1/GPL 2.0/LGPL 2.1
-   -
-   - The contents of this file are subject to the Mozilla Public License Version
-   - 1.1 (the "License"); you may not use this file except in compliance with
-   - the License. You may obtain a copy of the License at
-   - http://www.mozilla.org/MPL/
-   -
-   - Software distributed under the License is distributed on an "AS IS" basis,
-   - WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
-   - for the specific language governing rights and limitations under the
-   - License.
-   -
-   - The Original Code is mozilla.org code.
-   -
-   - The Initial Developer of the Original Code is
-   - Netscape Communications Corp.
-   - Portions created by the Initial Developer are Copyright (C) 2001
-   - the Initial Developer. All Rights Reserved.
-   -
-   - Contributor(s):
-   -   Ian McGreer <mcgreer@netscape.com>
-   -
-   - Alternatively, the contents of this file may be used under the terms of
-   - either the GNU General Public License Version 2 or later (the "GPL"), or
-   - the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
-   - in which case the provisions of the GPL or the LGPL are applicable instead
-   - of those above. If you wish to allow use of your version of this file only
-   - under the terms of either the GPL or the LGPL, and not to allow others to
-   - use your version of this file under the terms of the MPL, indicate your
-   - decision by deleting the provisions above and replace them with the notice
-   - and other provisions required by the GPL or the LGPL. If you do not delete
-   - the provisions above, a recipient may use your version of this file under
-   - the terms of any one of the MPL, the GPL or the LGPL.
-   -
-   - ***** END LICENSE BLOCK ***** -->
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
 
 <!ENTITY certmgr.title                       "ପ୍ରମାଣପତ୍ର ପରିଚାଳକ">
 
@@ -72,14 +39,10 @@
 
 <!ENTITY certmgr.editcert.title               "ସୁରକ୍ଷା ପ୍ରମାଣପତ୍ର ବିନ୍ୟାସକୁ ସମ୍ପାଦନ କରନ୍ତୁ">
 <!ENTITY certmgr.editcacert.title             "CA ପ୍ରମାଣପତ୍ର ବିଶ୍ୱସ୍ତ ବିନ୍ୟାସକୁ ସମ୍ପାଦନ କରନ୍ତୁ">
-<!ENTITY certmgr.editsslcert.title            "ୱେବ ସାଇଟ ପ୍ରମାଣପତ୍ର ବିଶ୍ୱସ୍ତ ବିନ୍ୟାସକୁ ସମ୍ପାଦନ କରନ୍ତୁ">
 <!ENTITY certmgr.editcert.edittrust           "ବିଶ୍ୱାସ ବିନ୍ୟାସକୁ ସମ୍ପାଦନ କରନ୍ତୁ:">
 <!ENTITY certmgr.editcert.trustssl            "ଏହି ପ୍ରମାଣପତ୍ର ୱେବ ସାଇଟଗୁଡ଼ିକୁ ଚିହ୍ନିପାରେ.">
 <!ENTITY certmgr.editcert.trustemail          "ଏହି ପ୍ରମାଣପତ୍ର ମେଲ ଚାଳକମାନଙ୍କୁ ଚିହ୍ନିପାରେ.">
 <!ENTITY certmgr.editcert.trustobjsign        "ଏହି ପ୍ରମାଣପତ୍ର ସଫ୍ଟୱେର ନିର୍ମାତାମାନଙ୍କୁ ଚିହ୍ନିପାରେ.">
-<!ENTITY certmgr.editsslcert.edittrust        "ପ୍ରମାଣପତ୍ର ବିଶ୍ୱାସ ବିନ୍ୟାସକୁ ସମ୍ପାଦନ କରନ୍ତୁ:">
-<!ENTITY certmgr.editsslcert.dotrust          "ଏହି ପ୍ରମାଣପତ୍ରର ବୈଧତାକୁ ବିଶ୍ୱାସ କରନ୍ତୁ.">
-<!ENTITY certmgr.editsslcert.donttrust        "ଏହି ପ୍ରମାଣପତ୍ରର ବୈଧତାକୁ ବିଶ୍ୱାସ କରନ୍ତୁ ନାହିଁ.">
 <!ENTITY certmgr.editemailcert.title          "ଇମେଲ ପ୍ରମାଣପତ୍ର ବିଶ୍ୱାସ ବିନ୍ୟାସକୁ ସମ୍ପାଦନ କରନ୍ତୁ">
 <!ENTITY certmgr.editemailcert.edittrust      "ପ୍ରମାଣପତ୍ର ବିଶ୍ୱାସ ବିନ୍ୟାସକୁ ସମ୍ପାଦନ କରନ୍ତୁ:">
 <!ENTITY certmgr.editemailcert.dotrust        "ଏହି ପ୍ରମାଣପତ୍ରର ବୈଧତାକୁ ବିଶ୍ୱାସ କରନ୍ତୁ.">
@@ -105,6 +68,8 @@
 <!ENTITY certmgr.close.accesskey              "C">
 <!ENTITY certmgr.view2.label                  "ଦେଖନ୍ତୁ…">
 <!ENTITY certmgr.view2.accesskey              "V">
+<!ENTITY certmgr.edit3.label                  "ବିଶ୍ୱାସକୁ ସମ୍ପାଦନ କରନ୍ତୁ…">
+<!ENTITY certmgr.edit3.accesskey              "E">
 <!ENTITY certmgr.editca.label                 "CA ବିଶ୍ୱାସକୁ ସମ୍ପାଦନ କରନ୍ତୁ ">
 <!ENTITY certmgr.editca.accesskey             "d">
 <!ENTITY certmgr.add.label                    "ଯୋଗ କରନ୍ତୁ">
@@ -113,6 +78,8 @@
 <!ENTITY certmgr.export.accesskey             "x">
 <!ENTITY certmgr.delete2.label                "ଅପସାରଣ କରନ୍ତୁ…">
 <!ENTITY certmgr.delete2.accesskey            "D">
+<!ENTITY certmgr.delete_builtin.label         "ଅପସାରଣ କରନ୍ତୁ କିମ୍ବା  ଅବିଶ୍ୱାସ କରନ୍ତୁ…">
+<!ENTITY certmgr.delete_builtin.accesskey     "D">
 <!ENTITY certmgr.backup2.label                "ନକଲ ସଂରକ୍ଷଣ କରନ୍ତୁ…">
 <!ENTITY certmgr.backup2.accesskey            "B">
 <!ENTITY certmgr.backupall2.label             "ସମସ୍ତଙ୍କୁ ନକଲ ସଂରକ୍ଷଣ କରନ୍ତୁ…">
@@ -129,10 +96,8 @@
 <!ENTITY certmgr.addException.accesskey       "x">
 
 <!ENTITY exceptionMgr.title                   "ସୁରକ୍ଷା ବ୍ୟତିକ୍ରମ ଯୋଗକରନ୍ତୁ">
-
 <!ENTITY exceptionMgr.exceptionButton.label   "ସୁରକ୍ଷା ବ୍ୟତିକ୍ରମ ନିଶ୍ଚିତ କରନ୍ତୁ">
 <!ENTITY exceptionMgr.exceptionButton.accesskey "C">
-
 <!ENTITY exceptionMgr.supplementalWarning     "ବିଧି ସଂଗତ ବ୍ୟାଙ୍କ, ଭଣ୍ଡାର, ଏବଂ ଅନ୍ୟାନ୍ୟ ସାର୍ବଜନୀନ ସାଇଟଗୁଡ଼ିକ ଆପଣଙ୍କୁ ଏହା କରିବାପାଇଁ କହିବ ନାହିଁ.">
 <!ENTITY exceptionMgr.certlocation.caption2   "ସର୍ଭର">
 <!ENTITY exceptionMgr.certlocation.url        "ସ୍ଥାନ:">
@@ -143,9 +108,3 @@
 <!ENTITY exceptionMgr.certstatus.accesskey    "V">
 <!ENTITY exceptionMgr.permanent.label         "ଏହି ବ୍ୟତିକ୍ରମକୁ ସ୍ଥାୟୀରୂପେ ସଂରକ୍ଷଣ କରନ୍ତୁ">
 <!ENTITY exceptionMgr.permanent.accesskey     "P">
-
-<!ENTITY certmgr.delete_builtin.label         "ଅପସାରଣ କରନ୍ତୁ କିମ୍ବା  ଅବିଶ୍ୱାସ କରନ୍ତୁ…">
-<!ENTITY certmgr.delete_builtin.accesskey     "D">
-<!ENTITY certmgr.edit3.label                  "ବିଶ୍ୱାସକୁ ସମ୍ପାଦନ କରନ୍ତୁ…">
-<!ENTITY certmgr.edit3.accesskey              "E">
-

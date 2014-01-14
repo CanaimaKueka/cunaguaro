@@ -17,7 +17,7 @@
 
 using namespace mozilla::net;
 
-NS_IMPL_THREADSAFE_ISUPPORTS2(AndroidCameraInputStream, nsIInputStream, nsIAsyncInputStream)
+NS_IMPL_ISUPPORTS2(AndroidCameraInputStream, nsIInputStream, nsIAsyncInputStream)
 
 AndroidCameraInputStream::AndroidCameraInputStream() :
   mWidth(0), mHeight(0), mCamera(0), mHeaderSent(false), mClosed(true), mFrameSize(0),
@@ -255,15 +255,15 @@ NS_IMETHODIMP AndroidCameraInputStream::CloseWithStatus(nsresult status)
  * AndroidCaptureProvider implementation
  */
 
-NS_IMPL_THREADSAFE_ISUPPORTS0(AndroidCaptureProvider)
+NS_IMPL_ISUPPORTS0(AndroidCaptureProvider)
 
-AndroidCaptureProvider* AndroidCaptureProvider::sInstance = NULL;
+AndroidCaptureProvider* AndroidCaptureProvider::sInstance = nullptr;
 
 AndroidCaptureProvider::AndroidCaptureProvider() {
 }
 
 AndroidCaptureProvider::~AndroidCaptureProvider() {
-  AndroidCaptureProvider::sInstance = NULL;
+  AndroidCaptureProvider::sInstance = nullptr;
 }
 
 nsresult AndroidCaptureProvider::Init(nsACString& aContentType,
@@ -296,6 +296,6 @@ already_AddRefed<AndroidCaptureProvider> GetAndroidCaptureProvider() {
   if (!AndroidCaptureProvider::sInstance) {
     AndroidCaptureProvider::sInstance = new AndroidCaptureProvider();
   }
-  AndroidCaptureProvider::sInstance->AddRef();
-  return AndroidCaptureProvider::sInstance;
+  nsRefPtr<AndroidCaptureProvider> ret = AndroidCaptureProvider::sInstance;
+  return ret.forget();
 }

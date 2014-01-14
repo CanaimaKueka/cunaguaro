@@ -6,6 +6,7 @@
   <script type="application/javascript" src="head.js"></script>
   <script type="application/javascript" src="mediaStreamPlayback.js"></script>
   <script type="application/javascript" src="pc.js"></script>
+  <script type="application/javascript" src="templates.js"></script>
 </head>
 <body>
 <pre id="test">
@@ -16,8 +17,8 @@
   });
 
   var test;
-  runTest(function () {
-    test = new PeerConnectionTest();
+  runTest(function (options) {
+    test = new PeerConnectionTest(options);
     test.setMediaConstraints([{audio: true}], [{audio: true}]);
     test.run();
   });

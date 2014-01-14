@@ -3,15 +3,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include "nsAlgorithm.h"
 #include "nsString.h"
-#include "nsBidiUtils.h"
-#include "nsMathUtils.h"
-
-#include "gfxTypes.h"
-
 #include "gfxContext.h"
-#include "gfxPlatform.h"
 #include "gfxHarfBuzzShaper.h"
 #include "gfxFontUtils.h"
 #include "nsUnicodeProperties.h"
@@ -21,9 +14,6 @@
 #include "harfbuzz/hb.h"
 #include "harfbuzz/hb-ot.h"
 
-#include "cairo.h"
-
-#include "nsCRT.h"
 #include <algorithm>
 
 #define FloatToFixed(f) (65536 * (f))
@@ -43,7 +33,8 @@ using namespace mozilla::unicode; // for Unicode property lookup
 
 gfxHarfBuzzShaper::gfxHarfBuzzShaper(gfxFont *aFont)
     : gfxFontShaper(aFont),
-      mHBFace(nullptr),
+      mHBFace(aFont->GetFontEntry()->GetHBFace()),
+      mHBFont(nullptr),
       mKernTable(nullptr),
       mHmtxTable(nullptr),
       mNumLongMetrics(0),
@@ -52,60 +43,29 @@ gfxHarfBuzzShaper::gfxHarfBuzzShaper(gfxFont *aFont)
       mSubtableOffset(0),
       mUVSTableOffset(0),
       mUseFontGetGlyph(aFont->ProvidesGetGlyph()),
-      mUseFontGlyphWidths(false)
+      mUseFontGlyphWidths(false),
+      mInitialized(false)
 {
 }
 
 gfxHarfBuzzShaper::~gfxHarfBuzzShaper()
 {
-    hb_blob_destroy(mCmapTable);
-    hb_blob_destroy(mHmtxTable);
-    hb_blob_destroy(mKernTable);
-    hb_face_destroy(mHBFace);
-}
-
-/*
- * HarfBuzz callback access to font table data
- */
-
-// callback for HarfBuzz to get a font table (in hb_blob_t form)
-// from the shaper (passed as aUserData)
-static hb_blob_t *
-HBGetTable(hb_face_t *face, hb_tag_t aTag, void *aUserData)
-{
-    gfxHarfBuzzShaper *shaper = static_cast<gfxHarfBuzzShaper*>(aUserData);
-    gfxFont *font = shaper->GetFont();
-
-    // bug 589682 - ignore the GDEF table in buggy fonts (applies to
-    // Italic and BoldItalic faces of Times New Roman)
-    if (aTag == TRUETYPE_TAG('G','D','E','F') &&
-        font->GetFontEntry()->IgnoreGDEF()) {
-        return nullptr;
+    if (mCmapTable) {
+        hb_blob_destroy(mCmapTable);
     }
-
-    // bug 721719 - ignore the GSUB table in buggy fonts (applies to Roboto,
-    // at least on some Android ICS devices; set in gfxFT2FontList.cpp)
-    if (aTag == TRUETYPE_TAG('G','S','U','B') &&
-        font->GetFontEntry()->IgnoreGSUB()) {
-        return nullptr;
+    if (mHmtxTable) {
+        hb_blob_destroy(mHmtxTable);
     }
-
-    return font->GetFontTable(aTag);
+    if (mKernTable) {
+        hb_blob_destroy(mKernTable);
+    }
+    if (mHBFont) {
+        hb_font_destroy(mHBFont);
+    }
+    if (mHBFace) {
+        hb_face_destroy(mHBFace);
+    }
 }
-
-/*
- * HarfBuzz font callback functions; font_data is a ptr to a
- * FontCallbackData struct
- */
-
-struct FontCallbackData {
-    FontCallbackData(gfxHarfBuzzShaper *aShaper, gfxContext *aContext)
-        : mShaper(aShaper), mContext(aContext)
-    { }
-
-    gfxHarfBuzzShaper *mShaper;
-    gfxContext        *mContext;
-};
 
 #define UNICODE_BMP_LIMIT 0x10000
 
@@ -113,7 +73,7 @@ hb_codepoint_t
 gfxHarfBuzzShaper::GetGlyph(hb_codepoint_t unicode,
                             hb_codepoint_t variation_selector) const
 {
-    hb_codepoint_t gid;
+    hb_codepoint_t gid = 0;
 
     if (mUseFontGetGlyph) {
         gid = mFont->GetGlyph(unicode, variation_selector);
@@ -128,6 +88,18 @@ gfxHarfBuzzShaper::GetGlyph(hb_codepoint_t unicode,
         const uint8_t* data =
             (const uint8_t*)hb_blob_get_data(mCmapTable, nullptr);
 
+        if (variation_selector) {
+            if (mUVSTableOffset) {
+                gid =
+                    gfxFontUtils::MapUVSToGlyphFormat14(data + mUVSTableOffset,
+                                                        unicode,
+                                                        variation_selector);
+            }
+            // If the variation sequence was not supported, return zero here;
+            // harfbuzz will call us again for the base character alone
+            return gid;
+        }
+
         switch (mCmapFormat) {
         case 4:
             gid = unicode < UNICODE_BMP_LIMIT ?
@@ -140,20 +112,7 @@ gfxHarfBuzzShaper::GetGlyph(hb_codepoint_t unicode,
             break;
         default:
             NS_WARNING("unsupported cmap format, glyphs will be missing");
-            gid = 0;
             break;
-        }
-
-        if (gid && variation_selector && mUVSTableOffset) {
-            hb_codepoint_t varGID =
-                gfxFontUtils::MapUVSToGlyphFormat14(data + mUVSTableOffset,
-                                                    unicode,
-                                                    variation_selector);
-            if (varGID) {
-                gid = varGID;
-            }
-            // else the variation sequence was not supported, use default
-            // mapping of the character code alone
         }
     }
 
@@ -173,8 +132,8 @@ HBGetGlyph(hb_font_t *font, void *font_data,
            hb_codepoint_t *glyph,
            void *user_data)
 {
-    const FontCallbackData *fcd =
-        static_cast<const FontCallbackData*>(font_data);
+    const gfxHarfBuzzShaper::FontCallbackData *fcd =
+        static_cast<const gfxHarfBuzzShaper::FontCallbackData*>(font_data);
     *glyph = fcd->mShaper->GetGlyph(unicode, variation_selector);
     return *glyph != 0;
 }
@@ -238,8 +197,8 @@ static hb_position_t
 HBGetGlyphHAdvance(hb_font_t *font, void *font_data,
                    hb_codepoint_t glyph, void *user_data)
 {
-    const FontCallbackData *fcd =
-        static_cast<const FontCallbackData*>(font_data);
+    const gfxHarfBuzzShaper::FontCallbackData *fcd =
+        static_cast<const gfxHarfBuzzShaper::FontCallbackData*>(font_data);
     return fcd->mShaper->GetGlyphHAdvance(fcd->mContext, glyph);
 }
 
@@ -498,7 +457,7 @@ gfxHarfBuzzShaper::GetHKerning(uint16_t aFirstGlyph,
     }
 
     if (!mKernTable) {
-        mKernTable = mFont->GetFontTable(TRUETYPE_TAG('k','e','r','n'));
+        mKernTable = mFont->GetFontEntry()->GetFontTable(TRUETYPE_TAG('k','e','r','n'));
         if (!mKernTable) {
             mKernTable = hb_blob_get_empty();
         }
@@ -642,8 +601,8 @@ HBGetHKerning(hb_font_t *font, void *font_data,
               hb_codepoint_t first_glyph, hb_codepoint_t second_glyph,
               void *user_data)
 {
-    const FontCallbackData *fcd =
-        static_cast<const FontCallbackData*>(font_data);
+    const gfxHarfBuzzShaper::FontCallbackData *fcd =
+        static_cast<const gfxHarfBuzzShaper::FontCallbackData*>(font_data);
     return fcd->mShaper->GetHKerning(first_glyph, second_glyph);
 }
 
@@ -851,11 +810,14 @@ gfxHarfBuzzShaper::ShapeText(gfxContext      *aContext,
         return false;
     }
 
-    if (!mHBFace) {
+    mCallbackData.mContext = aContext;
+    gfxFontEntry *entry = mFont->GetFontEntry();
+
+    if (!mInitialized) {
+        mInitialized = true;
+        mCallbackData.mShaper = this;
 
         mUseFontGlyphWidths = mFont->ProvidesGlyphWidths();
-
-        // set up the harfbuzz face etc the first time we use the font
 
         if (!sHBFontFuncs) {
             // static function callback pointers, initialized by the first
@@ -897,11 +859,9 @@ gfxHarfBuzzShaper::ShapeText(gfxContext      *aContext,
                                                 nullptr, nullptr);
         }
 
-        mHBFace = hb_face_create_for_tables(HBGetTable, this, nullptr);
-
         if (!mUseFontGetGlyph) {
             // get the cmap table and find offset to our subtable
-            mCmapTable = mFont->GetFontTable(TRUETYPE_TAG('c','m','a','p'));
+            mCmapTable = entry->GetFontTable(TRUETYPE_TAG('c','m','a','p'));
             if (!mCmapTable) {
                 NS_WARNING("failed to load cmap, glyphs will be missing");
                 return false;
@@ -920,8 +880,7 @@ gfxHarfBuzzShaper::ShapeText(gfxContext      *aContext,
             // the hmtx table directly;
             // read mNumLongMetrics from hhea table without caching its blob,
             // and preload/cache the hmtx table
-            hb_blob_t *hheaTable =
-                mFont->GetFontTable(TRUETYPE_TAG('h','h','e','a'));
+            gfxFontEntry::AutoTable hheaTable(entry, TRUETYPE_TAG('h','h','e','a'));
             if (hheaTable) {
                 uint32_t len;
                 const HMetricsHeader* hhea =
@@ -935,7 +894,7 @@ gfxHarfBuzzShaper::ShapeText(gfxContext      *aContext,
                         // in that case, we won't be able to use this font
                         // (this method will return FALSE below if mHmtx is null)
                         mHmtxTable =
-                            mFont->GetFontTable(TRUETYPE_TAG('h','m','t','x'));
+                            entry->GetFontTable(TRUETYPE_TAG('h','m','t','x'));
                         if (hb_blob_get_length(mHmtxTable) <
                             mNumLongMetrics * sizeof(HLongMetric)) {
                             // hmtx table is not large enough for the claimed
@@ -946,8 +905,13 @@ gfxHarfBuzzShaper::ShapeText(gfxContext      *aContext,
                     }
                 }
             }
-            hb_blob_destroy(hheaTable);
         }
+
+        mHBFont = hb_font_create(mHBFace);
+        hb_font_set_funcs(mHBFont, sHBFontFuncs, &mCallbackData, nullptr);
+        hb_font_set_ppem(mHBFont, mFont->GetAdjustedSize(), mFont->GetAdjustedSize());
+        uint32_t scale = FloatToFixed(mFont->GetAdjustedSize()); // 16.16 fixed-point
+        hb_font_set_scale(mHBFont, scale, scale);
     }
 
     if ((!mUseFontGetGlyph && mCmapFormat <= 0) ||
@@ -956,23 +920,17 @@ gfxHarfBuzzShaper::ShapeText(gfxContext      *aContext,
         return false;
     }
 
-    FontCallbackData fcd(this, aContext);
-    hb_font_t *font = hb_font_create(mHBFace);
-    hb_font_set_funcs(font, sHBFontFuncs, &fcd, nullptr);
-    hb_font_set_ppem(font, mFont->GetAdjustedSize(), mFont->GetAdjustedSize());
-    uint32_t scale = FloatToFixed(mFont->GetAdjustedSize()); // 16.16 fixed-point
-    hb_font_set_scale(font, scale, scale);
-
-    nsAutoTArray<hb_feature_t,20> features;
-
-    gfxFontEntry *entry = mFont->GetFontEntry();
     const gfxFontStyle *style = mFont->GetStyle();
 
+    nsAutoTArray<hb_feature_t,20> features;
     nsDataHashtable<nsUint32HashKey,uint32_t> mergedFeatures;
 
-    if (MergeFontFeatures(style->featureSettings,
-                      mFont->GetFontEntry()->mFeatureSettings,
-                      aShapedText->DisableLigatures(), mergedFeatures)) {
+    if (MergeFontFeatures(style,
+                          entry->mFeatureSettings,
+                          aShapedText->DisableLigatures(),
+                          entry->FamilyName(),
+                          mergedFeatures))
+    {
         // enumerate result and insert into hb_feature array
         mergedFeatures.Enumerate(AddFeature, &features);
     }
@@ -1008,7 +966,7 @@ gfxHarfBuzzShaper::ShapeText(gfxContext      *aContext,
                         reinterpret_cast<const uint16_t*>(aText),
                         length, 0, length);
 
-    hb_shape(font, buffer, features.Elements(), features.Length());
+    hb_shape(mHBFont, buffer, features.Elements(), features.Length());
 
     if (isRightToLeft) {
         hb_buffer_reverse(buffer);
@@ -1019,7 +977,6 @@ gfxHarfBuzzShaper::ShapeText(gfxContext      *aContext,
 
     NS_WARN_IF_FALSE(NS_SUCCEEDED(rv), "failed to store glyphs into gfxShapedWord");
     hb_buffer_destroy(buffer);
-    hb_font_destroy(font);
 
     return NS_SUCCEEDED(rv);
 }

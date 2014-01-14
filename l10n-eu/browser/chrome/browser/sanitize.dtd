@@ -3,7 +3,7 @@
    - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
 
 <!ENTITY sanitizePrefs2.title          "Historia garbitzeko ezarpenak">
-<!ENTITY sanitizeDialog2.title         "Garbitu azkenaldiko historia">
+<!ENTITY sanitizeDialog2.title         "Garbitu azken historia">
 
 <!ENTITY clearDataSettings2.label     "&brandShortName; ixtean, garbitu automatikoki:">
 <!-- XXX rearrange entities to match physical layout when l10n isn't an issue -->
@@ -38,9 +38,9 @@ that require it.  -->
 <!ENTITY itemFormSearchHistory.accesskey   "n">
 <!ENTITY itemPasswords.label               "Gordetako pasahitzak">
 <!ENTITY itemPasswords.accesskey           "p">
-<!ENTITY itemCookies.label                 "Cookie-ak">
+<!ENTITY itemCookies.label                 "Cookieak">
 <!ENTITY itemCookies.accesskey             "C">
-<!ENTITY itemCache.label                   "Cache-a">
+<!ENTITY itemCache.label                   "Cachea">
 <!ENTITY itemCache.accesskey               "a">
 <!ENTITY itemOfflineApps.label             "Lineaz kanpoko webguneen datuak">
 <!ENTITY itemOfflineApps.accesskey         "L">

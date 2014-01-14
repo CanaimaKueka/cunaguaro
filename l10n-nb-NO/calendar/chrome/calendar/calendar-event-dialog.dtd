@@ -153,6 +153,8 @@
 <!ENTITY event.location.accesskey                         "S">
 <!ENTITY event.categories.label                           "Kategori:">
 <!ENTITY event.categories.accesskey                       "K">
+<!ENTITY event.categories.textbox.label                   "Legg til ny kategori" >
+<!ENTITY event.categories.textbox.accesskey               "L">
 <!ENTITY event.calendar.label                             "Kalender:" >
 <!ENTITY event.calendar.accesskey                         "e">
 <!ENTITY event.attendees.label                            "Deltakere:" >
@@ -205,7 +207,7 @@
 <!ENTITY event.reminder.1day.before.label                 "1 dag før" >
 <!ENTITY event.reminder.2days.before.label                "2 dager før" >
 <!ENTITY event.reminder.1week.before.label                "1 uker før" >
-<!ENTITY event.reminder.custom.label                      "Egendefinert …" >
+<!ENTITY event.reminder.custom.label                      "Annet …" >
 
 <!ENTITY event.reminder.multiple.label                    "Flere påminnelser …" >
 
@@ -219,7 +221,7 @@
 <!ENTITY event.repeat.bi.weekly.label                   "Hver andre uke">
 <!ENTITY event.repeat.monthly.label                     "Månedlig">
 <!ENTITY event.repeat.yearly.label                      "Årlig">
-<!ENTITY event.repeat.custom.label                      "Egendefinert …">
+<!ENTITY event.repeat.custom.label                      "Annet …">
 
 <!ENTITY event.recurrence.pattern.label                 "Gjentakelsesmønster">
 <!ENTITY event.recurrence.occurs.label                  "Gjenta" >

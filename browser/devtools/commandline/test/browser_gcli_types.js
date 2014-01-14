@@ -37,6 +37,15 @@ function test() {
 
 // var assert = require('test/assert');
 var types = require('gcli/types');
+var nodetype = require('gcli/types/node');
+
+exports.setup = function(options) {
+  nodetype.setDocument(options.window.document);
+};
+
+exports.shutdown = function(options) {
+  nodetype.unsetDocument();
+};
 
 function forEachType(options, typeSpec, callback) {
   types.getTypeNames().forEach(function(name) {
@@ -75,7 +84,8 @@ exports.testDefault = function(options) {
   }
 
   forEachType(options, {}, function(type) {
-    var blank = type.getBlank().value;
+    var context = options.display.requisition.executionContext;
+    var blank = type.getBlank(context).value;
 
     // boolean and array types are exempt from needing undefined blank values
     if (type.name === 'boolean') {

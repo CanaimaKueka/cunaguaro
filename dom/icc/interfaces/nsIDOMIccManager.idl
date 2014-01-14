@@ -5,11 +5,11 @@
 #include "nsIDOMEventTarget.idl"
 #include "SimToolKit.idl"
 
-interface nsIDOMEventListener;
 interface nsIDOMDOMRequest;
-interface nsIDOMContact;
+interface nsIDOMEventListener;
+interface nsIDOMMozIccInfo;
 
-[scriptable, builtinclass, uuid(fcc1971a-ddb7-4b38-8474-25bef7e5bf40)]
+[scriptable, builtinclass, uuid(b403e307-e4ff-47a0-ac1e-c97b042b4595)]
 interface nsIDOMMozIccManager : nsIDOMEventTarget
 {
   /**
@@ -216,6 +216,12 @@ interface nsIDOMMozIccManager : nsIDOMEventTarget
   const unsigned short STK_TIMER_GET_CURRENT_VALUE = 0x02;
 
   /**
+   * Browser Termination Cause
+   */
+  const unsigned short STK_BROWSER_TERMINATION_CAUSE_USER  = 0x00;
+  const unsigned short STK_BROWSER_TERMINATION_CAUSE_ERROR = 0x01;
+
+  /**
    * Send the response back to ICC after an attempt to execute STK Proactive
    * Command.
    *
@@ -240,7 +246,7 @@ interface nsIDOMMozIccManager : nsIDOMEventTarget
 
   /**
    * Send the "Timer Expiration" Envelope command to ICC for TIMER MANAGEMENT.
-  `*
+   *
    * @param timer
    *        The identifier and value for a timer.
    *        timerId: Identifier of the timer that has expired.
@@ -260,6 +266,7 @@ interface nsIDOMMozIccManager : nsIDOMEventTarget
    *        - MozStkCallEvent
    *        - MozStkLanguageSelectionEvent
    *        - MozStkGeneralEvent
+   *        - MozStkBrowserTerminationEvent
    */
   void sendStkEventDownload(in jsval event);
 
@@ -274,6 +281,202 @@ interface nsIDOMMozIccManager : nsIDOMEventTarget
    * ICC.
    */
   [implicit_jscontext] attribute jsval onstksessionend;
+
+  // UICC Card Information.
+
+  /**
+   * Information stored in the device's ICC card.
+   *
+   * Null if the card is not detected.
+   */
+  readonly attribute nsIDOMMozIccInfo iccInfo;
+
+  /**
+   * The 'iccinfochange' event is notified whenever the icc info object
+   * changes.
+   */
+  [implicit_jscontext] attribute jsval oniccinfochange;
+
+  // UICC Card State.
+
+  /**
+   * Indicates the state of the device's ICC card.
+   *
+   * Possible values: null, 'illegal', 'unknown', 'absent', 'pinRequired',
+   * 'pukRequired', 'personalizationInProgress', 'networkLocked',
+   * 'corporateLocked', 'serviceProviderLocked', 'networkPukRequired',
+   * 'corporatePukRequired', 'serviceProviderPukRequired',
+   * 'personalizationReady', 'ready'.
+   */
+  readonly attribute DOMString cardState;
+
+  /**
+   * The 'cardstatechange' event is notified when the 'cardState' attribute
+   * changes value.
+   */
+  [implicit_jscontext] attribute jsval oncardstatechange;
+
+  // UICC Card Lock interfaces.
+
+  /**
+   * Find out about the status of an ICC lock (e.g. the PIN lock).
+   *
+   * @param lockType
+   *        Identifies the lock type, e.g. "pin" for the PIN lock, "fdn" for
+   *        the FDN lock.
+   *
+   * @return a DOM Request.
+   *         The request's result will be an object containing
+   *         information about the specified lock's status,
+   *         e.g. {lockType: "pin", enabled: true}.
+   */
+  nsIDOMDOMRequest getCardLock(in DOMString lockType);
+
+  /**
+   * Unlock a card lock.
+   *
+   * @param info
+   *        An object containing the information necessary to unlock
+   *        the given lock. At a minimum, this object must have a
+   *        "lockType" attribute which specifies the type of lock, e.g.
+   *        "pin" for the PIN lock. Other attributes are dependent on
+   *        the lock type.
+   *
+   * Examples:
+   *
+   * (1) Unlocking the PIN:
+   *
+   *   unlockCardLock({lockType: "pin",
+   *                   pin: "..."});
+   *
+   * (2) Unlocking the PUK and supplying a new PIN:
+   *
+   *   unlockCardLock({lockType: "puk",
+   *                   puk: "...",
+   *                   newPin: "..."});
+   *
+   * (3) Network depersonalization. Unlocking the network control key (NCK).
+   *
+   *   unlockCardLock({lockType: "nck",
+   *                   pin: "..."});
+   *
+   * (4) Corporate depersonalization. Unlocking the corporate control key (CCK).
+   *
+   *   unlockCardLock({lockType: "cck",
+   *                   pin: "..."});
+   *
+   * (5) Service Provider depersonalization. Unlocking the service provider
+   *     control key (SPCK).
+   *
+   *   unlockCardLock({lockType: "spck",
+   *                   pin: "..."});
+   *
+   * (6) Network PUK depersonalization. Unlocking the network control key (NCK).
+   *
+   *   unlockCardLock({lockType: "nckPuk",
+   *                   puk: "..."});
+   *
+   * (7) Corporate PUK depersonalization. Unlocking the corporate control key
+   *     (CCK).
+   *
+   *   unlockCardLock({lockType: "cckPuk",
+   *                   puk: "..."});
+   *
+   * (8) Service Provider PUK depersonalization. Unlocking the service provider
+   *     control key (SPCK).
+   *
+   *   unlockCardLock({lockType: "spckPuk",
+   *                   puk: "..."});
+   *
+   * @return a nsIDOMDOMRequest.
+   *         The request's result will be an object containing
+   *         information about the unlock operation.
+   *
+   * Examples:
+   *
+   * (1) Unlocking failed:
+   *
+   *     {
+   *       lockType:   "pin",
+   *       success:    false,
+   *       retryCount: 2
+   *     }
+   *
+   * (2) Unlocking succeeded:
+   *
+   *     {
+   *       lockType:  "pin",
+   *       success:   true
+   *     }
+   */
+  nsIDOMDOMRequest unlockCardLock(in jsval info);
+
+  /**
+   * Modify the state of a card lock.
+   *
+   * @param info
+   *        An object containing information about the lock and
+   *        how to modify its state. At a minimum, this object
+   *        must have a "lockType" attribute which specifies the
+   *        type of lock, e.g. "pin" for the PIN lock. Other
+   *        attributes are dependent on the lock type.
+   *
+   * Examples:
+   *
+   * (1a) Disabling the PIN lock:
+   *
+   *   setCardLock({lockType: "pin",
+   *                pin: "...",
+   *                enabled: false});
+   *
+   * (1b) Disabling the FDN lock:
+   *
+   *   setCardLock({lockType: "fdn",
+   *                pin2: "...",
+   *                enabled: false});
+   *
+   * (2) Changing the PIN:
+   *
+   *   setCardLock({lockType: "pin",
+   *                pin: "...",
+   *                newPin: "..."});
+   *
+   * @return a nsIDOMDOMRequest.
+   *         The request's result will be an object containing
+   *         information about the operation.
+   *
+   * Examples:
+   *
+   * (1) Enabling/Disabling card lock failed or change card lock failed.
+   *
+   *     {
+   *       lockType: "pin",
+   *       success: false,
+   *       retryCount: 2
+   *     }
+   *
+   * (2) Enabling/Disabling card lock succeed or change card lock succeed.
+   *
+   *     {
+   *       lockType: "pin",
+   *       success: true
+   *     }
+   */
+  nsIDOMDOMRequest setCardLock(in jsval info);
+
+  /**
+   * Retrieve the number of remaining tries for unlocking the card.
+   *
+   * @param lockType
+   *        Identifies the lock type, e.g. "pin" for the PIN lock, "puk" for
+   *        the PUK lock.
+   *
+   * @return a DOM Request.
+   *         If the lock type is "pin", or "puk", the request's result will be
+   *         an object containing the number of retries for the specified
+   *         lock. For any other lock type, the result is undefined.
+   */
+  nsIDOMDOMRequest getCardLockRetryCount(in DOMString lockType);
 
   // UICC Phonebook Interfaces.
 
@@ -300,7 +503,7 @@ interface nsIDOMMozIccManager : nsIDOMEventTarget
    *        PIN2 is only required for 'fdn'.
    */
   nsIDOMDOMRequest updateContact(in DOMString contactType,
-                                 in nsIDOMContact contact,
+                                 in jsval contact,
                                  [optional] in DOMString pin2);
 
   // End of UICC Phonebook Interfaces.

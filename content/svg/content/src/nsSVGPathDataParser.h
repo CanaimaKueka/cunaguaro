@@ -6,6 +6,8 @@
 #ifndef __NS_SVGPATHDATAPARSER_H__
 #define __NS_SVGPATHDATAPARSER_H__
 
+#include "mozilla/Attributes.h"
+#include "mozilla/gfx/Point.h"
 #include "gfxPoint.h"
 #include "nsSVGDataParser.h"
 
@@ -38,7 +40,7 @@ protected:
   virtual nsresult StoreEllipticalArc(bool absCoords, float x, float y,
                                       float r1, float r2, float angle,
                                       bool largeArcFlag, bool sweepFlag) = 0;
-  virtual nsresult Match();
+  virtual nsresult Match() MOZ_OVERRIDE;
  
   nsresult MatchCoordPair(float* aX, float* aY);
   bool IsTokenCoordPairStarter();
@@ -108,20 +110,22 @@ protected:
 
 class nsSVGArcConverter
 {
+  typedef mozilla::gfx::Point Point;
+
 public:
-  nsSVGArcConverter(const gfxPoint &from,
-                    const gfxPoint &to,
-                    const gfxPoint &radii,
+  nsSVGArcConverter(const Point& from,
+                    const Point& to,
+                    const Point& radii,
                     double angle,
                     bool largeArcFlag,
                     bool sweepFlag);
-  bool GetNextSegment(gfxPoint *cp1, gfxPoint *cp2, gfxPoint *to);
+  bool GetNextSegment(Point* cp1, Point* cp2, Point* to);
 protected:
   int32_t mNumSegs, mSegIndex;
   double mTheta, mDelta, mT;
   double mSinPhi, mCosPhi;
   double mRx, mRy;
-  gfxPoint mFrom, mC;
+  Point mFrom, mC;
 };
 
 class nsSVGPathDataParserToInternal : public nsSVGPathDataParser
@@ -133,22 +137,22 @@ public:
   nsresult Parse(const nsAString &aValue);
 
 protected:
-  virtual nsresult StoreMoveTo(bool absCoords, float x, float y);
-  virtual nsresult StoreClosePath();
-  virtual nsresult StoreLineTo(bool absCoords, float x, float y);
-  virtual nsresult StoreHLineTo(bool absCoords, float x);
-  virtual nsresult StoreVLineTo(bool absCoords, float y);
+  virtual nsresult StoreMoveTo(bool absCoords, float x, float y) MOZ_OVERRIDE;
+  virtual nsresult StoreClosePath() MOZ_OVERRIDE;
+  virtual nsresult StoreLineTo(bool absCoords, float x, float y) MOZ_OVERRIDE;
+  virtual nsresult StoreHLineTo(bool absCoords, float x) MOZ_OVERRIDE;
+  virtual nsresult StoreVLineTo(bool absCoords, float y) MOZ_OVERRIDE;
   virtual nsresult StoreCurveTo(bool absCoords, float x, float y,
-                                float x1, float y1, float x2, float y2);
+                                float x1, float y1, float x2, float y2) MOZ_OVERRIDE;
   virtual nsresult StoreSmoothCurveTo(bool absCoords, float x, float y,
-                                      float x2, float y2);
+                                      float x2, float y2) MOZ_OVERRIDE;
   virtual nsresult StoreQuadCurveTo(bool absCoords, float x, float y,
-                                    float x1, float y1);
+                                    float x1, float y1) MOZ_OVERRIDE;
   virtual nsresult StoreSmoothQuadCurveTo(bool absCoords,
-                                          float x, float y);
+                                          float x, float y) MOZ_OVERRIDE;
   virtual nsresult StoreEllipticalArc(bool absCoords, float x, float y,
                                       float r1, float r2, float angle,
-                                      bool largeArcFlag, bool sweepFlag);
+                                      bool largeArcFlag, bool sweepFlag) MOZ_OVERRIDE;
 
 private:
   mozilla::SVGPathData *mPathSegList;

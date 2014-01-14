@@ -9,11 +9,11 @@
 
 #include "AudioNode.h"
 #include "AudioBuffer.h"
-#include "AudioParam.h"
-#include "mozilla/dom/BindingUtils.h"
 
 namespace mozilla {
 namespace dom {
+
+class AudioParam;
 
 class AudioBufferSourceNode : public AudioNode,
                               public MainThreadMediaStreamListener
@@ -141,7 +141,6 @@ private:
   double mDuration;
   nsRefPtr<AudioBuffer> mBuffer;
   nsRefPtr<AudioParam> mPlaybackRate;
-  SelfReference<AudioBufferSourceNode> mPlayingRef; // a reference to self while playing
   bool mLoop;
   bool mStartCalled;
   bool mStopped;

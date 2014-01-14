@@ -18,6 +18,7 @@
 #include "nsAppDirectoryServiceDefs.h"
 #include "nsISimpleEnumerator.h"
 #include "nsIContent.h"
+#include "nsIDocument.h"
 #include "nsIServiceManager.h"
 #include "mozilla/Preferences.h"
 #include "BasicLayers.h"
@@ -38,6 +39,8 @@
 #include "mozilla/Attributes.h"
 #include "nsContentUtils.h"
 #include "gfxPlatform.h"
+#include "mozilla/gfx/2D.h"
+#include "mozilla/MouseEvents.h"
 
 #ifdef ACCESSIBILITY
 #include "nsAccessibilityService.h"
@@ -48,7 +51,6 @@
 
 static void debug_RegisterPrefCallbacks();
 
-static bool debug_InSecureKeyboardInputMode = false;
 #endif
 
 #ifdef NOISY_WIDGET_LEAKS
@@ -58,9 +60,9 @@ static int32_t gNumWidgets;
 nsIRollupListener* nsBaseWidget::gRollupListener = nullptr;
 
 using namespace mozilla::layers;
+using namespace mozilla::ipc;
 using namespace mozilla;
 using base::Thread;
-using mozilla::ipc::AsyncChannel;
 
 nsIContent* nsBaseWidget::mLastRollup = nullptr;
 // Global user preference for disabling native theme. Used
@@ -120,8 +122,32 @@ nsBaseWidget::nsBaseWidget()
 #ifdef DEBUG
   debug_RegisterPrefCallbacks();
 #endif
+
+  mShutdownObserver = new WidgetShutdownObserver(this);
+  nsContentUtils::RegisterShutdownObserver(mShutdownObserver);
 }
 
+NS_IMPL_ISUPPORTS1(WidgetShutdownObserver, nsIObserver)
+
+NS_IMETHODIMP
+WidgetShutdownObserver::Observe(nsISupports *aSubject,
+                                const char *aTopic,
+                                const PRUnichar *aData)
+{
+  if (strcmp(aTopic, NS_XPCOM_SHUTDOWN_OBSERVER_ID) == 0 &&
+      mWidget) {
+    mWidget->Shutdown();
+    nsContentUtils::UnregisterShutdownObserver(this);
+  }
+ return NS_OK;
+}
+
+void
+nsBaseWidget::Shutdown()
+{
+  DestroyCompositor();
+  mShutdownObserver = nullptr;
+}
 
 static void DeferredDestroyCompositor(CompositorParent* aCompositorParent,
                               CompositorChild* aCompositorChild)
@@ -171,6 +197,15 @@ nsBaseWidget::~nsBaseWidget()
   if (mLayerManager) {
     mLayerManager->Destroy();
     mLayerManager = nullptr;
+  }
+
+  if (mShutdownObserver) {
+    // If the shutdown observer is currently processing observers,
+    // then UnregisterShutdownObserver won't stop our Observer
+    // function from being called. Make sure we don't try
+    // to reference the dead widget.
+    mShutdownObserver->mWidget = nullptr;
+    nsContentUtils::UnregisterShutdownObserver(mShutdownObserver);
   }
 
   DestroyCompositor();
@@ -386,7 +421,7 @@ float nsBaseWidget::GetDPI()
   return 96.0f;
 }
 
-double nsIWidget::GetDefaultScale()
+CSSToLayoutDeviceScale nsIWidget::GetDefaultScale()
 {
   double devPixelsPerCSSPixel = DefaultScaleOverride();
 
@@ -394,7 +429,7 @@ double nsIWidget::GetDefaultScale()
     devPixelsPerCSSPixel = GetDefaultScaleInternal();
   }
 
-  return devPixelsPerCSSPixel;
+  return CSSToLayoutDeviceScale(devPixelsPerCSSPixel);
 }
 
 /* static */
@@ -715,11 +750,11 @@ NS_IMETHODIMP nsBaseWidget::MakeFullScreen(bool aFullScreen)
       mOriginalBounds = new nsIntRect();
     GetScreenBounds(*mOriginalBounds);
     // convert dev pix to display pix for window manipulation 
-    double scale = GetDefaultScale();
-    mOriginalBounds->x = NSToIntRound(mOriginalBounds->x / scale);
-    mOriginalBounds->y = NSToIntRound(mOriginalBounds->y / scale);
-    mOriginalBounds->width = NSToIntRound(mOriginalBounds->width / scale);
-    mOriginalBounds->height = NSToIntRound(mOriginalBounds->height / scale);
+    CSSToLayoutDeviceScale scale = GetDefaultScale();
+    mOriginalBounds->x = NSToIntRound(mOriginalBounds->x / scale.scale);
+    mOriginalBounds->y = NSToIntRound(mOriginalBounds->y / scale.scale);
+    mOriginalBounds->width = NSToIntRound(mOriginalBounds->width / scale.scale);
+    mOriginalBounds->height = NSToIntRound(mOriginalBounds->height / scale.scale);
 
     // Move to top-left corner of screen and size to the screen dimensions
     nsCOMPtr<nsIScreenManager> screenManager;
@@ -789,7 +824,7 @@ nsBaseWidget::AutoUseBasicLayerManager::~AutoUseBasicLayerManager()
 bool
 nsBaseWidget::ComputeShouldAccelerate(bool aDefault)
 {
-#if defined(XP_WIN) || defined(ANDROID) || (MOZ_PLATFORM_MAEMO > 5) || \
+#if defined(XP_WIN) || defined(ANDROID) || \
     defined(MOZ_GL_PROVIDER) || defined(XP_MACOSX)
   bool accelerateByDefault = true;
 #else
@@ -815,12 +850,8 @@ nsBaseWidget::ComputeShouldAccelerate(bool aDefault)
   }
 #endif
 
-  // We don't want to accelerate small popup windows like menu, but we still
-  // want to accelerate xul panels that may contain arbitrarily complex content.
-  bool isSmallPopup = ((mWindowType == eWindowType_popup) &&
-                      (mPopupType != ePopupTypePanel));
   // we should use AddBoolPrefVarCache
-  bool disableAcceleration = isSmallPopup || gfxPlatform::GetPrefLayersAccelerationDisabled() || (mWindowType == eWindowType_invisible);
+  bool disableAcceleration = IsSmallPopup() || gfxPlatform::GetPrefLayersAccelerationDisabled();
   mForceLayersAcceleration = gfxPlatform::GetPrefLayersAccelerationForceEnabled();
 
   const char *acceleratedEnv = PR_GetEnv("MOZ_ACCELERATED");
@@ -885,18 +916,27 @@ void nsBaseWidget::CreateCompositor()
   CreateCompositor(rect.width, rect.height);
 }
 
-mozilla::layers::LayersBackend
-nsBaseWidget::GetPreferredCompositorBackend()
+void
+nsBaseWidget::GetPreferredCompositorBackends(nsTArray<LayersBackend>& aHints)
 {
-  // We need a separate preference here (instead of using mUseLayersAcceleration)
-  // because we force enable accelerated layers with e10s. Once the BasicCompositor
-  // is stable enough to be used for Ripc/Cipc, then we can remove that and this
-  // pref.
-  if (Preferences::GetBool("layers.offmainthreadcomposition.prefer-basic", false)) {
-    return mozilla::layers::LAYERS_BASIC;
+  if (mUseLayersAcceleration) {
+    aHints.AppendElement(LAYERS_OPENGL);
   }
 
-  return mozilla::layers::LAYERS_OPENGL;
+  aHints.AppendElement(LAYERS_BASIC);
+}
+
+static void
+CheckForBasicBackends(nsTArray<LayersBackend>& aHints)
+{
+  for (size_t i = 0; i < aHints.Length(); ++i) {
+    if (aHints[i] == LAYERS_BASIC &&
+        !Preferences::GetBool("layers.offmainthreadcomposition.force-basic", false) &&
+        !Preferences::GetBool("browser.tabs.remote", false)) {
+      // basic compositor is not stable enough for regular use
+      aHints[i] = LAYERS_NONE;
+    }
+  }
 }
 
 void nsBaseWidget::CreateCompositor(int aWidth, int aHeight)
@@ -904,22 +944,33 @@ void nsBaseWidget::CreateCompositor(int aWidth, int aHeight)
   // Recreating this is tricky, as we may still have an old and we need
   // to make sure it's properly destroyed by calling DestroyCompositor!
 
+  // If we've already received a shutdown notification, don't try
+  // create a new compositor.
+  if (!mShutdownObserver) {
+    return;
+  }
+
   mCompositorParent = NewCompositorParent(aWidth, aHeight);
-  AsyncChannel *parentChannel = mCompositorParent->GetIPCChannel();
+  MessageChannel *parentChannel = mCompositorParent->GetIPCChannel();
   LayerManager* lm = new ClientLayerManager(this);
   MessageLoop *childMessageLoop = CompositorParent::CompositorLoop();
   mCompositorChild = new CompositorChild(lm);
-  AsyncChannel::Side childSide = mozilla::ipc::AsyncChannel::Child;
-  mCompositorChild->Open(parentChannel, childMessageLoop, childSide);
+  mCompositorChild->Open(parentChannel, childMessageLoop, ipc::ChildSide);
 
   TextureFactoryIdentifier textureFactoryIdentifier;
   PLayerTransactionChild* shadowManager;
-  mozilla::layers::LayersBackend backendHint = GetPreferredCompositorBackend();
+  nsTArray<LayersBackend> backendHints;
+  GetPreferredCompositorBackends(backendHints);
 
-  shadowManager = mCompositorChild->SendPLayerTransactionConstructor(
-    backendHint, 0, &textureFactoryIdentifier);
+  CheckForBasicBackends(backendHints);
 
-  if (shadowManager) {
+  bool success = false;
+  if (!backendHints.IsEmpty()) {
+    shadowManager = mCompositorChild->SendPLayerTransactionConstructor(
+      backendHints, 0, &textureFactoryIdentifier, &success);
+  }
+
+  if (success) {
     ShadowLayerForwarder* lf = lm->AsShadowForwarder();
     if (!lf) {
       delete lm;
@@ -929,23 +980,27 @@ void nsBaseWidget::CreateCompositor(int aWidth, int aHeight)
     lf->SetShadowManager(shadowManager);
     lf->IdentifyTextureHost(textureFactoryIdentifier);
     ImageBridgeChild::IdentifyCompositorTextureHost(textureFactoryIdentifier);
+    WindowUsesOMTC();
 
     mLayerManager = lm;
     return;
   }
 
-  // Failed to create a compositor!
   NS_WARNING("Failed to create an OMT compositor.");
   DestroyCompositor();
   // Compositor child had the only reference to LayerManager and will have
   // deallocated it when being freed.
 }
 
+bool nsBaseWidget::IsSmallPopup()
+{
+  return mWindowType == eWindowType_popup &&
+         mPopupType != ePopupTypePanel;
+}
+
 bool nsBaseWidget::ShouldUseOffMainThreadCompositing()
 {
-  bool isSmallPopup = ((mWindowType == eWindowType_popup) &&
-                      (mPopupType != ePopupTypePanel)) || (mWindowType == eWindowType_invisible);
-  return CompositorParent::CompositorLoop() && !isSmallPopup;
+  return CompositorParent::CompositorLoop() && !IsSmallPopup();
 }
 
 LayerManager* nsBaseWidget::GetLayerManager(PLayerTransactionChild* aShadowManager,
@@ -996,7 +1051,7 @@ LayerManager* nsBaseWidget::GetLayerManager(PLayerTransactionChild* aShadowManag
   return usedLayerManager;
 }
 
-BasicLayerManager* nsBaseWidget::CreateBasicLayerManager()
+LayerManager* nsBaseWidget::CreateBasicLayerManager()
 {
   return new BasicLayerManager(this);
 }
@@ -1004,6 +1059,11 @@ BasicLayerManager* nsBaseWidget::CreateBasicLayerManager()
 CompositorChild* nsBaseWidget::GetRemoteRenderer()
 {
   return mCompositorChild;
+}
+
+TemporaryRef<mozilla::gfx::DrawTarget> nsBaseWidget::StartRemoteDrawing()
+{
+  return nullptr;
 }
 
 //-------------------------------------------------------------------------
@@ -1055,9 +1115,11 @@ NS_METHOD nsBaseWidget::MoveClient(double aX, double aY)
 
   // GetClientOffset returns device pixels; scale back to display pixels
   // if that's what this widget uses for the Move/Resize APIs
-  double scale = BoundsUseDisplayPixels() ? 1.0 / GetDefaultScale() : 1.0;
-  aX -= clientOffset.x * scale;
-  aY -= clientOffset.y * scale;
+  CSSToLayoutDeviceScale scale = BoundsUseDisplayPixels()
+                                    ? GetDefaultScale()
+                                    : CSSToLayoutDeviceScale(1.0);
+  aX -= clientOffset.x * 1.0 / scale.scale;
+  aY -= clientOffset.y * 1.0 / scale.scale;
 
   return Move(aX, aY);
 }
@@ -1074,9 +1136,12 @@ NS_METHOD nsBaseWidget::ResizeClient(double aWidth,
 
   // GetClientBounds and mBounds are device pixels; scale back to display pixels
   // if that's what this widget uses for the Move/Resize APIs
-  double scale = BoundsUseDisplayPixels() ? 1.0 / GetDefaultScale() : 1.0;
-  aWidth = mBounds.width * scale + (aWidth - clientBounds.width * scale);
-  aHeight = mBounds.height * scale + (aHeight - clientBounds.height * scale);
+  CSSToLayoutDeviceScale scale = BoundsUseDisplayPixels()
+                                    ? GetDefaultScale()
+                                    : CSSToLayoutDeviceScale(1.0);
+  double invScale = 1.0 / scale.scale;
+  aWidth = mBounds.width * invScale + (aWidth - clientBounds.width * invScale);
+  aHeight = mBounds.height * invScale + (aHeight - clientBounds.height * invScale);
 
   return Resize(aWidth, aHeight, aRepaint);
 }
@@ -1093,7 +1158,7 @@ NS_METHOD nsBaseWidget::ResizeClient(double aX,
   nsIntRect clientBounds;
   GetClientBounds(clientBounds);
 
-  double scale = BoundsUseDisplayPixels() ? 1.0 / GetDefaultScale() : 1.0;
+  double scale = BoundsUseDisplayPixels() ? 1.0 / GetDefaultScale().scale : 1.0;
   aWidth = mBounds.width * scale + (aWidth - clientBounds.width * scale);
   aHeight = mBounds.height * scale + (aHeight - clientBounds.height * scale);
 
@@ -1180,26 +1245,6 @@ nsBaseWidget::HasPendingInputEvent()
 NS_IMETHODIMP
 nsBaseWidget::SetIcon(const nsAString&)
 {
-  return NS_OK;
-}
-
-NS_IMETHODIMP
-nsBaseWidget::BeginSecureKeyboardInput()
-{
-#ifdef DEBUG
-  NS_ASSERTION(!debug_InSecureKeyboardInputMode, "Attempting to nest call to BeginSecureKeyboardInput!");
-  debug_InSecureKeyboardInputMode = true;
-#endif
-  return NS_OK;
-}
-
-NS_IMETHODIMP
-nsBaseWidget::EndSecureKeyboardInput()
-{
-#ifdef DEBUG
-  NS_ASSERTION(debug_InSecureKeyboardInputMode, "Calling EndSecureKeyboardInput when it hasn't been enabled!");
-  debug_InSecureKeyboardInputMode = false;
-#endif
   return NS_OK;
 }
 
@@ -1360,13 +1405,15 @@ nsBaseWidget::ResolveIconName(const nsAString &aIconName,
 }
 
 NS_IMETHODIMP
-nsBaseWidget::BeginResizeDrag(nsGUIEvent* aEvent, int32_t aHorizontal, int32_t aVertical)
+nsBaseWidget::BeginResizeDrag(WidgetGUIEvent* aEvent,
+                              int32_t aHorizontal,
+                              int32_t aVertical)
 {
   return NS_ERROR_NOT_IMPLEMENTED;
 }
 
 NS_IMETHODIMP
-nsBaseWidget::BeginMoveDrag(nsMouseEvent* aEvent)
+nsBaseWidget::BeginMoveDrag(WidgetMouseEvent* aEvent)
 {
   return NS_ERROR_NOT_IMPLEMENTED;
 }
@@ -1478,7 +1525,7 @@ nsBaseWidget::NotifyUIStateChanged(UIStateChangeType aShowAccelerators,
 #ifdef ACCESSIBILITY
 
 a11y::Accessible*
-nsBaseWidget::GetAccessible()
+nsBaseWidget::GetRootAccessible()
 {
   NS_ENSURE_TRUE(mWidgetListener, nullptr);
 
@@ -1493,7 +1540,8 @@ nsBaseWidget::GetAccessible()
 
   // Accessible creation might be not safe so use IsSafeToRunScript to
   // make sure it's not created at unsafe times.
-  nsCOMPtr<nsIAccessibilityService> accService = services::GetAccessibilityService();
+  nsCOMPtr<nsIAccessibilityService> accService =
+    services::GetAccessibilityService();
   if (accService) {
     return accService->GetRootDocumentAccessible(presShell, nsContentUtils::IsSafeToRunScript());
   }
@@ -1515,7 +1563,7 @@ nsBaseWidget::GetAccessible()
 //
 //////////////////////////////////////////////////////////////
 /* static */ nsAutoString
-nsBaseWidget::debug_GuiEventToString(nsGUIEvent * aGuiEvent)
+nsBaseWidget::debug_GuiEventToString(WidgetGUIEvent* aGuiEvent)
 {
   NS_ASSERTION(nullptr != aGuiEvent,"cmon, null gui event.");
 
@@ -1692,7 +1740,7 @@ nsBaseWidget::debug_WantPaintFlashing()
 /* static */ void
 nsBaseWidget::debug_DumpEvent(FILE *                aFileOut,
                               nsIWidget *           aWidget,
-                              nsGUIEvent *          aGuiEvent,
+                              WidgetGUIEvent*       aGuiEvent,
                               const nsAutoCString & aWidgetName,
                               int32_t               aWindowID)
 {

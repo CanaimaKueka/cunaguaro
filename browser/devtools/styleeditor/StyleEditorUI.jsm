@@ -14,7 +14,7 @@ const Cu = Components.utils;
 Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://gre/modules/PluralForm.jsm");
 Cu.import("resource://gre/modules/NetUtil.jsm");
-Cu.import("resource://gre/modules/commonjs/sdk/core/promise.js");
+let promise = Cu.import("resource://gre/modules/commonjs/sdk/core/promise.js").Promise;
 Cu.import("resource:///modules/devtools/shared/event-emitter.js");
 Cu.import("resource:///modules/devtools/StyleEditorUtil.jsm");
 Cu.import("resource:///modules/devtools/SplitView.jsm");
@@ -48,7 +48,7 @@ function StyleEditorUI(debuggee, panelDoc) {
   this._root = this._panelDoc.getElementById("style-editor-chrome");
 
   this.editors = [];
-  this.selectedStyleSheetIndex = -1;
+  this.selectedEditor = null;
 
   this._onStyleSheetCreated = this._onStyleSheetCreated.bind(this);
   this._onStyleSheetsCleared = this._onStyleSheetsCleared.bind(this);
@@ -73,7 +73,7 @@ StyleEditorUI.prototype = {
       return true;
     }
     return this.editors.some((editor) => {
-      return editor.sourceEditor && editor.sourceEditor.dirty;
+      return editor.sourceEditor && !editor.sourceEditor.isClean();
     });
   },
 
@@ -82,6 +82,14 @@ StyleEditorUI.prototype = {
    */
   set isDirty(value) {
     this._markedDirty = value;
+  },
+
+  /*
+   * Index of selected stylesheet in document.styleSheets
+   */
+  get selectedStyleSheetIndex() {
+    return this.selectedEditor ?
+           this.selectedEditor.styleSheet.styleSheetIndex : -1;
   },
 
   /**
@@ -140,10 +148,17 @@ StyleEditorUI.prototype = {
    * Handler for debuggee's 'stylesheets-cleared' event. Remove all editors.
    */
   _onStyleSheetsCleared: function() {
-    this._clearStyleSheetEditors();
+    // remember selected sheet and line number for next load
+    if (this.selectedEditor && this.selectedEditor.sourceEditor) {
+      let href = this.selectedEditor.styleSheet.href;
+      let {line, ch} = this.selectedEditor.sourceEditor.getCursor();
+      this.selectStyleSheet(href, line, ch);
+    }
 
+    this._clearStyleSheetEditors();
     this._view.removeAll();
-    this.selectedStyleSheetIndex = -1;
+
+    this.selectedEditor = null;
 
     this._root.classList.add("loading");
   },
@@ -166,11 +181,22 @@ StyleEditorUI.prototype = {
    *        StyleSheet object for new sheet
    */
   _onDocumentLoad: function(event, styleSheets) {
+    if (this._styleSheetToSelect) {
+      // if selected stylesheet from previous load isn't here,
+      // just set first stylesheet to be selected instead
+      let selectedExists = styleSheets.some((sheet) => {
+        return this._styleSheetToSelect.href == sheet.href;
+      })
+      if (!selectedExists) {
+        this._styleSheetToSelect = null;
+      }
+    }
     for (let sheet of styleSheets) {
       this._addStyleSheetEditor(sheet);
     }
-    // this might be the first stylesheet, so remove loading indicator
+
     this._root.classList.remove("loading");
+
     this.emit("document-load");
   },
 
@@ -295,13 +321,18 @@ StyleEditorUI.prototype = {
 
       onShow: function(summary, details, data) {
         let editor = data.editor;
+        this.selectedEditor = editor;
+        this._styleSheetToSelect = null;
+
         if (!editor.sourceEditor) {
           // only initialize source editor when we switch to this view
           let inputElement = details.querySelector(".stylesheet-editor-input");
           editor.load(inputElement);
         }
         editor.onShow();
-      }
+
+        this.emit("editor-selected", editor);
+      }.bind(this)
     });
   },
 
@@ -314,7 +345,6 @@ StyleEditorUI.prototype = {
     for each (let editor in this.editors) {
       if (editor.styleSheet.href == sheet.href) {
         this._selectEditor(editor, sheet.line, sheet.col);
-        this._styleSheetToSelect = null;
         break;
       }
     }
@@ -331,18 +361,14 @@ StyleEditorUI.prototype = {
    *         Column number to jump to
    */
   _selectEditor: function(editor, line, col) {
-    line = line || 1;
-    col = col || 1;
-
-    this.selectedStyleSheetIndex = editor.styleSheet.styleSheetIndex;
+    line = line || 0;
+    col = col || 0;
 
     editor.getSourceEditor().then(() => {
-      editor.sourceEditor.setCaretPosition(line - 1, col - 1);
+      editor.sourceEditor.setCursor({line: line, ch: col});
     });
 
     this._view.activeSummary = editor.summary;
-
-    this.emit("editor-selected", editor);
   },
 
   /**
@@ -354,13 +380,18 @@ StyleEditorUI.prototype = {
    *        a stylesheet is not passed and the editor is initialized we ignore
    *        the call.
    * @param {Number} [line]
-   *        Line to which the caret should be moved (one-indexed).
+   *        Line to which the caret should be moved (zero-indexed).
    * @param {Number} [col]
-   *        Column to which the caret should be moved (one-indexed).
+   *        Column to which the caret should be moved (zero-indexed).
    */
   selectStyleSheet: function(href, line, col)
   {
     let alreadyCalled = !!this._styleSheetToSelect;
+    let originalHref;
+
+    if (alreadyCalled) {
+      originalHref = this._styleSheetToSelect.href;
+    }
 
     this._styleSheetToSelect = {
       href: href,
@@ -369,6 +400,14 @@ StyleEditorUI.prototype = {
     };
 
     if (alreadyCalled) {
+      // Just switch to the correct line and columns if the editor is already
+      // selected for the requested stylesheet.
+      for each (let editor in this.editors) {
+        if (editor.styleSheet.href == originalHref) {
+          editor.sourceEditor.setCursor({line: line, ch: col})
+          break;
+        }
+      }
       return;
     }
 

@@ -61,11 +61,12 @@ private:
  *  nsCacheService
  ******************************************************************************/
 
-class nsCacheService : public nsICacheService
+class nsCacheService : public nsICacheServiceInternal
 {
 public:
-    NS_DECL_ISUPPORTS
+    NS_DECL_THREADSAFE_ISUPPORTS
     NS_DECL_NSICACHESERVICE
+    NS_DECL_NSICACHESERVICEINTERNAL
 
     nsCacheService();
     virtual ~nsCacheService();
@@ -239,6 +240,8 @@ private:
 
     static void      Lock(::mozilla::Telemetry::ID mainThreadLockerID);
     static void      Unlock();
+    void             LockAcquired();
+    void             LockReleased();
 
     nsresult         CreateDiskDevice();
     nsresult         CreateOfflineDevice();
@@ -289,6 +292,7 @@ private:
     void             ClearDoomList(void);
     void             DoomActiveEntries(DoomCheckFn check);
     void             CloseAllStreams();
+    void             FireClearNetworkCacheStoredAnywhereNotification();
 
     static
     PLDHashOperator  GetActiveEntries(PLDHashTable *    table,
@@ -323,6 +327,9 @@ private:
 
     mozilla::Mutex                  mLock;
     mozilla::CondVar                mCondVar;
+
+    mozilla::Mutex                  mTimeStampLock;
+    mozilla::TimeStamp              mLockAcquiredTimeStamp;
 
     nsCOMPtr<nsIThread>             mCacheIOThread;
 

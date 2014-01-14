@@ -15,6 +15,7 @@ class nsFormSubmission;
 namespace mozilla {
 namespace dom {
 class Element;
+class HTMLFieldSetElement;
 } // namespace dom
 } // namespace mozilla
 
@@ -48,6 +49,7 @@ enum ButtonElementTypes {
 enum InputElementTypes {
   NS_FORM_INPUT_BUTTON = NS_FORM_INPUT_ELEMENT + 1,
   NS_FORM_INPUT_CHECKBOX,
+  NS_FORM_INPUT_COLOR,
   NS_FORM_INPUT_DATE,
   NS_FORM_INPUT_EMAIL,
   NS_FORM_INPUT_FILE,
@@ -85,6 +87,12 @@ class nsIFormControl : public nsISupports
 public:
 
   NS_DECLARE_STATIC_IID_ACCESSOR(NS_IFORMCONTROL_IID)
+
+  /**
+   * Get the fieldset for this form control.
+   * @return the fieldset
+   */
+  virtual mozilla::dom::HTMLFieldSetElement *GetFieldSet() = 0;
 
   /**
    * Get the form for this form control.

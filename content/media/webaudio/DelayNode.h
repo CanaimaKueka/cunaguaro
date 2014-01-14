@@ -31,13 +31,17 @@ public:
     return mDelay;
   }
 
+  virtual const DelayNode* AsDelayNode() const MOZ_OVERRIDE
+  {
+    return this;
+  }
+
 private:
   static void SendDelayToStream(AudioNode* aNode);
   friend class DelayNodeEngine;
 
 private:
   nsRefPtr<AudioParam> mDelay;
-  SelfReference<DelayNode> mPlayingRef;
 };
 
 }

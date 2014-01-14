@@ -4,16 +4,16 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef jsiter_h___
-#define jsiter_h___
+#ifndef jsiter_h
+#define jsiter_h
 
 /*
  * JavaScript iterators.
  */
+
+#include "mozilla/MemoryReporting.h"
+
 #include "jscntxt.h"
-#include "jsprvtd.h"
-#include "jspubtd.h"
-#include "jsversion.h"
 
 #include "gc/Barrier.h"
 #include "vm/Stack.h"
@@ -98,8 +98,8 @@ struct NativeIterator
 
         next_->prev_ = prev_;
         prev_->next_ = next_;
-        next_ = NULL;
-        prev_ = NULL;
+        next_ = nullptr;
+        prev_ = nullptr;
     }
 
     static NativeIterator *allocateSentinel(JSContext *cx);
@@ -117,43 +117,32 @@ struct NativeIterator
 class PropertyIteratorObject : public JSObject
 {
   public:
-    static Class class_;
+    static const Class class_;
 
-    inline NativeIterator *getNativeIterator() const;
-    inline void setNativeIterator(js::NativeIterator *ni);
+    NativeIterator *getNativeIterator() const {
+        return static_cast<js::NativeIterator *>(getPrivate());
+    }
+    void setNativeIterator(js::NativeIterator *ni) {
+        setPrivate(ni);
+    }
 
-    size_t sizeOfMisc(JSMallocSizeOfFun mallocSizeOf) const;
+    size_t sizeOfMisc(mozilla::MallocSizeOf mallocSizeOf) const;
 
   private:
     static void trace(JSTracer *trc, JSObject *obj);
     static void finalize(FreeOp *fop, JSObject *obj);
 };
 
-/*
- * Array iterators are roughly like this:
- *
- *   Array.prototype.iterator = function iterator() {
- *       for (var i = 0; i < (this.length >>> 0); i++)
- *           yield this[i];
- *   }
- *
- * However they are not generators. They are a different class. The semantics
- * of Array iterators will be given in the eventual ES6 spec in full detail.
- */
-class ElementIteratorObject : public JSObject
+class ArrayIteratorObject : public JSObject
 {
   public:
-    static JSObject *create(JSContext *cx, Handle<Value> target);
-    static const JSFunctionSpec methods[];
+    static const Class class_;
+};
 
-    enum {
-        TargetSlot,
-        IndexSlot,
-        NumSlots
-    };
-
-    static JSBool next(JSContext *cx, unsigned argc, Value *vp);
-    static bool next_impl(JSContext *cx, JS::CallArgs args);
+class StringIteratorObject : public JSObject
+{
+  public:
+    static const Class class_;
 };
 
 bool
@@ -199,10 +188,10 @@ UnwindIteratorForException(JSContext *cx, js::HandleObject obj);
 void
 UnwindIteratorForUncatchableException(JSContext *cx, JSObject *obj);
 
-JSBool
+bool
 IteratorConstructor(JSContext *cx, unsigned argc, Value *vp);
 
-}
+} /* namespace js */
 
 extern bool
 js_SuppressDeletedProperty(JSContext *cx, js::HandleObject obj, jsid id);
@@ -224,27 +213,10 @@ js_IteratorMore(JSContext *cx, js::HandleObject iterobj, js::MutableHandleValue 
 extern bool
 js_IteratorNext(JSContext *cx, js::HandleObject iterobj, js::MutableHandleValue rval);
 
-extern JSBool
+extern bool
 js_ThrowStopIteration(JSContext *cx);
 
 namespace js {
-
-/*
- * Get the next value from an iterator object.
- *
- * On success, store the next value in *vp and return true; if there are no
- * more values, store the magic value JS_NO_ITER_VALUE in *vp and return true.
- */
-inline bool
-Next(JSContext *cx, HandleObject iter, MutableHandleValue vp)
-{
-    if (!js_IteratorMore(cx, iter, vp))
-        return false;
-    if (vp.toBoolean())
-        return js_IteratorNext(cx, iter, vp);
-    vp.setMagic(JS_NO_ITER_VALUE);
-    return true;
-}
 
 /*
  * Convenience class for imitating a JS level for-of loop. Typical usage:
@@ -269,60 +241,25 @@ class ForOfIterator
   private:
     JSContext *cx;
     RootedObject iterator;
-    RootedValue currentValue;
-    bool ok;
-    bool closed;
 
     ForOfIterator(const ForOfIterator &) MOZ_DELETE;
     ForOfIterator &operator=(const ForOfIterator &) MOZ_DELETE;
 
   public:
-    ForOfIterator(JSContext *cx, const Value &iterable)
-        : cx(cx), iterator(cx, NULL), currentValue(cx), closed(false)
-    {
-        RootedValue iterv(cx, iterable);
-        ok = ValueToIterator(cx, JSITER_FOR_OF, &iterv);
-        iterator = ok ? &iterv.get().toObject() : NULL;
-    }
+    ForOfIterator(JSContext *cx) : cx(cx), iterator(cx) { }
 
-    ~ForOfIterator() {
-        if (!closed)
-            close();
-    }
-
-    bool next() {
-        JS_ASSERT(!closed);
-        ok = ok && Next(cx, iterator, &currentValue);
-        return ok && !currentValue.get().isMagic(JS_NO_ITER_VALUE);
-    }
-
-    Value &value() {
-        JS_ASSERT(ok);
-        JS_ASSERT(!closed);
-        return currentValue.get();
-    }
-
-    bool close() {
-        JS_ASSERT(!closed);
-        closed = true;
-        if (!iterator)
-            return false;
-        bool throwing = cx->isExceptionPending();
-        RootedValue exc(cx);
-        if (throwing) {
-            exc = cx->getPendingException();
-            cx->clearPendingException();
-        }
-        bool closedOK = CloseIterator(cx, iterator);
-        if (throwing && closedOK)
-            cx->setPendingException(exc);
-        return ok && !throwing && closedOK;
-    }
+    bool init(HandleValue iterable);
+    bool next(MutableHandleValue val, bool *done);
 };
 
-} /* namespace js */
+/*
+ * Create an object of the form { value: VALUE, done: DONE }.
+ * ES6 draft from 2013-09-05, section 25.4.3.4.
+ */
+extern JSObject *
+CreateItrResultObject(JSContext *cx, js::HandleValue value, bool done);
 
-#if JS_HAS_GENERATORS
+} /* namespace js */
 
 /*
  * Generator state codes.
@@ -347,17 +284,9 @@ struct JSGenerator
 };
 
 extern JSObject *
-js_NewGenerator(JSContext *cx);
-
-namespace js {
-
-bool
-GeneratorHasMarkableFrame(JSGenerator *gen);
-
-} /* namespace js */
-#endif
+js_NewGenerator(JSContext *cx, const js::FrameRegs &regs);
 
 extern JSObject *
 js_InitIteratorClasses(JSContext *cx, js::HandleObject obj);
 
-#endif /* jsiter_h___ */
+#endif /* jsiter_h */

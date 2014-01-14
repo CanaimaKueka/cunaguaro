@@ -14,7 +14,6 @@ namespace mozilla {
 namespace dom {
 
 // Channel Selectors
-static const unsigned short SVG_CHANNEL_UNKNOWN = 0;
 static const unsigned short SVG_CHANNEL_R = 1;
 static const unsigned short SVG_CHANNEL_G = 2;
 static const unsigned short SVG_CHANNEL_B = 3;
@@ -65,31 +64,31 @@ NS_IMPL_ELEMENT_CLONE_WITH_INIT(SVGFEDisplacementMapElement)
 
 //----------------------------------------------------------------------
 
-already_AddRefed<nsIDOMSVGAnimatedString>
+already_AddRefed<SVGAnimatedString>
 SVGFEDisplacementMapElement::In1()
 {
   return mStringAttributes[IN1].ToDOMAnimatedString(this);
 }
 
-already_AddRefed<nsIDOMSVGAnimatedString>
+already_AddRefed<SVGAnimatedString>
 SVGFEDisplacementMapElement::In2()
 {
   return mStringAttributes[IN2].ToDOMAnimatedString(this);
 }
 
-already_AddRefed<nsIDOMSVGAnimatedNumber>
+already_AddRefed<SVGAnimatedNumber>
 SVGFEDisplacementMapElement::Scale()
 {
   return mNumberAttributes[SCALE].ToDOMAnimatedNumber(this);
 }
 
-already_AddRefed<nsIDOMSVGAnimatedEnumeration>
+already_AddRefed<SVGAnimatedEnumeration>
 SVGFEDisplacementMapElement::XChannelSelector()
 {
   return mEnumAttributes[CHANNEL_X].ToDOMAnimatedEnum(this);
 }
 
-already_AddRefed<nsIDOMSVGAnimatedEnumeration>
+already_AddRefed<SVGAnimatedEnumeration>
 SVGFEDisplacementMapElement::YChannelSelector()
 {
   return mEnumAttributes[CHANNEL_Y].ToDOMAnimatedEnum(this);

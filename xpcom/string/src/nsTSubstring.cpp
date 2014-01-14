@@ -3,6 +3,7 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+#include "mozilla/MemoryReporting.h"
 #include "prdtoa.h"
 
 #ifdef XPCOM_STRING_CONSTRUCTOR_OUT_OF_LINE
@@ -269,7 +270,7 @@ void
 nsTSubstring_CharT::Assign( char_type c )
   {
     if (!ReplacePrep(0, mLength, 1))
-      NS_RUNTIMEABORT("OOM");
+      NS_ABORT_OOM(mLength);
 
     *mData = c;
   }
@@ -285,10 +286,17 @@ nsTSubstring_CharT::Assign( char_type c, const fallible_t& )
   }
 
 void
+nsTSubstring_CharT::Assign( const char_type* data )
+  {
+    if (!Assign(data, size_type(-1), fallible_t()))
+      NS_ABORT_OOM(char_traits::length(data));
+  }
+
+void
 nsTSubstring_CharT::Assign( const char_type* data, size_type length )
   {
     if (!Assign(data, length, fallible_t()))
-      NS_RUNTIMEABORT("OOM");
+      NS_ABORT_OOM(length);
   }
 
 bool
@@ -319,7 +327,7 @@ void
 nsTSubstring_CharT::AssignASCII( const char* data, size_type length )
   {
     if (!AssignASCII(data, length, fallible_t()))
-      NS_RUNTIMEABORT("OOM");
+      NS_ABORT_OOM(length);
   }
 
 bool
@@ -345,7 +353,7 @@ void
 nsTSubstring_CharT::Assign( const self_type& str )
 {
   if (!Assign(str, fallible_t()))
-    NS_RUNTIMEABORT("OOM");
+    NS_ABORT_OOM(str.Length());
 }
 
 bool
@@ -390,7 +398,7 @@ void
 nsTSubstring_CharT::Assign( const substring_tuple_type& tuple )
   {
     if (!Assign(tuple, fallible_t()))
-      NS_RUNTIMEABORT("OOM");
+      NS_ABORT_OOM(tuple.Length());
   }
 
 bool
@@ -530,7 +538,7 @@ void
 nsTSubstring_CharT::SetCapacity( size_type capacity )
   {
     if (!SetCapacity(capacity, fallible_t()))
-      NS_RUNTIMEABORT("OOM");
+      NS_ABORT_OOM(capacity);
   }
 
 bool
@@ -701,7 +709,7 @@ nsTSubstring_CharT::StripChar( char_type aChar, int32_t aOffset )
       return;
 
     if (!EnsureMutable()) // XXX do this lazily?
-      NS_RUNTIMEABORT("OOM");
+      NS_ABORT_OOM(mLength);
 
     // XXX(darin): this code should defer writing until necessary.
 
@@ -726,7 +734,7 @@ nsTSubstring_CharT::StripChars( const char_type* aChars, uint32_t aOffset )
       return;
 
     if (!EnsureMutable()) // XXX do this lazily?
-      NS_RUNTIMEABORT("OOM");
+      NS_ABORT_OOM(mLength);
 
     // XXX(darin): this code should defer writing until necessary.
 
@@ -883,7 +891,7 @@ nsTSubstring_CharT::DoAppendFloat( double aFloat, int digits )
 
 size_t
 nsTSubstring_CharT::SizeOfExcludingThisMustBeUnshared(
-    nsMallocSizeOfFun mallocSizeOf) const
+    mozilla::MallocSizeOf mallocSizeOf) const
 {
   if (mFlags & F_SHARED) {
     return nsStringBuffer::FromData(mData)->
@@ -906,7 +914,7 @@ nsTSubstring_CharT::SizeOfExcludingThisMustBeUnshared(
 
 size_t
 nsTSubstring_CharT::SizeOfExcludingThisIfUnshared(
-    nsMallocSizeOfFun mallocSizeOf) const
+    mozilla::MallocSizeOf mallocSizeOf) const
 {
   // This is identical to SizeOfExcludingThisMustBeUnshared except for the
   // F_SHARED case.
@@ -922,7 +930,7 @@ nsTSubstring_CharT::SizeOfExcludingThisIfUnshared(
 
 size_t
 nsTSubstring_CharT::SizeOfExcludingThisEvenIfShared(
-    nsMallocSizeOfFun mallocSizeOf) const
+    mozilla::MallocSizeOf mallocSizeOf) const
 {
   // This is identical to SizeOfExcludingThisMustBeUnshared except for the
   // F_SHARED case.
@@ -938,21 +946,21 @@ nsTSubstring_CharT::SizeOfExcludingThisEvenIfShared(
 
 size_t
 nsTSubstring_CharT::SizeOfIncludingThisMustBeUnshared(
-    nsMallocSizeOfFun mallocSizeOf) const
+    mozilla::MallocSizeOf mallocSizeOf) const
 {
   return mallocSizeOf(this) + SizeOfExcludingThisMustBeUnshared(mallocSizeOf);
 }
 
 size_t
 nsTSubstring_CharT::SizeOfIncludingThisIfUnshared(
-    nsMallocSizeOfFun mallocSizeOf) const
+    mozilla::MallocSizeOf mallocSizeOf) const
 {
   return mallocSizeOf(this) + SizeOfExcludingThisIfUnshared(mallocSizeOf);
 }
 
 size_t
 nsTSubstring_CharT::SizeOfIncludingThisEvenIfShared(
-    nsMallocSizeOfFun mallocSizeOf) const
+    mozilla::MallocSizeOf mallocSizeOf) const
 {
   return mallocSizeOf(this) + SizeOfExcludingThisEvenIfShared(mallocSizeOf);
 }

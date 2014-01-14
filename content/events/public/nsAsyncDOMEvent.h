@@ -6,6 +6,7 @@
 #ifndef nsAsyncDOMEvent_h___
 #define nsAsyncDOMEvent_h___
 
+#include "mozilla/Attributes.h"
 #include "nsCOMPtr.h"
 #include "nsThreadUtils.h"
 #include "nsINode.h"
@@ -33,9 +34,9 @@ public:
     : mEventNode(aEventNode), mEvent(aEvent), mDispatchChromeOnly(false)
   { }
 
-  nsAsyncDOMEvent(nsINode *aEventNode, nsEvent &aEvent);
+  nsAsyncDOMEvent(nsINode* aEventNode, mozilla::WidgetEvent& aEvent);
 
-  NS_IMETHOD Run();
+  NS_IMETHOD Run() MOZ_OVERRIDE;
   nsresult PostDOMEvent();
   void RunDOMEventWhenSafe();
 

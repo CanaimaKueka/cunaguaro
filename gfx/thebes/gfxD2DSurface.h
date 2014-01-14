@@ -8,20 +8,20 @@
 
 #include "gfxASurface.h"
 #include "nsPoint.h"
-#include "nsRect.h"
 
 #include <windows.h>
 
 struct ID3D10Texture2D;
+struct nsIntRect;
 
-class THEBES_API gfxD2DSurface : public gfxASurface {
+class gfxD2DSurface : public gfxASurface {
 public:
 
     gfxD2DSurface(HWND wnd,
                   gfxContentType aContent);
 
     gfxD2DSurface(const gfxIntSize& size,
-                  gfxImageFormat imageFormat = ImageFormatRGB24);
+                  gfxImageFormat imageFormat = gfxImageFormatRGB24);
 
     gfxD2DSurface(HANDLE handle, gfxContentType aContent);
 

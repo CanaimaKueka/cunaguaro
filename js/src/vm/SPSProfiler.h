@@ -4,17 +4,17 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef SPSProfiler_h__
-#define SPSProfiler_h__
-
-#include <stddef.h>
+#ifndef vm_SPSProfiler_h
+#define vm_SPSProfiler_h
 
 #include "mozilla/DebugOnly.h"
 #include "mozilla/GuardObjects.h"
-#include "mozilla/HashFunctions.h"
 
-#include "js/Utility.h"
+#include <stddef.h>
+
 #include "jsscript.h"
+
+#include "js/ProfilingStack.h"
 
 /*
  * SPS Profiler integration with the JS Engine
@@ -69,18 +69,18 @@
  *
  * = Native Stack Pointer
  *
- * The actual value pushed as the native pointer is NULL for most JS functions.
- * The reason for this is that there's actually very little correlation between
- * the JS stack and the C++ stack because many JS functions all run in the same
- * C++ frame, or can even go backwards in C++ when going from the JIT back to
- * the interpreter.
+ * The actual value pushed as the native pointer is nullptr for most JS
+ * functions. The reason for this is that there's actually very little
+ * correlation between the JS stack and the C++ stack because many JS functions
+ * all run in the same C++ frame, or can even go backwards in C++ when going
+ * from the JIT back to the interpreter.
  *
- * To alleviate this problem, all JS functions push NULL as their "native stack
- * pointer" to indicate that it's a JS function call. The function RunScript(),
- * however, pushes an actual C++ stack pointer onto the SPS stack. This way when
- * interleaving C++ and JS, if SPS sees a NULL native stack pointer on the SPS
- * stack, it looks backwards for the first non-NULL pointer and uses that for
- * all subsequent NULL native stack pointers.
+ * To alleviate this problem, all JS functions push nullptr as their "native
+ * stack pointer" to indicate that it's a JS function call. The function
+ * RunScript(), however, pushes an actual C++ stack pointer onto the SPS stack.
+ * This way when interleaving C++ and JS, if SPS sees a nullptr native stack
+ * pointer on the SPS stack, it looks backwards for the first non-nullptr
+ * pointer and uses that for all subsequent nullptr native stack pointers.
  *
  * = Line Numbers
  *
@@ -95,28 +95,17 @@
  * JS was far too expensive, so that is why the pc instead of the translated
  * line number is stored.
  *
- * As an invariant, if the pc is NULL, then the JIT is currently executing
+ * As an invariant, if the pc is nullptr, then the JIT is currently executing
  * generated code. Otherwise execution is in another JS function or in C++. With
- * this in place, only the top entry of the stack can ever have NULL as its pc.
- * Additionally with this invariant, it is possible to maintain mappings of JIT
- * code to pc which can be accessed safely because they will only be accessed
- * from a signal handler when the JIT code is executing.
+ * this in place, only the top entry of the stack can ever have nullptr as its
+ * pc. Additionally with this invariant, it is possible to maintain mappings of
+ * JIT code to pc which can be accessed safely because they will only be
+ * accessed from a signal handler when the JIT code is executing.
  */
-
-class JSFunction;
 
 namespace js {
 
 class ProfileEntry;
-
-#ifdef JS_METHODJIT
-namespace mjit {
-    struct JITChunk;
-    struct JITScript;
-    struct JSActiveFrame;
-    struct PCLengthEntry;
-}
-#endif
 
 typedef HashMap<JSScript*, const char*, DefaultHasher<JSScript*>, SystemAllocPolicy>
         ProfileStringMap;
@@ -162,7 +151,7 @@ class SPSProfiler
 
     /* management of whether instrumentation is on or off */
     bool enabled() { JS_ASSERT_IF(enabled_, installed()); return enabled_; }
-    bool installed() { return stack_ != NULL && size_ != NULL; }
+    bool installed() { return stack_ != nullptr && size_ != nullptr; }
     void enable(bool enabled);
     void enableSlowAssertions(bool enabled) { slowAssertions = enabled; }
     bool slowAssertionsEnabled() { return slowAssertions; }
@@ -190,77 +179,7 @@ class SPSProfiler
     void enterNative(const char *string, void *sp);
     void exitNative() { pop(); }
 
-#ifdef JS_METHODJIT
-    struct ICInfo
-    {
-        size_t base;
-        size_t size;
-        jsbytecode *pc;
-
-        ICInfo(void *base, size_t size, jsbytecode *pc)
-          : base(size_t(base)), size(size), pc(pc)
-        {}
-    };
-
-    struct JMChunkInfo
-    {
-        size_t mainStart;               // bounds for the inline code
-        size_t mainEnd;
-        size_t stubStart;               // bounds of the ool code
-        size_t stubEnd;
-        mjit::PCLengthEntry *pcLengths; // pcLengths for this chunk
-        mjit::JITChunk *chunk;          // stored to test when removing
-
-        JMChunkInfo(mjit::JSActiveFrame *frame,
-                    mjit::PCLengthEntry *pcLengths,
-                    mjit::JITChunk *chunk);
-
-        jsbytecode *convert(JSScript *script, size_t ip);
-    };
-
-    struct JMScriptInfo
-    {
-        Vector<ICInfo, 0, SystemAllocPolicy> ics;
-        Vector<JMChunkInfo, 1, SystemAllocPolicy> chunks;
-    };
-
-    typedef HashMap<JSScript*, JMScriptInfo*, DefaultHasher<JSScript*>,
-                    SystemAllocPolicy> JITInfoMap;
-
-    /*
-     * This is the mapping which facilitates translation from an ip to a
-     * jsbytecode*. The mapping is from a JSScript* to a set of chunks and ics
-     * which are associated with the script. This way lookup/translation doesn't
-     * have to do something like iterate the entire map.
-     *
-     * Each IC is easy to test because they all have only one pc associated with
-     * them, and the range is easy to check. The main chunks of code are a bit
-     * harder because there are both the inline and out of line streams which
-     * need to be tested. Each of these streams is described by the pcLengths
-     * array stored within each chunk. This array describes the width of each
-     * opcode of the corresponding JSScript, and has the same number of entries
-     * as script->length.
-     */
-    JITInfoMap jminfo;
-
-    bool registerMJITCode(mjit::JITChunk *chunk,
-                          mjit::JSActiveFrame *outerFrame,
-                          mjit::JSActiveFrame **inlineFrames);
-    void discardMJITCode(mjit::JITScript *jscr,
-                         mjit::JITChunk *chunk, void* address);
-    bool registerICCode(mjit::JITChunk *chunk, JSScript *script, jsbytecode* pc,
-                        void *start, size_t size);
-    jsbytecode *ipToPC(JSScript *script, size_t ip);
-
-  private:
-    JMChunkInfo *registerScript(mjit::JSActiveFrame *frame,
-                                mjit::PCLengthEntry *lenths,
-                                mjit::JITChunk *chunk);
-    void unregisterScript(JSScript *script, mjit::JITChunk *chunk);
-  public:
-#else
-    jsbytecode *ipToPC(JSScript *script, size_t ip) { return NULL; }
-#endif
+    jsbytecode *ipToPC(JSScript *script, size_t ip) { return nullptr; }
 
     void setProfilingStack(ProfileEntry *stack, uint32_t *size, uint32_t max);
     const char *profileString(JSContext *cx, JSScript *script, JSFunction *maybeFun);
@@ -311,7 +230,7 @@ class SPSInstrumentation
 {
     /* Because of inline frames, this is a nested structure in a vector */
     struct FrameState {
-        JSScript *script; // script for this frame, NULL if not pushed yet
+        JSScript *script; // script for this frame, nullptr if not pushed yet
         bool skipNext;    // should the next call to reenter be skipped?
         int  left;        // number of leave() calls made without a matching reenter()
     };
@@ -327,7 +246,7 @@ class SPSInstrumentation
      * profiler's stack and constituent fields.
      */
     SPSInstrumentation(SPSProfiler *profiler)
-      : profiler_(profiler), frame(NULL)
+      : profiler_(profiler), frame(nullptr)
     {
         enterInlineFrame();
     }
@@ -342,7 +261,7 @@ class SPSInstrumentation
         if (!enabled())
             return;
         JS_ASSERT(frame->left == 0);
-        JS_ASSERT(frame->script != NULL);
+        JS_ASSERT(frame->script != nullptr);
         frames.shrinkBy(1);
         JS_ASSERT(frames.length() > 0);
         frame = &frames[frames.length() - 1];
@@ -352,12 +271,12 @@ class SPSInstrumentation
     bool enterInlineFrame() {
         if (!enabled())
             return true;
-        JS_ASSERT_IF(frame != NULL, frame->script != NULL);
-        JS_ASSERT_IF(frame != NULL, frame->left == 1);
+        JS_ASSERT_IF(frame != nullptr, frame->script != nullptr);
+        JS_ASSERT_IF(frame != nullptr, frame->left == 1);
         if (!frames.growBy(1))
             return false;
         frame = &frames[frames.length() - 1];
-        frame->script = NULL;
+        frame->script = nullptr;
         frame->skipNext = false;
         frame->left = 0;
         return true;
@@ -371,10 +290,10 @@ class SPSInstrumentation
     /*
      * When debugging or with slow assertions, sometimes a C++ method will be
      * invoked to perform the pop operation from the SPS stack. When we leave
-     * JIT code, we need to record the current PC, but upon reentering JIT code,
-     * no update back to NULL should happen. This method exists to flag this
-     * behavior. The next leave() will emit instrumentation, but the following
-     * reenter() will be a no-op.
+     * JIT code, we need to record the current PC, but upon reentering JIT
+     * code, no update back to nullptr should happen. This method exists to
+     * flag this behavior. The next leave() will emit instrumentation, but the
+     * following reenter() will be a no-op.
      */
     void skipNextReenter() {
         /* If we've left the frame, the reenter will be skipped anyway */
@@ -406,7 +325,7 @@ class SPSInstrumentation
             return true;
         const char *string = profiler_->profileString(cx, script,
                                                       script->function());
-        if (string == NULL)
+        if (string == nullptr)
             return false;
         masm.spsPushFrame(profiler_, string, script, scratch);
         setPushed(script);
@@ -416,7 +335,7 @@ class SPSInstrumentation
     /*
      * Signifies that C++ performed the push() for this function. C++ always
      * sets the current PC to something non-null, however, so as soon as JIT
-     * code is reentered this updates the current pc to NULL.
+     * code is reentered this updates the current pc to nullptr.
      */
     void pushManual(JSScript *script, Assembler &masm, Register scratch) {
         if (!enabled())
@@ -469,4 +388,4 @@ class SPSInstrumentation
 
 } /* namespace js */
 
-#endif /* SPSProfiler_h__ */
+#endif /* vm_SPSProfiler_h */

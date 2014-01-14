@@ -168,8 +168,11 @@ MarFile *mar_open(const char *path) {
   FILE *fp;
 
   fp = fopen(path, "rb");
-  if (!fp)
+  if (!fp) {
+    fprintf(stderr, "ERROR: could not open file in mar_open()\n");
+    perror(path);
     return NULL;
+  }
 
   return mar_fpopen(fp);
 }
@@ -178,9 +181,12 @@ MarFile *mar_open(const char *path) {
 MarFile *mar_wopen(const wchar_t *path) {
   FILE *fp;
 
-  fp = _wfopen(path, L"rb");
-  if (!fp)
+  _wfopen_s(&fp, path, L"rb");
+  if (!fp) {
+    fprintf(stderr, "ERROR: could not open file in mar_wopen()\n");
+    _wperror(path);
     return NULL;
+  }
 
   return mar_fpopen(fp);
 }
@@ -367,6 +373,8 @@ read_product_info_block(char *path,
   MarFile mar;
   mar.fp = fopen(path, "rb");
   if (!mar.fp) {
+    fprintf(stderr, "ERROR: could not open file in read_product_info_block()\n");
+    perror(path);
     return -1;
   }
   rv = mar_read_product_info_block(&mar, infoBlock);
@@ -386,7 +394,7 @@ int
 mar_read_product_info_block(MarFile *mar, 
                             struct ProductInformationBlock *infoBlock)
 {
-  int i, hasAdditionalBlocks, offset, 
+  int i, hasAdditionalBlocks,
     offsetAdditionalBlocks, numAdditionalBlocks,
     additionalBlockSize, additionalBlockID;
   /* The buffer size is 97 bytes because the MAR channel name < 64 bytes, and 
@@ -547,6 +555,8 @@ int get_mar_file_info(const char *path,
   int rv;
   FILE *fp = fopen(path, "rb");
   if (!fp) {
+    fprintf(stderr, "ERROR: could not open file in get_mar_file_info()\n");
+    perror(path);
     return -1;
   }
 

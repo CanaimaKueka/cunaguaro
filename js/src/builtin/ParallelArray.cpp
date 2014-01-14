@@ -4,18 +4,13 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include "jsapi.h"
-#include "jsobj.h"
-#include "jsarray.h"
-
 #include "builtin/ParallelArray.h"
 
-#include "vm/ForkJoin.h"
+#include "jsobj.h"
+
 #include "vm/GlobalObject.h"
 #include "vm/String.h"
-#include "vm/ThreadPool.h"
 
-#include "jsinterpinlines.h"
 #include "jsobjinlines.h"
 
 using namespace js;
@@ -27,13 +22,13 @@ using namespace js;
 FixedHeapPtr<PropertyName> ParallelArrayObject::ctorNames[NumCtors];
 
 const JSFunctionSpec ParallelArrayObject::methods[] = {
-    { "map",       JSOP_NULLWRAPPER, 2, 0, "ParallelArrayMap"       },
-    { "reduce",    JSOP_NULLWRAPPER, 2, 0, "ParallelArrayReduce"    },
-    { "scan",      JSOP_NULLWRAPPER, 2, 0, "ParallelArrayScan"      },
-    { "scatter",   JSOP_NULLWRAPPER, 5, 0, "ParallelArrayScatter"   },
-    { "filter",    JSOP_NULLWRAPPER, 2, 0, "ParallelArrayFilter"    },
-    { "partition", JSOP_NULLWRAPPER, 1, 0, "ParallelArrayPartition" },
-    { "flatten",   JSOP_NULLWRAPPER, 0, 0, "ParallelArrayFlatten" },
+    JS_SELF_HOSTED_FN("map",       "ParallelArrayMap",       2, 0),
+    JS_SELF_HOSTED_FN("reduce",    "ParallelArrayReduce",    2, 0),
+    JS_SELF_HOSTED_FN("scan",      "ParallelArrayScan",      2, 0),
+    JS_SELF_HOSTED_FN("scatter",   "ParallelArrayScatter",   5, 0),
+    JS_SELF_HOSTED_FN("filter",    "ParallelArrayFilter",    2, 0),
+    JS_SELF_HOSTED_FN("partition", "ParallelArrayPartition", 1, 0),
+    JS_SELF_HOSTED_FN("flatten",   "ParallelArrayFlatten",   0, 0),
 
     // FIXME #838906. Note that `get()` is not currently defined on this table but
     // rather is assigned to each instance of ParallelArray as an own
@@ -42,13 +37,13 @@ const JSFunctionSpec ParallelArrayObject::methods[] = {
     // receiver.  In the future we can improve this by (1) extending
     // TI to track the dimensionality of the receiver and (2) using a
     // hint to aggressively inline calls to get().
-    // { "get",      JSOP_NULLWRAPPER, 1, 0, "ParallelArrayGet" },
+    // JS_SELF_HOSTED_FN("get", "ParallelArrayGet", 1, 0),
 
-    { "toString", JSOP_NULLWRAPPER, 0, 0, "ParallelArrayToString" },
+    JS_SELF_HOSTED_FN("toString",  "ParallelArrayToString",  0, 0),
     JS_FS_END
 };
 
-Class ParallelArrayObject::protoClass = {
+const Class ParallelArrayObject::protoClass = {
     "ParallelArray",
     JSCLASS_HAS_CACHED_PROTO(JSProto_ParallelArray),
     JS_PropertyStub,         // addProperty
@@ -60,7 +55,7 @@ Class ParallelArrayObject::protoClass = {
     JS_ConvertStub
 };
 
-Class ParallelArrayObject::class_ = {
+const Class ParallelArrayObject::class_ = {
     "ParallelArray",
     JSCLASS_HAS_CACHED_PROTO(JSProto_ParallelArray),
     JS_PropertyStub,         // addProperty
@@ -90,7 +85,7 @@ ParallelArrayObject::initProps(JSContext *cx, HandleObject obj)
     return true;
 }
 
-/*static*/ JSBool
+/*static*/ bool
 ParallelArrayObject::construct(JSContext *cx, unsigned argc, Value *vp)
 {
     RootedFunction ctor(cx, getConstructor(cx, argc));
@@ -107,9 +102,9 @@ ParallelArrayObject::getConstructor(JSContext *cx, unsigned argc)
     RootedPropertyName ctorName(cx, ctorNames[js::Min(argc, NumCtors - 1)]);
     RootedValue ctorValue(cx);
     if (!cx->global()->getIntrinsicValue(cx, ctorName, &ctorValue))
-        return NULL;
-    JS_ASSERT(ctorValue.isObject() && ctorValue.toObject().isFunction());
-    return ctorValue.toObject().toFunction();
+        return nullptr;
+    JS_ASSERT(ctorValue.isObject() && ctorValue.toObject().is<JSFunction>());
+    return &ctorValue.toObject().as<JSFunction>();
 }
 
 /*static*/ JSObject *
@@ -118,16 +113,16 @@ ParallelArrayObject::newInstance(JSContext *cx, NewObjectKind newKind /* = Gener
     gc::AllocKind kind = gc::GetGCObjectKind(NumFixedSlots);
     RootedObject result(cx, NewBuiltinClassInstance(cx, &class_, kind, newKind));
     if (!result)
-        return NULL;
+        return nullptr;
 
     // Add in the basic PA properties now with default values:
     if (!initProps(cx, result))
-        return NULL;
+        return nullptr;
 
     return result;
 }
 
-/*static*/ JSBool
+/*static*/ bool
 ParallelArrayObject::constructHelper(JSContext *cx, MutableHandleFunction ctor, CallArgs &args0)
 {
     RootedObject result(cx, newInstance(cx, TenuredObject));
@@ -136,7 +131,7 @@ ParallelArrayObject::constructHelper(JSContext *cx, MutableHandleFunction ctor, 
 
     if (cx->typeInferenceEnabled()) {
         jsbytecode *pc;
-        RootedScript script(cx, cx->stack.currentScript(&pc));
+        RootedScript script(cx, cx->currentScript(&pc));
         if (script) {
             if (ctor->nonLazyScript()->shouldCloneAtCallsite) {
                 ctor.set(CloneFunctionAtCallsite(cx, ctor, script, pc));
@@ -166,15 +161,15 @@ ParallelArrayObject::constructHelper(JSContext *cx, MutableHandleFunction ctor, 
         }
     }
 
-    InvokeArgsGuard args;
-    if (!cx->stack.pushInvokeArgs(cx, args0.length(), &args))
+    InvokeArgs args(cx);
+    if (!args.init(args0.length()))
         return false;
 
     args.setCallee(ObjectValue(*ctor));
     args.setThis(ObjectValue(*result));
 
     for (uint32_t i = 0; i < args0.length(); i++)
-        args[i] = args0[i];
+        args[i].set(args0[i]);
 
     if (!Invoke(cx, args))
         return false;
@@ -190,33 +185,35 @@ ParallelArrayObject::initClass(JSContext *cx, HandleObject obj)
 
     // Cache constructor names.
     {
-        const char *ctorStrs[NumCtors] = { "ParallelArrayConstructEmpty",
-                                           "ParallelArrayConstructFromArray",
-                                           "ParallelArrayConstructFromFunction",
-                                           "ParallelArrayConstructFromFunctionMode" };
+        static const char *const ctorStrs[NumCtors] = {
+            "ParallelArrayConstructEmpty",
+            "ParallelArrayConstructFromArray",
+            "ParallelArrayConstructFromFunction",
+            "ParallelArrayConstructFromFunctionMode"
+        };
         for (uint32_t i = 0; i < NumCtors; i++) {
             JSAtom *atom = Atomize(cx, ctorStrs[i], strlen(ctorStrs[i]), InternAtom);
             if (!atom)
-                return NULL;
+                return nullptr;
             ctorNames[i].init(atom->asPropertyName());
         }
     }
 
-    Rooted<GlobalObject *> global(cx, &obj->asGlobal());
+    Rooted<GlobalObject *> global(cx, &obj->as<GlobalObject>());
 
     RootedObject proto(cx, global->createBlankPrototype(cx, &protoClass));
     if (!proto)
-        return NULL;
+        return nullptr;
 
     JSProtoKey key = JSProto_ParallelArray;
     RootedFunction ctor(cx, global->createConstructor(cx, construct,
                                                       cx->names().ParallelArray, 0));
     if (!ctor ||
         !LinkConstructorAndPrototype(cx, ctor, proto) ||
-        !DefinePropertiesAndBrand(cx, proto, NULL, methods) ||
+        !DefinePropertiesAndBrand(cx, proto, nullptr, methods) ||
         !DefineConstructorAndPrototype(cx, global, key, ctor, proto))
     {
-        return NULL;
+        return nullptr;
     }
 
     // Define the length getter.
@@ -224,23 +221,23 @@ ParallelArrayObject::initClass(JSContext *cx, HandleObject obj)
         const char lengthStr[] = "ParallelArrayLength";
         JSAtom *atom = Atomize(cx, lengthStr, strlen(lengthStr));
         if (!atom)
-            return NULL;
+            return nullptr;
         Rooted<PropertyName *> lengthProp(cx, atom->asPropertyName());
         RootedValue lengthValue(cx);
         if (!cx->global()->getIntrinsicValue(cx, lengthProp, &lengthValue))
-            return NULL;
+            return nullptr;
         RootedObject lengthGetter(cx, &lengthValue.toObject());
         if (!lengthGetter)
-            return NULL;
+            return nullptr;
 
         RootedId lengthId(cx, AtomToId(cx->names().length));
         unsigned flags = JSPROP_PERMANENT | JSPROP_SHARED | JSPROP_GETTER;
         RootedValue value(cx, UndefinedValue());
         if (!DefineNativeProperty(cx, proto, lengthId, value,
-                                  JS_DATA_TO_FUNC_PTR(PropertyOp, lengthGetter.get()), NULL,
+                                  JS_DATA_TO_FUNC_PTR(PropertyOp, lengthGetter.get()), nullptr,
                                   flags, 0, 0))
         {
-            return NULL;
+            return nullptr;
         }
     }
 

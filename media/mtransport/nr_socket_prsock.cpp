@@ -116,7 +116,7 @@ extern "C" {
 // Implement the nsISupports ref counting
 namespace mozilla {
 
-NS_IMPL_THREADSAFE_ISUPPORTS0(NrSocket)
+NS_IMPL_ISUPPORTS0(NrSocket)
 
 
 // The nsASocket callbacks
@@ -330,7 +330,7 @@ int NrSocket::create(nr_transport_addr *addr) {
     ABORT(R_INTERNAL);
   }
 
-  r_log(LOG_GENERIC,LOG_DEBUG,"Creating socket %d with addr %s",
+  r_log(LOG_GENERIC,LOG_DEBUG,"Creating socket %p with addr %s",
         fd_, addr->as_string);
   nr_transport_addr_copy(&my_addr_,addr);
 

@@ -62,8 +62,9 @@ let gGestureSupport = {
 
     switch (aEvent.type) {
       case "MozSwipeGestureStart":
-        aEvent.preventDefault();
-        this._setupSwipeGesture(aEvent);
+        if (this._setupSwipeGesture(aEvent)) {
+          aEvent.preventDefault();
+        }
         break;
       case "MozSwipeGestureUpdate":
         aEvent.preventDefault();
@@ -179,34 +180,40 @@ let gGestureSupport = {
    *
    * @param aEvent
    *        The swipe gesture start event.
+   * @return true if swipe gestures could successfully be set up, false
+   *         othwerwise.
    */
   _setupSwipeGesture: function GS__setupSwipeGesture(aEvent) {
-    if (!this._swipeNavigatesHistory(aEvent))
-      return;
+    if (!this._swipeNavigatesHistory(aEvent)) {
+      return false;
+    }
+
+    let isVerticalSwipe = false;
+    if (gHistorySwipeAnimation.active) {
+      if (aEvent.direction == aEvent.DIRECTION_UP) {
+        if (content.pageYOffset > 0) {
+          return false;
+        }
+        isVerticalSwipe = true;
+      } else if (aEvent.direction == aEvent.DIRECTION_DOWN) {
+        if (content.pageYOffset < content.scrollMaxY) {
+          return false;
+        }
+        isVerticalSwipe = true;
+      }
+    }
 
     let canGoBack = gHistorySwipeAnimation.canGoBack();
     let canGoForward = gHistorySwipeAnimation.canGoForward();
     let isLTR = gHistorySwipeAnimation.isLTR;
 
-    if (canGoBack)
+    if (canGoBack) {
       aEvent.allowedDirections |= isLTR ? aEvent.DIRECTION_LEFT :
                                           aEvent.DIRECTION_RIGHT;
-    if (canGoForward)
+    }
+    if (canGoForward) {
       aEvent.allowedDirections |= isLTR ? aEvent.DIRECTION_RIGHT :
                                           aEvent.DIRECTION_LEFT;
-
-    let isVerticalSwipe = false;
-    if (gHistorySwipeAnimation.active) {
-      if (aEvent.direction == aEvent.DIRECTION_UP) {
-        isVerticalSwipe = true;
-        // Force a synchronous scroll to the top of the page.
-        content.scrollTo(content.scrollX, 0);
-      }
-      else if (aEvent.direction == aEvent.DIRECTION_DOWN) {
-        isVerticalSwipe = true;
-        // Force a synchronous scroll to the bottom of the page.
-        content.scrollTo(content.scrollX, content.scrollMaxY);
-      }
     }
 
     gHistorySwipeAnimation.startAnimation(isVerticalSwipe);
@@ -221,6 +228,8 @@ let gGestureSupport = {
       this._doUpdate = function (aEvent) {};
       this._doEnd = function (aEvent) {};
     }
+
+    return true;
   },
 
   /**
@@ -569,7 +578,7 @@ let gHistorySwipeAnimation = {
     this._boxHeight = -1;
     this._maxSnapshots = this._getMaxSnapshots();
     this._lastSwipeDir = "";
-    this._isVerticalSwipe = false;
+    this._direction = "horizontal";
 
     // We only want to activate history swipe animations if we store snapshots.
     // If we don't store any, we handle horizontal swipes without animations.
@@ -605,7 +614,7 @@ let gHistorySwipeAnimation = {
    *        Whether we're dealing with a vertical swipe or not.
    */
   startAnimation: function HSA_startAnimation(aIsVerticalSwipe) {
-    this._isVerticalSwipe = aIsVerticalSwipe;
+    this._direction = aIsVerticalSwipe ? "vertical" : "horizontal";
 
     if (this.isAnimationRunning()) {
       // If this is a horizontal scroll, or if this is a vertical scroll that
@@ -615,7 +624,7 @@ let gHistorySwipeAnimation = {
       // taking another snapshot. If vertical scrolls are initiated repeatedly
       // without prior horizontal scroll we skip this and restart the animation
       // from 0.
-      if (!this._isVerticalSwipe || this._lastSwipeDir != "") {
+      if (this._direction == "horizontal" || this._lastSwipeDir != "") {
         gBrowser.stop();
         this._lastSwipeDir = "RELOAD"; // just ensure that != ""
         this._canGoBack = this.canGoBack();
@@ -653,24 +662,24 @@ let gHistorySwipeAnimation = {
    *        swipe gesture.
    */
   updateAnimation: function HSA_updateAnimation(aVal) {
-    if (!this.isAnimationRunning())
+    if (!this.isAnimationRunning()) {
       return;
+    }
 
     // We use the following value to decrease the bounce effect when scrolling
     // to the top or bottom of the page, or when swiping back/forward past the
     // browsing history. This value was determined experimentally.
     let dampValue = 4;
-    if (this._isVerticalSwipe) {
+    if (this._direction == "vertical") {
       this._prevBox.collapsed = true;
       this._nextBox.collapsed = true;
       this._positionBox(this._curBox, -1 * aVal / dampValue);
-    }
-    else if ((aVal >= 0 && this.isLTR) ||
-             (aVal <= 0 && !this.isLTR)) {
+    } else if ((aVal >= 0 && this.isLTR) ||
+               (aVal <= 0 && !this.isLTR)) {
       let tempDampValue = 1;
-      if (this._canGoBack)
+      if (this._canGoBack) {
         this._prevBox.collapsed = false;
-      else {
+      } else {
         tempDampValue = dampValue;
         this._prevBox.collapsed = true;
       }
@@ -682,11 +691,7 @@ let gHistorySwipeAnimation = {
 
       // The forward page should be pushed offscreen all the way to the right.
       this._positionBox(this._nextBox, 1);
-    }
-    else {
-      if (aVal < -1)
-        aVal = -1; // Cap value to avoid sliding the page further than allowed.
-
+    } else {
       // The intention is to go forward. If there is a page to go forward to,
       // it should slide in from the right (LTR) or left (RTL).
       // Otherwise, the current page should slide to the left (LTR) or
@@ -698,8 +703,7 @@ let gHistorySwipeAnimation = {
         let offset = this.isLTR ? 1 : -1;
         this._positionBox(this._curBox, 0);
         this._positionBox(this._nextBox, offset + aVal);
-      }
-      else {
+      } else {
         this._prevBox.collapsed = true;
         this._positionBox(this._curBox, aVal / dampValue);
       }
@@ -916,7 +920,7 @@ let gHistorySwipeAnimation = {
   _positionBox: function HSA__positionBox(aBox, aPosition) {
     let transform = "";
 
-    if (this._isVerticalSwipe)
+    if (this._direction == "vertical")
       transform = "translateY(" + this._boxHeight * aPosition + "px)";
     else
       transform = "translateX(" + this._boxWidth * aPosition + "px)";

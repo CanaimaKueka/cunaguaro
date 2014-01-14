@@ -7,24 +7,26 @@
 #define WEBGLPROGRAM_H_
 
 #include "WebGLObjectModel.h"
-#include "WebGLShader.h"
 
 #include "nsWrapperCache.h"
 
 #include "mozilla/LinkedList.h"
 #include "mozilla/CheckedInt.h"
+#include <map>
 
 namespace mozilla {
+
+class WebGLShader;
+class WebGLUniformInfo;
 
 typedef nsDataHashtable<nsCStringHashKey, nsCString> CStringMap;
 typedef nsDataHashtable<nsCStringHashKey, WebGLUniformInfo> CStringToUniformInfoMap;
 
 class WebGLProgram MOZ_FINAL
-    : public nsISupports
+    : public nsWrapperCache
     , public WebGLRefCountedObject<WebGLProgram>
     , public LinkedListElement<WebGLProgram>
     , public WebGLContextBoundObject
-    , public nsWrapperCache
 {
 public:
     WebGLProgram(WebGLContext *context);
@@ -39,7 +41,7 @@ public:
         mAttachedShaders.Clear();
     }
 
-    WebGLuint GLName() { return mGLName; }
+    GLuint GLName() { return mGLName; }
     const nsTArray<WebGLRefPtr<WebGLShader> >& AttachedShaders() const { return mAttachedShaders; }
     bool LinkStatus() { return mLinkStatus; }
     uint32_t Generation() const { return mGeneration.value(); }
@@ -105,12 +107,15 @@ public:
     virtual JSObject* WrapObject(JSContext *cx,
                                  JS::Handle<JSObject*> scope) MOZ_OVERRIDE;
 
-    NS_DECL_CYCLE_COLLECTING_ISUPPORTS
-    NS_DECL_CYCLE_COLLECTION_SCRIPT_HOLDER_CLASS(WebGLProgram)
+    NS_INLINE_DECL_CYCLE_COLLECTING_NATIVE_REFCOUNTING(WebGLProgram)
+    NS_DECL_CYCLE_COLLECTION_SCRIPT_HOLDER_NATIVE_CLASS(WebGLProgram)
+
+    // public post-link data
+    std::map<GLint, nsCString> mActiveAttribMap;
 
 protected:
 
-    WebGLuint mGLName;
+    GLuint mGLName;
     bool mLinkStatus;
     // attached shaders of the program object
     nsTArray<WebGLRefPtr<WebGLShader> > mAttachedShaders;

@@ -6,3 +6,11 @@
 
 MODULE = 'intl'
 
+SOURCES += [
+    'nsCharsetMenu.cpp',
+]
+
+LIBRARY_NAME = 'intl_s'
+
+LIBXUL_LIBRARY = True
+

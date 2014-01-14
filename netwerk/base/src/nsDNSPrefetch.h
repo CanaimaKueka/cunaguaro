@@ -6,7 +6,6 @@
 #ifndef nsDNSPrefetch_h___
 #define nsDNSPrefetch_h___
 
-#include "nsCOMPtr.h"
 #include "nsString.h"
 #include "mozilla/TimeStamp.h"
 #include "mozilla/Attributes.h"
@@ -19,7 +18,7 @@ class nsIDNSService;
 class nsDNSPrefetch MOZ_FINAL : public nsIDNSListener
 {
 public:
-    NS_DECL_ISUPPORTS
+    NS_DECL_THREADSAFE_ISUPPORTS
     NS_DECL_NSIDNSLISTENER
   
     nsDNSPrefetch(nsIURI *aURI, bool storeTiming);

@@ -1,16 +1,19 @@
-<!ENTITY inspectorHTMLCopyInner.label       "Copy Inner HTML">
-<!ENTITY inspectorHTMLCopyInner.accesskey   "I">
+<!ENTITY inspectorHTMLEdit.label       "Խմբագրել որպես HTML">
+<!ENTITY inspectorHTMLEdit.accesskey   "Խ">
 
-<!ENTITY inspectorHTMLCopyOuter.label       "Copy Outer HTML">
-<!ENTITY inspectorHTMLCopyOuter.accesskey   "O">
+<!ENTITY inspectorHTMLCopyInner.label       "Պատճենել ներքին HTML-ն">
+<!ENTITY inspectorHTMLCopyInner.accesskey   "ն">
 
-<!ENTITY inspectorCopyUniqueSelector.label       "Copy Unique Selector">
-<!ENTITY inspectorCopyUniqueSelector.accesskey   "U">
+<!ENTITY inspectorHTMLCopyOuter.label       "Պատճենել արտաքին HTML-ն">
+<!ENTITY inspectorHTMLCopyOuter.accesskey   "ա">
 
-<!ENTITY inspectorHTMLDelete.label          "Delete Node">
-<!ENTITY inspectorHTMLDelete.accesskey      "D">
+<!ENTITY inspectorCopyUniqueSelector.label       "Պատճենել ունիկալ ընտրիչը">
+<!ENTITY inspectorCopyUniqueSelector.accesskey   "ո">
 
-<!ENTITY inspector.selectButton.tooltip     "Select element with mouse">
+<!ENTITY inspectorHTMLDelete.label          "Հեռացնել հանգույցը">
+<!ENTITY inspectorHTMLDelete.accesskey      "Հ">
 
-<!ENTITY inspectorSearchHTML.label          "Search HTML">
+<!ENTITY inspector.selectButton.tooltip     "Մկնիկով ընտրել տարրը">
+
+<!ENTITY inspectorSearchHTML.label          "Փնտրել HTML">
 <!ENTITY inspectorSearchHTML.key            "F">

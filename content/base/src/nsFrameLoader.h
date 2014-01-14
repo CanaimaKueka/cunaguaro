@@ -37,6 +37,7 @@ class mozIApplication;
 
 namespace mozilla {
 namespace dom {
+class ContentParent;
 class PBrowserParent;
 class TabParent;
 struct StructuredCloneData;
@@ -47,7 +48,7 @@ class RenderFrameParent;
 }
 }
 
-#ifdef MOZ_WIDGET_GTK2
+#if defined(MOZ_WIDGET_GTK)
 typedef struct _GtkWidget GtkWidget;
 #endif
 #ifdef MOZ_WIDGET_QT
@@ -154,13 +155,7 @@ protected:
   nsFrameLoader(mozilla::dom::Element* aOwner, bool aNetworkCreated);
 
 public:
-  ~nsFrameLoader() {
-    mNeedsAsyncDestroy = true;
-    if (mMessageManager) {
-      mMessageManager->Disconnect();
-    }
-    nsFrameLoader::Destroy();
-  }
+  ~nsFrameLoader();
 
   bool AsyncScrollEnabled() const
   {
@@ -185,12 +180,14 @@ public:
   /**
    * MessageManagerCallback methods that we override.
    */
-  virtual bool DoLoadFrameScript(const nsAString& aURL);
-  virtual bool DoSendAsyncMessage(const nsAString& aMessage,
-                                  const mozilla::dom::StructuredCloneData& aData);
-  virtual bool CheckPermission(const nsAString& aPermission);
-  virtual bool CheckManifestURL(const nsAString& aManifestURL);
-  virtual bool CheckAppHasPermission(const nsAString& aPermission);
+  virtual bool DoLoadFrameScript(const nsAString& aURL) MOZ_OVERRIDE;
+  virtual bool DoSendAsyncMessage(JSContext* aCx,
+                                  const nsAString& aMessage,
+                                  const mozilla::dom::StructuredCloneData& aData,
+                                  JS::Handle<JSObject *> aCpows);
+  virtual bool CheckPermission(const nsAString& aPermission) MOZ_OVERRIDE;
+  virtual bool CheckManifestURL(const nsAString& aManifestURL) MOZ_OVERRIDE;
+  virtual bool CheckAppHasPermission(const nsAString& aPermission) MOZ_OVERRIDE;
 
   /**
    * Called from the layout frame associated with this frame loader;
@@ -306,6 +303,15 @@ public:
    */
   nsView* GetDetachedSubdocView(nsIDocument** aContainerDoc) const;
 
+  /**
+   * Applies a new set of sandbox flags. These are merged with the sandbox
+   * flags from our owning content's owning document with a logical OR, this
+   * ensures that we can only add restrictions and never remove them.
+   */
+  void ApplySandboxFlags(uint32_t sandboxFlags);
+
+  void GetURL(nsString& aURL);
+
 private:
 
   void SetOwnerContent(mozilla::dom::Element* aContent);
@@ -354,7 +360,6 @@ private:
    */
   nsresult MaybeCreateDocShell();
   nsresult EnsureMessageManager();
-  NS_HIDDEN_(void) GetURL(nsString& aURL);
 
   // Properly retrieves documentSize of any subdocument type.
   nsresult GetWindowDimensions(nsRect& aRect);
@@ -433,10 +438,12 @@ private:
   // doesn't necessarily correlate with docshell/document visibility.
   bool mVisible : 1;
 
-  // XXX leaking
-  nsCOMPtr<nsIObserver> mChildHost;
+  // The ContentParent associated with mRemoteBrowser.  This was added as a
+  // strong ref in bug 545237, and we're not sure if we can get rid of it.
+  nsRefPtr<mozilla::dom::ContentParent> mContentParent;
   RenderFrameParent* mCurrentRemoteFrame;
   TabParent* mRemoteBrowser;
+  uint64_t mChildID;
 
   // See nsIFrameLoader.idl.  Short story, if !(mRenderMode &
   // RENDER_MODE_ASYNC_SCROLL), all the fields below are ignored in

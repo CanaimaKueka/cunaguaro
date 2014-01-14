@@ -3,14 +3,17 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include "nsDOMClassInfoID.h"
 #include "nsDOMCommandEvent.h"
+#include "prtime.h"
+#include "mozilla/MiscEvents.h"
+
+using namespace mozilla;
 
 nsDOMCommandEvent::nsDOMCommandEvent(mozilla::dom::EventTarget* aOwner,
                                      nsPresContext* aPresContext,
-                                     nsCommandEvent* aEvent)
+                                     WidgetCommandEvent* aEvent)
   : nsDOMEvent(aOwner, aPresContext, aEvent ? aEvent :
-               new nsCommandEvent(false, nullptr, nullptr, nullptr))
+               new WidgetCommandEvent(false, nullptr, nullptr, nullptr))
 {
   mEvent->time = PR_Now();
   if (aEvent) {
@@ -18,22 +21,10 @@ nsDOMCommandEvent::nsDOMCommandEvent(mozilla::dom::EventTarget* aOwner,
   } else {
     mEventIsInternal = true;
   }
-  SetIsDOMBinding();
 }
-
-nsDOMCommandEvent::~nsDOMCommandEvent()
-{
-  if (mEventIsInternal && mEvent->eventStructType == NS_COMMAND_EVENT) {
-    delete static_cast<nsCommandEvent*>(mEvent);
-    mEvent = nullptr;
-  }
-}
-
-DOMCI_DATA(CommandEvent, nsDOMCommandEvent)
 
 NS_INTERFACE_MAP_BEGIN(nsDOMCommandEvent)
   NS_INTERFACE_MAP_ENTRY(nsIDOMCommandEvent)
-  NS_DOM_INTERFACE_MAP_ENTRY_CLASSINFO(CommandEvent)
 NS_INTERFACE_MAP_END_INHERITING(nsDOMEvent)
 
 NS_IMPL_ADDREF_INHERITED(nsDOMCommandEvent, nsDOMEvent)
@@ -42,7 +33,7 @@ NS_IMPL_RELEASE_INHERITED(nsDOMCommandEvent, nsDOMEvent)
 NS_IMETHODIMP
 nsDOMCommandEvent::GetCommand(nsAString& aCommand)
 {
-  nsIAtom* command = static_cast<nsCommandEvent*>(mEvent)->command;
+  nsIAtom* command = mEvent->AsCommandEvent()->command;
   if (command) {
     command->ToString(aCommand);
   } else {
@@ -60,19 +51,16 @@ nsDOMCommandEvent::InitCommandEvent(const nsAString& aTypeArg,
   nsresult rv = nsDOMEvent::InitEvent(aTypeArg, aCanBubbleArg, aCancelableArg);
   NS_ENSURE_SUCCESS(rv, rv);
 
-  static_cast<nsCommandEvent*>(mEvent)->command = do_GetAtom(aCommand);
+  mEvent->AsCommandEvent()->command = do_GetAtom(aCommand);
   return NS_OK;
 }
 
 nsresult NS_NewDOMCommandEvent(nsIDOMEvent** aInstancePtrResult,
                                mozilla::dom::EventTarget* aOwner,
                                nsPresContext* aPresContext,
-                               nsCommandEvent* aEvent)
+                               WidgetCommandEvent* aEvent)
 {
   nsDOMCommandEvent* it = new nsDOMCommandEvent(aOwner, aPresContext, aEvent);
-  if (nullptr == it) {
-    return NS_ERROR_OUT_OF_MEMORY;
-  }
 
   return CallQueryInterface(it, aInstancePtrResult);
 }

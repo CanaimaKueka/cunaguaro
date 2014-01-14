@@ -46,10 +46,10 @@ inline bool isOnlySafeChars(const nsAFlatString& in,
 //-----------------------------------------------------------------------------
 
 /* Implementation file */
-NS_IMPL_THREADSAFE_ISUPPORTS3(nsIDNService,
-                              nsIIDNService,
-                              nsIObserver,
-                              nsISupportsWeakReference)
+NS_IMPL_ISUPPORTS3(nsIDNService,
+                   nsIIDNService,
+                   nsIObserver,
+                   nsISupportsWeakReference)
 
 nsresult nsIDNService::Init()
 {
@@ -141,7 +141,7 @@ nsIDNService::nsIDNService()
 
   mMultilingualTestBed = false;
 
-  if (idn_success != idn_nameprep_create(NULL, &mNamePrepHandle))
+  if (idn_success != idn_nameprep_create(nullptr, &mNamePrepHandle))
     mNamePrepHandle = nullptr;
 
   mNormalizer = do_GetService(NS_UNICODE_NORMALIZER_CONTRACTID);
@@ -402,7 +402,10 @@ NS_IMETHODIMP nsIDNService::ConvertToDisplayIDN(const nsACString & input, bool *
 
 //-----------------------------------------------------------------------------
 
-static void utf16ToUcs4(const nsAString& in, uint32_t *out, uint32_t outBufLen, uint32_t *outLen)
+static nsresult utf16ToUcs4(const nsAString& in,
+                            uint32_t *out,
+                            uint32_t outBufLen,
+                            uint32_t *outLen)
 {
   uint32_t i = 0;
   nsAString::const_iterator start, end;
@@ -424,15 +427,12 @@ static void utf16ToUcs4(const nsAString& in, uint32_t *out, uint32_t outBufLen, 
       out[i] = curChar;
 
     i++;
-    if (i >= outBufLen) {
-      NS_ERROR("input too big, the result truncated");
-      out[outBufLen-1] = (uint32_t)'\0';
-      *outLen = outBufLen-1;
-      return;
-    }
+    if (i >= outBufLen)
+      return NS_ERROR_FAILURE;
   }
   out[i] = (uint32_t)'\0';
   *outLen = i;
+  return NS_OK;
 }
 
 static void ucs4toUtf16(const uint32_t *in, nsAString& out)
@@ -452,7 +452,8 @@ static nsresult punycode(const char* prefix, const nsAString& in, nsACString& ou
 {
   uint32_t ucs4Buf[kMaxDNSNodeLen + 1];
   uint32_t ucs4Len;
-  utf16ToUcs4(in, ucs4Buf, kMaxDNSNodeLen, &ucs4Len);
+  nsresult rv = utf16ToUcs4(in, ucs4Buf, kMaxDNSNodeLen, &ucs4Len);
+  NS_ENSURE_SUCCESS(rv, rv);
 
   // need maximum 20 bits to encode 16 bit Unicode character
   // (include null terminator)
@@ -473,7 +474,7 @@ static nsresult punycode(const char* prefix, const nsAString& in, nsACString& ou
   encodedBuf[encodedLength] = '\0';
   out.Assign(nsDependentCString(prefix) + nsDependentCString(encodedBuf));
 
-  return NS_OK;
+  return rv;
 }
 
 static nsresult encodeToRACE(const char* prefix, const nsAString& in, nsACString& out)
@@ -536,10 +537,10 @@ nsresult nsIDNService::stringPrep(const nsAString& in, nsAString& out,
   if (!mNamePrepHandle || !mNormalizer)
     return NS_ERROR_FAILURE;
 
-  nsresult rv = NS_OK;
   uint32_t ucs4Buf[kMaxDNSNodeLen + 1];
   uint32_t ucs4Len;
-  utf16ToUcs4(in, ucs4Buf, kMaxDNSNodeLen, &ucs4Len);
+  nsresult rv = utf16ToUcs4(in, ucs4Buf, kMaxDNSNodeLen, &ucs4Len);
+  NS_ENSURE_SUCCESS(rv, rv);
 
   // map
   idn_result_t idn_err;
@@ -623,11 +624,16 @@ nsresult nsIDNService::stringPrepAndACE(const nsAString& in, nsACString& out,
       else
         rv = encodeToACE(strPrep, out);
     }
-  }
-
-  if (out.Length() > kMaxDNSNodeLen) {
-    NS_WARNING("IDN node too large");
-    return NS_ERROR_FAILURE;
+    // Check that the encoded output isn't larger than the maximum length of an
+    // DNS node per RFC 1034.
+    // This test isn't necessary in the code paths above where the input is
+    // ASCII (since the output will be the same length as the input) or where
+    // we convert to UTF-8 (since the output is only used for display in the
+    // UI and not passed to DNS and can legitimately be longer than the limit).
+    if (out.Length() > kMaxDNSNodeLen) {
+      NS_WARNING("IDN node too large");
+      return NS_ERROR_FAILURE;
+    }
   }
 
   return rv;

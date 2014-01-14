@@ -9,6 +9,7 @@
 #include <sndio.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <assert.h>
 #include "cubeb/cubeb.h"
 #include "cubeb-internal.h"
 
@@ -55,7 +56,7 @@ float_to_s16(void *ptr, long nsamp)
 static void
 sndio_onmove(void *arg, int delta)
 {
-  struct cubeb_stream *s = (struct cubeb_stream *)arg;
+  cubeb_stream *s = (cubeb_stream *)arg;
 
   s->rdpos += delta;
 }
@@ -65,7 +66,7 @@ sndio_mainloop(void *arg)
 {
 #define MAXFDS 8
   struct pollfd pfds[MAXFDS];
-  struct cubeb_stream *s = arg;
+  cubeb_stream *s = arg;
   int n, nfds, revents, state;
   size_t start = 0, end = 0;
   long nfr;
@@ -152,6 +153,7 @@ sndio_get_backend_id(cubeb *context)
   return "sndio";
 }
 
+
 static void
 sndio_destroy(cubeb *context)
 {
@@ -168,12 +170,12 @@ sndio_stream_init(cubeb *context,
                   cubeb_state_callback state_callback,
                   void *user_ptr)
 {
-  struct cubeb_stream *s;
+  cubeb_stream *s;
   struct sio_par wpar, rpar;
   DPR("sndio_stream_init(%s)\n", stream_name);
   size_t size;
 
-  s = malloc(sizeof(struct cubeb_stream));
+  s = malloc(sizeof(cubeb_stream));
   if (s == NULL)
     return CUBEB_ERROR;
   s->context = context;
@@ -247,6 +249,34 @@ sndio_stream_init(cubeb *context,
   return CUBEB_OK;
 }
 
+static int
+sndio_get_max_channel_count(cubeb * ctx, uint32_t * max_channels)
+{
+  assert(ctx && max_channels);
+
+  *max_channels = 8;
+
+  return CUBEB_OK;
+}
+
+static int
+sndio_get_preferred_sample_rate(cubeb * ctx, uint32_t * rate)
+{
+  // XXX Not yet implemented.
+  *rate = 44100;
+
+  return CUBEB_OK;
+}
+
+static int
+sndio_get_min_latency(cubeb * ctx, cubeb_stream_params params, uint32_t * latency_ms)
+{
+  // XXX Not yet implemented.
+  latency_ms = 40;
+
+  return CUBEB_OK;
+}
+
 static void
 sndio_stream_destroy(cubeb_stream *s)
 {
@@ -303,13 +333,26 @@ sndio_stream_set_volume(cubeb_stream *s, float volume)
   return CUBEB_OK;
 }
 
+int
+sndio_stream_get_latency(cubeb_stream * stm, uint32_t * latency)
+{
+  // http://www.openbsd.org/cgi-bin/man.cgi?query=sio_open
+  // in the "Measuring the latency and buffers usage" paragraph.
+  *latency = stm->wrpos - stm->rdpos;
+  return CUBEB_OK;
+}
+
 static struct cubeb_ops const sndio_ops = {
   .init = sndio_init,
   .get_backend_id = sndio_get_backend_id,
+  .get_max_channel_count = sndio_get_max_channel_count,
+  .get_min_latency = sndio_get_min_latency,
+  .get_preferred_sample_rate = sndio_get_preferred_sample_rate,
   .destroy = sndio_destroy,
   .stream_init = sndio_stream_init,
   .stream_destroy = sndio_stream_destroy,
   .stream_start = sndio_stream_start,
   .stream_stop = sndio_stream_stop,
-  .stream_get_position = sndio_stream_get_position
+  .stream_get_position = sndio_stream_get_position,
+  .stream_get_latency = sndio_stream_get_latency
 };

@@ -2,11 +2,10 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include "nsIOService.h"
 #include "nsAsyncStreamCopier.h"
+#include "nsIOService.h"
 #include "nsIEventTarget.h"
 #include "nsStreamUtils.h"
-#include "nsNetSegmentUtils.h"
 #include "nsNetUtil.h"
 #include "prlog.h"
 
@@ -53,7 +52,7 @@ nsAsyncStreamCopier::IsComplete(nsresult *status)
 void
 nsAsyncStreamCopier::Complete(nsresult status)
 {
-    LOG(("nsAsyncStreamCopier::Complete [this=%x status=%x]\n", this, status));
+    LOG(("nsAsyncStreamCopier::Complete [this=%p status=%x]\n", this, status));
 
     nsCOMPtr<nsIRequestObserver> observer;
     nsCOMPtr<nsISupports> ctx;
@@ -88,7 +87,7 @@ nsAsyncStreamCopier::OnAsyncCopyComplete(void *closure, nsresult status)
 //-----------------------------------------------------------------------------
 // nsISupports
 
-NS_IMPL_THREADSAFE_ISUPPORTS2(nsAsyncStreamCopier,
+NS_IMPL_ISUPPORTS2(nsAsyncStreamCopier,
                               nsIRequest,
                               nsIAsyncStreamCopier)
 
@@ -217,7 +216,7 @@ nsAsyncStreamCopier::Init(nsIInputStream *source,
 NS_IMETHODIMP
 nsAsyncStreamCopier::AsyncCopy(nsIRequestObserver *observer, nsISupports *ctx)
 {
-    LOG(("nsAsyncStreamCopier::AsyncCopy [this=%x observer=%x]\n", this, observer));
+    LOG(("nsAsyncStreamCopier::AsyncCopy [this=%p observer=%x]\n", this, observer));
 
     NS_ASSERTION(mSource && mSink, "not initialized");
     nsresult rv;

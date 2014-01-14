@@ -11,6 +11,7 @@
 #include "plarena.h"
 #include "nsClassHashtable.h"
 #include "nsICategoryManager.h"
+#include "mozilla/MemoryReporting.h"
 #include "mozilla/Mutex.h"
 #include "mozilla/Attributes.h"
 
@@ -34,7 +35,7 @@ class CategoryLeaf : public nsDepCharHashKey
 public:
   CategoryLeaf(const char* aKey)
     : nsDepCharHashKey(aKey),
-      value(NULL) { }
+      value(nullptr) { }
   const char* value;
 };
 
@@ -76,7 +77,7 @@ public:
   ~CategoryNode();
   void operator delete(void*) { }
 
-  size_t SizeOfExcludingThis(nsMallocSizeOfFun aMallocSizeOf);
+  size_t SizeOfExcludingThis(mozilla::MallocSizeOf aMallocSizeOf);
 
 private:
   CategoryNode()
@@ -113,7 +114,7 @@ public:
                         const char* aKey,
                         const char* aValue,
                         bool aReplace = true,
-                        char** aOldValue = NULL);
+                        char** aOldValue = nullptr);
 
   static nsresult Create(nsISupports* aOuter, REFNSIID aIID, void** aResult);
   void InitMemoryReporter();
@@ -121,14 +122,15 @@ public:
   static nsCategoryManager* GetSingleton();
   static void Destroy();
 
-  static int64_t GetCategoryManagerSize();
-  size_t SizeOfIncludingThis(nsMallocSizeOfFun aMallocSizeOf);
+  static int64_t SizeOfIncludingThis(mozilla::MallocSizeOf aMallocSizeOf);
 
 private:
   static nsCategoryManager* gCategoryManager;
 
   nsCategoryManager();
   ~nsCategoryManager();
+
+  size_t SizeOfIncludingThisHelper(mozilla::MallocSizeOf aMallocSizeOf);
 
   CategoryNode* get_category(const char* aName);
   void NotifyObservers(const char* aTopic,
@@ -140,7 +142,7 @@ private:
   mozilla::Mutex mLock;
   bool mSuppressNotifications;
 
-  nsIMemoryReporter* mReporter;
+  nsCOMPtr<nsIMemoryReporter> mReporter;
 };
 
 #endif

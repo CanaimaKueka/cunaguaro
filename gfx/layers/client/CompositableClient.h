@@ -6,24 +6,34 @@
 #ifndef MOZILLA_GFX_BUFFERCLIENT_H
 #define MOZILLA_GFX_BUFFERCLIENT_H
 
-#include "mozilla/layers/PCompositableChild.h"
-#include "mozilla/layers/LayersTypes.h"
-#include "mozilla/RefPtr.h"
+#include <stdint.h>                     // for uint64_t
+#include <vector>                       // for vector
+#include <map>                          // for map
+#include "mozilla/Assertions.h"         // for MOZ_CRASH
+#include "mozilla/RefPtr.h"             // for TemporaryRef, RefCounted
+#include "mozilla/gfx/Types.h"          // for SurfaceFormat
+#include "mozilla/layers/CompositorTypes.h"
+#include "mozilla/layers/LayersTypes.h"  // for LayersBackend
+#include "mozilla/layers/PCompositableChild.h"  // for PCompositableChild
+#include "nsTraceRefcnt.h"              // for MOZ_COUNT_CTOR, etc
+#include "gfxASurface.h"                // for gfxContentType
 
 namespace mozilla {
 namespace layers {
 
-class CompositableChild;
 class CompositableClient;
+class DeprecatedTextureClient;
 class TextureClient;
+class BufferTextureClient;
 class ImageBridgeChild;
-class ShadowableLayer;
 class CompositableForwarder;
 class CompositableChild;
+class SurfaceDescriptor;
+class TextureClientData;
 
 /**
  * CompositableClient manages the texture-specific logic for composite layers,
- * independently of the layer. It is the content side of a ConmpositableClient/
+ * independently of the layer. It is the content side of a CompositableClient/
  * CompositableHost pair.
  *
  * CompositableClient's purpose is to send texture data to the compositor side
@@ -59,32 +69,29 @@ class CompositableChild;
  * where we have a different way of interfacing with the textures - in terms of
  * drawing into the compositable and/or passing its contents to the compostior.
  */
-class CompositableClient : public RefCounted<CompositableClient>
+class CompositableClient : public AtomicRefCounted<CompositableClient>
 {
 public:
-  CompositableClient(CompositableForwarder* aForwarder)
-  : mCompositableChild(nullptr), mForwarder(aForwarder)
-  {
-    MOZ_COUNT_CTOR(CompositableClient);
-  }
+  CompositableClient(CompositableForwarder* aForwarder);
 
   virtual ~CompositableClient();
 
-  virtual TextureInfo GetTextureInfo() const
-  {
-    MOZ_NOT_REACHED("This method should be overridden");
-    return TextureInfo();
-  }
+  virtual TextureInfo GetTextureInfo() const = 0;
 
   LayersBackend GetCompositorBackendType() const;
 
-  TemporaryRef<TextureClient>
-  CreateTextureClient(TextureClientType aTextureClientType);
+  TemporaryRef<DeprecatedTextureClient>
+  CreateDeprecatedTextureClient(DeprecatedTextureClientType aDeprecatedTextureClientType,
+                                gfxContentType aContentType = GFX_CONTENT_SENTINEL);
+
+  virtual TemporaryRef<BufferTextureClient>
+  CreateBufferTextureClient(gfx::SurfaceFormat aFormat,
+                            TextureFlags aFlags = TEXTURE_FLAGS_DEFAULT);
 
   virtual void SetDescriptorFromReply(TextureIdentifier aTextureId,
                                       const SurfaceDescriptor& aDescriptor)
   {
-    MOZ_NOT_REACHED("If you want to call this, you should have implemented it");
+    MOZ_CRASH("If you want to call this, you should have implemented it");
   }
 
   /**
@@ -97,7 +104,7 @@ public:
   CompositableChild* GetIPDLActor() const;
 
   // should only be called by a CompositableForwarder
-  void SetIPDLActor(CompositableChild* aChild);
+  virtual void SetIPDLActor(CompositableChild* aChild);
 
   CompositableForwarder* GetForwarder() const
   {
@@ -106,12 +113,65 @@ public:
 
   /**
    * This identifier is what lets us attach async compositables with a shadow
-   * layer. It is not used if the compositable is used with the regulat shadow
+   * layer. It is not used if the compositable is used with the regular shadow
    * layer forwarder.
+   *
+   * If this returns zero, it means the compositable is not async (it is used
+   * on the main thread).
    */
   uint64_t GetAsyncID() const;
 
+  /**
+   * Tells the Compositor to create a TextureHost for this TextureClient.
+   */
+  virtual bool AddTextureClient(TextureClient* aClient);
+
+  /**
+   * Tells the Compositor to delete the TextureHost corresponding to this
+   * TextureClient.
+   */
+  virtual void RemoveTextureClient(TextureClient* aClient);
+
+  /**
+   * A hook for the Compositable to execute whatever it held off for next transaction.
+   */
+  virtual void OnTransaction();
+
+  /**
+   * A hook for the when the Compositable is detached from it's layer.
+   */
+  virtual void OnDetach() {}
+
+  /**
+   * When texture deallocation must happen on the client side, we need to first
+   * ensure that the compositor has already let go of the data in order
+   * to safely deallocate it.
+   *
+   * This is implemented by registering a callback to postpone deallocation or
+   * recycling of the shared data.
+   *
+   * This hook is called when the compositor notifies the client that it is not
+   * holding any more references to the shared data so that this compositable
+   * can run the corresponding callback.
+   */
+  void OnReplyTextureRemoved(uint64_t aTextureID);
+
+  /**
+   * Run all he registered callbacks (see the comment for OnReplyTextureRemoved).
+   * Only call this if you know what you are doing.
+   */
+  void FlushTexturesToRemoveCallbacks();
 protected:
+  struct TextureIDAndFlags {
+    TextureIDAndFlags(uint64_t aID, TextureFlags aFlags)
+    : mID(aID), mFlags(aFlags) {}
+    uint64_t mID;
+    TextureFlags mFlags;
+  };
+  // The textures to destroy in the next transaction;
+  nsTArray<TextureIDAndFlags> mTexturesToRemove;
+  std::map<uint64_t, TextureClientData*> mTexturesToRemoveCallbacks;
+  uint64_t mNextTextureID;
   CompositableChild* mCompositableChild;
   CompositableForwarder* mForwarder;
 };

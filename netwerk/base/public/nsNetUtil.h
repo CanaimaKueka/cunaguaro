@@ -81,10 +81,14 @@
 #include "nsIOfflineCacheUpdate.h"
 #include "nsIContentSniffer.h"
 #include "nsCategoryCache.h"
+#include "nsStringStream.h"
+#include "nsIViewSourceChannel.h"
 
 #include <limits>
 
 #ifdef MOZILLA_INTERNAL_API
+
+#include "nsReadableUtils.h"
 
 inline already_AddRefed<nsIIOService>
 do_GetIOService(nsresult* error = 0)
@@ -460,6 +464,47 @@ NS_NewInputStreamChannel(nsIChannel      **result,
 {
     return NS_NewInputStreamChannel(result, uri, stream, contentType,
                                     &contentCharset);
+}
+
+inline nsresult
+NS_NewInputStreamChannel(nsIChannel      **result,
+                         nsIURI           *uri,
+                         const nsAString  &data,
+                         const nsACString &contentType,
+                         bool              isSrcdocChannel = false)
+{
+
+    nsresult rv;
+
+    nsCOMPtr<nsIStringInputStream> stream;
+    stream = do_CreateInstance(NS_STRINGINPUTSTREAM_CONTRACTID, &rv);
+    NS_ENSURE_SUCCESS(rv, rv);
+
+#ifdef MOZILLA_INTERNAL_API
+    uint32_t len;
+    char* utf8Bytes = ToNewUTF8String(data, &len);
+    rv = stream->AdoptData(utf8Bytes, len);
+#else
+    char* utf8Bytes = ToNewUTF8String(data);
+    rv = stream->AdoptData(utf8Bytes, strlen(utf8Bytes));
+#endif
+
+    nsCOMPtr<nsIChannel> chan;
+
+    rv = NS_NewInputStreamChannel(getter_AddRefs(chan), uri, stream,
+                                  contentType, NS_LITERAL_CSTRING("UTF-8"));
+    NS_ENSURE_SUCCESS(rv, rv);
+
+    if (isSrcdocChannel) {
+        nsCOMPtr<nsIInputStreamChannel> inStrmChan = do_QueryInterface(chan);
+        NS_ENSURE_TRUE(inStrmChan, NS_ERROR_FAILURE);
+        inStrmChan->SetSrcdocData(data);
+    }
+
+    *result = nullptr;
+    chan.swap(*result);
+
+    return NS_OK;
 }
 
 inline nsresult
@@ -1309,6 +1354,8 @@ NS_UsePrivateBrowsing(nsIChannel *channel)
 // know about script security manager.
 #define NECKO_NO_APP_ID 0
 #define NECKO_UNKNOWN_APP_ID UINT32_MAX
+// special app id reserved for separating the safebrowsing cookie
+#define NECKO_SAFEBROWSING_APP_ID UINT32_MAX - 1
 
 /**
  * Gets AppId and isInBrowserElement from channel's nsILoadContext.
@@ -1918,7 +1965,9 @@ NS_RelaxStrictFileOriginPolicy(nsIURI *aTargetURI,
       NS_FAILED(sourceFileURL->GetFile(getter_AddRefs(sourceFile))) ||
       !targetFile || !sourceFile ||
       NS_FAILED(targetFile->Normalize()) ||
+#ifndef MOZ_WIDGET_ANDROID
       NS_FAILED(sourceFile->Normalize()) ||
+#endif
       (!aAllowDirectoryTarget &&
        (NS_FAILED(targetFile->IsDirectory(&targetIsDir)) || targetIsDir))) {
     return false;
@@ -1930,19 +1979,26 @@ NS_RelaxStrictFileOriginPolicy(nsIURI *aTargetURI,
   // inherit its source principal and be scriptable by that source.
   //
   bool sourceIsDir;
-  bool contained = false;
+  bool allowed = false;
   nsresult rv = sourceFile->IsDirectory(&sourceIsDir);
   if (NS_SUCCEEDED(rv) && sourceIsDir) {
-    rv = sourceFile->Contains(targetFile, true, &contained);
+    rv = sourceFile->Contains(targetFile, true, &allowed);
   } else {
     nsCOMPtr<nsIFile> sourceParent;
     rv = sourceFile->GetParent(getter_AddRefs(sourceParent));
     if (NS_SUCCEEDED(rv) && sourceParent) {
-      rv = sourceParent->Contains(targetFile, true, &contained);
+      rv = sourceParent->Equals(targetFile, &allowed);
+      if (NS_FAILED(rv) || !allowed) {
+        rv = sourceParent->Contains(targetFile, true, &allowed);
+      } else {
+        MOZ_ASSERT(aAllowDirectoryTarget,
+                   "sourceFile->Parent == targetFile, but targetFile "
+                   "should've been disallowed if it is a directory");
+      }
     }
   }
 
-  if (NS_SUCCEEDED(rv) && contained) {
+  if (NS_SUCCEEDED(rv) && allowed) {
     return true;
   }
 
@@ -2270,7 +2326,8 @@ NS_SniffContent(const char* aSnifferType, nsIRequest* aRequest,
     return;
   }
 
-  const nsCOMArray<nsIContentSniffer>& sniffers = cache->GetEntries();
+  nsCOMArray<nsIContentSniffer> sniffers;
+  cache->GetEntries(sniffers);
   for (int32_t i = 0; i < sniffers.Count(); ++i) {
     nsresult rv = sniffers[i]->GetMIMETypeFromContent(aRequest, aData, aLength, aSniffedType);
     if (NS_SUCCEEDED(rv) && !aSniffedType.IsEmpty()) {
@@ -2279,6 +2336,28 @@ NS_SniffContent(const char* aSnifferType, nsIRequest* aRequest,
   }
 
   aSniffedType.Truncate();
+}
+
+/**
+ * Whether the channel was created to load a srcdoc document.
+ * Note that view-source:about:srcdoc is classified as a srcdoc document by 
+ * this function, which may not be applicable everywhere.
+ */
+inline bool
+NS_IsSrcdocChannel(nsIChannel *aChannel)
+{
+  bool isSrcdoc;
+  nsCOMPtr<nsIInputStreamChannel> isr = do_QueryInterface(aChannel);
+  if (isr) {
+    isr->GetIsSrcdocChannel(&isSrcdoc);
+    return isSrcdoc;
+  }
+  nsCOMPtr<nsIViewSourceChannel> vsc = do_QueryInterface(aChannel);
+  if (vsc) {
+    vsc->GetIsSrcdocChannel(&isSrcdoc);
+    return isSrcdoc;
+  }
+  return false;
 }
 
 #endif // !nsNetUtil_h__

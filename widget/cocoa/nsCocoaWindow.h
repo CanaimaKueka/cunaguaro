@@ -76,6 +76,8 @@ typedef struct _nsCocoaWindowList {
   float mDPI;
 
   NSTrackingArea* mTrackingArea;
+
+  BOOL mBeingShown;
 }
 
 - (void)importState:(NSDictionary*)aState;
@@ -95,7 +97,12 @@ typedef struct _nsCocoaWindowList {
 - (void)updateTrackingArea;
 - (NSView*)trackingAreaView;
 
+- (void)setBeingShown:(BOOL)aValue;
+- (BOOL)isVisibleOrBeingShown;
+
 - (ChildView*)mainChildView;
+
+- (NSArray*)titlebarControls;
 
 @end
 
@@ -114,6 +121,10 @@ typedef struct _nsCocoaWindowList {
 // rounded bottom corners, so this call doesn't have any effect there.
 - (void)setBottomCornerRounded:(BOOL)rounded;
 - (BOOL)bottomCornerRounded;
+
+// Present in the same form on OS X since at least OS X 10.5.
+- (NSRect)contentRectForFrameRect:(NSRect)windowFrame styleMask:(NSUInteger)windowStyle;
+- (NSRect)frameRectForContentRect:(NSRect)windowContentRect styleMask:(NSUInteger)windowStyle;
 
 @end
 
@@ -179,15 +190,15 @@ typedef struct _nsCocoaWindowList {
 @interface ToolbarWindow : BaseWindow
 {
   TitlebarAndBackgroundColor *mColor;
-  float mUnifiedToolbarHeight;
+  CGFloat mUnifiedToolbarHeight;
   NSColor *mBackgroundColor;
   NSView *mTitlebarView; // strong
 }
 // Pass nil here to get the default appearance.
 - (void)setTitlebarColor:(NSColor*)aColor forActiveWindow:(BOOL)aActive;
-- (void)setUnifiedToolbarHeight:(float)aHeight;
-- (float)unifiedToolbarHeight;
-- (float)titlebarHeight;
+- (void)setUnifiedToolbarHeight:(CGFloat)aHeight;
+- (CGFloat)unifiedToolbarHeight;
+- (CGFloat)titlebarHeight;
 - (NSRect)titlebarRect;
 - (void)setTitlebarNeedsDisplayInRect:(NSRect)aRect sync:(BOOL)aSync;
 - (void)setTitlebarNeedsDisplayInRect:(NSRect)aRect;
@@ -251,6 +262,7 @@ public:
     CGFloat                 BackingScaleFactor();
     void                    BackingScaleFactorChanged();
     virtual double          GetDefaultScaleInternal();
+    virtual int32_t         RoundsWidgetCoordinatesTo() MOZ_OVERRIDE;
 
     NS_IMETHOD              SetTitle(const nsAString& aTitle);
 
@@ -260,7 +272,8 @@ public:
                                           LayersBackend aBackendHint = mozilla::layers::LAYERS_NONE,
                                           LayerManagerPersistence aPersistence = LAYER_MANAGER_CURRENT,
                                           bool* aAllowRetaining = nullptr);
-    NS_IMETHOD DispatchEvent(nsGUIEvent* event, nsEventStatus & aStatus) ;
+    NS_IMETHOD DispatchEvent(mozilla::WidgetGUIEvent* aEvent,
+                             nsEventStatus& aStatus);
     NS_IMETHOD CaptureRollupEvents(nsIRollupListener * aListener, bool aDoCapture);
     NS_IMETHOD GetAttention(int32_t aCycleCount);
     virtual bool HasPendingInputEvent();
@@ -289,11 +302,10 @@ public:
     void SetMenuBar(nsMenuBarX* aMenuBar);
     nsMenuBarX *GetMenuBar();
 
-    NS_IMETHOD_(void) SetInputContext(const InputContext& aContext,
-                                      const InputContextAction& aAction)
-    {
-      mInputContext = aContext;
-    }
+    NS_IMETHOD NotifyIME(NotificationToIME aNotification) MOZ_OVERRIDE;
+    NS_IMETHOD_(void) SetInputContext(
+                        const InputContext& aContext,
+                        const InputContextAction& aAction) MOZ_OVERRIDE;
     NS_IMETHOD_(InputContext) GetInputContext()
     {
       NSView* view = mWindow ? [mWindow contentView] : nil;
@@ -308,8 +320,6 @@ public:
       }
       return mInputContext;
     }
-    NS_IMETHOD BeginSecureKeyboardInput();
-    NS_IMETHOD EndSecureKeyboardInput();
 
     void SetPopupWindowLevel();
 

@@ -3,6 +3,7 @@
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 Cu.import("resource://gre/modules/Services.jsm");
+Cu.import("resource://gre/modules/PlacesUtils.jsm");
 
 function run_test() {
   initApp();
@@ -13,10 +14,12 @@ function run_test() {
     { // normal provider
       name: "provider 1",
       origin: "https://example1.com",
+      sidebarURL: "https://example1.com/sidebar/",
     },
     { // provider without workerURL
       name: "provider 2",
-      origin: "https://example2.com"
+      origin: "https://example2.com",
+      sidebarURL: "https://example2.com/sidebar/",
     }
   ];
 
@@ -46,6 +49,7 @@ function run_test() {
   runner.appendIterator(testAddRemoveProvider(manifests, next));
   runner.appendIterator(testIsSameOrigin(manifests, next));
   runner.appendIterator(testResolveUri  (manifests, next));
+  runner.appendIterator(testOrderedProviders(manifests, next));
   runner.next();
 }
 
@@ -74,38 +78,44 @@ function testGetProviderList(manifests, next) {
   }
 }
 
+
 function testEnabled(manifests, next) {
   // Check that providers are disabled by default
   let providers = yield SocialService.getProviderList(next);
   do_check_true(providers.length >= manifests.length);
-  do_check_true(SocialService.enabled);
+  do_check_true(SocialService.enabled, "social enabled at test start");
   providers.forEach(function (provider) {
     do_check_false(provider.enabled);
   });
 
-  let notificationDisabledCorrect = false;
-  Services.obs.addObserver(function obs1(subj, topic, data) {
-    Services.obs.removeObserver(obs1, "social:pref-changed");
-    notificationDisabledCorrect = data == "disabled";
-  }, "social:pref-changed", false);
+  do_test_pending();
+  function waitForEnableObserver(cb) {
+    Services.prefs.addObserver("social.enabled", function prefObserver(subj, topic, data) {
+      Services.prefs.removeObserver("social.enabled", prefObserver);
+      cb();
+    }, false);
+  }
 
   // enable one of the added providers
   providers[providers.length-1].enabled = true;
 
   // now disable the service and check that it disabled that provider (and all others for good measure)
+  waitForEnableObserver(function() {
+    do_check_true(!SocialService.enabled);
+    providers.forEach(function (provider) {
+      do_check_false(provider.enabled);
+    });
+    waitForEnableObserver(function() {
+      do_check_true(SocialService.enabled);
+      // Enabling the service should not enable providers
+      providers.forEach(function (provider) {
+        do_check_false(provider.enabled);
+      });
+      do_test_finished();
+    });
+    SocialService.enabled = true;
+  });
   SocialService.enabled = false;
-  do_check_true(notificationDisabledCorrect);
-  do_check_true(!SocialService.enabled);
-  providers.forEach(function (provider) {
-    do_check_false(provider.enabled);
-  });
-
-  SocialService.enabled = true;
-  do_check_true(SocialService.enabled);
-  // Enabling the service should not enable providers
-  providers.forEach(function (provider) {
-    do_check_false(provider.enabled);
-  });
 }
 
 function testAddRemoveProvider(manifests, next) {
@@ -167,4 +177,27 @@ function testResolveUri(manifests, next) {
   do_check_eq(provider.resolveUri("/foo.html").spec, provider.origin + "/foo.html");
   do_check_eq(provider.resolveUri("http://somewhereelse.com/foo.html").spec, "http://somewhereelse.com/foo.html");
   do_check_eq(provider.resolveUri("data:text/html,<p>hi").spec, "data:text/html,<p>hi");
+}
+
+function testOrderedProviders(manifests, next) {
+  let providers = yield SocialService.getProviderList(next);
+
+  // add visits for only one of the providers
+  let visits = [];
+  let startDate = Date.now() * 1000;
+  for (let i = 0; i < 10; i++) {
+    visits.push({
+      uri: Services.io.newURI(providers[1].sidebarURL + i, null, null),
+      visitDate: startDate + i
+    });
+  }
+
+  promiseAddVisits(visits).then(next);
+  yield;
+  let orderedProviders = yield SocialService.getOrderedProviderList(next);
+  do_check_eq(orderedProviders[0], providers[1]);
+  do_check_eq(orderedProviders[1], providers[0]);
+  do_check_true(orderedProviders[0].frecency > orderedProviders[1].frecency);
+  promiseClearHistory().then(next);
+  yield;
 }

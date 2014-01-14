@@ -11,12 +11,12 @@
 namespace mozilla {
 namespace layers {
 
-class THEBES_API ColorLayerD3D9 : public ColorLayer,
-                                 public LayerD3D9
+class ColorLayerD3D9 : public ColorLayer,
+                       public LayerD3D9
 {
 public:
   ColorLayerD3D9(LayerManagerD3D9 *aManager)
-    : ColorLayer(aManager, NULL)
+    : ColorLayer(aManager, nullptr)
     , LayerD3D9(aManager)
   {
     mImplData = static_cast<LayerD3D9*>(this);

@@ -55,10 +55,8 @@ function run_test() {
   do_load_manifest("data/chrome.manifest");
 
   let httpServer = new HttpServer();
-  httpServer.start(4444);
+  httpServer.start(-1);
   httpServer.registerDirectory("/", do_get_cwd());
-
-  let search = Services.search; // Cause service initialization
 
   do_register_cleanup(function cleanup() {
     httpServer.stop(function() {});
@@ -68,7 +66,9 @@ function run_test() {
   do_test_pending();
   Services.obs.addObserver(search_observer, "browser-search-engine-modified", false);
 
-  search.addEngine("http://localhost:4444/data/engine.xml",
-                   Ci.nsISearchEngine.DATA_XML,
-                   null, false);
+  Services.search.addEngine("http://localhost:" +
+                            httpServer.identity.primaryPort +
+                            "/data/engine.xml",
+                            Ci.nsISearchEngine.DATA_XML,
+                            null, false);
 }

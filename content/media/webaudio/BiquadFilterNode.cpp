@@ -8,8 +8,11 @@
 #include "AudioNodeEngine.h"
 #include "AudioNodeStream.h"
 #include "AudioDestinationNode.h"
+#include "PlayingRefChangeHandler.h"
 #include "WebAudioUtils.h"
 #include "blink/Biquad.h"
+#include "mozilla/Preferences.h"
+#include "AudioParamTimeline.h"
 
 namespace mozilla {
 namespace dom {
@@ -23,14 +26,16 @@ NS_INTERFACE_MAP_END_INHERITING(AudioNode)
 NS_IMPL_ADDREF_INHERITED(BiquadFilterNode, AudioNode)
 NS_IMPL_RELEASE_INHERITED(BiquadFilterNode, AudioNode)
 
-void SetParamsOnBiquad(WebCore::Biquad& aBiquad,
-                       BiquadFilterType aType,
-                       double aFrequency,
-                       double aQ,
-                       double aGain,
-                       double aDetune)
+static void
+SetParamsOnBiquad(WebCore::Biquad& aBiquad,
+                  float aSampleRate,
+                  BiquadFilterType aType,
+                  double aFrequency,
+                  double aQ,
+                  double aGain,
+                  double aDetune)
 {
-  const double nyquist = IdealAudioRate() * 0.5;
+  const double nyquist = aSampleRate * 0.5;
   double normalizedFrequency = aFrequency / nyquist;
 
   if (aDetune) {
@@ -61,6 +66,9 @@ void SetParamsOnBiquad(WebCore::Biquad& aBiquad,
     break;
   case BiquadFilterType::Allpass:
     aBiquad.setAllpassParams(normalizedFrequency, aQ);
+    break;
+  default:
+    NS_NOTREACHED("We should never see the alternate names here");
     break;
   }
 }
@@ -102,7 +110,9 @@ public:
       NS_ERROR("Bad BiquadFilterNode Int32Parameter");
     }
   }
-  void SetTimelineParameter(uint32_t aIndex, const AudioParamTimeline& aValue) MOZ_OVERRIDE
+  void SetTimelineParameter(uint32_t aIndex,
+                            const AudioParamTimeline& aValue,
+                            TrackRate aSampleRate) MOZ_OVERRIDE
   {
     MOZ_ASSERT(mSource && mDestination);
     switch (aIndex) {
@@ -132,15 +142,47 @@ public:
                                  AudioChunk* aOutput,
                                  bool* aFinished) MOZ_OVERRIDE
   {
+    float inputBuffer[WEBAUDIO_BLOCK_SIZE];
+
     if (aInput.IsNull()) {
-      aOutput->SetNull(WEBAUDIO_BLOCK_SIZE);
-      return;
+      bool hasTail = false;
+      for (uint32_t i = 0; i < mBiquads.Length(); ++i) {
+        if (mBiquads[i].hasTail()) {
+          hasTail = true;
+          break;
+        }
+      }
+      if (!hasTail) {
+        if (!mBiquads.IsEmpty()) {
+          mBiquads.Clear();
+
+          nsRefPtr<PlayingRefChangeHandler> refchanged =
+            new PlayingRefChangeHandler(aStream, PlayingRefChangeHandler::RELEASE);
+          aStream->Graph()->
+            DispatchToMainThreadAfterStreamStateUpdate(refchanged.forget());
+        }
+
+        aOutput->SetNull(WEBAUDIO_BLOCK_SIZE);
+        return;
+      }
+
+      PodArrayZero(inputBuffer);
+
+    } else if(mBiquads.Length() != aInput.mChannelData.Length()){
+      if (mBiquads.IsEmpty()) {
+        nsRefPtr<PlayingRefChangeHandler> refchanged =
+          new PlayingRefChangeHandler(aStream, PlayingRefChangeHandler::ADDREF);
+        aStream->Graph()->
+          DispatchToMainThreadAfterStreamStateUpdate(refchanged.forget());
+      } else { // Help people diagnose bug 924718
+        NS_WARNING("BiquadFilterNode channel count changes may produce audio glitches");
+      }
+
+      // Adjust the number of biquads based on the number of channels
+      mBiquads.SetLength(aInput.mChannelData.Length());
     }
 
-    // Adjust the number of biquads based on the number of channels
-    const uint32_t numberOfChannels = aInput.mChannelData.Length();
-    mBiquads.SetLength(numberOfChannels);
-
+    uint32_t numberOfChannels = mBiquads.Length();
     AllocateAudioBlock(numberOfChannels, aOutput);
 
     TrackTicks pos = aStream->GetCurrentPosition();
@@ -151,9 +193,19 @@ public:
     double detune = mDetune.GetValueAtTime(pos);
 
     for (uint32_t i = 0; i < numberOfChannels; ++i) {
-      SetParamsOnBiquad(mBiquads[i], mType, freq, q, gain, detune);
+      const float* input;
+      if (aInput.IsNull()) {
+        input = inputBuffer;
+      } else {
+        input = static_cast<const float*>(aInput.mChannelData[i]);
+        if (aInput.mVolume != 1.0) {
+          AudioBlockCopyChannelWithScale(input, aInput.mVolume, inputBuffer);
+          input = inputBuffer;
+        }
+      }
+      SetParamsOnBiquad(mBiquads[i], aStream->SampleRate(), mType, freq, q, gain, detune);
 
-      mBiquads[i].process(static_cast<const float*>(aInput.mChannelData[i]),
+      mBiquads[i].process(input,
                           static_cast<float*>(const_cast<void*>(aOutput->mChannelData[i])),
                           aInput.GetDuration());
     }
@@ -176,10 +228,14 @@ BiquadFilterNode::BiquadFilterNode(AudioContext* aContext)
               ChannelCountMode::Max,
               ChannelInterpretation::Speakers)
   , mType(BiquadFilterType::Lowpass)
-  , mFrequency(new AudioParam(this, SendFrequencyToStream, 350.f))
-  , mDetune(new AudioParam(this, SendDetuneToStream, 0.f))
-  , mQ(new AudioParam(this, SendQToStream, 1.f))
-  , mGain(new AudioParam(this, SendGainToStream, 0.f))
+  , mFrequency(new AudioParam(MOZ_THIS_IN_INITIALIZER_LIST(),
+                              SendFrequencyToStream, 350.f))
+  , mDetune(new AudioParam(MOZ_THIS_IN_INITIALIZER_LIST(),
+                           SendDetuneToStream, 0.f))
+  , mQ(new AudioParam(MOZ_THIS_IN_INITIALIZER_LIST(),
+                      SendQToStream, 1.f))
+  , mGain(new AudioParam(MOZ_THIS_IN_INITIALIZER_LIST(),
+                         SendGainToStream, 0.f))
 {
   BiquadFilterNodeEngine* engine = new BiquadFilterNodeEngine(this, aContext->Destination());
   mStream = aContext->Graph()->CreateAudioNodeStream(engine, MediaStreamGraph::INTERNAL_STREAM);
@@ -195,6 +251,41 @@ BiquadFilterNode::WrapObject(JSContext* aCx, JS::Handle<JSObject*> aScope)
 void
 BiquadFilterNode::SetType(BiquadFilterType aType)
 {
+  if (!Preferences::GetBool("media.webaudio.legacy.BiquadFilterNode")) {
+    // Do not accept the alternate enum values unless the legacy pref
+    // has been turned on.
+    switch (aType) {
+    case BiquadFilterType::_0:
+    case BiquadFilterType::_1:
+    case BiquadFilterType::_2:
+    case BiquadFilterType::_3:
+    case BiquadFilterType::_4:
+    case BiquadFilterType::_5:
+    case BiquadFilterType::_6:
+    case BiquadFilterType::_7:
+      // Do nothing in order to emulate setting an invalid enum value.
+      return;
+    default:
+      // Shut up the compiler warning
+      break;
+    }
+  }
+
+  // Handle the alternate enum values
+  switch (aType) {
+  case BiquadFilterType::_0: aType = BiquadFilterType::Lowpass; break;
+  case BiquadFilterType::_1: aType = BiquadFilterType::Highpass; break;
+  case BiquadFilterType::_2: aType = BiquadFilterType::Bandpass; break;
+  case BiquadFilterType::_3: aType = BiquadFilterType::Lowshelf; break;
+  case BiquadFilterType::_4: aType = BiquadFilterType::Highshelf; break;
+  case BiquadFilterType::_5: aType = BiquadFilterType::Peaking; break;
+  case BiquadFilterType::_6: aType = BiquadFilterType::Notch; break;
+  case BiquadFilterType::_7: aType = BiquadFilterType::Allpass; break;
+  default:
+    // Shut up the compiler warning
+    break;
+  }
+
   mType = aType;
   SendInt32ParameterToStream(BiquadFilterNodeEngine::TYPE,
                              static_cast<int32_t>(aType));
@@ -202,8 +293,8 @@ BiquadFilterNode::SetType(BiquadFilterType aType)
 
 void
 BiquadFilterNode::GetFrequencyResponse(const Float32Array& aFrequencyHz,
-                                       Float32Array& aMagResponse,
-                                       Float32Array& aPhaseResponse)
+                                       const Float32Array& aMagResponse,
+                                       const Float32Array& aPhaseResponse)
 {
   uint32_t length = std::min(std::min(aFrequencyHz.Length(), aMagResponse.Length()),
                              aPhaseResponse.Length());
@@ -213,7 +304,7 @@ BiquadFilterNode::GetFrequencyResponse(const Float32Array& aFrequencyHz,
 
   nsAutoArrayPtr<float> frequencies(new float[length]);
   float* frequencyHz = aFrequencyHz.Data();
-  const double nyquist = IdealAudioRate() * 0.5;
+  const double nyquist = Context()->SampleRate() * 0.5;
 
   // Normalize the frequencies
   for (uint32_t i = 0; i < length; ++i) {
@@ -228,7 +319,7 @@ BiquadFilterNode::GetFrequencyResponse(const Float32Array& aFrequencyHz,
   double detune = mDetune->GetValueAtTime(currentTime);
 
   WebCore::Biquad biquad;
-  SetParamsOnBiquad(biquad, mType, freq, q, gain, detune);
+  SetParamsOnBiquad(biquad, Context()->SampleRate(), mType, freq, q, gain, detune);
   biquad.getFrequencyResponse(int(length), frequencies, aMagResponse.Data(), aPhaseResponse.Data());
 }
 

@@ -41,8 +41,6 @@ pref("toolkit.zoomManager.zoomValues", ".2,.3,.5,.67,.8,.9,1,1.1,1.2,1.33,1.5,1.
 // Mobile will use faster, less durable mode.
 pref("toolkit.storage.synchronous", 0);
 
-// Device pixel to CSS px ratio, in percent. Set to -1 to calculate based on display density.
-pref("browser.viewport.scaleRatio", -1);
 pref("browser.viewport.desktopWidth", 980);
 // The default fallback zoom level to render pages at. Set to -1 to fit page; otherwise
 // the value is divided by 1000 and clamped to hard-coded min/max scale values.
@@ -65,6 +63,8 @@ pref("browser.cache.memory.enable", false);
 pref("browser.cache.memory.enable", true);
 #endif
 pref("browser.cache.memory.capacity", 1024); // kilobytes
+
+pref("browser.cache.memory_limit", 5120); // 5 MB
 
 /* image cache prefs */
 pref("image.cache.size", 1048576); // bytes
@@ -94,6 +94,9 @@ pref("network.http.keep-alive.timeout", 600);
 pref("network.http.max-connections", 20);
 pref("network.http.max-persistent-connections-per-server", 6);
 pref("network.http.max-persistent-connections-per-proxy", 20);
+
+// spdy
+pref("network.http.spdy.push-allowance", 32768);
 
 // See bug 545869 for details on why these are set the way they are
 pref("network.buffer.cache.count", 24);
@@ -143,15 +146,11 @@ pref("browser.helperApps.deleteTempFileOnExit", false);
 /* password manager */
 pref("signon.rememberSignons", true);
 pref("signon.expireMasterPassword", false);
-pref("signon.SignonFileName", "signons.txt");
 pref("signon.debug", false);
 
-/* form helper */
-// 0 = disabled, 1 = enabled, 2 = dynamic depending on screen size
-pref("formhelper.mode", 2);
+/* form helper (scroll to and optionally zoom into editable fields)  */
+pref("formhelper.mode", 2);  // 0 = disabled, 1 = enabled, 2 = dynamic depending on screen size
 pref("formhelper.autozoom", true);
-pref("formhelper.autozoom.caret", true);
-pref("formhelper.restore", false);
 
 /* find helper */
 pref("findhelper.autozoom", true);
@@ -164,6 +163,7 @@ pref("layout.spellcheckDefault", 0);
 
 /* new html5 forms */
 pref("dom.experimental_forms", true);
+pref("dom.forms.number", true);
 
 /* extension manager and xpinstall */
 pref("xpinstall.whitelist.add", "addons.mozilla.org");
@@ -225,7 +225,6 @@ pref("accessibility.typeaheadfind.timeout", 5000);
 pref("accessibility.typeaheadfind.flashBar", 1);
 pref("accessibility.typeaheadfind.linksonly", false);
 pref("accessibility.typeaheadfind.casesensitive", 0);
-// zoom key(F7) conflicts with caret browsing on maemo
 pref("accessibility.browsewithcaret_shortcut.enabled", false);
 
 // Whether the character encoding menu is under the main Firefox button. This
@@ -245,6 +244,7 @@ pref("browser.search.log", false);
 // ordering of search engines in the engine list.
 pref("browser.search.order.1", "chrome://browser/locale/region.properties");
 pref("browser.search.order.2", "chrome://browser/locale/region.properties");
+pref("browser.search.order.3", "chrome://browser/locale/region.properties");
 
 // disable updating
 pref("browser.search.update", false);
@@ -357,10 +357,8 @@ pref("gfx.displayport.strategy_vb.danger_y_incr", -1); // additional danger zone
 // prediction bias strategy options
 pref("gfx.displayport.strategy_pb.threshold", -1); // velocity threshold in inches/frame
 
-// disable Graphite font shaping by default on Android until memory footprint
-// of using the Charis SIL fonts that we ship with the product is addressed
-// (see bug 700023, bug 846832, bug 847344)
-pref("gfx.font_rendering.graphite.enabled", false);
+// Allow 24-bit colour when the hardware supports it
+pref("gfx.android.rgb16.force", false);
 
 // don't allow JS to move and resize existing windows
 pref("dom.disable_window_move_resize", true);
@@ -390,6 +388,7 @@ pref("privacy.item.syncAccount", true);
 
 // enable geo
 pref("geo.enabled", true);
+pref("app.geo.reportdata", 0);
 
 // content sink control -- controls responsiveness during page load
 // see https://bugzilla.mozilla.org/show_bug.cgi?id=481566#c9
@@ -397,9 +396,6 @@ pref("geo.enabled", true);
 //pref("content.sink.pending_event_mode", 0);
 //pref("content.sink.perf_deflect_count", 1000000);
 //pref("content.sink.perf_parse_time", 50000000);
-
-// Disable methodjit in chrome to save memory
-pref("javascript.options.methodjit.chrome",  false);
 
 // Disable the JS engine's gc on memory pressure, since we do one in the mobile
 // browser (bug 669346).
@@ -414,6 +410,7 @@ pref("javascript.options.mem.gc_high_frequency_low_limit_mb", 10);
 pref("javascript.options.mem.gc_low_frequency_heap_growth", 105);
 pref("javascript.options.mem.high_water_mark", 16);
 pref("javascript.options.mem.gc_allocation_threshold_mb", 3);
+pref("javascript.options.mem.gc_decommit_threshold_mb", 1);
 #else
 pref("javascript.options.mem.high_water_mark", 32);
 #endif
@@ -440,10 +437,16 @@ pref("browser.ui.touch.weight.visited", 120); // percentage
 // The percentage of the screen that needs to be scrolled before margins are exposed.
 pref("browser.ui.show-margins-threshold", 20);
 
+// Maximum distance from the point where the user pressed where we still
+// look for text to select
+pref("browser.ui.selection.distance", 250);
+
 // plugins
 pref("plugin.disable", false);
 pref("dom.ipc.plugins.enabled", false);
 
+// This pref isn't actually used anymore, but we're leaving this here to avoid changing
+// the default so that we can migrate a user-set pref. See bug 885357.
 pref("plugins.click_to_play", true);
 // The default value for nsIPluginTag.enabledState (STATE_CLICKTOPLAY = 1)
 pref("plugin.default.state", 1);
@@ -467,12 +470,15 @@ pref("app.faqURL", "http://www.mozilla.com/%LOCALE%/mobile/beta/faq/");
 #else
 pref("app.faqURL", "http://www.mozilla.com/%LOCALE%/mobile/faq/");
 #endif
-pref("app.marketplaceURL", "https://marketplace.mozilla.org/");
+pref("app.marketplaceURL", "https://marketplace.firefox.com/");
 
 // Name of alternate about: page for certificate errors (when undefined, defaults to about:neterror)
 pref("security.alternate_certificate_error_page", "certerror");
 
 pref("security.warn_viewing_mixed", false); // Warning is disabled.  See Bug 616712.
+
+// Block insecure active content on https pages
+pref("security.mixed_content.block_active_content", true);
 
 // Override some named colors to avoid inverse OS themes
 pref("ui.-moz-dialog", "#efebe7");
@@ -541,13 +547,18 @@ pref("layers.async-video.enabled", true);
 pref("layers.progressive-paint", true);
 pref("layers.low-precision-buffer", true);
 pref("layers.low-precision-resolution", 250);
+// We want to limit layers for two reasons:
+// 1) We can't scroll smoothly if we have to many draw calls
+// 2) Pages that have too many layers consume too much memory and crash.
+// By limiting the number of layers on mobile we're making the main thread
+// work harder keep scrolling smooth and memory low.
+pref("layers.max-active", 20);
 
 pref("notification.feature.enabled", true);
 pref("dom.webnotifications.enabled", true);
 
 // prevent tooltips from showing up
 pref("browser.chrome.toolbar_tips", false);
-pref("indexedDB.feature.enabled", true);
 pref("dom.indexedDB.warningQuota", 5);
 
 // prevent video elements from preloading too much data
@@ -556,7 +567,6 @@ pref("media.preload.auto", 2);    // preload metadata if preload=auto
 
 // optimize images memory usage
 pref("image.mem.decodeondraw", true);
-pref("content.image.allow_locking", false);
 pref("image.mem.min_discard_timeout_ms", 10000);
 
 // enable touch events interfaces
@@ -577,7 +587,6 @@ pref("browser.safebrowsing.reportPhishURL", "http://%LOCALE%.phish-report.mozill
 pref("browser.safebrowsing.reportMalwareURL", "http://%LOCALE%.malware-report.mozilla.com/?hl=%LOCALE%");
 pref("browser.safebrowsing.reportMalwareErrorURL", "http://%LOCALE%.malware-error.mozilla.com/?hl=%LOCALE%");
 
-pref("browser.safebrowsing.warning.infoURL", "http://www.mozilla.com/%LOCALE%/firefox/phishing-protection/");
 pref("browser.safebrowsing.malware.reportURL", "http://safebrowsing.clients.google.com/safebrowsing/diagnostic?client=%NAME%&hl=%LOCALE%&site=");
 
 pref("browser.safebrowsing.id", @MOZ_APP_UA_NAME@);
@@ -588,9 +597,6 @@ pref("urlclassifier.alternate_error_page", "blocked");
 
 // The number of random entries to send with a gethash request.
 pref("urlclassifier.gethashnoise", 4);
-
-// The list of tables that use the gethash request to confirm partial results.
-pref("urlclassifier.gethashtables", "goog-phish-shavar,goog-malware-shavar");
 
 // If an urlclassifier table has not been updated in this number of seconds,
 // a gethash request will be forced to check that the result is still in
@@ -643,13 +649,24 @@ pref("ui.scrolling.overscroll_snap_limit", -1);
 pref("ui.scrolling.min_scrollable_distance", -1);
 // The axis lock mode for panning behaviour - set between standard, free and sticky
 pref("ui.scrolling.axis_lock_mode", "standard");
+// Negate scrollY, true will make the mouse scroll wheel move the screen the same direction as with most desktops or laptops.
+pref("ui.scrolling.negate_wheel_scrollY", true);
+// Determine the dead zone for gamepad joysticks. Higher values result in larger dead zones; use a negative value to
+// auto-detect based on reported hardware values
+pref("ui.scrolling.gamepad_dead_zone", 10);
 
 
 // Enable accessibility mode if platform accessibility is enabled.
 pref("accessibility.accessfu.activate", 2);
-pref("accessibility.accessfu.quicknav_modes", "Link,Heading,FormElement,ListItem");
+pref("accessibility.accessfu.quicknav_modes", "Link,Heading,FormElement,Landmark,ListItem");
 // Setting for an utterance order (0 - description first, 1 - description last).
-pref("accessibility.accessfu.utterance", 0);
+pref("accessibility.accessfu.utterance", 1);
+// Whether to skip images with empty alt text
+pref("accessibility.accessfu.skip_empty_images", true);
+
+// Transmit UDP busy-work to the LAN when anticipating low latency
+// network reads and on wifi to mitigate 802.11 Power Save Polling delays
+pref("network.tickle-wifi.enabled", true);
 
 // Mobile manages state by autodetection
 pref("network.manage-offline-status", true);
@@ -664,14 +681,12 @@ pref("reader.parse-on-load.enabled", true);
 // Allow reader mode even on low-memory platforms
 pref("reader.parse-on-load.force-enabled", false);
 
-// The default of font size in reader (1-7)
-pref("reader.font_size", 4);
+// The default of font size in reader (1-5)
+pref("reader.font_size", 3);
 
-// The default of margin size in reader (5%-25%)
-pref("reader.margin_size", 5);
-
-// The default color scheme in reader (light, dark, sepia)
-pref("reader.color_scheme", "light");
+// The default color scheme in reader (light, dark, sepia, auto)
+// auto = color automatically adjusts according to ambient light level
+pref("reader.color_scheme", "auto");
 
 // The font type in reader (sans-serif, serif)
 pref("reader.font_type", "sans-serif");
@@ -699,7 +714,11 @@ pref("app.orientation.default", "");
 // back to the system.
 pref("memory.free_dirty_pages", true);
 
-pref("layout.imagevisibility.enabled", false);
+pref("layout.imagevisibility.enabled", true);
+pref("layout.imagevisibility.numscrollportwidths", 1);
+pref("layout.imagevisibility.numscrollportheights", 1);
+
+pref("layers.force-tiles", true);
 
 // Enable the dynamic toolbar
 pref("browser.chrome.dynamictoolbar", true);
@@ -708,6 +727,9 @@ pref("browser.chrome.dynamictoolbar", true);
 // 0: Show a current page title.
 // 1: Show a current page url.
 pref("browser.chrome.titlebarMode", 0);
+
+// Hide common parts of URLs like "www." or "http://"
+pref("browser.urlbar.trimURLs", true);
 
 #ifdef MOZ_PKG_SPECIAL
 // Disable webgl on ARMv6 because running the reftests takes
@@ -729,10 +751,8 @@ pref("browser.contentHandlers.types.3.title", "chrome://browser/locale/region.pr
 pref("browser.contentHandlers.types.3.uri", "chrome://browser/locale/region.properties");
 pref("browser.contentHandlers.types.3.type", "application/vnd.mozilla.maybe.feed");
 
-#ifndef RELEASE_BUILD
-// Enable Web Audio for Firefox for Android in Nightly and Aurora
-pref("media.webaudio.enabled", true);
-#endif
+// WebPayment
+pref("dom.mozPay.enabled", true);
 
 #ifndef RELEASE_BUILD
 pref("dom.payment.provider.0.name", "Firefox Marketplace");
@@ -742,9 +762,26 @@ pref("dom.payment.provider.0.type", "mozilla/payments/pay/v1");
 pref("dom.payment.provider.0.requestMethod", "GET");
 #endif
 
-// This needs more tests and stability fixes first, as well as UI.
-pref("media.navigator.enabled", false);
-pref("media.peerconnection.enabled", false);
+// Shortnumber matching needed for e.g. Brazil:
+// 01187654321 can be found with 87654321
+pref("dom.phonenumber.substringmatching.BR", 8);
+pref("dom.phonenumber.substringmatching.CO", 10);
+pref("dom.phonenumber.substringmatching.VE", 7);
 
-// Make <audio> and <video> talk to the AudioChannelService.
+// Support for the mozAudioChannel attribute on media elements is disabled in non-webapps
 pref("media.useAudioChannelService", false);
+
+// Turn on the CSP 1.0 parser for Content Security Policy headers
+pref("security.csp.speccompliant", true);
+
+// Enable hardware-accelerated Skia canvas
+pref("gfx.canvas.azure.backends", "skia");
+pref("gfx.canvas.azure.accelerated", true);
+
+pref("general.useragent.override.youtube.com", "Android; Tablet;#Android; Mobile;");
+
+// When true, phone number linkification is enabled.
+pref("browser.ui.linkify.phone", false);
+
+// Enables/disables Spatial Navigation
+pref("snav.enabled", true);

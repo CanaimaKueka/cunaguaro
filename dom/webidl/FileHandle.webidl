@@ -5,8 +5,6 @@
 
 interface LockedFile;
 
-enum FileMode { "readonly", "readwrite" };
-
 interface FileHandle : EventTarget {
   readonly attribute DOMString name;
   readonly attribute DOMString type;
@@ -17,8 +15,6 @@ interface FileHandle : EventTarget {
   [Throws]
   DOMRequest getFile();
 
-  [SetterThrows]
   attribute EventHandler onabort;
-  [SetterThrows]
   attribute EventHandler onerror;
 };

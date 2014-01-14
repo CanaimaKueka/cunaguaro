@@ -14,6 +14,7 @@ import org.mozilla.gecko.GeckoEvent;
 import org.mozilla.gecko.GeckoProfile;
 
 import org.mozilla.gecko.background.healthreport.EnvironmentBuilder;
+import org.mozilla.gecko.background.common.GlobalConstants;
 import org.mozilla.gecko.background.healthreport.HealthReportConstants;
 import org.mozilla.gecko.background.healthreport.HealthReportDatabaseStorage;
 import org.mozilla.gecko.background.healthreport.HealthReportGenerator;
@@ -121,10 +122,10 @@ public class BrowserHealthReporter implements GeckoEventListener {
      * @return non-null Health Report.
      */
     public JSONObject generateReport() throws JSONException {
-        GeckoProfile profile = GeckoAppShell.getProfile();
+        GeckoProfile profile = GeckoAppShell.getGeckoInterface().getProfile();
         String profilePath = profile.getDir().getAbsolutePath();
 
-        long since = System.currentTimeMillis() - HealthReportConstants.MILLISECONDS_PER_SIX_MONTHS;
+        long since = System.currentTimeMillis() - GlobalConstants.MILLISECONDS_PER_SIX_MONTHS;
         long lastPingTime = Math.max(getLastUploadLocalTime(), HealthReportConstants.EARLIEST_LAST_PING);
 
         return generateReport(since, lastPingTime, profilePath);

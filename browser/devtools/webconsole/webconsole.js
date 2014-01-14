@@ -1,4 +1,4 @@
-/* -*- Mode: js2; js2-basic-offset: 2; indent-tabs-mode: nil; -*- */
+/* -*- js2-basic-offset: 2; indent-tabs-mode: nil; -*- */
 /* vim: set ts=2 et sw=2 tw=80: */
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -6,51 +6,42 @@
 
 "use strict";
 
-const Cc = Components.classes;
-const Ci = Components.interfaces;
-const Cu = Components.utils;
+const {Cc, Ci, Cu} = require("chrome");
 
-Cu.import("resource://gre/modules/XPCOMUtils.jsm");
+let WebConsoleUtils = require("devtools/toolkit/webconsole/utils").Utils;
 
-XPCOMUtils.defineLazyModuleGetter(this, "Services",
-                                  "resource://gre/modules/Services.jsm");
-
-XPCOMUtils.defineLazyServiceGetter(this, "clipboardHelper",
-                                   "@mozilla.org/widget/clipboardhelper;1",
-                                   "nsIClipboardHelper");
-
-XPCOMUtils.defineLazyModuleGetter(this, "GripClient",
-                                  "resource://gre/modules/devtools/dbg-client.jsm");
-
-XPCOMUtils.defineLazyModuleGetter(this, "NetworkPanel",
-                                  "resource:///modules/NetworkPanel.jsm");
-
-XPCOMUtils.defineLazyModuleGetter(this, "AutocompletePopup",
-                                  "resource:///modules/devtools/AutocompletePopup.jsm");
-
-XPCOMUtils.defineLazyModuleGetter(this, "WebConsoleUtils",
-                                  "resource://gre/modules/devtools/WebConsoleUtils.jsm");
-
-XPCOMUtils.defineLazyModuleGetter(this, "Promise",
-                                  "resource://gre/modules/commonjs/sdk/core/promise.js");
-
-XPCOMUtils.defineLazyModuleGetter(this, "VariablesView",
-                                  "resource:///modules/devtools/VariablesView.jsm");
-
-XPCOMUtils.defineLazyModuleGetter(this, "EventEmitter",
-                                  "resource:///modules/devtools/shared/event-emitter.js");
-
-XPCOMUtils.defineLazyModuleGetter(this, "devtools",
-                                  "resource:///modules/devtools/gDevTools.jsm");
+loader.lazyServiceGetter(this, "clipboardHelper",
+                         "@mozilla.org/widget/clipboardhelper;1",
+                         "nsIClipboardHelper");
+loader.lazyImporter(this, "Services", "resource://gre/modules/Services.jsm");
+loader.lazyGetter(this, "promise", () => require("sdk/core/promise"));
+loader.lazyGetter(this, "EventEmitter", () => require("devtools/shared/event-emitter"));
+loader.lazyGetter(this, "AutocompletePopup",
+                  () => require("devtools/shared/autocomplete-popup").AutocompletePopup);
+loader.lazyGetter(this, "ToolSidebar",
+                  () => require("devtools/framework/sidebar").ToolSidebar);
+loader.lazyGetter(this, "NetworkPanel",
+                  () => require("devtools/webconsole/network-panel").NetworkPanel);
+loader.lazyGetter(this, "ConsoleOutput",
+                  () => require("devtools/webconsole/console-output").ConsoleOutput);
+loader.lazyGetter(this, "Messages",
+                  () => require("devtools/webconsole/console-output").Messages);
+loader.lazyImporter(this, "EnvironmentClient", "resource://gre/modules/devtools/dbg-client.jsm");
+loader.lazyImporter(this, "ObjectClient", "resource://gre/modules/devtools/dbg-client.jsm");
+loader.lazyImporter(this, "VariablesView", "resource:///modules/devtools/VariablesView.jsm");
+loader.lazyImporter(this, "VariablesViewController", "resource:///modules/devtools/VariablesViewController.jsm");
+loader.lazyImporter(this, "PluralForm", "resource://gre/modules/PluralForm.jsm");
 
 const STRINGS_URI = "chrome://browser/locale/devtools/webconsole.properties";
 let l10n = new WebConsoleUtils.l10n(STRINGS_URI);
 
+const XHTML_NS = "http://www.w3.org/1999/xhtml";
 
-// The XUL namespace.
-const XUL_NS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
+const MIXED_CONTENT_LEARN_MORE = "https://developer.mozilla.org/docs/Security/MixedContent";
 
-const MIXED_CONTENT_LEARN_MORE = "https://developer.mozilla.org/en/Security/MixedContent";
+const INSECURE_PASSWORDS_LEARN_MORE = "https://developer.mozilla.org/docs/Security/InsecurePasswords";
+
+const STRICT_TRANSPORT_SECURITY_LEARN_MORE = "https://developer.mozilla.org/docs/Security/HTTP_Strict_Transport_Security";
 
 const HELP_URL = "https://developer.mozilla.org/docs/Tools/Web_Console/Helpers";
 
@@ -115,14 +106,14 @@ const SEVERITY_CLASS_FRAGMENTS = [
 // Most of these rather idiosyncratic names are historical and predate the
 // division of message type into "category" and "severity".
 const MESSAGE_PREFERENCE_KEYS = [
-//  Error         Warning   Info    Log
-  [ "network",    null,         null,   "networkinfo", ],  // Network
-  [ "csserror",   "cssparser",  null,   null,          ],  // CSS
-  [ "exception",  "jswarn",     null,   null,          ],  // JS
-  [ "error",      "warn",       "info", "log",         ],  // Web Developer
-  [ null,         null,         null,   null,          ],  // Input
-  [ null,         null,         null,   null,          ],  // Output
-  [ "secerror",   "secwarn",    null,   null,          ],  // Security
+//  Error         Warning       Info      Log
+  [ "network",    "netwarn",    null,     "networkinfo", ],  // Network
+  [ "csserror",   "cssparser",  null,     "csslog",      ],  // CSS
+  [ "exception",  "jswarn",     null,     "jslog",       ],  // JS
+  [ "error",      "warn",       "info",   "log",         ],  // Web Developer
+  [ null,         null,         null,     null,          ],  // Input
+  [ null,         null,         null,     null,          ],  // Output
+  [ "secerror",   "secwarn",    null,     null,          ],  // Security
 ];
 
 // A mapping from the console API log event levels to the Web Console
@@ -178,6 +169,7 @@ const MIN_FONT_SIZE = 10;
 const MAX_LONG_STRING_LENGTH = 200000;
 
 const PREF_CONNECTION_TIMEOUT = "devtools.debugger.remote-timeout";
+const PREF_PERSISTLOG = "devtools.webconsole.persistlog";
 
 /**
  * A WebConsoleFrame instance is an interactive console initialized *per target*
@@ -187,6 +179,7 @@ const PREF_CONNECTION_TIMEOUT = "devtools.debugger.remote-timeout";
  * The WebConsoleFrame is responsible for the actual Web Console UI
  * implementation.
  *
+ * @constructor
  * @param object aWebConsoleOwner
  *        The WebConsole owner object.
  */
@@ -194,11 +187,15 @@ function WebConsoleFrame(aWebConsoleOwner)
 {
   this.owner = aWebConsoleOwner;
   this.hudId = this.owner.hudId;
+  this.window = this.owner.iframeWindow;
 
   this._repeatNodes = {};
   this._outputQueue = [];
   this._pruneCategoriesQueue = {};
   this._networkRequests = {};
+  this.filterPrefs = {};
+
+  this.output = new ConsoleOutput(this);
 
   this._toggleFilter = this._toggleFilter.bind(this);
   this._flushMessageQueue = this._flushMessageQueue.bind(this);
@@ -208,11 +205,12 @@ function WebConsoleFrame(aWebConsoleOwner)
 
   EventEmitter.decorate(this);
 }
+exports.WebConsoleFrame = WebConsoleFrame;
 
 WebConsoleFrame.prototype = {
   /**
    * The WebConsole instance that owns this frame.
-   * @see HUDService.jsm::WebConsole
+   * @see hudservice.js::WebConsole
    * @type object
    */
   owner: null,
@@ -234,7 +232,7 @@ WebConsoleFrame.prototype = {
   get popupset() this.owner.mainPopupSet,
 
   /**
-   * Holds the initialization Promise object.
+   * Holds the initialization promise object.
    * @private
    * @type object
    */
@@ -306,6 +304,13 @@ WebConsoleFrame.prototype = {
   filterPrefs: null,
 
   /**
+   * Prefix used for filter preferences.
+   * @private
+   * @type string
+   */
+  _filterPrefsPrefix: FILTER_PREFS_PREFIX,
+
+  /**
    * The nesting depth of the currently active console group.
    */
   groupDepth: 0,
@@ -328,6 +333,12 @@ WebConsoleFrame.prototype = {
    * @type nsIDOMElement
    */
   outputNode: null,
+
+  /**
+   * The ConsoleOutput instance that manages all output.
+   * @type object
+   */
+  output: null,
 
   /**
    * The input element that allows the user to filter messages by string.
@@ -355,7 +366,7 @@ WebConsoleFrame.prototype = {
    */
   getSaveRequestAndResponseBodies:
   function WCF_getSaveRequestAndResponseBodies() {
-    let deferred = Promise.defer();
+    let deferred = promise.defer();
     let toGet = [
       "NetworkMonitor.saveRequestAndResponseBodies"
     ];
@@ -382,7 +393,7 @@ WebConsoleFrame.prototype = {
    */
   setSaveRequestAndResponseBodies:
   function WCF_setSaveRequestAndResponseBodies(aValue) {
-    let deferred = Promise.defer();
+    let deferred = promise.defer();
     let newValue = !!aValue;
     let toSet = {
       "NetworkMonitor.saveRequestAndResponseBodies": newValue,
@@ -403,9 +414,17 @@ WebConsoleFrame.prototype = {
   },
 
   /**
+   * Getter for the persistent logging preference.
+   * @type boolean
+   */
+  get persistLog() {
+    return Services.prefs.getBoolPref(PREF_PERSISTLOG);
+  },
+
+  /**
    * Initialize the WebConsoleFrame instance.
    * @return object
-   *         A Promise object for the initialization.
+   *         A promise object for the initialization.
    */
   init: function WCF_init()
   {
@@ -418,7 +437,7 @@ WebConsoleFrame.prototype = {
    *
    * @private
    * @return object
-   *         A Promise object that is resolved/reject based on the connection
+   *         A promise object that is resolved/reject based on the connection
    *         result.
    */
   _initConnection: function WCF__initConnection()
@@ -427,7 +446,7 @@ WebConsoleFrame.prototype = {
       return this._initDefer.promise;
     }
 
-    this._initDefer = Promise.defer();
+    this._initDefer = promise.defer();
     this.proxy = new WebConsoleConnectionProxy(this, this.owner.target);
 
     this.proxy.connect().then(() => { // on success
@@ -451,9 +470,6 @@ WebConsoleFrame.prototype = {
    */
   _initUI: function WCF__initUI()
   {
-    // Remember that this script is loaded in the webconsole.xul context:
-    // |window| is the iframe global.
-    this.window = window;
     this.document = this.window.document;
     this.rootElement = this.document.documentElement;
 
@@ -463,17 +479,20 @@ WebConsoleFrame.prototype = {
     this._commandController = new CommandController(this);
     this.window.controllers.insertControllerAt(0, this._commandController);
 
+    this._contextMenuHandler = new ConsoleContextMenu(this);
+
     let doc = this.document;
 
     this.filterBox = doc.querySelector(".hud-filter-box");
-    this.outputNode = doc.querySelector(".hud-output-node");
+    this.outputNode = doc.getElementById("output-container");
     this.completeNode = doc.querySelector(".jsterm-complete-node");
     this.inputNode = doc.querySelector(".jsterm-input-node");
 
     this._setFilterTextBoxEvents();
     this._initFilterButtons();
 
-    let fontSize = Services.prefs.getIntPref("devtools.webconsole.fontSize");
+    let fontSize = this.owner._browserConsole ?
+                   Services.prefs.getIntPref("devtools.webconsole.fontSize") : 0;
 
     if (fontSize != 0) {
       fontSize = Math.max(MIN_FONT_SIZE, fontSize);
@@ -481,6 +500,13 @@ WebConsoleFrame.prototype = {
       this.outputNode.style.fontSize = fontSize + "px";
       this.completeNode.style.fontSize = fontSize + "px";
       this.inputNode.style.fontSize = fontSize + "px";
+    }
+
+    if (this.owner._browserConsole) {
+      for (let id of ["Enlarge", "Reduce", "Reset"]) {
+        this.document.getElementById("cmd_fullZoom" + id)
+                     .removeAttribute("disabled");
+      }
     }
 
     let updateSaveBodiesPrefUI = (aElement) => {
@@ -537,47 +563,53 @@ WebConsoleFrame.prototype = {
    */
   _initDefaultFilterPrefs: function WCF__initDefaultFilterPrefs()
   {
-    this.filterPrefs = {
-      network: Services.prefs.getBoolPref(FILTER_PREFS_PREFIX + "network"),
-      networkinfo: Services.prefs.getBoolPref(FILTER_PREFS_PREFIX + "networkinfo"),
-      csserror: Services.prefs.getBoolPref(FILTER_PREFS_PREFIX + "csserror"),
-      cssparser: Services.prefs.getBoolPref(FILTER_PREFS_PREFIX + "cssparser"),
-      exception: Services.prefs.getBoolPref(FILTER_PREFS_PREFIX + "exception"),
-      jswarn: Services.prefs.getBoolPref(FILTER_PREFS_PREFIX + "jswarn"),
-      error: Services.prefs.getBoolPref(FILTER_PREFS_PREFIX + "error"),
-      info: Services.prefs.getBoolPref(FILTER_PREFS_PREFIX + "info"),
-      warn: Services.prefs.getBoolPref(FILTER_PREFS_PREFIX + "warn"),
-      log: Services.prefs.getBoolPref(FILTER_PREFS_PREFIX + "log"),
-      secerror: Services.prefs.getBoolPref(FILTER_PREFS_PREFIX + "secerror"),
-      secwarn: Services.prefs.getBoolPref(FILTER_PREFS_PREFIX + "secwarn"),
-    };
+    let prefs = ["network", "networkinfo", "csserror", "cssparser", "csslog",
+                 "exception", "jswarn", "jslog", "error", "info", "warn", "log",
+                 "secerror", "secwarn", "netwarn"];
+    for (let pref of prefs) {
+      this.filterPrefs[pref] = Services.prefs
+                               .getBoolPref(this._filterPrefsPrefix + pref);
+    }
   },
 
   /**
-   * Sets the click events for all binary toggle filter buttons.
+   * Attach / detach reflow listeners depending on the checked status
+   * of the `CSS > Log` menuitem.
+   *
+   * @param function [aCallback=null]
+   *        Optional function to invoke when the listener has been
+   *        added/removed.
+   *
+   */
+  _updateReflowActivityListener:
+    function WCF__updateReflowActivityListener(aCallback)
+  {
+    if (this.webConsoleClient) {
+      let pref = this._filterPrefsPrefix + "csslog";
+      if (Services.prefs.getBoolPref(pref)) {
+        this.webConsoleClient.startListeners(["ReflowActivity"], aCallback);
+      } else {
+        this.webConsoleClient.stopListeners(["ReflowActivity"], aCallback);
+      }
+    }
+  },
+
+  /**
+   * Sets the events for the filter input field.
    * @private
    */
   _setFilterTextBoxEvents: function WCF__setFilterTextBoxEvents()
   {
-    let timer = null;
+    let timer = Cc["@mozilla.org/timer;1"].createInstance(Ci.nsITimer);
     let timerEvent = this.adjustVisibilityOnSearchStringChange.bind(this);
 
     let onChange = function _onChange() {
-      let timer;
-
       // To improve responsiveness, we let the user finish typing before we
       // perform the search.
-      if (timer == null) {
-        let timerClass = Cc["@mozilla.org/timer;1"];
-        timer = timerClass.createInstance(Ci.nsITimer);
-      }
-      else {
-        timer.cancel();
-      }
-
+      timer.cancel();
       timer.initWithCallback(timerEvent, SEARCH_DELAY,
                              Ci.nsITimer.TYPE_ONE_SHOT);
-    }.bind(this);
+    };
 
     this.filterBox.addEventListener("command", onChange, false);
     this.filterBox.addEventListener("input", onChange, false);
@@ -614,6 +646,23 @@ WebConsoleFrame.prototype = {
 
       aButton.setAttribute("checked", someChecked);
     }, this);
+
+    if (!this.owner._browserConsole) {
+      // The Browser Console displays nsIConsoleMessages which are messages that
+      // end up in the JS category, but they are not errors or warnings, they
+      // are just log messages. The Web Console does not show such messages.
+      let jslog = this.document.querySelector("menuitem[prefKey=jslog]");
+      jslog.hidden = true;
+    }
+
+    if (Services.appinfo.OS == "Darwin") {
+      let net = this.document.querySelector("toolbarbutton[category=net]");
+      let accesskey = net.getAttribute("accesskeyMacOSX");
+      net.setAttribute("accesskey", accesskey);
+
+      let logging = this.document.querySelector("toolbarbutton[category=logging]");
+      logging.removeAttribute("accesskey");
+    }
   },
 
   /**
@@ -759,7 +808,8 @@ WebConsoleFrame.prototype = {
   {
     this.filterPrefs[aToggleType] = aState;
     this.adjustVisibilityForMessageType(aToggleType, aState);
-    Services.prefs.setBoolPref(FILTER_PREFS_PREFIX + aToggleType, aState);
+    Services.prefs.setBoolPref(this._filterPrefsPrefix + aToggleType, aState);
+    this._updateReflowActivityListener();
   },
 
   /**
@@ -813,25 +863,23 @@ WebConsoleFrame.prototype = {
     let outputNode = this.outputNode;
     let doc = this.document;
 
-    // Look for message nodes ("hud-msg-node") with the given preference key
-    // ("hud-msg-error", "hud-msg-cssparser", etc.) and add or remove the
-    // "hud-filtered-by-type" class, which turns on or off the display.
+    // Look for message nodes (".message") with the given preference key
+    // (filter="error", filter="cssparser", etc.) and add or remove the
+    // "filtered-by-type" class, which turns on or off the display.
 
-    let xpath = ".//*[contains(@class, 'hud-msg-node') and " +
-      "contains(concat(@class, ' '), 'hud-" + aPrefKey + " ')]";
+    let xpath = ".//*[contains(@class, 'message') and " +
+      "@filter='" + aPrefKey + "']";
     let result = doc.evaluate(xpath, outputNode, null,
       Ci.nsIDOMXPathResult.UNORDERED_NODE_SNAPSHOT_TYPE, null);
     for (let i = 0; i < result.snapshotLength; i++) {
       let node = result.snapshotItem(i);
       if (aState) {
-        node.classList.remove("hud-filtered-by-type");
+        node.classList.remove("filtered-by-type");
       }
       else {
-        node.classList.add("hud-filtered-by-type");
+        node.classList.add("filtered-by-type");
       }
     }
-
-    this.regroupOutput();
   },
 
   /**
@@ -841,25 +889,23 @@ WebConsoleFrame.prototype = {
   adjustVisibilityOnSearchStringChange:
   function WCF_adjustVisibilityOnSearchStringChange()
   {
-    let nodes = this.outputNode.getElementsByClassName("hud-msg-node");
+    let nodes = this.outputNode.getElementsByClassName("message");
     let searchString = this.filterBox.value;
 
     for (let i = 0, n = nodes.length; i < n; ++i) {
       let node = nodes[i];
 
       // hide nodes that match the strings
-      let text = node.clipboardText;
+      let text = node.textContent;
 
       // if the text matches the words in aSearchString...
       if (this.stringMatchesFilters(text, searchString)) {
-        node.classList.remove("hud-filtered-by-string");
+        node.classList.remove("filtered-by-string");
       }
       else {
-        node.classList.add("hud-filtered-by-string");
+        node.classList.add("filtered-by-string");
       }
     }
-
-    this.regroupOutput();
   },
 
   /**
@@ -879,7 +925,7 @@ WebConsoleFrame.prototype = {
     let prefKey = MESSAGE_PREFERENCE_KEYS[aNode.category][aNode.severity];
     if (prefKey && !this.getFilterState(prefKey)) {
       // The node is filtered by type.
-      aNode.classList.add("hud-filtered-by-type");
+      aNode.classList.add("filtered-by-type");
       isFiltered = true;
     }
 
@@ -889,11 +935,11 @@ WebConsoleFrame.prototype = {
 
     // if string matches the filter text
     if (!this.stringMatchesFilters(text, search)) {
-      aNode.classList.add("hud-filtered-by-string");
+      aNode.classList.add("filtered-by-string");
       isFiltered = true;
     }
 
-    if (isFiltered && aNode.classList.contains("webconsole-msg-inspector")) {
+    if (isFiltered && aNode.classList.contains("inlined-variables-view")) {
       aNode.classList.add("hidden-message");
     }
 
@@ -912,15 +958,17 @@ WebConsoleFrame.prototype = {
   mergeFilteredMessageNode:
   function WCF_mergeFilteredMessageNode(aOriginal, aFiltered)
   {
-    // childNodes[3].firstChild is the node containing the number of repetitions
-    // of a node.
-    let repeatNode = aOriginal.childNodes[3].firstChild;
+    let repeatNode = aOriginal.getElementsByClassName("repeats")[0];
     if (!repeatNode) {
       return; // no repeat node, return early.
     }
 
     let occurrences = parseInt(repeatNode.getAttribute("value")) + 1;
     repeatNode.setAttribute("value", occurrences);
+    repeatNode.textContent = occurrences;
+    let str = l10n.getStr("messageRepeats.tooltip2");
+    repeatNode.title = PluralForm.get(occurrences, str)
+                       .replace("#1", occurrences);
   },
 
   /**
@@ -935,7 +983,7 @@ WebConsoleFrame.prototype = {
    */
   _filterRepeatedMessage: function WCF__filterRepeatedMessage(aNode)
   {
-    let repeatNode = aNode.getElementsByClassName("webconsole-msg-repeat")[0];
+    let repeatNode = aNode.getElementsByClassName("repeats")[0];
     if (!repeatNode) {
       return null;
     }
@@ -943,25 +991,23 @@ WebConsoleFrame.prototype = {
     let uid = repeatNode._uid;
     let dupeNode = null;
 
-    if (aNode.classList.contains("webconsole-msg-cssparser") ||
-        aNode.classList.contains("webconsole-msg-security")) {
+    if (aNode.category == CATEGORY_CSS ||
+        aNode.category == CATEGORY_SECURITY) {
       dupeNode = this._repeatNodes[uid];
       if (!dupeNode) {
         this._repeatNodes[uid] = aNode;
       }
     }
-    else if (!aNode.classList.contains("webconsole-msg-network") &&
-             !aNode.classList.contains("webconsole-msg-inspector") &&
-             (aNode.classList.contains("webconsole-msg-console") ||
-              aNode.classList.contains("webconsole-msg-exception") ||
-              aNode.classList.contains("webconsole-msg-error"))) {
+    else if ((aNode.category == CATEGORY_WEBDEV ||
+              aNode.category == CATEGORY_JS) &&
+             aNode.category != CATEGORY_NETWORK &&
+             !aNode.classList.contains("inlined-variables-view")) {
       let lastMessage = this.outputNode.lastChild;
       if (!lastMessage) {
         return null;
       }
 
-      let lastRepeatNode = lastMessage
-                           .getElementsByClassName("webconsole-msg-repeat")[0];
+      let lastRepeatNode = lastMessage.getElementsByClassName("repeats")[0];
       if (lastRepeatNode && lastRepeatNode._uid == uid) {
         dupeNode = lastMessage;
       }
@@ -997,6 +1043,9 @@ WebConsoleFrame.prototype = {
                              [category, aMessage]);
           break;
         }
+        case "LogMessage":
+          this.handleLogMessage(aMessage);
+          break;
         case "ConsoleAPI":
           this.outputMessage(CATEGORY_WEBDEV, this.logConsoleAPIMessage,
                              [aMessage]);
@@ -1056,10 +1105,22 @@ WebConsoleFrame.prototype = {
         let functionName = aMessage.functionName ||
                            l10n.getStr("stacktrace.anonymousFunction");
 
-        body = l10n.getFormatStr("stacktrace.outputMessage",
-                                 [filename, functionName, sourceLine]);
+        body = this.document.createElementNS(XHTML_NS, "a");
+        body.setAttribute("aria-haspopup", true);
+        body.href = "#";
+        body.draggable = false;
+        body.textContent = l10n.getFormatStr("stacktrace.outputMessage",
+                                             [filename, functionName,
+                                              sourceLine]);
 
-        clipboardText = "";
+        this._addMessageLinkCallback(body, () => {
+          this.jsterm.openVariablesView({
+            rawObject: aMessage.stacktrace,
+            autofocus: true,
+          });
+        });
+
+        clipboardText = body.textContent + "\n";
 
         aMessage.stacktrace.forEach(function(aFrame) {
           clipboardText += aFrame.filename + " :: " +
@@ -1135,24 +1196,19 @@ WebConsoleFrame.prototype = {
     let node = this.createMessageNode(CATEGORY_WEBDEV, LEVELS[level], body,
                                       sourceURL, sourceLine, clipboardText,
                                       level, aMessage.timeStamp);
+    if (aMessage.private) {
+      node.setAttribute("private", true);
+    }
 
     if (objectActors.size > 0) {
       node._objectActors = objectActors;
 
-      let repeatNode = node.querySelector(".webconsole-msg-repeat");
+      let repeatNode = node.getElementsByClassName("repeats")[0];
       repeatNode._uid += [...objectActors].join("-");
     }
 
-    // Make the node bring up the variables view, to allow the user to inspect
-    // the stack trace.
     if (level == "trace") {
       node._stacktrace = aMessage.stacktrace;
-
-      this.makeOutputMessageLink(node, () =>
-        this.jsterm.openVariablesView({
-          rawObject: node._stacktrace,
-          autofocus: true,
-        }));
     }
 
     return node;
@@ -1207,11 +1263,40 @@ WebConsoleFrame.prototype = {
       severity = SEVERITY_WARNING;
     }
 
+    let objectActors = new Set();
+
+    // Gather the actor IDs.
+    for (let prop of ["errorMessage", "lineText"]) {
+      let grip = aScriptError[prop];
+      if (WebConsoleUtils.isActorGrip(grip)) {
+        objectActors.add(grip.actor);
+      }
+    }
+
+    let errorMessage = aScriptError.errorMessage;
+    if (errorMessage.type && errorMessage.type == "longString") {
+      errorMessage = errorMessage.initial;
+    }
+
     let node = this.createMessageNode(aCategory, severity,
-                                      aScriptError.errorMessage,
+                                      errorMessage,
                                       aScriptError.sourceName,
                                       aScriptError.lineNumber, null, null,
                                       aScriptError.timeStamp);
+
+    // Select the body of the message node that is displayed in the console
+    let msgBody = node.getElementsByClassName("body")[0];
+    // Add the more info link node to messages that belong to certain categories
+    this.addMoreInfoLink(msgBody, aScriptError);
+
+    if (aScriptError.private) {
+      node.setAttribute("private", true);
+    }
+
+    if (objectActors.size > 0) {
+      node._objectActors = objectActors;
+    }
+
     return node;
   },
 
@@ -1226,6 +1311,43 @@ WebConsoleFrame.prototype = {
   {
     let category = Utils.categoryForScriptError(aPageError);
     this.outputMessage(category, this.reportPageError, [category, aPageError]);
+  },
+
+  /**
+   * Handle log messages received from the server. This method outputs the given
+   * message.
+   *
+   * @param object aPacket
+   *        The message packet received from the server.
+   */
+  handleLogMessage: function WCF_handleLogMessage(aPacket)
+  {
+    if (aPacket.message) {
+      this.outputMessage(CATEGORY_JS, this._reportLogMessage, [aPacket]);
+    }
+  },
+
+  /**
+   * Display log messages received from the server.
+   *
+   * @private
+   * @param object aPacket
+   *        The message packet received from the server.
+   * @return nsIDOMElement
+   *         The message element to render for the given log message.
+   */
+  _reportLogMessage: function WCF__reportLogMessage(aPacket)
+  {
+    let msg = aPacket.message;
+    if (msg.type && msg.type == "longString") {
+      msg = msg.initial;
+    }
+    let node = this.createMessageNode(CATEGORY_JS, SEVERITY_LOG, msg, null,
+                                      null, null, null, aPacket.timeStamp);
+    if (WebConsoleUtils.isActorGrip(aPacket.message)) {
+      node._objectActors = new Set([aPacket.message.actor]);
+    }
+    return node;
   },
 
   /**
@@ -1244,62 +1366,62 @@ WebConsoleFrame.prototype = {
     }
 
     let request = networkInfo.request;
-
-    let msgNode = this.document.createElementNS(XUL_NS, "hbox");
-
-    let methodNode = this.document.createElementNS(XUL_NS, "label");
-    methodNode.setAttribute("value", request.method);
-    methodNode.classList.add("webconsole-msg-body-piece");
-    msgNode.appendChild(methodNode);
-
-    let linkNode = this.document.createElementNS(XUL_NS, "hbox");
-    linkNode.flex = 1;
-    linkNode.classList.add("webconsole-msg-body-piece");
-    linkNode.classList.add("webconsole-msg-link");
-    msgNode.appendChild(linkNode);
-
-    let urlNode = this.document.createElementNS(XUL_NS, "label");
-    urlNode.flex = 1;
-    urlNode.setAttribute("crop", "center");
-    urlNode.setAttribute("title", request.url);
-    urlNode.setAttribute("tooltiptext", request.url);
-    urlNode.setAttribute("value", request.url);
-    urlNode.classList.add("hud-clickable");
-    urlNode.classList.add("webconsole-msg-body-piece");
-    urlNode.classList.add("webconsole-msg-url");
-    linkNode.appendChild(urlNode);
-
+    let clipboardText = request.method + " " + request.url;
     let severity = SEVERITY_LOG;
     let mixedRequest =
       WebConsoleUtils.isMixedHTTPSRequest(request.url, this.contentLocation);
     if (mixedRequest) {
-      urlNode.classList.add("webconsole-mixed-content");
-      this.makeMixedContentNode(linkNode);
-      // If we define a SEVERITY_SECURITY in the future, switch this to
-      // SEVERITY_SECURITY.
       severity = SEVERITY_WARNING;
     }
 
-    let statusNode = this.document.createElementNS(XUL_NS, "label");
-    statusNode.setAttribute("value", "");
-    statusNode.classList.add("hud-clickable");
-    statusNode.classList.add("webconsole-msg-body-piece");
-    statusNode.classList.add("webconsole-msg-status");
-    linkNode.appendChild(statusNode);
-
-    let clipboardText = request.method + " " + request.url;
+    let methodNode = this.document.createElementNS(XHTML_NS, "span");
+    methodNode.className = "method";
+    methodNode.textContent = request.method + " ";
 
     let messageNode = this.createMessageNode(CATEGORY_NETWORK, severity,
-                                             msgNode, null, null, clipboardText);
-
+                                             methodNode, null, null,
+                                             clipboardText);
+    if (networkInfo.private) {
+      messageNode.setAttribute("private", true);
+    }
     messageNode._connectionId = aActorId;
     messageNode.url = request.url;
 
-    this.makeOutputMessageLink(messageNode, function WCF_net_message_link() {
+    let body = methodNode.parentNode;
+    body.setAttribute("aria-haspopup", true);
+
+    let displayUrl = request.url;
+    let pos = displayUrl.indexOf("?");
+    if (pos > -1) {
+      displayUrl = displayUrl.substr(0, pos);
+    }
+
+    let urlNode = this.document.createElementNS(XHTML_NS, "a");
+    urlNode.className = "url";
+    urlNode.setAttribute("title", request.url);
+    urlNode.href = request.url;
+    urlNode.textContent = displayUrl;
+    urlNode.draggable = false;
+    body.appendChild(urlNode);
+    body.appendChild(this.document.createTextNode(" "));
+
+    if (mixedRequest) {
+      messageNode.classList.add("mixed-content");
+      this.makeMixedContentNode(body);
+    }
+
+    let statusNode = this.document.createElementNS(XHTML_NS, "a");
+    statusNode.className = "status";
+    body.appendChild(statusNode);
+
+    let onClick = () => {
       if (!messageNode._panelOpen) {
         this.openNetworkPanel(messageNode, networkInfo);
       }
-    }.bind(this));
+    };
+
+    this._addMessageLinkCallback(urlNode, onClick);
+    this._addMessageLinkCallback(statusNode, onClick);
 
     networkInfo.node = messageNode;
 
@@ -1319,19 +1441,82 @@ WebConsoleFrame.prototype = {
     let mixedContentWarning = "[" + l10n.getStr("webConsoleMixedContentWarning") + "]";
 
     // Mixed content warning message links to a Learn More page
-    let mixedContentWarningNode = this.document.createElement("label");
-    mixedContentWarningNode.setAttribute("value", mixedContentWarning);
-    mixedContentWarningNode.setAttribute("title", mixedContentWarning);
-    mixedContentWarningNode.classList.add("hud-clickable");
-    mixedContentWarningNode.classList.add("webconsole-mixed-content-link");
+    let mixedContentWarningNode = this.document.createElementNS(XHTML_NS, "a");
+    mixedContentWarningNode.title = MIXED_CONTENT_LEARN_MORE;
+    mixedContentWarningNode.href = MIXED_CONTENT_LEARN_MORE;
+    mixedContentWarningNode.className = "learn-more-link";
+    mixedContentWarningNode.textContent = mixedContentWarning;
+    mixedContentWarningNode.draggable = false;
 
     aLinkNode.appendChild(mixedContentWarningNode);
 
-    mixedContentWarningNode.addEventListener("click", function(aEvent) {
-      this.owner.openLink(MIXED_CONTENT_LEARN_MORE);
-      aEvent.preventDefault();
+    this._addMessageLinkCallback(mixedContentWarningNode, (aNode, aEvent) => {
       aEvent.stopPropagation();
-    }.bind(this));
+      this.owner.openLink(MIXED_CONTENT_LEARN_MORE);
+    });
+  },
+
+  /**
+   * Adds a more info link node to messages based on the nsIScriptError object
+   * that we need to report to the console
+   *
+   * @param aNode
+   *        The node to which we will be adding the more info link node
+   * @param aScriptError
+   *        The script error object that we are reporting to the console
+   */
+  addMoreInfoLink: function WCF_addMoreInfoLink(aNode, aScriptError)
+  {
+    let url;
+    switch (aScriptError.category) {
+     case "Insecure Password Field":
+       url = INSECURE_PASSWORDS_LEARN_MORE;
+     break;
+     case "Mixed Content Message":
+     case "Mixed Content Blocker":
+      url = MIXED_CONTENT_LEARN_MORE;
+     break;
+     case "Invalid HSTS Headers":
+      url = STRICT_TRANSPORT_SECURITY_LEARN_MORE;
+     break;
+     default:
+      // Unknown category. Return without adding more info node.
+      return;
+    }
+
+    this.addLearnMoreWarningNode(aNode, url);
+  },
+
+  /*
+   * Appends a clickable warning node to the node passed
+   * as a parameter to the function. When a user clicks on the appended
+   * warning node, the browser navigates to the provided url.
+   *
+   * @param aNode
+   *        The node to which we will be adding a clickable warning node.
+   * @param aURL
+   *        The url which points to the page where the user can learn more
+   *        about security issues associated with the specific message that's
+   *        being logged.
+   */
+  addLearnMoreWarningNode:
+  function WCF_addLearnMoreWarningNode(aNode, aURL)
+  {
+    let moreInfoLabel = "[" + l10n.getStr("webConsoleMoreInfoLabel") + "]";
+
+    let warningNode = this.document.createElementNS(XHTML_NS, "a");
+    warningNode.title = aURL;
+    warningNode.href = aURL;
+    warningNode.draggable = false;
+    warningNode.textContent = moreInfoLabel;
+    warningNode.className = "learn-more-link";
+
+    this._addMessageLinkCallback(warningNode, (aNode, aEvent) => {
+      aEvent.stopPropagation();
+      this.owner.openLink(aURL);
+    });
+
+    aNode.appendChild(warningNode);
   },
 
   /**
@@ -1344,21 +1529,19 @@ WebConsoleFrame.prototype = {
    */
   logFileActivity: function WCF_logFileActivity(aFileURI)
   {
-    let urlNode = this.document.createElementNS(XUL_NS, "label");
-    urlNode.flex = 1;
-    urlNode.setAttribute("crop", "center");
+    let urlNode = this.document.createElementNS(XHTML_NS, "a");
     urlNode.setAttribute("title", aFileURI);
-    urlNode.setAttribute("tooltiptext", aFileURI);
-    urlNode.setAttribute("value", aFileURI);
-    urlNode.classList.add("hud-clickable");
-    urlNode.classList.add("webconsole-msg-url");
+    urlNode.className = "url";
+    urlNode.textContent = aFileURI;
+    urlNode.draggable = false;
+    urlNode.href = aFileURI;
 
     let outputNode = this.createMessageNode(CATEGORY_NETWORK, SEVERITY_LOG,
                                             urlNode, null, null, aFileURI);
 
-    this.makeOutputMessageLink(outputNode, function WCF__onFileClick() {
+    this._addMessageLinkCallback(urlNode, () => {
       this.owner.viewSource(aFileURI);
-    }.bind(this));
+    });
 
     return outputNode;
   },
@@ -1372,6 +1555,42 @@ WebConsoleFrame.prototype = {
   handleFileActivity: function WCF_handleFileActivity(aFileURI)
   {
     this.outputMessage(CATEGORY_NETWORK, this.logFileActivity, [aFileURI]);
+  },
+
+  /**
+   * Handle the reflow activity messages coming from the remote Web Console.
+   *
+   * @param object aMessage
+   *        An object holding information about a reflow batch.
+   */
+  logReflowActivity: function WCF_logReflowActivity(aMessage)
+  {
+    let {start, end, sourceURL, sourceLine} = aMessage;
+    let duration = Math.round((end - start) * 100) / 100;
+    let node = this.document.createElementNS(XHTML_NS, "span");
+    if (sourceURL) {
+      node.textContent = l10n.getFormatStr("reflow.messageWithLink", [duration]);
+      let a = this.document.createElementNS(XHTML_NS, "a");
+      a.href = "#";
+      a.draggable = "false";
+      let filename = WebConsoleUtils.abbreviateSourceURL(sourceURL);
+      let functionName = aMessage.functionName || l10n.getStr("stacktrace.anonymousFunction");
+      a.textContent = l10n.getFormatStr("reflow.messageLinkText",
+                         [functionName, filename, sourceLine]);
+      this._addMessageLinkCallback(a, () => {
+        this.owner.viewSourceInDebugger(sourceURL, sourceLine);
+      });
+      node.appendChild(a);
+    } else {
+      node.textContent = l10n.getFormatStr("reflow.messageWithNoLink", [duration]);
+    }
+    return this.createMessageNode(CATEGORY_CSS, SEVERITY_LOG, node);
+  },
+
+
+  handleReflowActivity: function WCF_handleReflowActivity(aMessage)
+  {
+    this.outputMessage(CATEGORY_CSS, this.logReflowActivity, [aMessage]);
   },
 
   /**
@@ -1416,6 +1635,7 @@ WebConsoleFrame.prototype = {
       response: {},
       timings: {},
       updates: [], // track the list of network event updates
+      private: aActor.private,
     };
 
     this._networkRequests[aActor.actor] = networkInfo;
@@ -1469,8 +1689,8 @@ WebConsoleFrame.prototype = {
         break;
     }
 
-    if (networkInfo.node) {
-      this._updateNetMessage(aActorId);
+    if (networkInfo.node && this._updateNetMessage(aActorId)) {
+      this.emit("messages-updated", new Set([networkInfo.node]));
     }
 
     // For unit tests we pass the HTTP activity object to the test callback,
@@ -1489,6 +1709,8 @@ WebConsoleFrame.prototype = {
    * @private
    * @param string aActorId
    *        The network event actor ID for which you want to update the message.
+   * @return boolean
+   *         |true| if the message node was updated, or |false| otherwise.
    */
   _updateNetMessage: function WCF__updateNetMessage(aActorId)
   {
@@ -1503,6 +1725,7 @@ WebConsoleFrame.prototype = {
     let hasResponseStart = updates.indexOf("responseStart") > -1;
     let request = networkInfo.request;
     let response = networkInfo.response;
+    let updated = false;
 
     if (hasEventTimings || hasResponseStart) {
       let status = [];
@@ -1515,9 +1738,8 @@ WebConsoleFrame.prototype = {
       }
       let statusText = "[" + status.join(" ") + "]";
 
-      let linkNode = messageNode.querySelector(".webconsole-msg-link");
-      let statusNode = linkNode.querySelector(".webconsole-msg-status");
-      statusNode.setAttribute("value", statusText);
+      let statusNode = messageNode.getElementsByClassName("status")[0];
+      statusNode.textContent = statusText;
 
       messageNode.clipboardText = [request.method, request.url, statusText]
                                   .join(" ");
@@ -1526,11 +1748,15 @@ WebConsoleFrame.prototype = {
           response.status <= MAX_HTTP_ERROR_CODE) {
         this.setMessageType(messageNode, CATEGORY_NETWORK, SEVERITY_ERROR);
       }
+
+      updated = true;
     }
 
     if (messageNode._netPanel) {
       messageNode._netPanel.update();
     }
+
+    return updated;
   },
 
   /**
@@ -1681,6 +1907,35 @@ WebConsoleFrame.prototype = {
   },
 
   /**
+   * Handler for the tabNavigated notification.
+   *
+   * @param string aEvent
+   *        Event name.
+   * @param object aPacket
+   *        Notification packet received from the server.
+   */
+  handleTabNavigated: function WCF_handleTabNavigated(aEvent, aPacket)
+  {
+    if (aEvent == "will-navigate") {
+      if (this.persistLog) {
+        let marker = new Messages.NavigationMarker(aPacket.url, Date.now());
+        this.output.addMessage(marker);
+      }
+      else {
+        this.jsterm.clearOutput();
+      }
+    }
+
+    if (aPacket.url) {
+      this.onLocationChange(aPacket.url, aPacket.title);
+    }
+
+    if (aEvent == "navigate" && !aPacket.nativeConsoleAPI) {
+      this.logWarningAboutReplacedAPI();
+    }
+  },
+
+  /**
    * Output a message node. This filters a node appropriately, then sends it to
    * the output, regrouping and pruning output as necessary.
    *
@@ -1755,9 +2010,8 @@ WebConsoleFrame.prototype = {
 
     let outputNode = this.outputNode;
     let lastVisibleNode = null;
+    let scrollNode = outputNode.parentNode;
     let scrolledToBottom = Utils.isOutputScrolledToBottom(outputNode);
-    let scrollBox = outputNode.scrollBoxObject.element;
-
     let hudIdSupportsString = WebConsoleUtils.supportsString(this.hudId);
 
     // Output the current batch of messages.
@@ -1784,7 +2038,7 @@ WebConsoleFrame.prototype = {
     // improve performance.
     let removedNodes = 0;
     if (shouldPrune || !this._outputQueue.length) {
-      oldScrollHeight = scrollBox.scrollHeight;
+      oldScrollHeight = scrollNode.scrollHeight;
 
       let categories = Object.keys(this._pruneCategoriesQueue);
       categories.forEach(function _pruneOutput(aCategory) {
@@ -1793,14 +2047,9 @@ WebConsoleFrame.prototype = {
       this._pruneCategoriesQueue = {};
     }
 
-    // Regroup messages at the end of the queue.
-    if (!this._outputQueue.length) {
-      this.regroupOutput();
-    }
-
     let isInputOutput = lastVisibleNode &&
-      (lastVisibleNode.classList.contains("webconsole-msg-input") ||
-       lastVisibleNode.classList.contains("webconsole-msg-output"));
+                        (lastVisibleNode.category == CATEGORY_INPUT ||
+                         lastVisibleNode.category == CATEGORY_OUTPUT);
 
     // Scroll to the new node if it is not filtered, and if the output node is
     // scrolled at the bottom or if the new node is a jsterm input/output
@@ -1809,10 +2058,10 @@ WebConsoleFrame.prototype = {
       Utils.scrollToVisible(lastVisibleNode);
     }
     else if (!scrolledToBottom && removedNodes > 0 &&
-             oldScrollHeight != scrollBox.scrollHeight) {
+             oldScrollHeight != scrollNode.scrollHeight) {
       // If there were pruned messages and if scroll is not at the bottom, then
       // we need to adjust the scroll location.
-      scrollBox.scrollTop -= oldScrollHeight - scrollBox.scrollHeight;
+      scrollNode.scrollTop -= oldScrollHeight - scrollNode.scrollHeight;
     }
 
     if (newMessages.size) {
@@ -1828,7 +2077,14 @@ WebConsoleFrame.prototype = {
     }
     else {
       this._outputTimerInitialized = false;
-      this._flushCallback && this._flushCallback();
+      if (this._flushCallback) {
+        try {
+          this._flushCallback();
+        }
+        catch (ex) {
+          console.error(ex);
+        }
+      }
     }
 
     this._lastOutputFlush = Date.now();
@@ -1985,6 +2241,22 @@ WebConsoleFrame.prototype = {
         }
       });
     }
+    else if (category == CATEGORY_JS &&
+             methodOrNode == this.reportPageError) {
+      let pageError = args[1];
+      for (let prop of ["errorMessage", "lineText"]) {
+        let grip = pageError[prop];
+        if (WebConsoleUtils.isActorGrip(grip)) {
+          this._releaseObject(grip.actor);
+        }
+      }
+    }
+    else if (category == CATEGORY_JS &&
+             methodOrNode == this._reportLogMessage) {
+      if (WebConsoleUtils.isActorGrip(args[0].message)) {
+        this._releaseObject(args[0].message.actor);
+      }
+    }
   },
 
   /**
@@ -1998,11 +2270,9 @@ WebConsoleFrame.prototype = {
    */
   pruneOutputIfNecessary: function WCF_pruneOutputIfNecessary(aCategory)
   {
-    let outputNode = this.outputNode;
     let logLimit = Utils.logLimitForCategory(aCategory);
-
-    let messageNodes = outputNode.getElementsByClassName("webconsole-msg-" +
-        CATEGORY_CLASS_FRAGMENTS[aCategory]);
+    let messageNodes = this.outputNode.querySelectorAll(".message[category=" +
+                       CATEGORY_CLASS_FRAGMENTS[aCategory] + "]");
     let n = Math.max(0, messageNodes.length - logLimit);
     let toRemove = Array.prototype.slice.call(messageNodes, 0, n);
     toRemove.forEach(this.removeOutputMessage, this);
@@ -2025,55 +2295,28 @@ WebConsoleFrame.prototype = {
       aNode._objectActors.clear();
     }
 
-    if (aNode.classList.contains("webconsole-msg-cssparser") ||
-        aNode.classList.contains("webconsole-msg-security")) {
-      let repeatNode = aNode.getElementsByClassName("webconsole-msg-repeat")[0];
+    if (aNode.category == CATEGORY_CSS ||
+        aNode.category == CATEGORY_SECURITY) {
+      let repeatNode = aNode.getElementsByClassName("repeats")[0];
       if (repeatNode && repeatNode._uid) {
         delete this._repeatNodes[repeatNode._uid];
       }
     }
     else if (aNode._connectionId &&
-             aNode.classList.contains("webconsole-msg-network")) {
+             aNode.category == CATEGORY_NETWORK) {
       delete this._networkRequests[aNode._connectionId];
       this._releaseObject(aNode._connectionId);
     }
-    else if (aNode.classList.contains("webconsole-msg-inspector")) {
+    else if (aNode.classList.contains("inlined-variables-view")) {
       let view = aNode._variablesView;
-      let actors = view ?
-                   this.jsterm._objectActorsInVariablesViews.get(view) :
-                   new Set();
-      for (let actor of actors) {
-        this._releaseObject(actor);
+      if (view) {
+        view.controller.releaseActors();
       }
-      actors.clear();
       aNode._variablesView = null;
     }
 
     if (aNode.parentNode) {
       aNode.parentNode.removeChild(aNode);
-    }
-  },
-
-  /**
-   * Splits the given console messages into groups based on their timestamps.
-   */
-  regroupOutput: function WCF_regroupOutput()
-  {
-    // Go through the nodes and adjust the placement of "webconsole-new-group"
-    // classes.
-    let nodes = this.outputNode.querySelectorAll(".hud-msg-node" +
-      ":not(.hud-filtered-by-string):not(.hud-filtered-by-type)");
-    let lastTimestamp;
-    for (let i = 0, n = nodes.length; i < n; i++) {
-      let thisTimestamp = nodes[i].timestamp;
-      if (lastTimestamp != null &&
-          thisTimestamp >= lastTimestamp + NEW_GROUP_DELAY) {
-        nodes[i].classList.add("webconsole-new-group");
-      }
-      else {
-        nodes[i].classList.remove("webconsole-new-group");
-      }
-      lastTimestamp = thisTimestamp;
     }
   },
 
@@ -2102,8 +2345,8 @@ WebConsoleFrame.prototype = {
    *        The timestamp to use for this message node. If omitted, the current
    *        date and time is used.
    * @return nsIDOMNode
-   *         The message node: a XUL richlistitem ready to be inserted into
-   *         the Web Console output node.
+   *         The message node: a DIV ready to be inserted into the Web Console
+   *         output node.
    */
   createMessageNode:
   function WCF_createMessageNode(aCategory, aSeverity, aBody, aSourceURL,
@@ -2116,26 +2359,12 @@ WebConsoleFrame.prototype = {
     // Make the icon container, which is a vertical box. Its purpose is to
     // ensure that the icon stays anchored at the top of the message even for
     // long multi-line messages.
-    let iconContainer = this.document.createElementNS(XUL_NS, "vbox");
-    iconContainer.classList.add("webconsole-msg-icon-container");
-    // Apply the curent group by indenting appropriately.
-    iconContainer.style.marginLeft = this.groupDepth * GROUP_INDENT + "px";
-
-    // Make the icon node. It's sprited and the actual region of the image is
-    // determined by CSS rules.
-    let iconNode = this.document.createElementNS(XUL_NS, "image");
-    iconNode.classList.add("webconsole-msg-icon");
-    iconContainer.appendChild(iconNode);
-
-    // Make the spacer that positions the icon.
-    let spacer = this.document.createElementNS(XUL_NS, "spacer");
-    spacer.flex = 1;
-    iconContainer.appendChild(spacer);
+    let iconContainer = this.document.createElementNS(XHTML_NS, "span");
+    iconContainer.className = "icon";
 
     // Create the message body, which contains the actual text of the message.
-    let bodyNode = this.document.createElementNS(XUL_NS, "description");
-    bodyNode.flex = 1;
-    bodyNode.classList.add("webconsole-msg-body");
+    let bodyNode = this.document.createElementNS(XHTML_NS, "span");
+    bodyNode.className = "body devtools-monospace";
 
     // Store the body text, since it is needed later for the variables view.
     let body = aBody;
@@ -2145,8 +2374,15 @@ WebConsoleFrame.prototype = {
                      (aBody + (aSourceURL ? " @ " + aSourceURL : "") +
                               (aSourceLine ? ":" + aSourceLine : ""));
 
+    let timestamp = aTimeStamp || Date.now();
+
     // Create the containing node and append all its elements to it.
-    let node = this.document.createElementNS(XUL_NS, "richlistitem");
+    let node = this.document.createElementNS(XHTML_NS, "div");
+    node.id = "console-msg-" + gSequenceId();
+    node.className = "message";
+    node.clipboardText = aClipboardText;
+    node.timestamp = timestamp;
+    this.setMessageType(node, aCategory, aSeverity);
 
     if (aBody instanceof Ci.nsIDOMNode) {
       bodyNode.appendChild(aBody);
@@ -2170,21 +2406,28 @@ WebConsoleFrame.prototype = {
       }
     }
 
-    let repeatContainer = this.document.createElementNS(XUL_NS, "hbox");
-    repeatContainer.setAttribute("align", "start");
-    let repeatNode = this.document.createElementNS(XUL_NS, "label");
-    repeatNode.setAttribute("value", "1");
-    repeatNode.classList.add("webconsole-msg-repeat");
-    repeatNode._uid = [bodyNode.textContent, aCategory, aSeverity, aLevel,
-                       aSourceURL, aSourceLine].join(":");
-    repeatContainer.appendChild(repeatNode);
+    // Add the message repeats node only when needed.
+    let repeatNode = null;
+    if (aCategory != CATEGORY_INPUT &&
+        aCategory != CATEGORY_OUTPUT &&
+        aCategory != CATEGORY_NETWORK &&
+        !(aCategory == CATEGORY_CSS && aSeverity == SEVERITY_LOG)) {
+      repeatNode = this.document.createElementNS(XHTML_NS, "span");
+      repeatNode.setAttribute("value", "1");
+      repeatNode.className = "repeats";
+      repeatNode.textContent = 1;
+      repeatNode._uid = [bodyNode.textContent, aCategory, aSeverity, aLevel,
+                         aSourceURL, aSourceLine].join(":");
+    }
 
     // Create the timestamp.
-    let timestampNode = this.document.createElementNS(XUL_NS, "label");
-    timestampNode.classList.add("webconsole-timestamp");
-    let timestamp = aTimeStamp || Date.now();
+    let timestampNode = this.document.createElementNS(XHTML_NS, "span");
+    timestampNode.className = "timestamp devtools-monospace";
+    // Apply the current group by indenting appropriately.
+    timestampNode.style.marginRight = this.groupDepth * GROUP_INDENT + "px";
+
     let timestampString = l10n.timestampString(timestamp);
-    timestampNode.setAttribute("value", timestampString);
+    timestampNode.textContent = timestampString + " ";
 
     // Create the source location (e.g. www.example.com:6) that sits on the
     // right side of the message, if applicable.
@@ -2193,25 +2436,17 @@ WebConsoleFrame.prototype = {
       locationNode = this.createLocationNode(aSourceURL, aSourceLine);
     }
 
-    node.clipboardText = aClipboardText;
-    node.classList.add("hud-msg-node");
-
-    node.timestamp = timestamp;
-    this.setMessageType(node, aCategory, aSeverity);
-
     node.appendChild(timestampNode);
     node.appendChild(iconContainer);
 
     // Display the variables view after the message node.
     if (aLevel == "dir") {
-      let viewContainer = this.document.createElement("hbox");
-      viewContainer.flex = 1;
-      viewContainer.height = this.outputNode.clientHeight *
-                             CONSOLE_DIR_VIEW_HEIGHT;
+      bodyNode.style.height = (this.window.innerHeight *
+                               CONSOLE_DIR_VIEW_HEIGHT) + "px";
 
       let options = {
         objectActor: body.arguments[0],
-        targetElement: viewContainer,
+        targetElement: bodyNode,
         hideFilterInput: true,
       };
       this.jsterm.openVariablesView(options).then((aView) => {
@@ -2221,22 +2456,17 @@ WebConsoleFrame.prototype = {
         }
       });
 
-      let bodyContainer = this.document.createElement("vbox");
-      bodyContainer.flex = 1;
-      bodyContainer.appendChild(bodyNode);
-      bodyContainer.appendChild(viewContainer);
-      node.appendChild(bodyContainer);
-      node.classList.add("webconsole-msg-inspector");
+      node.classList.add("inlined-variables-view");
     }
-    else {
-      node.appendChild(bodyNode);
+
+    node.appendChild(bodyNode);
+    if (repeatNode) {
+      node.appendChild(repeatNode);
     }
-    node.appendChild(repeatContainer);
     if (locationNode) {
       node.appendChild(locationNode);
     }
-
-    node.setAttribute("id", "console-msg-" + gSequenceId());
+    node.appendChild(this.document.createTextNode("\n"));
 
     return node;
   },
@@ -2260,7 +2490,7 @@ WebConsoleFrame.prototype = {
   {
     Object.defineProperty(aMessage, "_panelOpen", {
       get: function() {
-        let nodes = aContainer.querySelectorAll(".hud-clickable");
+        let nodes = aContainer.getElementsByTagName("a");
         return Array.prototype.some.call(nodes, function(aNode) {
           return aNode._panelOpen;
         });
@@ -2281,10 +2511,11 @@ WebConsoleFrame.prototype = {
         aContainer.appendChild(this.document.createTextNode(text));
 
         if (aItem.type && aItem.type == "longString") {
-          let ellipsis = this.document.createElement("description");
-          ellipsis.classList.add("hud-clickable");
+          let ellipsis = this.document.createElementNS(XHTML_NS, "a");
           ellipsis.classList.add("longStringEllipsis");
           ellipsis.textContent = l10n.getStr("longStringEllipsis");
+          ellipsis.href = "#";
+          ellipsis.draggable = false;
 
           let formatter = function(s) '"' + s + '"';
 
@@ -2297,10 +2528,11 @@ WebConsoleFrame.prototype = {
       }
 
       // For inspectable objects.
-      let elem = this.document.createElement("description");
-      elem.classList.add("hud-clickable");
+      let elem = this.document.createElementNS(XHTML_NS, "a");
       elem.setAttribute("aria-haspopup", "true");
-      elem.appendChild(this.document.createTextNode(text));
+      elem.textContent = text;
+      elem.href = "#";
+      elem.draggable = false;
 
       this._addMessageLinkCallback(elem,
         this._consoleLogClick.bind(this, elem, aItem));
@@ -2324,14 +2556,10 @@ WebConsoleFrame.prototype = {
    *        server, before being displayed in the console.
    * @param nsIDOMElement aEllipsis
    *        The DOM element the user can click on to expand the string.
-   * @param nsIDOMEvent aEvent
-   *        The DOM click event triggered by the user.
    */
   _longStringClick:
-  function WCF__longStringClick(aMessage, aActor, aFormatter, aEllipsis, aEvent)
+  function WCF__longStringClick(aMessage, aActor, aFormatter, aEllipsis)
   {
-    aEvent.preventDefault();
-
     if (!aFormatter) {
       aFormatter = function(s) s;
     }
@@ -2364,7 +2592,7 @@ WebConsoleFrame.prototype = {
   },
 
   /**
-   * Creates the XUL label that displays the textual location of an incoming
+   * Creates the anchor that displays the textual location of an incoming
    * message.
    *
    * @param string aSourceURL
@@ -2373,127 +2601,78 @@ WebConsoleFrame.prototype = {
    *        The line number on which the error occurred. If zero or omitted,
    *        there is no line number associated with this message.
    * @return nsIDOMNode
-   *         The new XUL label node, ready to be added to the message node.
+   *         The new anchor element, ready to be added to the message node.
    */
   createLocationNode: function WCF_createLocationNode(aSourceURL, aSourceLine)
   {
-    let locationNode = this.document.createElementNS(XUL_NS, "label");
+    let locationNode = this.document.createElementNS(XHTML_NS, "a");
 
     // Create the text, which consists of an abbreviated version of the URL
     // plus an optional line number. Scratchpad URLs should not be abbreviated.
-    let text;
+    let displayLocation;
+    let fullURL;
+    let isScratchpad = false;
 
     if (/^Scratchpad\/\d+$/.test(aSourceURL)) {
-      text = aSourceURL;
+      displayLocation = aSourceURL;
+      fullURL = aSourceURL;
+      isScratchpad = true;
     }
     else {
-      text = WebConsoleUtils.abbreviateSourceURL(aSourceURL);
+      fullURL = aSourceURL.split(" -> ").pop();
+      displayLocation = WebConsoleUtils.abbreviateSourceURL(fullURL);
     }
 
     if (aSourceLine) {
-      text += ":" + aSourceLine;
+      displayLocation += ":" + aSourceLine;
       locationNode.sourceLine = aSourceLine;
     }
 
-    locationNode.setAttribute("value", text);
-
-    // Style appropriately.
-    locationNode.setAttribute("crop", "center");
+    locationNode.textContent = " " + displayLocation;
+    locationNode.href = isScratchpad ? "#" : fullURL;
+    locationNode.draggable = false;
     locationNode.setAttribute("title", aSourceURL);
-    locationNode.setAttribute("tooltiptext", aSourceURL);
-    locationNode.classList.add("webconsole-location");
-    locationNode.classList.add("text-link");
+    locationNode.className = "location devtools-monospace";
 
     // Make the location clickable.
-    locationNode.addEventListener("click", function() {
-      if (/^Scratchpad\/\d+$/.test(aSourceURL)) {
-        let wins = Services.wm.getEnumerator("devtools:scratchpad");
-
-        while (wins.hasMoreElements()) {
-          let win = wins.getNext();
-
-          if (win.Scratchpad.uniqueName === aSourceURL) {
-            win.focus();
-            return;
-          }
-        }
+    this._addMessageLinkCallback(locationNode, () => {
+      if (isScratchpad) {
+        this.owner.viewSourceInScratchpad(aSourceURL);
       }
       else if (locationNode.parentNode.category == CATEGORY_CSS) {
-        this.owner.viewSourceInStyleEditor(aSourceURL, aSourceLine);
+        this.owner.viewSourceInStyleEditor(fullURL, aSourceLine);
       }
       else if (locationNode.parentNode.category == CATEGORY_JS ||
                locationNode.parentNode.category == CATEGORY_WEBDEV) {
-        this.owner.viewSourceInDebugger(aSourceURL, aSourceLine);
+        this.owner.viewSourceInDebugger(fullURL, aSourceLine);
       }
       else {
-        this.owner.viewSource(aSourceURL, aSourceLine);
+        this.owner.viewSource(fullURL, aSourceLine);
       }
-    }.bind(this), true);
+    });
 
     return locationNode;
   },
 
   /**
-   * Adjusts the category and severity of the given message, clearing the old
-   * category and severity if present.
+   * Adjusts the category and severity of the given message.
    *
    * @param nsIDOMNode aMessageNode
    *        The message node to alter.
-   * @param number aNewCategory
-   *        The new category for the message; one of the CATEGORY_ constants.
-   * @param number aNewSeverity
-   *        The new severity for the message; one of the SEVERITY_ constants.
+   * @param number aCategory
+   *        The category for the message; one of the CATEGORY_ constants.
+   * @param number aSeverity
+   *        The severity for the message; one of the SEVERITY_ constants.
    * @return void
    */
   setMessageType:
-  function WCF_setMessageType(aMessageNode, aNewCategory, aNewSeverity)
+  function WCF_setMessageType(aMessageNode, aCategory, aSeverity)
   {
-    // Remove the old CSS classes, if applicable.
-    if ("category" in aMessageNode) {
-      let oldCategory = aMessageNode.category;
-      let oldSeverity = aMessageNode.severity;
-      aMessageNode.classList.remove("webconsole-msg-" +
-                                    CATEGORY_CLASS_FRAGMENTS[oldCategory]);
-      aMessageNode.classList.remove("webconsole-msg-" +
-                                    SEVERITY_CLASS_FRAGMENTS[oldSeverity]);
-      let key = "hud-" + MESSAGE_PREFERENCE_KEYS[oldCategory][oldSeverity];
-      aMessageNode.classList.remove(key);
-    }
-
-    // Add in the new CSS classes.
-    aMessageNode.category = aNewCategory;
-    aMessageNode.severity = aNewSeverity;
-    aMessageNode.classList.add("webconsole-msg-" +
-                               CATEGORY_CLASS_FRAGMENTS[aNewCategory]);
-    aMessageNode.classList.add("webconsole-msg-" +
-                               SEVERITY_CLASS_FRAGMENTS[aNewSeverity]);
-    let key = "hud-" + MESSAGE_PREFERENCE_KEYS[aNewCategory][aNewSeverity];
-    aMessageNode.classList.add(key);
-  },
-
-  /**
-   * Make a link given an output element.
-   *
-   * @param nsIDOMNode aNode
-   *        The message element you want to make a link for.
-   * @param function aCallback
-   *        The function you want invoked when the user clicks on the message
-   *        element.
-   */
-  makeOutputMessageLink: function WCF_makeOutputMessageLink(aNode, aCallback)
-  {
-    let linkNode;
-    if (aNode.category === CATEGORY_NETWORK) {
-      linkNode = aNode.querySelector(".webconsole-msg-link, .webconsole-msg-url");
-    }
-    else {
-      linkNode = aNode.querySelector(".webconsole-msg-body");
-      linkNode.classList.add("hud-clickable");
-    }
-
-    linkNode.setAttribute("aria-haspopup", "true");
-
-    this._addMessageLinkCallback(aNode, aCallback);
+    aMessageNode.category = aCategory;
+    aMessageNode.severity = aSeverity;
+    aMessageNode.setAttribute("category", CATEGORY_CLASS_FRAGMENTS[aCategory]);
+    aMessageNode.setAttribute("severity", SEVERITY_CLASS_FRAGMENTS[aSeverity]);
+    aMessageNode.setAttribute("filter", MESSAGE_PREFERENCE_KEYS[aCategory][aSeverity]);
   },
 
   /**
@@ -2508,14 +2687,26 @@ WebConsoleFrame.prototype = {
   _addMessageLinkCallback: function WCF__addMessageLinkCallback(aNode, aCallback)
   {
     aNode.addEventListener("mousedown", function(aEvent) {
+      this._mousedown = true;
       this._startX = aEvent.clientX;
       this._startY = aEvent.clientY;
     }, false);
 
     aNode.addEventListener("click", function(aEvent) {
-      if (aEvent.detail != 1 || aEvent.button != 0 ||
-          (this._startX != aEvent.clientX &&
-           this._startY != aEvent.clientY)) {
+      let mousedown = this._mousedown;
+      this._mousedown = false;
+
+      // Do not allow middle/right-click or 2+ clicks.
+      if (aEvent.detail != 1 || aEvent.button != 0) {
+        return;
+      }
+
+      aEvent.preventDefault();
+
+      // If this event started with a mousedown event and it ends at a different
+      // location, we consider this text selection.
+      if (mousedown && this._startX != aEvent.clientX &&
+          this._startY != aEvent.clientY) {
         return;
       }
 
@@ -2533,35 +2724,21 @@ WebConsoleFrame.prototype = {
    */
   copySelectedItems: function WCF_copySelectedItems(aOptions)
   {
-    aOptions = aOptions || { linkOnly: false };
+    aOptions = aOptions || { linkOnly: false, contextmenu: false };
 
     // Gather up the selected items and concatenate their clipboard text.
     let strings = [];
-    let newGroup = false;
 
-    let children = this.outputNode.children;
+    let children = this.output.getSelectedMessages();
+    if (!children.length && aOptions.contextmenu) {
+      children = [this._contextMenuHandler.lastClickedMessage];
+    }
 
-    for (let i = 0; i < children.length; i++) {
-      let item = children[i];
-      if (!item.selected) {
-        continue;
-      }
-
-      // Add dashes between groups so that group boundaries show up in the
-      // copied output.
-      if (i > 0 && item.classList.contains("webconsole-new-group")) {
-        newGroup = true;
-      }
-
+    for (let item of children) {
       // Ensure the selected item hasn't been filtered by type or string.
-      if (!item.classList.contains("hud-filtered-by-type") &&
-          !item.classList.contains("hud-filtered-by-string")) {
+      if (!item.classList.contains("filtered-by-type") &&
+          !item.classList.contains("filtered-by-string")) {
         let timestampString = l10n.timestampString(item.timestamp);
-        if (newGroup) {
-          strings.push("--");
-          newGroup = false;
-        }
-
         if (aOptions.linkOnly) {
           strings.push(item.url);
         }
@@ -2616,7 +2793,8 @@ WebConsoleFrame.prototype = {
    */
   openSelectedItemInTab: function WCF_openSelectedItemInTab()
   {
-    let item = this.outputNode.selectedItem;
+    let item = this.output.getSelectedMessages(1)[0] ||
+               this._contextMenuHandler.lastClickedMessage;
 
     if (!item || !item.url) {
       return;
@@ -2630,7 +2808,7 @@ WebConsoleFrame.prototype = {
    * when the Web Console is closed.
    *
    * @return object
-   *         A Promise that is resolved when the WebConsoleFrame instance is
+   *         A promise that is resolved when the WebConsoleFrame instance is
    *         destroyed.
    */
   destroy: function WCF_destroy()
@@ -2639,7 +2817,7 @@ WebConsoleFrame.prototype = {
       return this._destroyer.promise;
     }
 
-    this._destroyer = Promise.defer();
+    this._destroyer = promise.defer();
 
     this._repeatNodes = {};
     this._outputQueue = [];
@@ -2655,6 +2833,13 @@ WebConsoleFrame.prototype = {
     if (this.jsterm) {
       this.jsterm.destroy();
       this.jsterm = null;
+    }
+    this.output.destroy();
+    this.output = null;
+
+    if (this._contextMenuHandler) {
+      this._contextMenuHandler.destroy();
+      this._contextMenuHandler = null;
     }
 
     this._commandController = null;
@@ -2675,6 +2860,35 @@ WebConsoleFrame.prototype = {
   },
 };
 
+
+/**
+ * @see VariablesView.simpleValueEvalMacro
+ */
+function simpleValueEvalMacro(aItem, aCurrentString)
+{
+  return VariablesView.simpleValueEvalMacro(aItem, aCurrentString, "_self");
+};
+
+
+/**
+ * @see VariablesView.overrideValueEvalMacro
+ */
+function overrideValueEvalMacro(aItem, aCurrentString)
+{
+  return VariablesView.overrideValueEvalMacro(aItem, aCurrentString, "_self");
+};
+
+
+/**
+ * @see VariablesView.getterOrSetterEvalMacro
+ */
+function getterOrSetterEvalMacro(aItem, aCurrentString)
+{
+  return VariablesView.getterOrSetterEvalMacro(aItem, aCurrentString, "_self");
+}
+
+
+
 /**
  * Create a JSTerminal (a JavaScript command line). This is attached to an
  * existing HeadsUpDisplay (a Web Console instance). This code is responsible
@@ -2691,14 +2905,19 @@ function JSTerm(aWebConsoleFrame)
 
   this.lastCompletion = { value: null };
   this.history = [];
-  this.historyIndex = 0;
-  this.historyPlaceHolder = 0;  // this.history.length;
+
+  // Holds the number of entries in history. This value is incremented in
+  // this.execute().
+  this.historyIndex = 0; // incremented on this.execute()
+
+  // Holds the index of the history entry that the user is currently viewing.
+  // This is reset to this.history.length when this.execute() is invoked.
+  this.historyPlaceHolder = 0;
   this._objectActorsInVariablesViews = new Map();
 
-  this._keyPress = this.keyPress.bind(this);
-  this._inputEventHandler = this.inputEventHandler.bind(this);
-  this._fetchVarProperties = this._fetchVarProperties.bind(this);
-  this._fetchVarLongString = this._fetchVarLongString.bind(this);
+  this._keyPress = this._keyPress.bind(this);
+  this._inputEventHandler = this._inputEventHandler.bind(this);
+  this._focusEventHandler = this._focusEventHandler.bind(this);
   this._onKeypressInVariablesView = this._onKeypressInVariablesView.bind(this);
 
   EventEmitter.decorate(this);
@@ -2712,6 +2931,21 @@ JSTerm.prototype = {
    * @type object
    */
   lastCompletion: null,
+
+  /**
+   * Array that caches the user input suggestions received from the server.
+   * @private
+   * @type array
+   */
+  _autocompleteCache: null,
+
+  /**
+   * The input that caused the last request to the server, whose response is
+   * cached in the _autocompleteCache array.
+   * @private
+   * @type string
+   */
+  _autocompleteQuery: null,
 
   /**
    * The Web Console sidebar.
@@ -2753,11 +2987,26 @@ JSTerm.prototype = {
   lastInputValue: "",
 
   /**
+   * Tells if the input node changed since the last focus.
+   *
+   * @private
+   * @type boolean
+   */
+  _inputChanged: false,
+
+  /**
+   * Tells if the autocomplete popup was navigated since the last open.
+   *
+   * @private
+   * @type boolean
+   */
+  _autocompletePopupNavigated: false,
+
+  /**
    * History of code that was executed.
    * @type array
    */
   history: null,
-
   autocompletePopup: null,
   inputNode: null,
   completeNode: null,
@@ -2803,6 +3052,7 @@ JSTerm.prototype = {
     this.inputNode.addEventListener("keypress", this._keyPress, false);
     this.inputNode.addEventListener("input", this._inputEventHandler, false);
     this.inputNode.addEventListener("keyup", this._inputEventHandler, false);
+    this.inputNode.addEventListener("focus", this._focusEventHandler, false);
 
     this.lastInputValue && this.setInputValue(this.lastInputValue);
   },
@@ -2880,15 +3130,6 @@ JSTerm.prototype = {
       return;
     }
 
-    if (aCallback) {
-      let oldFlushCallback = this.hud._flushCallback;
-      this.hud._flushCallback = function() {
-        aCallback();
-        oldFlushCallback && oldFlushCallback();
-        this.hud._flushCallback = oldFlushCallback;
-      }.bind(this);
-    }
-
     let node;
 
     if (errorMessage) {
@@ -2905,6 +3146,20 @@ JSTerm.prototype = {
                               aAfterNode, aResponse.timestamp);
     }
 
+    if (aCallback) {
+      let oldFlushCallback = this.hud._flushCallback;
+      this.hud._flushCallback = () => {
+        aCallback(node);
+        if (oldFlushCallback) {
+          oldFlushCallback();
+          this.hud._flushCallback = oldFlushCallback;
+        }
+        else {
+          this.hud._flushCallback = null;
+        }
+      };
+    }
+
     node._objectActors = new Set();
 
     let error = aResponse.exception;
@@ -2919,11 +3174,12 @@ JSTerm.prototype = {
         // Add an ellipsis to expand the short string if the object is not
         // inspectable.
 
-        let body = node.querySelector(".webconsole-msg-body");
-        let ellipsis = this.hud.document.createElement("description");
-        ellipsis.classList.add("hud-clickable");
+        let body = node.getElementsByClassName("body")[0];
+        let ellipsis = this.hud.document.createElementNS(XHTML_NS, "a");
         ellipsis.classList.add("longStringEllipsis");
         ellipsis.textContent = l10n.getStr("longStringEllipsis");
+        ellipsis.href = "#";
+        ellipsis.draggable = false;
 
         let formatter = function(s) '"' + s + '"';
         let onclick = this.hud._longStringClick.bind(this.hud, node, result,
@@ -2951,8 +3207,6 @@ JSTerm.prototype = {
     // attempt to execute the content of the inputNode
     aExecuteString = aExecuteString || this.inputNode.value;
     if (!aExecuteString) {
-      this.writeOutput(l10n.getStr("executeEmptyInput"), CATEGORY_OUTPUT,
-                       SEVERITY_LOG);
       return;
     }
 
@@ -2962,8 +3216,10 @@ JSTerm.prototype = {
     let options = { frame: this.SELECTED_FRAME };
     this.requestEvaluation(aExecuteString, options).then(onResult, onResult);
 
-    this.history.push(aExecuteString);
-    this.historyIndex++;
+    // Append a new value in the history of executed code, or overwrite the most
+    // recent entry. The most recent entry may contain the last edited input
+    // value that was not evaluated yet.
+    this.history[this.historyIndex++] = aExecuteString;
     this.historyPlaceHolder = this.history.length;
     this.setInputValue("");
     this.clearCompletion();
@@ -2987,12 +3243,12 @@ JSTerm.prototype = {
    *        If you do not provide a |frame| the string will be evaluated in the
    *        global content window.
    * @return object
-   *         A Promise object that is resolved when the server response is
+   *         A promise object that is resolved when the server response is
    *         received.
    */
   requestEvaluation: function JST_requestEvaluation(aString, aOptions = {})
   {
-    let deferred = Promise.defer();
+    let deferred = promise.defer();
 
     function onResult(aResponse) {
       if (!aResponse.error) {
@@ -3061,7 +3317,7 @@ JSTerm.prototype = {
    *        - autofocus: optional boolean, |true| if you want to give focus to
    *        the variables view window after open, |false| otherwise.
    * @return object
-   *         A Promise object that is resolved when the variables view has
+   *         A promise object that is resolved when the variables view has
    *         opened. The new variables view instance is given to the callbacks.
    */
   openVariablesView: function JST_openVariablesView(aOptions)
@@ -3091,12 +3347,12 @@ JSTerm.prototype = {
       return view;
     };
 
-    let promise;
+    let openPromise;
     if (aOptions.targetElement) {
-      let deferred = Promise.defer();
-      promise = deferred.promise;
+      let deferred = promise.defer();
+      openPromise = deferred.promise;
       let document = aOptions.targetElement.ownerDocument;
-      let iframe = document.createElement("iframe");
+      let iframe = document.createElementNS(XHTML_NS, "iframe");
 
       iframe.addEventListener("load", function onIframeLoad(aEvent) {
         iframe.removeEventListener("load", onIframeLoad, true);
@@ -3111,10 +3367,10 @@ JSTerm.prototype = {
       if (!this.sidebar) {
         this._createSidebar();
       }
-      promise = this._addVariablesViewSidebarTab();
+      openPromise = this._addVariablesViewSidebarTab();
     }
 
-    return promise.then(onContainerReady);
+    return openPromise.then(onContainerReady);
   },
 
   /**
@@ -3126,8 +3382,7 @@ JSTerm.prototype = {
   _createSidebar: function JST__createSidebar()
   {
     let tabbox = this.hud.document.querySelector("#webconsole-sidebar");
-    let ToolSidebar = devtools.require("devtools/framework/sidebar").ToolSidebar;
-    this.sidebar = new ToolSidebar(tabbox, this);
+    this.sidebar = new ToolSidebar(tabbox, this, "webconsole");
     this.sidebar.show();
   },
 
@@ -3136,11 +3391,11 @@ JSTerm.prototype = {
    *
    * @private
    * @return object
-   *         A Promise object for the adding of the new tab.
+   *         A promise object for the adding of the new tab.
    */
   _addVariablesViewSidebarTab: function JST__addVariablesViewSidebarTab()
   {
-    let deferred = Promise.defer();
+    let deferred = promise.defer();
 
     let onTabReady = () => {
       let window = this.sidebar.getWindowForTab("variablesview");
@@ -3206,7 +3461,30 @@ JSTerm.prototype = {
     view.searchEnabled = !aOptions.hideFilterInput;
     view.lazyEmpty = this._lazyVariablesView;
     view.lazyAppend = this._lazyVariablesView;
-    this._objectActorsInVariablesViews.set(view, new Set());
+
+    VariablesViewController.attach(view, {
+      getEnvironmentClient: aGrip => {
+        return new EnvironmentClient(this.hud.proxy.client, aGrip);
+      },
+      getObjectClient: aGrip => {
+        return new ObjectClient(this.hud.proxy.client, aGrip);
+      },
+      getLongStringClient: aGrip => {
+        return this.webConsoleClient.longString(aGrip);
+      },
+      releaseActor: aActor => {
+        this.hud._releaseObject(aActor);
+      },
+      simpleValueEvalMacro: simpleValueEvalMacro,
+      overrideValueEvalMacro: overrideValueEvalMacro,
+      getterOrSetterEvalMacro: getterOrSetterEvalMacro,
+    });
+
+    // Relay events from the VariablesView.
+    view.on("fetched", (aEvent, aType, aVar) => {
+      this.emit("variablesview-fetched", aVar);
+    });
+
     return view;
   },
 
@@ -3228,16 +3506,11 @@ JSTerm.prototype = {
     view.createHierarchy();
     view.empty();
 
-    let actors = this._objectActorsInVariablesViews.get(view);
-    for (let actor of actors) {
-      // We need to avoid pruning the object inspection starting point.
-      // That one is pruned when the console message is removed.
-      if (view._consoleLastObjectActor != actor) {
-        this.hud._releaseObject(actor);
-      }
-    }
-
-    actors.clear();
+    // We need to avoid pruning the object inspection starting point.
+    // That one is pruned when the console message is removed.
+    view.controller.releaseActors(aActor => {
+      return view._consoleLastObjectActor != aActor;
+    });
 
     if (aOptions.objectActor) {
       // Make sure eval works in the correct context.
@@ -3251,20 +3524,13 @@ JSTerm.prototype = {
       view.delete = null;
     }
 
-    let scope = view.addScope(aOptions.label);
-    scope.expanded = true;
-    scope.locked = true;
-
-    let container = scope.addVar();
-    container.evaluationMacro = this._variablesViewSimpleValueEvalMacro;
+    let { variable, expanded } = view.controller.setSingleVariable(aOptions);
+    variable.evaluationMacro = simpleValueEvalMacro;
 
     if (aOptions.objectActor) {
-      this._fetchVarProperties(container, aOptions.objectActor);
       view._consoleLastObjectActor = aOptions.objectActor.actor;
     }
     else if (aOptions.rawObject) {
-      container.populate(aOptions.rawObject);
-      view.commitHierarchy();
       view._consoleLastObjectActor = null;
     }
     else {
@@ -3272,7 +3538,9 @@ JSTerm.prototype = {
                       "display.");
     }
 
-    this.emit("variablesview-updated", view, aOptions);
+    expanded.then(() => {
+      this.emit("variablesview-updated", view, aOptions);
+    });
   },
 
   /**
@@ -3296,80 +3564,6 @@ JSTerm.prototype = {
     };
 
     this.requestEvaluation(aString, evalOptions).then(onEval, onEval);
-  },
-
-  /**
-   * Generates the string evaluated when performing simple value changes in the
-   * variables view.
-   *
-   * @private
-   * @param Variable | Property aItem
-   *        The current variable or property.
-   * @param string aCurrentString
-   *        The trimmed user inputted string.
-   * @return string
-   *         The string to be evaluated.
-   */
-  _variablesViewSimpleValueEvalMacro:
-  function JST__variablesViewSimpleValueEvalMacro(aItem, aCurrentString)
-  {
-    return "_self" + aItem.symbolicName + "=" + aCurrentString;
-  },
-
-
-  /**
-   * Generates the string evaluated when overriding getters and setters with
-   * plain values in the variables view.
-   *
-   * @private
-   * @param Property aItem
-   *        The current getter or setter property.
-   * @param string aCurrentString
-   *        The trimmed user inputted string.
-   * @return string
-   *         The string to be evaluated.
-   */
-  _variablesViewOverrideValueEvalMacro:
-  function JST__variablesViewOverrideValueEvalMacro(aItem, aCurrentString)
-  {
-    let parent = aItem.ownerView;
-    let symbolicName = parent.symbolicName;
-    if (symbolicName.indexOf("_self") != 0) {
-      parent._symbolicName = "_self" + symbolicName;
-    }
-
-    let result = VariablesView.overrideValueEvalMacro.apply(this, arguments);
-
-    parent._symbolicName = symbolicName;
-
-    return result;
-  },
-
-  /**
-   * Generates the string evaluated when performing getters and setters changes
-   * in the variables view.
-   *
-   * @private
-   * @param Property aItem
-   *        The current getter or setter property.
-   * @param string aCurrentString
-   *        The trimmed user inputted string.
-   * @return string
-   *         The string to be evaluated.
-   */
-  _variablesViewGetterOrSetterEvalMacro:
-  function JST__variablesViewGetterOrSetterEvalMacro(aItem, aCurrentString)
-  {
-    let propertyObject = aItem.ownerView;
-    let parentObject = propertyObject.ownerView;
-    let parent = parentObject.symbolicName;
-    parentObject._symbolicName = "_self" + parent;
-
-    let result = VariablesView.getterOrSetterEvalMacro.apply(this, arguments);
-
-    parentObject._symbolicName = parent;
-
-    return result;
   },
 
   /**
@@ -3480,144 +3674,7 @@ JSTerm.prototype = {
     aCallback && aCallback(aResponse);
   },
 
-  /**
-   * Adds properties to a variable in the view. Triggered when a variable is
-   * expanded. It does not expand the variable.
-   *
-   * @param object aVar
-   *        The VariablseView Variable instance where the properties get added.
-   * @param object [aGrip]
-   *        Optional, the object actor grip of the variable. If the grip is not
-   *        provided, then the aVar.value is used as the object actor grip.
-   */
-  _fetchVarProperties: function JST__fetchVarProperties(aVar, aGrip)
-  {
-    // Retrieve the properties only once.
-    if (aVar._fetched) {
-      return;
-    }
-    aVar._fetched = true;
 
-    let grip = aGrip || aVar.value;
-    if (!grip) {
-      throw new Error("No object actor grip was given for the variable.");
-    }
-
-    let view = aVar._variablesView;
-    let actors = this._objectActorsInVariablesViews.get(view);
-
-    function addActorForDescriptor(aGrip) {
-      if (WebConsoleUtils.isActorGrip(aGrip)) {
-        actors.add(aGrip.actor);
-      }
-    }
-
-    let onNewProperty = (aProperty) => {
-      if (aProperty.getter || aProperty.setter) {
-        aProperty.evaluationMacro = this._variablesViewOverrideValueEvalMacro;
-        let getter = aProperty.get("get");
-        let setter = aProperty.get("set");
-        if (getter) {
-          getter.evaluationMacro = this._variablesViewGetterOrSetterEvalMacro;
-        }
-        if (setter) {
-          setter.evaluationMacro = this._variablesViewGetterOrSetterEvalMacro;
-        }
-      }
-      else {
-        aProperty.evaluationMacro = this._variablesViewSimpleValueEvalMacro;
-      }
-
-      let grips = [aProperty.value, aProperty.getter, aProperty.setter];
-      grips.forEach(addActorForDescriptor);
-
-      let inspectable = !VariablesView.isPrimitive({ value: aProperty.value });
-      let longString = WebConsoleUtils.isActorGrip(aProperty.value) &&
-                       aProperty.value.type == "longString";
-      if (inspectable) {
-        aProperty.onexpand = this._fetchVarProperties;
-      }
-      else if (longString) {
-        aProperty.onexpand = this._fetchVarLongString;
-        aProperty.showArrow();
-      }
-    };
-
-    let client = new GripClient(this.hud.proxy.client, grip);
-    client.getPrototypeAndProperties((aResponse) => {
-      let { ownProperties, prototype, safeGetterValues } = aResponse;
-      let sortable = VariablesView.NON_SORTABLE_CLASSES.indexOf(grip.class) == -1;
-
-      // Merge the safe getter values into one object such that we can use it
-      // in VariablesView.
-      for (let name of Object.keys(safeGetterValues)) {
-        if (name in ownProperties) {
-          ownProperties[name].getterValue = safeGetterValues[name].getterValue;
-          ownProperties[name].getterPrototypeLevel = safeGetterValues[name]
-                                                     .getterPrototypeLevel;
-        }
-        else {
-          ownProperties[name] = safeGetterValues[name];
-        }
-      }
-
-      // Add all the variable properties.
-      if (ownProperties) {
-        aVar.addProperties(ownProperties, {
-          sorted: sortable,
-          callback: onNewProperty,
-        });
-      }
-
-      // Add the variable's __proto__.
-      if (prototype && prototype.type != "null") {
-        let proto = aVar.addProperty("__proto__", { value: prototype });
-        onNewProperty(proto);
-      }
-
-      aVar._retrieved = true;
-      view.commitHierarchy();
-      this.emit("variablesview-fetched", aVar);
-    });
-  },
-
-  /**
-   * Fetch the full string for a given variable that displays a long string.
-   *
-   * @param object aVar
-   *        The VariablesView Variable instance where the properties get added.
-   */
-  _fetchVarLongString: function JST__fetchVarLongString(aVar)
-  {
-    if (aVar._fetched) {
-      return;
-    }
-    aVar._fetched = true;
-
-    let grip = aVar.value;
-    if (!grip) {
-      throw new Error("No long string actor grip was given for the variable.");
-    }
-
-    let client = this.webConsoleClient.longString(grip);
-    let toIndex = Math.min(grip.length, MAX_LONG_STRING_LENGTH);
-    client.substring(grip.initial.length, toIndex, (aResponse) => {
-      if (aResponse.error) {
-        Cu.reportError("JST__fetchVarLongString substring failure: " +
-                       aResponse.error + ": " + aResponse.message);
-        return;
-      }
-
-      aVar.onexpand = null;
-      aVar.setGrip(grip.initial + aResponse.substring);
-      aVar.hideArrow();
-      aVar._retrieved = true;
-
-      if (toIndex != grip.length) {
-        this.hud.logWarningAboutStringTooLong();
-      }
-    });
-  },
 
   /**
    * Writes a JS object to the JSTerm outputNode.
@@ -3640,19 +3697,25 @@ JSTerm.prototype = {
   writeOutputJS:
   function JST_writeOutputJS(aOutputMessage, aCallback, aNodeAfter, aTimestamp)
   {
-    let node = this.writeOutput(aOutputMessage, CATEGORY_OUTPUT, SEVERITY_LOG,
-                                aNodeAfter, aTimestamp);
+    let link = null;
     if (aCallback) {
-      this.hud.makeOutputMessageLink(node, aCallback);
+      link = this.hud.document.createElementNS(XHTML_NS, "a");
+      link.setAttribute("aria-haspopup", true);
+      link.textContent = aOutputMessage;
+      link.href = "#";
+      link.draggable = false;
+      this.hud._addMessageLinkCallback(link, aCallback);
     }
-    return node;
+
+    return this.writeOutput(link || aOutputMessage, CATEGORY_OUTPUT,
+                            SEVERITY_LOG, aNodeAfter, aTimestamp);
   },
 
   /**
    * Writes a message to the HUD that originates from the interactive
    * JavaScript console.
    *
-   * @param string aOutputMessage
+   * @param nsIDOMNode|string aOutputMessage
    *        The message to display.
    * @param number aCategory
    *        The category of message: one of the CATEGORY_ constants.
@@ -3683,6 +3746,8 @@ JSTerm.prototype = {
   /**
    * Clear the Web Console output.
    *
+   * This method emits the "messages-cleared" notification.
+   *
    * @param boolean aClearStorage
    *        True if you want to clear the console messages storage associated to
    *        this Web Console.
@@ -3705,6 +3770,22 @@ JSTerm.prototype = {
     if (aClearStorage) {
       this.webConsoleClient.clearMessagesCache();
     }
+
+    this.emit("messages-cleared");
+  },
+
+  /**
+   * Remove all of the private messages from the Web Console output.
+   *
+   * This method emits the "private-messages-cleared" notification.
+   */
+  clearPrivateMessages: function JST_clearPrivateMessages()
+  {
+    let nodes = this.hud.outputNode.querySelectorAll(".message[private]");
+    for (let node of nodes) {
+      this.hud.removeOutputMessage(node);
+    }
+    this.emit("private-messages-cleared");
   },
 
   /**
@@ -3742,39 +3823,45 @@ JSTerm.prototype = {
     this.lastInputValue = aNewValue;
     this.completeNode.value = "";
     this.resizeInput();
+    this._inputChanged = true;
   },
 
   /**
    * The inputNode "input" and "keyup" event handler.
-   *
-   * @param nsIDOMEvent aEvent
+   * @private
    */
-  inputEventHandler: function JSTF_inputEventHandler(aEvent)
+  _inputEventHandler: function JST__inputEventHandler()
   {
     if (this.lastInputValue != this.inputNode.value) {
       this.resizeInput();
       this.complete(this.COMPLETE_HINT_ONLY);
       this.lastInputValue = this.inputNode.value;
+      this._inputChanged = true;
     }
   },
 
   /**
    * The inputNode "keypress" event handler.
    *
+   * @private
    * @param nsIDOMEvent aEvent
    */
-  keyPress: function JSTF_keyPress(aEvent)
+  _keyPress: function JST__keyPress(aEvent)
   {
+    let inputNode = this.inputNode;
+    let inputUpdated = false;
+
     if (aEvent.ctrlKey) {
-      let inputNode = this.inputNode;
-      let closePopup = false;
       switch (aEvent.charCode) {
         case 97:
           // control-a
+          this.clearCompletion();
+
           if (Services.appinfo.OS == "WINNT") {
-            closePopup = true;
+            // Allow Select All on Windows.
             break;
           }
+
           let lineBeginPos = 0;
           if (this.hasMultilineInput()) {
             // find index of closest newline <= to cursor
@@ -3788,8 +3875,8 @@ JSTerm.prototype = {
           }
           inputNode.setSelectionRange(lineBeginPos, lineBeginPos);
           aEvent.preventDefault();
-          closePopup = true;
           break;
+
         case 101:
           // control-e
           if (Services.appinfo.OS == "WINNT") {
@@ -3808,7 +3895,9 @@ JSTerm.prototype = {
           }
           inputNode.setSelectionRange(lineEndPos, lineEndPos);
           aEvent.preventDefault();
+          this.clearCompletion();
           break;
+
         case 110:
           // Control-N differs from down arrow: it ignores autocomplete state.
           // Note that we preserve the default 'down' navigation within
@@ -3817,9 +3906,14 @@ JSTerm.prototype = {
               this.canCaretGoNext() &&
               this.historyPeruse(HISTORY_FORWARD)) {
             aEvent.preventDefault();
+            // Ctrl-N is also used to focus the Network category button on MacOSX.
+            // The preventDefault() call doesn't prevent the focus from moving
+            // away from the input.
+            inputNode.focus();
           }
-          closePopup = true;
+          this.clearCompletion();
           break;
+
         case 112:
           // Control-P differs from up arrow: it ignores autocomplete state.
           // Note that we preserve the default 'up' navigation within
@@ -3828,16 +3922,15 @@ JSTerm.prototype = {
               this.canCaretGoPrevious() &&
               this.historyPeruse(HISTORY_BACK)) {
             aEvent.preventDefault();
+            // Ctrl-P may also be used to focus some category button on MacOSX.
+            // The preventDefault() call doesn't prevent the focus from moving
+            // away from the input.
+            inputNode.focus();
           }
-          closePopup = true;
+          this.clearCompletion();
           break;
         default:
           break;
-      }
-      if (closePopup) {
-        if (this.autocompletePopup.isOpen) {
-          this.clearCompletion();
-        }
       }
       return;
     }
@@ -3848,9 +3941,7 @@ JSTerm.prototype = {
       return;
     }
 
-    let inputUpdated = false;
-
-    switch(aEvent.keyCode) {
+    switch (aEvent.keyCode) {
       case Ci.nsIDOMKeyEvent.DOM_VK_ESCAPE:
         if (this.autocompletePopup.isOpen) {
           this.clearCompletion();
@@ -3858,15 +3949,19 @@ JSTerm.prototype = {
         }
         else if (this.sidebar) {
           this._sidebarDestroy();
+          aEvent.preventDefault();
         }
         break;
 
       case Ci.nsIDOMKeyEvent.DOM_VK_RETURN:
-        if (this.autocompletePopup.isOpen && this.autocompletePopup.selectedIndex > -1) {
+        if (this._autocompletePopupNavigated &&
+            this.autocompletePopup.isOpen &&
+            this.autocompletePopup.selectedIndex > -1) {
           this.acceptProposedCompletion();
         }
         else {
           this.execute();
+          this._inputChanged = false;
         }
         aEvent.preventDefault();
         break;
@@ -3874,6 +3969,9 @@ JSTerm.prototype = {
       case Ci.nsIDOMKeyEvent.DOM_VK_UP:
         if (this.autocompletePopup.isOpen) {
           inputUpdated = this.complete(this.COMPLETE_BACKWARD);
+          if (inputUpdated) {
+            this._autocompletePopupNavigated = true;
+          }
         }
         else if (this.canCaretGoPrevious()) {
           inputUpdated = this.historyPeruse(HISTORY_BACK);
@@ -3886,6 +3984,9 @@ JSTerm.prototype = {
       case Ci.nsIDOMKeyEvent.DOM_VK_DOWN:
         if (this.autocompletePopup.isOpen) {
           inputUpdated = this.complete(this.COMPLETE_FORWARD);
+          if (inputUpdated) {
+            this._autocompletePopupNavigated = true;
+          }
         }
         else if (this.canCaretGoNext()) {
           inputUpdated = this.historyPeruse(HISTORY_FORWARD);
@@ -3895,6 +3996,33 @@ JSTerm.prototype = {
         }
         break;
 
+      case Ci.nsIDOMKeyEvent.DOM_VK_HOME:
+      case Ci.nsIDOMKeyEvent.DOM_VK_END:
+      case Ci.nsIDOMKeyEvent.DOM_VK_LEFT:
+        if (this.autocompletePopup.isOpen || this.lastCompletion.value) {
+          this.clearCompletion();
+        }
+        break;
+
+      case Ci.nsIDOMKeyEvent.DOM_VK_RIGHT: {
+        let cursorAtTheEnd = this.inputNode.selectionStart ==
+                             this.inputNode.selectionEnd &&
+                             this.inputNode.selectionStart ==
+                             this.inputNode.value.length;
+        let haveSuggestion = this.autocompletePopup.isOpen ||
+                             this.lastCompletion.value;
+        let useCompletion = cursorAtTheEnd || this._autocompletePopupNavigated;
+        if (haveSuggestion && useCompletion &&
+            this.complete(this.COMPLETE_HINT_ONLY) &&
+            this.lastCompletion.value &&
+            this.acceptProposedCompletion()) {
+          aEvent.preventDefault();
+        }
+        if (this.autocompletePopup.isOpen) {
+          this.clearCompletion();
+        }
+        break;
+      }
       case Ci.nsIDOMKeyEvent.DOM_VK_TAB:
         // Generate a completion and accept the first proposed value.
         if (this.complete(this.COMPLETE_HINT_ONLY) &&
@@ -3902,15 +4030,23 @@ JSTerm.prototype = {
             this.acceptProposedCompletion()) {
           aEvent.preventDefault();
         }
-        else {
+        else if (this._inputChanged) {
           this.updateCompleteNode(l10n.getStr("Autocomplete.blank"));
           aEvent.preventDefault();
         }
         break;
-
       default:
         break;
     }
+  },
+
+  /**
+   * The inputNode "focus" event handler.
+   * @private
+   */
+  _focusEventHandler: function JST__focusEventHandler()
+  {
+    this._inputChanged = false;
   },
 
   /**
@@ -3933,27 +4069,26 @@ JSTerm.prototype = {
       if (this.historyPlaceHolder <= 0) {
         return false;
       }
-
       let inputVal = this.history[--this.historyPlaceHolder];
-      if (inputVal){
-        this.setInputValue(inputVal);
+
+      // Save the current input value as the latest entry in history, only if
+      // the user is already at the last entry.
+      // Note: this code does not store changes to items that are already in
+      // history.
+      if (this.historyPlaceHolder+1 == this.historyIndex) {
+        this.history[this.historyIndex] = this.inputNode.value || "";
       }
+
+      this.setInputValue(inputVal);
     }
     // Down Arrow key
     else if (aDirection == HISTORY_FORWARD) {
-      if (this.historyPlaceHolder == this.history.length - 1) {
-        this.historyPlaceHolder ++;
-        this.setInputValue("");
-      }
-      else if (this.historyPlaceHolder >= (this.history.length)) {
+      if (this.historyPlaceHolder >= (this.history.length-1)) {
         return false;
       }
-      else {
-        let inputVal = this.history[++this.historyPlaceHolder];
-        if (inputVal){
-          this.setInputValue(inputVal);
-        }
-      }
+
+      let inputVal = this.history[++this.historyPlaceHolder];
+      this.setInputValue(inputVal);
     }
     else {
       throw new Error("Invalid argument 0");
@@ -4054,9 +4189,8 @@ JSTerm.prototype = {
       return false;
     }
 
-    // Only complete if the selection is empty and at the end of the input.
-    if (inputNode.selectionStart == inputNode.selectionEnd &&
-        inputNode.selectionEnd != inputValue.length) {
+    // Only complete if the selection is empty.
+    if (inputNode.selectionStart != inputNode.selectionEnd) {
       this.clearCompletion();
       return false;
     }
@@ -4103,11 +4237,46 @@ JSTerm.prototype = {
     }
 
     let requestId = gSequenceId();
-    let input = this.inputNode.value;
     let cursor = this.inputNode.selectionStart;
+    let input = this.inputNode.value.substring(0, cursor);
+    let cache = this._autocompleteCache;
 
-    // TODO: Bug 787986 - throttle/disable updates, deal with slow/high latency
-    // network connections.
+    // If the current input starts with the previous input, then we already
+    // have a list of suggestions and we just need to filter the cached
+    // suggestions. When the current input ends with a non-alphanumeric
+    // character we ask the server again for suggestions.
+
+    // Check if last character is non-alphanumeric
+    if (!/[a-zA-Z0-9]$/.test(input)) {
+      this._autocompleteQuery = null;
+      this._autocompleteCache = null;
+    }
+
+    if (this._autocompleteQuery && input.startsWith(this._autocompleteQuery)) {
+      let filterBy = input;
+      // Find the last non-alphanumeric if exists.
+      let lastNonAlpha = input.match(/[^a-zA-Z0-9][a-zA-Z0-9]*$/);
+      // If input contains non-alphanumerics, use the part after the last one
+      // to filter the cache
+      if (lastNonAlpha) {
+        filterBy = input.substring(input.lastIndexOf(lastNonAlpha) + 1);
+      }
+
+      let newList = cache.sort().filter(function(l) {
+        return l.startsWith(filterBy);
+      });
+
+      this.lastCompletion = {
+        requestId: null,
+        completionType: aType,
+        value: null,
+      };
+
+      let response = { matches: newList, matchProp: filterBy };
+      this._receiveAutocompleteProperties(null, aCallback, response);
+      return;
+    }
+
     this.lastCompletion = {
       requestId: requestId,
       completionType: aType,
@@ -4142,6 +4311,15 @@ JSTerm.prototype = {
       return;
     }
 
+    // Cache whatever came from the server if the last char is alphanumeric or '.'
+    let cursor = inputNode.selectionStart;
+    let inputUntilCursor = inputValue.substring(0, cursor);
+
+    if (aRequestId != null && /[a-zA-Z0-9.]$/.test(inputUntilCursor)) {
+      this._autocompleteCache = aMessage.matches;
+      this._autocompleteQuery = inputUntilCursor;
+    }
+
     let matches = aMessage.matches;
     let lastPart = aMessage.matchProp;
     if (!matches.length) {
@@ -4164,9 +4342,11 @@ JSTerm.prototype = {
 
     if (items.length > 1 && !popup.isOpen) {
       popup.openPopup(inputNode);
+      this._autocompletePopupNavigated = false;
     }
     else if (items.length < 2 && popup.isOpen) {
       popup.hidePopup();
+      this._autocompletePopupNavigated = false;
     }
 
     if (items.length == 1) {
@@ -4190,6 +4370,11 @@ JSTerm.prototype = {
 
   onAutocompleteSelect: function JSTF_onAutocompleteSelect()
   {
+    // Render the suggestion only if the cursor is at the end of the input.
+    if (this.inputNode.selectionStart != this.inputNode.value.length) {
+      return;
+    }
+
     let currentItem = this.autocompletePopup.selectedItem;
     if (currentItem && this.lastCompletion.value) {
       let suffix = currentItem.label.substring(this.lastCompletion.
@@ -4212,6 +4397,7 @@ JSTerm.prototype = {
     this.updateCompleteNode("");
     if (this.autocompletePopup.isOpen) {
       this.autocompletePopup.hidePopup();
+      this._autocompletePopupNavigated = false;
     }
   },
 
@@ -4230,7 +4416,11 @@ JSTerm.prototype = {
     if (currentItem && this.lastCompletion.value) {
       let suffix = currentItem.label.substring(this.lastCompletion.
                                                matchProp.length);
-      this.setInputValue(this.inputNode.value + suffix);
+      let cursor = this.inputNode.selectionStart;
+      let value = this.inputNode.value;
+      this.setInputValue(value.substr(0, cursor) + suffix + value.substr(cursor));
+      let newCursor = cursor + suffix.length;
+      this.inputNode.selectionStart = this.inputNode.selectionEnd = newCursor;
       updated = true;
     }
 
@@ -4275,11 +4465,7 @@ JSTerm.prototype = {
   _sidebarDestroy: function JST__sidebarDestroy()
   {
     if (this._variablesView) {
-      let actors = this._objectActorsInVariablesViews.get(this._variablesView);
-      for (let actor of actors) {
-        this.hud._releaseObject(actor);
-      }
-      actors.clear();
+      this._variablesView.controller.releaseActors();
       this._variablesView = null;
     }
 
@@ -4314,6 +4500,7 @@ JSTerm.prototype = {
     this.inputNode.removeEventListener("keypress", this._keyPress, false);
     this.inputNode.removeEventListener("input", this._inputEventHandler, false);
     this.inputNode.removeEventListener("keyup", this._inputEventHandler, false);
+    this.inputNode.removeEventListener("focus", this._focusEventHandler, false);
 
     this.hud = null;
   },
@@ -4324,13 +4511,7 @@ JSTerm.prototype = {
  */
 var Utils = {
   /**
-   * Flag to turn on and off scrolling.
-   */
-  scroll: true,
-
-  /**
-   * Scrolls a node so that it's visible in its containing XUL "scrollbox"
-   * element.
+   * Scrolls a node so that it's visible in its containing element.
    *
    * @param nsIDOMNode aNode
    *        The node to make visible.
@@ -4338,20 +4519,7 @@ var Utils = {
    */
   scrollToVisible: function Utils_scrollToVisible(aNode)
   {
-    if (!this.scroll) {
-      return;
-    }
-
-    // Find the enclosing richlistbox node.
-    let richListBoxNode = aNode.parentNode;
-    while (richListBoxNode.tagName != "richlistbox") {
-      richListBoxNode = richListBoxNode.parentNode;
-    }
-
-    // Use the scroll box object interface to ensure the element is visible.
-    let boxObject = richListBoxNode.scrollBoxObject;
-    let nsIScrollBoxObject = boxObject.QueryInterface(Ci.nsIScrollBoxObject);
-    nsIScrollBoxObject.ensureElementIsVisible(aNode);
+    aNode.scrollIntoView(false);
   },
 
   /**
@@ -4366,10 +4534,9 @@ var Utils = {
   {
     let lastNodeHeight = aOutputNode.lastChild ?
                          aOutputNode.lastChild.clientHeight : 0;
-    let scrollBox = aOutputNode.scrollBoxObject.element;
-
-    return scrollBox.scrollTop + scrollBox.clientHeight >=
-           scrollBox.scrollHeight - lastNodeHeight / 2;
+    let scrollNode = aOutputNode.parentNode;
+    return scrollNode.scrollTop + scrollNode.clientHeight >=
+           scrollNode.scrollHeight - lastNodeHeight / 2;
   },
 
   /**
@@ -4389,7 +4556,11 @@ var Utils = {
         return CATEGORY_CSS;
 
       case "Mixed Content Blocker":
+      case "Mixed Content Message":
       case "CSP":
+      case "Invalid HSTS Headers":
+      case "Insecure Password Field":
+      case "SSL":
         return CATEGORY_SECURITY;
 
       default:
@@ -4436,20 +4607,11 @@ function CommandController(aWebConsole)
 
 CommandController.prototype = {
   /**
-   * Copies the currently-selected entries in the Web Console output to the
-   * clipboard.
-   */
-  copy: function CommandController_copy()
-  {
-    this.owner.copySelectedItems();
-  },
-
-  /**
    * Selects all the text in the HUD output.
    */
   selectAll: function CommandController_selectAll()
   {
-    this.owner.outputNode.selectAll();
+    this.owner.output.selectAllMessages();
   },
 
   /**
@@ -4462,31 +4624,34 @@ CommandController.prototype = {
 
   copyURL: function CommandController_copyURL()
   {
-    this.owner.copySelectedItems({ linkOnly: true });
+    this.owner.copySelectedItems({ linkOnly: true, contextmenu: true });
   },
 
   supportsCommand: function CommandController_supportsCommand(aCommand)
   {
+    if (!this.owner || !this.owner.output) {
+      return false;
+    }
     return this.isCommandEnabled(aCommand);
   },
 
   isCommandEnabled: function CommandController_isCommandEnabled(aCommand)
   {
     switch (aCommand) {
-      case "cmd_copy":
-        // Only enable "copy" if nodes are selected.
-        return this.owner.outputNode.selectedCount > 0;
       case "consoleCmd_openURL":
       case "consoleCmd_copyURL": {
         // Only enable URL-related actions if node is Net Activity.
-        let selectedItem = this.owner.outputNode.selectedItem;
+        let selectedItem = this.owner.output.getSelectedMessages(1)[0] ||
+                           this.owner._contextMenuHandler.lastClickedMessage;
         return selectedItem && "url" in selectedItem;
       }
+      case "consoleCmd_clearOutput":
+      case "cmd_selectAll":
+      case "cmd_find":
+        return true;
       case "cmd_fontSizeEnlarge":
       case "cmd_fontSizeReduce":
       case "cmd_fontSizeReset":
-      case "cmd_selectAll":
-        return true;
       case "cmd_close":
         return this.owner.owner._browserConsole;
     }
@@ -4496,14 +4661,17 @@ CommandController.prototype = {
   doCommand: function CommandController_doCommand(aCommand)
   {
     switch (aCommand) {
-      case "cmd_copy":
-        this.copy();
-        break;
       case "consoleCmd_openURL":
         this.openURL();
         break;
       case "consoleCmd_copyURL":
         this.copyURL();
+        break;
+      case "consoleCmd_clearOutput":
+        this.owner.jsterm.clearOutput(true);
+        break;
+      case "cmd_find":
+        this.owner.filterBox.focus();
         break;
       case "cmd_selectAll":
         this.selectAll();
@@ -4544,14 +4712,17 @@ function WebConsoleConnectionProxy(aWebConsole, aTarget)
   this.target = aTarget;
 
   this._onPageError = this._onPageError.bind(this);
+  this._onLogMessage = this._onLogMessage.bind(this);
   this._onConsoleAPICall = this._onConsoleAPICall.bind(this);
   this._onNetworkEvent = this._onNetworkEvent.bind(this);
   this._onNetworkEventUpdate = this._onNetworkEventUpdate.bind(this);
   this._onFileActivity = this._onFileActivity.bind(this);
+  this._onReflowActivity = this._onReflowActivity.bind(this);
   this._onTabNavigated = this._onTabNavigated.bind(this);
   this._onAttachConsole = this._onAttachConsole.bind(this);
   this._onCachedMessages = this._onCachedMessages.bind(this);
   this._connectionTimeout = this._connectionTimeout.bind(this);
+  this._onLastPrivateContextExited = this._onLastPrivateContextExited.bind(this);
 }
 
 WebConsoleConnectionProxy.prototype = {
@@ -4621,7 +4792,7 @@ WebConsoleConnectionProxy.prototype = {
    * Initialize a debugger client and connect it to the debugger server.
    *
    * @return object
-   *         A Promise object that is resolved/rejected based on the success of
+   *         A promise object that is resolved/rejected based on the success of
    *         the connection initialization.
    */
   connect: function WCCP_connect()
@@ -4630,15 +4801,15 @@ WebConsoleConnectionProxy.prototype = {
       return this._connectDefer.promise;
     }
 
-    this._connectDefer = Promise.defer();
+    this._connectDefer = promise.defer();
 
     let timeout = Services.prefs.getIntPref(PREF_CONNECTION_TIMEOUT);
     this._connectTimer = Cc["@mozilla.org/timer;1"].createInstance(Ci.nsITimer);
     this._connectTimer.initWithCallback(this._connectionTimeout,
                                         timeout, Ci.nsITimer.TYPE_ONE_SHOT);
 
-    let promise = this._connectDefer.promise;
-    promise.then(function _onSucess() {
+    let connPromise = this._connectDefer.promise;
+    connPromise.then(function _onSucess() {
       this._connectTimer.cancel();
       this._connectTimer = null;
     }.bind(this), function _onFailure() {
@@ -4647,11 +4818,14 @@ WebConsoleConnectionProxy.prototype = {
 
     let client = this.client = this.target.client;
 
+    client.addListener("logMessage", this._onLogMessage);
     client.addListener("pageError", this._onPageError);
     client.addListener("consoleAPICall", this._onConsoleAPICall);
     client.addListener("networkEvent", this._onNetworkEvent);
     client.addListener("networkEventUpdate", this._onNetworkEventUpdate);
     client.addListener("fileActivity", this._onFileActivity);
+    client.addListener("reflowActivity", this._onReflowActivity);
+    client.addListener("lastPrivateContextExited", this._onLastPrivateContextExited);
     this.target.on("will-navigate", this._onTabNavigated);
     this.target.on("navigate", this._onTabNavigated);
 
@@ -4662,7 +4836,7 @@ WebConsoleConnectionProxy.prototype = {
     }
     this._attachConsole();
 
-    return promise;
+    return connPromise;
   },
 
   /**
@@ -4716,6 +4890,8 @@ WebConsoleConnectionProxy.prototype = {
 
     let msgs = ["PageError", "ConsoleAPI"];
     this.webConsoleClient.getCachedMessages(msgs, this._onCachedMessages);
+
+    this.owner._updateReflowActivityListener();
   },
 
   /**
@@ -4735,7 +4911,7 @@ WebConsoleConnectionProxy.prototype = {
     }
 
     if (!this._connectTimer) {
-      // This happens if the Promise is rejected (eg. a timeout), but the
+      // This happens if the promise is rejected (eg. a timeout), but the
       // connection attempt is successful, nonetheless.
       Cu.reportError("Web Console getCachedMessages error: invalid state.");
     }
@@ -4764,6 +4940,23 @@ WebConsoleConnectionProxy.prototype = {
   {
     if (this.owner && aPacket.from == this._consoleActor) {
       this.owner.handlePageError(aPacket.pageError);
+    }
+  },
+
+  /**
+   * The "logMessage" message type handler. We redirect any message to the UI
+   * for displaying.
+   *
+   * @private
+   * @param string aType
+   *        Message type.
+   * @param object aPacket
+   *        The message received from the server.
+   */
+  _onLogMessage: function WCCP__onLogMessage(aType, aPacket)
+  {
+    if (this.owner && aPacket.from == this._consoleActor) {
+      this.owner.handleLogMessage(aPacket);
     }
   },
 
@@ -4836,6 +5029,31 @@ WebConsoleConnectionProxy.prototype = {
     }
   },
 
+  _onReflowActivity: function WCCP__onReflowActivity(aType, aPacket)
+  {
+    if (this.owner && aPacket.from == this._consoleActor) {
+      this.owner.handleReflowActivity(aPacket);
+    }
+  },
+
+  /**
+   * The "lastPrivateContextExited" message type handler. When this message is
+   * received the Web Console UI is cleared.
+   *
+   * @private
+   * @param string aType
+   *        Message type.
+   * @param object aPacket
+   *        The message received from the server.
+   */
+  _onLastPrivateContextExited:
+  function WCCP__onLastPrivateContextExited(aType, aPacket)
+  {
+    if (this.owner && aPacket.from == this._consoleActor) {
+      this.owner.jsterm.clearPrivateMessages();
+    }
+  },
+
   /**
    * The "will-navigate" and "navigate" event handlers. We redirect any message
    * to the UI for displaying.
@@ -4852,13 +5070,7 @@ WebConsoleConnectionProxy.prototype = {
       return;
     }
 
-    if (aPacket.url) {
-      this.owner.onLocationChange(aPacket.url, aPacket.title);
-    }
-
-    if (aEvent == "navigate" && !aPacket.nativeConsoleAPI) {
-      this.owner.logWarningAboutReplacedAPI();
-    }
+    this.owner.handleTabNavigated(aEvent, aPacket);
   },
 
   /**
@@ -4878,7 +5090,7 @@ WebConsoleConnectionProxy.prototype = {
    * Disconnect the Web Console from the remote server.
    *
    * @return object
-   *         A Promise object that is resolved when disconnect completes.
+   *         A promise object that is resolved when disconnect completes.
    */
   disconnect: function WCCP_disconnect()
   {
@@ -4886,18 +5098,21 @@ WebConsoleConnectionProxy.prototype = {
       return this._disconnecter.promise;
     }
 
-    this._disconnecter = Promise.defer();
+    this._disconnecter = promise.defer();
 
     if (!this.client) {
       this._disconnecter.resolve(null);
       return this._disconnecter.promise;
     }
 
+    this.client.removeListener("logMessage", this._onLogMessage);
     this.client.removeListener("pageError", this._onPageError);
     this.client.removeListener("consoleAPICall", this._onConsoleAPICall);
     this.client.removeListener("networkEvent", this._onNetworkEvent);
     this.client.removeListener("networkEventUpdate", this._onNetworkEventUpdate);
     this.client.removeListener("fileActivity", this._onFileActivity);
+    this.client.removeListener("reflowActivity", this._onReflowActivity);
+    this.client.removeListener("lastPrivateContextExited", this._onLastPrivateContextExited);
     this.target.off("will-navigate", this._onTabNavigated);
     this.target.off("navigate", this._onTabNavigated);
 
@@ -4919,40 +5134,35 @@ function gSequenceId()
 gSequenceId.n = 0;
 
 
-function goUpdateConsoleCommands() {
-  goUpdateCommand("consoleCmd_openURL");
-  goUpdateCommand("consoleCmd_copyURL");
-}
-
-
-
 ///////////////////////////////////////////////////////////////////////////////
 // Context Menu
 ///////////////////////////////////////////////////////////////////////////////
 
-const CONTEXTMENU_ID = "output-contextmenu";
-
 /*
- * ConsoleContextMenu: This handle to show/hide a context menu item.
+ * ConsoleContextMenu this used to handle the visibility of context menu items.
+ *
+ * @constructor
+ * @param object aOwner
+ *        The WebConsoleFrame instance that owns this object.
  */
-let ConsoleContextMenu = {
+function ConsoleContextMenu(aOwner)
+{
+  this.owner = aOwner;
+  this.popup = this.owner.document.getElementById("output-contextmenu");
+  this.build = this.build.bind(this);
+  this.popup.addEventListener("popupshowing", this.build);
+}
+
+ConsoleContextMenu.prototype = {
+  lastClickedMessage: null,
+
   /*
    * Handle to show/hide context menu item.
-   *
-   * @param nsIDOMEvent aEvent
    */
   build: function CCM_build(aEvent)
   {
-    let popup = aEvent.target;
-    if (popup.id !== CONTEXTMENU_ID) {
-      return;
-    }
-
-    let view = document.querySelector(".hud-output-node");
-    let metadata = this.getSelectionMetadata(view);
-
-    for (let i = 0, l = popup.childNodes.length; i < l; ++i) {
-      let element = popup.childNodes[i];
+    let metadata = this.getSelectionMetadata(aEvent.rangeParent);
+    for (let element of this.popup.children) {
       element.hidden = this.shouldHideMenuItem(element, metadata);
     }
   },
@@ -4960,21 +5170,27 @@ let ConsoleContextMenu = {
   /*
    * Get selection information from the view.
    *
-   * @param nsIDOMElement aView
-   *        This should be <xul:richlistbox>.
-   *
+   * @param nsIDOMElement aClickElement
+   *        The DOM element the user clicked on.
    * @return object
    *         Selection metadata.
    */
-  getSelectionMetadata: function CCM_getSelectionMetadata(aView)
+  getSelectionMetadata: function CCM_getSelectionMetadata(aClickElement)
   {
     let metadata = {
       selectionType: "",
       selection: new Set(),
     };
-    let selectedItems = aView.selectedItems;
+    let selectedItems = this.owner.output.getSelectedMessages();
+    if (!selectedItems.length) {
+      let clickedItem = this.owner.output.getMessageForElement(aClickElement);
+      if (clickedItem) {
+        this.lastClickedMessage = clickedItem;
+        selectedItems = [clickedItem];
+      }
+    }
 
-    metadata.selectionType = (selectedItems > 1) ? "multiple" : "single";
+    metadata.selectionType = selectedItems.length > 1 ? "multiple" : "single";
 
     let selection = metadata.selection;
     for (let item of selectedItems) {
@@ -5029,4 +5245,16 @@ let ConsoleContextMenu = {
 
     return shouldHide;
   },
+
+  /**
+   * Destroy the ConsoleContextMenu object instance.
+   */
+  destroy: function CCM_destroy()
+  {
+    this.popup.removeEventListener("popupshowing", this.build);
+    this.popup = null;
+    this.owner = null;
+    this.lastClickedMessage = null;
+  },
 };
+

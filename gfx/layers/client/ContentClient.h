@@ -6,19 +6,40 @@
 #ifndef MOZILLA_GFX_CONTENTCLIENT_H
 #define MOZILLA_GFX_CONTENTCLIENT_H
 
-#include "mozilla/layers/LayersSurfaces.h"
-#include "mozilla/layers/CompositableClient.h"
-#include "gfxReusableSurfaceWrapper.h"
-#include "mozilla/layers/TextureClient.h"
-#include "ThebesLayerBuffer.h"
-#include "ipc/AutoOpenSurface.h"
-#include "ipc/ShadowLayerChild.h"
-#include "gfxPlatform.h"
+#include <stdint.h>                     // for uint32_t
+#include "ThebesLayerBuffer.h"          // for ThebesLayerBuffer, etc
+#include "gfxTypes.h"
+#include "gfxPlatform.h"                // for gfxPlatform
+#include "mozilla/Assertions.h"         // for MOZ_CRASH
+#include "mozilla/Attributes.h"         // for MOZ_OVERRIDE
+#include "mozilla/RefPtr.h"             // for RefPtr, TemporaryRef
+#include "mozilla/gfx/Point.h"          // for IntSize
+#include "mozilla/layers/CompositableClient.h"  // for CompositableClient
+#include "mozilla/layers/CompositableForwarder.h"
+#include "mozilla/layers/CompositorTypes.h"  // for TextureInfo, etc
+#include "mozilla/layers/ISurfaceAllocator.h"
+#include "mozilla/layers/LayersSurfaces.h"  // for SurfaceDescriptor
+#include "mozilla/layers/TextureClient.h"  // for DeprecatedTextureClient
+#include "mozilla/mozalloc.h"           // for operator delete
+#include "nsCOMPtr.h"                   // for already_AddRefed
+#include "nsPoint.h"                    // for nsIntPoint
+#include "nsRect.h"                     // for nsIntRect
+#include "nsRegion.h"                   // for nsIntRegion
+#include "nsTArray.h"                   // for nsTArray
+
+class gfxContext;
+struct gfxMatrix;
+class gfxASurface;
 
 namespace mozilla {
+namespace gfx {
+class DrawTarget;
+}
+
 namespace layers {
 
 class BasicLayerManager;
+class ThebesLayer;
 
 /**
  * A compositable client for Thebes layers. These are different to Image/Canvas
@@ -53,10 +74,9 @@ class BasicLayerManager;
  * Updated() is called when we are done painting and packages up the change in
  * the appropriate way to be passed to the compositor in the layers transation.
  *
- * SwapBuffers is called in repsonse to the transaction reply from the compositor.
+ * SwapBuffers is called in response to the transaction reply from the compositor.
  */
 class ContentClient : public CompositableClient
-                    , protected ThebesLayerBuffer
 {
 public:
   /**
@@ -68,26 +88,15 @@ public:
 
   ContentClient(CompositableForwarder* aForwarder)
   : CompositableClient(aForwarder)
-  , ThebesLayerBuffer(ContainsVisibleBounds)
   {}
   virtual ~ContentClient()
   {}
 
-  typedef ThebesLayerBuffer::PaintState PaintState;
-  typedef ThebesLayerBuffer::ContentType ContentType;
 
-  virtual void Clear() { ThebesLayerBuffer::Clear(); }
-  PaintState BeginPaintBuffer(ThebesLayer* aLayer, ContentType aContentType,
-                              uint32_t aFlags)
-  {
-    return ThebesLayerBuffer::BeginPaint(aLayer, aContentType, aFlags);
-  }
-
-  virtual void DrawTo(ThebesLayer* aLayer, gfxContext* aTarget, float aOpacity,
-                      gfxASurface* aMask, const gfxMatrix* aMaskTransform)
-  {
-    ThebesLayerBuffer::DrawTo(aLayer, aTarget, aOpacity, aMask, aMaskTransform);
-  }
+  virtual void Clear() = 0;
+  virtual ThebesLayerBuffer::PaintState BeginPaintBuffer(ThebesLayer* aLayer,
+                                                         ThebesLayerBuffer::ContentType aContentType,
+                                                         uint32_t aFlags) = 0;
 
   // Sync front/back buffers content
   // After executing, the new back buffer has the same (interesting) pixels as
@@ -105,38 +114,67 @@ public:
   virtual void EndPaint() {}
 };
 
+/**
+ * A ContentClient for use with OMTC.
+ */
+class ContentClientRemote : public ContentClient
+{
+public:
+  ContentClientRemote(CompositableForwarder* aForwarder)
+    : ContentClient(aForwarder)
+  {}
+
+  virtual void Updated(const nsIntRegion& aRegionToDraw,
+                       const nsIntRegion& aVisibleRegion,
+                       bool aDidSelfCopy) = 0;
+};
+
 // thin wrapper around BasicThebesLayerBuffer, for on-mtc
 class ContentClientBasic : public ContentClient
+                         , protected ThebesLayerBuffer
 {
 public:
   ContentClientBasic(CompositableForwarder* aForwarder,
                      BasicLayerManager* aManager);
 
-  virtual already_AddRefed<gfxASurface> CreateBuffer(ContentType aType,
-                                                     const nsIntRect& aRect,
-                                                     uint32_t aFlags,
-                                                     gfxASurface**) MOZ_OVERRIDE;
-  virtual TemporaryRef<gfx::DrawTarget>
-    CreateDTBuffer(ContentType aType, const nsIntRect& aRect, uint32_t aFlags);
+  typedef ThebesLayerBuffer::PaintState PaintState;
+  typedef ThebesLayerBuffer::ContentType ContentType;
+
+  virtual void Clear() { ThebesLayerBuffer::Clear(); }
+  PaintState BeginPaintBuffer(ThebesLayer* aLayer, ContentType aContentType,
+                              uint32_t aFlags)
+  {
+    return ThebesLayerBuffer::BeginPaint(aLayer, aContentType, aFlags);
+  }
+
+  void DrawTo(ThebesLayer* aLayer, gfxContext* aTarget, float aOpacity,
+              gfxASurface* aMask, const gfxMatrix* aMaskTransform)
+  {
+    ThebesLayerBuffer::DrawTo(aLayer, aTarget, aOpacity, aMask, aMaskTransform);
+  }
+
+  virtual void CreateBuffer(ContentType aType, const nsIntRect& aRect, uint32_t aFlags,
+                            gfxASurface** aBlackSurface, gfxASurface** aWhiteSurface,
+                            RefPtr<gfx::DrawTarget>* aBlackDT, RefPtr<gfx::DrawTarget>* aWhiteDT) MOZ_OVERRIDE;
+  virtual bool SupportsAzureContent() const;
 
   virtual TextureInfo GetTextureInfo() const MOZ_OVERRIDE
   {
-    MOZ_NOT_REACHED("Should not be called on non-remote ContentClient");
-    return TextureInfo();
+    MOZ_CRASH("Should not be called on non-remote ContentClient");
   }
-
 
 private:
   BasicLayerManager* mManager;
 };
 
 /**
- * A ContentClient for use with OMTC.
+ * A ContentClientRemote backed by a ThebesLayerBuffer.
+ *
  * When using a ContentClientRemote, SurfaceDescriptors are created on
  * the rendering side and destroyed on the compositing side. They are only
  * passed from one side to the other when the TextureClient/Hosts are created.
  * *Ownership* of the SurfaceDescriptor moves from the rendering side to the
- * comnpositing side with the create message (send from CreateBuffer) which
+ * compositing side with the create message (send from CreateBuffer) which
  * tells the compositor that TextureClients have been created and that the
  * compositor should assign the corresponding TextureHosts to our corresponding
  * ContentHost.
@@ -144,18 +182,30 @@ private:
  * If the size or type of our buffer(s) change(s), then we simply destroy and
  * create them.
  */
-class ContentClientRemote : public ContentClient
+class ContentClientRemoteBuffer : public ContentClientRemote
+                                , protected ThebesLayerBuffer
 {
   using ThebesLayerBuffer::BufferRect;
   using ThebesLayerBuffer::BufferRotation;
 public:
-  ContentClientRemote(CompositableForwarder* aForwarder)
-    : ContentClient(aForwarder)
-    , mTextureClient(nullptr)
+  ContentClientRemoteBuffer(CompositableForwarder* aForwarder)
+    : ContentClientRemote(aForwarder)
+    , ThebesLayerBuffer(ContainsVisibleBounds)
+    , mDeprecatedTextureClient(nullptr)
     , mIsNewBuffer(false)
     , mFrontAndBackBufferDiffer(false)
-    , mContentType(gfxASurface::CONTENT_COLOR_ALPHA)
+    , mContentType(GFX_CONTENT_COLOR_ALPHA)
   {}
+
+  typedef ThebesLayerBuffer::PaintState PaintState;
+  typedef ThebesLayerBuffer::ContentType ContentType;
+
+  virtual void Clear() { ThebesLayerBuffer::Clear(); }
+  PaintState BeginPaintBuffer(ThebesLayer* aLayer, ContentType aContentType,
+                              uint32_t aFlags)
+  {
+    return ThebesLayerBuffer::BeginPaint(aLayer, aContentType, aFlags);
+  }
 
   /**
    * Begin/End Paint map a gfxASurface from the texture client
@@ -184,18 +234,11 @@ public:
     return ThebesLayerBuffer::BufferRotation();
   }
 
-  virtual already_AddRefed<gfxASurface> CreateBuffer(ContentType aType,
-                                                     const nsIntRect& aRect,
-                                                     uint32_t aFlags,
-                                                     gfxASurface** aWhiteSurface) MOZ_OVERRIDE;
-  virtual TemporaryRef<gfx::DrawTarget> CreateDTBuffer(ContentType aType,
-                                                       const nsIntRect& aRect,
-                                                       uint32_t aFlags) MOZ_OVERRIDE;
+  virtual void CreateBuffer(ContentType aType, const nsIntRect& aRect, uint32_t aFlags,
+                            gfxASurface** aBlackSurface, gfxASurface** aWhiteSurface,
+                            RefPtr<gfx::DrawTarget>* aBlackDT, RefPtr<gfx::DrawTarget>* aWhiteDT) MOZ_OVERRIDE;
 
-  virtual bool SupportsAzureContent() const MOZ_OVERRIDE
-  {
-    return gfxPlatform::GetPlatform()->SupportsAzureContent();
-  }
+  virtual bool SupportsAzureContent() const MOZ_OVERRIDE;
 
   void DestroyBuffers();
 
@@ -209,10 +252,10 @@ protected:
                                        const nsIntRegion& aVisibleRegion,
                                        bool aDidSelfCopy);
 
-  // create and configure mTextureClient
-  void BuildTextureClients(ContentType aType,
-                           const nsIntRect& aRect,
-                           uint32_t aFlags);
+  // create and configure mDeprecatedTextureClient
+  void BuildDeprecatedTextureClients(ContentType aType,
+                                     const nsIntRect& aRect,
+                                     uint32_t aFlags);
 
   // Create the front buffer for the ContentClient/Host pair if necessary
   // and notify the compositor that we have created the buffer(s).
@@ -222,11 +265,13 @@ protected:
   // lock it now.
   virtual void LockFrontBuffer() {}
 
-  RefPtr<TextureClient> mTextureClient;
-  RefPtr<TextureClient> mTextureClientOnWhite;
+  bool CreateAndAllocateDeprecatedTextureClient(RefPtr<DeprecatedTextureClient>& aClient);
+
+  RefPtr<DeprecatedTextureClient> mDeprecatedTextureClient;
+  RefPtr<DeprecatedTextureClient> mDeprecatedTextureClientOnWhite;
   // keep a record of texture clients we have created and need to keep
   // around, then unlock when we are done painting
-  nsTArray<RefPtr<TextureClient> > mOldTextures;
+  nsTArray<RefPtr<DeprecatedTextureClient> > mOldTextures;
 
   TextureInfo mTextureInfo;
   bool mIsNewBuffer;
@@ -236,21 +281,21 @@ protected:
 };
 
 /**
- * A double buffered ContentClient. mTextureClient is the back buffer, which
+ * A double buffered ContentClient. mDeprecatedTextureClient is the back buffer, which
  * we draw into. mFrontClient is the front buffer which we may read from, but
  * not write to, when the compositor does not have the 'soft' lock. We can write
- * into mTextureClient at any time.
+ * into mDeprecatedTextureClient at any time.
  *
  * The ContentHost keeps a reference to both corresponding texture hosts, in
- * repsonse to our UpdateTextureRegion message, the compositor swaps its
- * references. In repsonse to the compositor's reply we swap our references
+ * response to our UpdateTextureRegion message, the compositor swaps its
+ * references. In response to the compositor's reply we swap our references
  * (in SwapBuffers).
  */
-class ContentClientDoubleBuffered : public ContentClientRemote
+class ContentClientDoubleBuffered : public ContentClientRemoteBuffer
 {
 public:
   ContentClientDoubleBuffered(CompositableForwarder* aFwd)
-    : ContentClientRemote(aFwd)
+    : ContentClientRemoteBuffer(aFwd)
   {
     mTextureInfo.mCompositableType = BUFFER_CONTENT_DIRECT;
   }
@@ -269,8 +314,8 @@ private:
   void UpdateDestinationFrom(const RotatedBuffer& aSource,
                              const nsIntRegion& aUpdateRegion);
 
-  RefPtr<TextureClient> mFrontClient;
-  RefPtr<TextureClient> mFrontClientOnWhite;
+  RefPtr<DeprecatedTextureClient> mFrontClient;
+  RefPtr<DeprecatedTextureClient> mFrontClientOnWhite;
   nsIntRegion mFrontUpdatedRegion;
   nsIntRect mFrontBufferRect;
   nsIntPoint mFrontBufferRotation;
@@ -280,15 +325,15 @@ private:
  * A single buffered ContentClient. We have a single TextureClient/Host
  * which we update and then send a message to the compositor that we are
  * done updating. It is not safe for the compositor to use the corresponding
- * TextureHost's memory directly, it most upload it to video memory of some
+ * TextureHost's memory directly, it must upload it to video memory of some
  * kind. We are free to modify the TextureClient once we receive reply from
  * the compositor.
  */
-class ContentClientSingleBuffered : public ContentClientRemote
+class ContentClientSingleBuffered : public ContentClientRemoteBuffer
 {
 public:
   ContentClientSingleBuffered(CompositableForwarder* aFwd)
-    : ContentClientRemote(aFwd)
+    : ContentClientRemoteBuffer(aFwd)
   {
     mTextureInfo.mCompositableType = BUFFER_CONTENT;    
   }
@@ -298,6 +343,89 @@ public:
 
 protected:
   virtual void CreateFrontBufferAndNotify(const nsIntRect& aBufferRect) MOZ_OVERRIDE;
+};
+
+/**
+ * A single buffered ContentClient that creates temporary buffers which are 
+ * used to update the host-side texture. The ownership of the buffers is
+ * passed to the host side during the transaction, and we need to create
+ * new ones each frame.
+ */
+class ContentClientIncremental : public ContentClientRemote
+{
+public:
+  ContentClientIncremental(CompositableForwarder* aFwd)
+    : ContentClientRemote(aFwd)
+    , mContentType(GFX_CONTENT_COLOR_ALPHA)
+    , mHasBuffer(false)
+    , mHasBufferOnWhite(false)
+  {
+    mTextureInfo.mCompositableType = BUFFER_CONTENT_INC;
+  }
+
+  typedef ThebesLayerBuffer::PaintState PaintState;
+  typedef ThebesLayerBuffer::ContentType ContentType;
+
+  virtual TextureInfo GetTextureInfo() const
+  {
+    return mTextureInfo;
+  }
+
+  virtual void Clear()
+  {
+    mBufferRect.SetEmpty();
+    mHasBuffer = false;
+    mHasBufferOnWhite = false;
+  }
+  virtual ThebesLayerBuffer::PaintState BeginPaintBuffer(ThebesLayer* aLayer,
+                                                         ThebesLayerBuffer::ContentType aContentType,
+                                                         uint32_t aFlags);
+
+  virtual void Updated(const nsIntRegion& aRegionToDraw,
+                       const nsIntRegion& aVisibleRegion,
+                       bool aDidSelfCopy);
+
+  virtual void EndPaint()
+  {
+    if (IsSurfaceDescriptorValid(mUpdateDescriptor)) {
+      mForwarder->DestroySharedSurface(&mUpdateDescriptor);
+    }
+    if (IsSurfaceDescriptorValid(mUpdateDescriptorOnWhite)) {
+      mForwarder->DestroySharedSurface(&mUpdateDescriptorOnWhite);
+    }
+  }
+
+private:
+
+  enum BufferType{
+    BUFFER_BLACK,
+    BUFFER_WHITE
+  };
+
+  void NotifyBufferCreated(ContentType aType, uint32_t aFlags)
+  {
+    mTextureInfo.mTextureFlags = aFlags & ~TEXTURE_DEALLOCATE_CLIENT;
+    mContentType = aType;
+
+    mForwarder->CreatedIncrementalBuffer(this,
+                                         mTextureInfo,
+                                         mBufferRect);
+
+  }
+
+  already_AddRefed<gfxASurface> GetUpdateSurface(BufferType aType, nsIntRegion& aUpdateRegion);
+
+  TextureInfo mTextureInfo;
+  nsIntRect mBufferRect;
+  nsIntPoint mBufferRotation;
+
+  SurfaceDescriptor mUpdateDescriptor;
+  SurfaceDescriptor mUpdateDescriptorOnWhite;
+
+  ContentType mContentType;
+
+  bool mHasBuffer;
+  bool mHasBufferOnWhite;
 };
 
 }

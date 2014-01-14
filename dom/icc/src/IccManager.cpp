@@ -2,15 +2,18 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#include "mozilla/dom/IccManager.h"
+
+#include "GeneratedEvents.h"
+#include "mozilla/dom/StkCommandEvent.h"
 #include "mozilla/Services.h"
 #include "nsIDOMClassInfo.h"
-#include "IccManager.h"
+#include "nsIDOMIccInfo.h"
 #include "SimToolKit.h"
-#include "StkCommandEvent.h"
 
 #define NS_RILCONTENTHELPER_CONTRACTID "@mozilla.org/ril/content-helper;1"
 
-using namespace mozilla::dom::icc;
+using namespace mozilla::dom;
 
 class IccManager::Listener : public nsIIccListener
 {
@@ -36,7 +39,7 @@ public:
 
 NS_IMPL_ISUPPORTS1(IccManager::Listener, nsIIccListener)
 
-DOMCI_DATA(MozIccManager, mozilla::dom::icc::IccManager)
+DOMCI_DATA(MozIccManager, IccManager)
 
 NS_INTERFACE_MAP_BEGIN(IccManager)
   NS_INTERFACE_MAP_ENTRY(nsIDOMMozIccManager)
@@ -128,6 +131,69 @@ IccManager::SendStkEventDownload(const JS::Value& aEvent)
 }
 
 NS_IMETHODIMP
+IccManager::GetIccInfo(nsIDOMMozIccInfo** aIccInfo)
+{
+  *aIccInfo = nullptr;
+
+  if (!mProvider) {
+    return NS_ERROR_FAILURE;
+  }
+
+  return mProvider->GetIccInfo(aIccInfo);
+}
+
+NS_IMETHODIMP
+IccManager::GetCardState(nsAString& cardState)
+{
+  cardState.SetIsVoid(true);
+
+  if (!mProvider) {
+    return NS_ERROR_FAILURE;
+  }
+  return mProvider->GetCardState(cardState);
+}
+
+NS_IMETHODIMP
+IccManager::GetCardLock(const nsAString& aLockType, nsIDOMDOMRequest** aDomRequest)
+{
+  if (!mProvider) {
+    return NS_ERROR_FAILURE;
+  }
+
+  return mProvider->GetCardLockState(GetOwner(), aLockType, aDomRequest);
+}
+
+NS_IMETHODIMP
+IccManager::SetCardLock(const JS::Value& aInfo, nsIDOMDOMRequest** aDomRequest)
+{
+  if (!mProvider) {
+    return NS_ERROR_FAILURE;
+  }
+
+  return mProvider->SetCardLock(GetOwner(), aInfo, aDomRequest);
+}
+
+NS_IMETHODIMP
+IccManager::UnlockCardLock(const JS::Value& aInfo, nsIDOMDOMRequest** aDomRequest)
+{
+  if (!mProvider) {
+    return NS_ERROR_FAILURE;
+  }
+
+  return mProvider->UnlockCardLock(GetOwner(), aInfo, aDomRequest);
+}
+
+NS_IMETHODIMP
+IccManager::GetCardLockRetryCount(const nsAString& aLockType, nsIDOMDOMRequest** aDomRequest)
+{
+  if (!mProvider) {
+    return NS_ERROR_FAILURE;
+  }
+
+  return mProvider->GetCardLockRetryCount(GetOwner(), aLockType, aDomRequest);
+}
+
+NS_IMETHODIMP
 IccManager::IccOpenChannel(const nsAString& aAid, nsIDOMDOMRequest** aRequest)
 {
   if (!mProvider) {
@@ -169,7 +235,7 @@ IccManager::ReadContacts(const nsAString& aContactType, nsIDOMDOMRequest** aRequ
 
 NS_IMETHODIMP
 IccManager::UpdateContact(const nsAString& aContactType,
-                          nsIDOMContact* aContact,
+                          const JS::Value& aContact,
                           const nsAString& aPin2,
                           nsIDOMDOMRequest** aRequest)
 {
@@ -182,6 +248,8 @@ IccManager::UpdateContact(const nsAString& aContactType,
 
 NS_IMPL_EVENT_HANDLER(IccManager, stkcommand)
 NS_IMPL_EVENT_HANDLER(IccManager, stksessionend)
+NS_IMPL_EVENT_HANDLER(IccManager, cardstatechange)
+NS_IMPL_EVENT_HANDLER(IccManager, iccinfochange)
 
 // nsIIccListener
 
@@ -198,4 +266,16 @@ NS_IMETHODIMP
 IccManager::NotifyStkSessionEnd()
 {
   return DispatchTrustedEvent(NS_LITERAL_STRING("stksessionend"));
+}
+
+NS_IMETHODIMP
+IccManager::NotifyCardStateChanged()
+{
+  return DispatchTrustedEvent(NS_LITERAL_STRING("cardstatechange"));
+}
+
+NS_IMETHODIMP
+IccManager::NotifyIccInfoChanged()
+{
+  return DispatchTrustedEvent(NS_LITERAL_STRING("iccinfochange"));
 }

@@ -6,10 +6,8 @@
 
 /* A higher-order macro for enumerating all JSProtoKey values. */
 
-#ifndef jsprototypes_h___
-#define jsprototypes_h___
-
-#include "jsversion.h"
+#ifndef jsprototypes_h
+#define jsprototypes_h
 
 /*
  * Enumerator codes in the second column must not change -- they are part of
@@ -56,5 +54,7 @@
     macro(DataView,              35,     js_InitTypedArrayClasses) \
     macro(ParallelArray,         36,     js_InitParallelArrayClass) \
     macro(Intl,                  37,     js_InitIntlClass) \
+    macro(TypedObject,           38,     js_InitTypedObjectDummy) \
+    macro(GeneratorFunction,     39,     js_InitIteratorClasses) \
 
-#endif /* jsprototypes_h___ */
+#endif /* jsprototypes_h */

@@ -64,6 +64,8 @@
 <!ENTITY display.label                "اعرض">
 <!ENTITY display.accesskey            "ض">
 <!ENTITY display.key                  "l">
+
+
 <!-- LOCALIZATION NOTE (environmentMenu.label, accesskey): This menu item was
   -  renamed from "Context" to avoid confusion with the right-click context
   -  menu in the text area. It refers to the JavaScript Environment (or context)
@@ -72,7 +74,7 @@
   -->
 
 <!ENTITY environmentMenu.label        "البيئة">
-<!ENTITY environmentMenu.accesskey    "ئ">
+<!ENTITY environmentMenu.accesskey    "ة">
 
 
 <!ENTITY contentContext.label         "المحتوى">
@@ -105,9 +107,8 @@
 <!ENTITY resetContext2.label          "صفّر المتغيرات">
 <!ENTITY resetContext2.accesskey      "ص">
 
-<!ENTITY reloadAndRun.label           "Reload And Run">
-<!ENTITY reloadAndRun.accesskey       "E">
-<!ENTITY reloadAndRun.key             "r">
+
+
 
 <!ENTITY executeMenu.label            "تنفيذ">
 <!ENTITY executeMenu.accesskey        "ذ">

@@ -20,7 +20,6 @@
 #include "MediaStreamList.h"
 #include "nsIScriptGlobalObject.h"
 #include "mozilla/Preferences.h"
-#include "jsapi.h"
 #endif
 
 using namespace mozilla;
@@ -114,6 +113,16 @@ void RemoteSourceStreamInfo::DetachMedia_m()
   mMediaStream = nullptr;
 }
 
+already_AddRefed<PeerConnectionImpl>
+PeerConnectionImpl::Constructor(const dom::GlobalObject& aGlobal, ErrorResult& rv)
+{
+  nsRefPtr<PeerConnectionImpl> pc = new PeerConnectionImpl(&aGlobal);
+
+  CSFLogDebug(logTag, "Created PeerConnection: %p", pc.get());
+
+  return pc.forget();
+}
+
 PeerConnectionImpl* PeerConnectionImpl::CreatePeerConnection()
 {
   PeerConnectionImpl *pc = new PeerConnectionImpl();
@@ -179,9 +188,12 @@ nsresult PeerConnectionMedia::Init(const std::vector<NrIceStunServer>& stun_serv
   // Create three streams to start with.
   // One each for audio, video and DataChannel
   // TODO: this will be re-visited
-  RefPtr<NrIceMediaStream> audioStream = mIceCtx->CreateStream("stream1", 2);
-  RefPtr<NrIceMediaStream> videoStream = mIceCtx->CreateStream("stream2", 2);
-  RefPtr<NrIceMediaStream> dcStream = mIceCtx->CreateStream("stream3", 2);
+  RefPtr<NrIceMediaStream> audioStream =
+    mIceCtx->CreateStream((mParent->GetHandle()+"/stream1/audio").c_str(), 2);
+  RefPtr<NrIceMediaStream> videoStream =
+    mIceCtx->CreateStream((mParent->GetHandle()+"/stream2/video").c_str(), 2);
+  RefPtr<NrIceMediaStream> dcStream =
+    mIceCtx->CreateStream((mParent->GetHandle()+"/stream3/data").c_str(), 2);
 
   if (!audioStream) {
     CSFLogError(logTag, "%s: audio stream is NULL", __FUNCTION__);
@@ -393,7 +405,8 @@ PeerConnectionMedia::AddRemoteStream(nsRefPtr<RemoteSourceStreamInfo> aInfo,
 nsresult
 PeerConnectionMedia::AddRemoteStreamHint(int aIndex, bool aIsVideo)
 {
-  if (aIndex >= mRemoteSourceStreams.Length()) {
+  if (aIndex < 0 ||
+      static_cast<unsigned int>(aIndex) >= mRemoteSourceStreams.Length()) {
     return NS_ERROR_ILLEGAL_VALUE;
   }
 
@@ -439,6 +452,20 @@ PeerConnectionMedia::IceStreamReady(NrIceMediaStream *aStream)
   CSFLogDebug(logTag, "%s: %s", __FUNCTION__, aStream->name().c_str());
 }
 
+// This method exists for the unittests.
+// It allows visibility into the pipelines and flows.
+// It returns NULL if no pipeline exists for this track number.
+mozilla::RefPtr<mozilla::MediaPipeline>
+SourceStreamInfo::GetPipeline(int aTrack) {
+  std::map<int, mozilla::RefPtr<mozilla::MediaPipeline> >::iterator it =
+    mPipelines.find(aTrack);
+
+  if (it == mPipelines.end()) {
+    return NULL;
+  }
+
+  return it->second;
+}
 
 void
 LocalSourceStreamInfo::StorePipeline(int aTrack,

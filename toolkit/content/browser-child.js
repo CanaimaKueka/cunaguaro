@@ -8,6 +8,7 @@ let Cu = Components.utils;
 
 Cu.import("resource://gre/modules/Services.jsm");
 Cu.import('resource://gre/modules/XPCOMUtils.jsm');
+Cu.import("resource://gre/modules/RemoteAddonsChild.jsm");
 
 let WebProgressListener = {
   init: function() {
@@ -25,48 +26,69 @@ let WebProgressListener = {
   _setupJSON: function setupJSON(aWebProgress, aRequest) {
     return {
       isTopLevel: aWebProgress.isTopLevel,
-      requestURI: this._requestSpec(aRequest)
+      isLoadingDocument: aWebProgress.isLoadingDocument,
+      requestURI: this._requestSpec(aRequest),
+      loadType: aWebProgress.loadType
+    };
+  },
+
+  _setupObjects: function setupObjects(aWebProgress) {
+    let win = docShell.QueryInterface(Ci.nsIInterfaceRequestor)
+                      .getInterface(Ci.nsIDOMWindow);
+    return {
+      contentWindow: win,
+      // DOMWindow is not necessarily the content-window with subframes.
+      DOMWindow: aWebProgress.DOMWindow
     };
   },
 
   onStateChange: function onStateChange(aWebProgress, aRequest, aStateFlags, aStatus) {
     let json = this._setupJSON(aWebProgress, aRequest);
+    let objects = this._setupObjects(aWebProgress);
+
     json.stateFlags = aStateFlags;
     json.status = aStatus;
 
-    sendAsyncMessage("Content:StateChange", json);
+    sendAsyncMessage("Content:StateChange", json, objects);
   },
 
   onProgressChange: function onProgressChange(aWebProgress, aRequest, aCurSelf, aMaxSelf, aCurTotal, aMaxTotal) {
   },
 
   onLocationChange: function onLocationChange(aWebProgress, aRequest, aLocationURI, aFlags) {
-    let spec = aLocationURI ? aLocationURI.spec : "";
-    let charset = content.document.characterSet;
-
     let json = this._setupJSON(aWebProgress, aRequest);
-    json.documentURI = aWebProgress.DOMWindow.document.documentURIObject.spec;
-    json.location = spec;
-    json.canGoBack = docShell.canGoBack;
-    json.canGoForward = docShell.canGoForward;
-    json.charset = charset.toString();
+    let objects = this._setupObjects(aWebProgress);
 
-    sendAsyncMessage("Content:LocationChange", json);
+    json.location = aLocationURI ? aLocationURI.spec : "";
+
+    if (json.isTopLevel) {
+      json.canGoBack = docShell.canGoBack;
+      json.canGoForward = docShell.canGoForward;
+      json.documentURI = content.document.documentURIObject.spec;
+      json.charset = content.document.characterSet;
+    }
+
+    sendAsyncMessage("Content:LocationChange", json, objects);
   },
 
   onStatusChange: function onStatusChange(aWebProgress, aRequest, aStatus, aMessage) {
     let json = this._setupJSON(aWebProgress, aRequest);
+    let objects = this._setupObjects(aWebProgress);
+
     json.status = aStatus;
     json.message = aMessage;
 
-    sendAsyncMessage("Content:StatusChange", json);
+    sendAsyncMessage("Content:StatusChange", json, objects);
   },
 
   onSecurityChange: function onSecurityChange(aWebProgress, aRequest, aState) {
     let json = this._setupJSON(aWebProgress, aRequest);
-    json.state = aState;
+    let objects = this._setupObjects(aWebProgress);
 
-    sendAsyncMessage("Content:SecurityChange", json);
+    json.state = aState;
+    json.status = SecurityUI.getSSLStatusAsString();
+
+    sendAsyncMessage("Content:SecurityChange", json, objects);
   },
 
   QueryInterface: function QueryInterface(aIID) {
@@ -149,6 +171,39 @@ let WebNavigation =  {
 
 WebNavigation.init();
 
+let SecurityUI = {
+  getSSLStatusAsString: function() {
+    let status = docShell.securityUI.QueryInterface(Ci.nsISSLStatusProvider).SSLStatus;
+
+    if (status) {
+      let helper = Cc["@mozilla.org/network/serialization-helper;1"]
+                      .getService(Ci.nsISerializationHelper);
+
+      status.QueryInterface(Ci.nsISerializable);
+      return helper.serializeToString(status);
+    }
+
+    return null;
+  }
+};
+
+let ControllerCommands = {
+  init: function () {
+    addMessageListener("ControllerCommands:Do", this);
+  },
+
+  receiveMessage: function(message) {
+    switch(message.name) {
+      case "ControllerCommands:Do":
+        if (docShell.isCommandEnabled(message.data))
+          docShell.doCommand(message.data);
+        break;
+    }
+  }
+}
+
+ControllerCommands.init()
+
 addEventListener("DOMTitleChanged", function (aEvent) {
   let document = content.document;
   switch (aEvent.type) {
@@ -160,3 +215,15 @@ addEventListener("DOMTitleChanged", function (aEvent) {
     break;
   }
 }, false);
+
+addEventListener("ImageContentLoaded", function (aEvent) {
+  if (content.document instanceof Ci.nsIImageDocument) {
+    let req = content.document.imageRequest;
+    if (!req.image)
+      return;
+    sendAsyncMessage("ImageDocumentLoaded", { width: req.image.width,
+                                              height: req.image.height });
+  }
+}, false);
+
+RemoteAddonsChild.init(this);

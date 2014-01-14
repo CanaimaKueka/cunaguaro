@@ -4,21 +4,23 @@
 
 #include "nsISupports.idl"
 
-interface nsIDOMWindow;
 interface nsIDOMDOMRequest;
-interface nsIDOMContact;
+interface nsIDOMMozIccInfo;
+interface nsIDOMWindow;
 
-[scriptable, uuid(f383a42b-0961-4bb0-b45e-dbc345d59237)]
+[scriptable, uuid(87e9ad03-e8e2-40d1-bf28-a6d287c31b93)]
 interface nsIIccListener : nsISupports
 {
   void notifyStkCommand(in DOMString aMessage);
   void notifyStkSessionEnd();
+  void notifyCardStateChanged();
+  void notifyIccInfoChanged();
 };
 
 /**
  * XPCOM component (in the content process) that provides the ICC information.
  */
-[scriptable, uuid(041aee4f-fad0-4ed8-a11c-774b1aedd09e)]
+[scriptable, uuid(52fa6780-c913-11e2-8b8b-0800200c9a66)]
 interface nsIIccProvider : nsISupports
 {
   /**
@@ -28,6 +30,16 @@ interface nsIIccProvider : nsISupports
    */
   void registerIccMsg(in nsIIccListener listener);
   void unregisterIccMsg(in nsIIccListener listener);
+
+  /**
+   * UICC Information
+   */
+  readonly attribute nsIDOMMozIccInfo iccInfo;
+
+  /**
+   * Card State
+   */
+  readonly attribute DOMString cardState;
 
   /**
    * STK interfaces.
@@ -44,6 +56,14 @@ interface nsIIccProvider : nsISupports
                             in jsval        event);
 
   /**
+   * Card lock interfaces.
+   */
+  nsIDOMDOMRequest getCardLockState(in nsIDOMWindow window, in DOMString lockType);
+  nsIDOMDOMRequest unlockCardLock(in nsIDOMWindow window, in jsval info);
+  nsIDOMDOMRequest setCardLock(in nsIDOMWindow window, in jsval info);
+  nsIDOMDOMRequest getCardLockRetryCount(in nsIDOMWindow window, in DOMString lockType);
+
+  /**
    * Phonebook interfaces.
    */
   nsIDOMDOMRequest readContacts(in nsIDOMWindow window,
@@ -51,7 +71,7 @@ interface nsIIccProvider : nsISupports
 
   nsIDOMDOMRequest updateContact(in nsIDOMWindow window,
                                  in DOMString contactType,
-                                 in nsIDOMContact contact,
+                                 in jsval contact,
                                  in DOMString pin2);
 
   /**

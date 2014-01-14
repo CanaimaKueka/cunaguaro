@@ -3,24 +3,24 @@
    - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
 
 
-<!ENTITY splash_settingup "&brandShortName; á shocrú">
-<!ENTITY splash_bookmarks_history "Fan nóiméad - leabharmharcanna agus stair á nuashonrú.">
-
 <!ENTITY no_space_to_start_error "Ní féidir le &brandShortName; tosú mar nach bhfuil go leor spáis ann.">
 <!ENTITY error_loading_file "Tharla earráid agus na comhaid atá riachtanach chun &brandShortName; a rith á luchtú.">
+<!-- Localization note: These are used as the titles of different pages on the home screen.
+     They are automatically converted to all caps by the Android platform. -->
 
-<!ENTITY awesomebar_all_pages_title "Suímh Is Fearr">
-<!ENTITY awesomebar_bookmarks_title "Leabharmharcanna">
-<!ENTITY awesomebar_history_title "Stair">
-<!ENTITY awesomebar_switch_to_tab "Téigh go cluaisín">
+<!ENTITY bookmarks_title "Leabharmharcanna">
+<!ENTITY history_title "Stair">
+<!ENTITY reading_list_title "Liosta Léitheoireachta">
+
+<!ENTITY switch_to_tab "Téigh go cluaisín">
 
 <!ENTITY crash_reporter_title "Tuairisceoir na gClistí &brandShortName;">
-<!ENTITY crash_message2 "&brandShortName; had a problem and crashed. Your tabs should be listed on the &brandShortName; Start page when you restart.">
-<!ENTITY crash_send_report_message2 "Tell Mozilla about this crash so they can fix it">
+<!ENTITY crash_message2 "Tá &brandShortName; tar éis tuairteáil. Beidh do chuid cluaisíní liostáilte ar thúsleathanach &brandShortName; nuair a atosóidh tú é.">
+<!ENTITY crash_send_report_message3 "Inis do &vendorShortName; faoin gcliseadh seo ionas go mbeidh siad in ann é a réiteach">
 <!ENTITY crash_include_url2 "Cuir seoladh an leathanaigh ar a raibh mé san áireamh">
 <!ENTITY crash_sorry "Tá brón orainn">
 <!ENTITY crash_comment "Cuir nóta leis (tá nótaí infheicthe go poiblí)">
-<!ENTITY crash_allow_contact "Tabhair cead do Mhozilla dul i dteagmháil liom maidir leis an tuairisc seo">
+<!ENTITY crash_allow_contact2 "Tabhair cead do &vendorShortName; dul i dteagmháil liom maidir leis an tuairisc seo">
 <!ENTITY crash_email "Do sheoladh ríomhphoist">
 <!ENTITY crash_closing_alert "An bhfuil fonn ort imeacht gan tuairisc a sheoladh?">
 <!ENTITY sending_crash_report "Tuairisc ar thuairteáil á seoladh\u2026">
@@ -33,15 +33,13 @@
 
 <!ENTITY choose_file "Roghnaigh Comhad">
 
-<!ENTITY awesomebar_default_text "Cuir Ábhar Cuardaigh nó Seoladh isteach">
-
-<!ENTITY remote_tabs "Cluaisíní Sioncrónaithe">
-<!ENTITY remote_tabs_show_all "Taispeáin gach cluaisín">
+<!ENTITY url_bar_default_text "Cuir Ábhar Cuardaigh nó Seoladh isteach">
 
 <!ENTITY bookmark "Leabharmharc">
 <!ENTITY bookmark_added "Leabharmharc cruthaithe">
 <!ENTITY bookmark_removed "Baineadh an leabharmharc">
 <!ENTITY bookmark_updated "Leabharmharc nuashonraithe">
+<!ENTITY bookmark_options "Roghanna">
 
 <!ENTITY history_today_section "Inniu">
 <!ENTITY history_yesterday_section "Inné">
@@ -66,20 +64,31 @@
 
 <!ENTITY settings "Socruithe">
 <!ENTITY settings_title "Socruithe">
-<!ENTITY pref_category_general "Ginearálta">
-<!ENTITY pref_category_privacy "Príobháideacht agus Slándáil">
-<!ENTITY pref_category_content "Ábhar">
-<!-- Localization note (datareporting_title) : This string matches
-     (dataChoicesTab.label) in chrome/browser/preferences/advanced.dtd except in
-     capitalization. -->
+<!ENTITY pref_category_advanced "Ardroghanna">
+<!ENTITY pref_category_customize "Saincheap">
+<!ENTITY pref_category_search2 "Socruithe cuardaigh">
+<!ENTITY pref_category_display "Taispeáint">
+<!ENTITY pref_category_privacy_short "Príobháideachas">
+<!ENTITY pref_category_vendor "&vendorShortName;">
 <!ENTITY pref_category_datareporting "Roghanna sonraí">
-<!ENTITY pref_about_firefox "Maidir le &brandShortName;">
+<!ENTITY pref_category_installed_search_engines "Innill chuardaigh suiteáilte">
+<!ENTITY pref_category_add_search_providers "Cuir innill chuardaigh leis">
+<!-- Localization note (pref_search_tip) : "TIP" as in "hint", "clue" etc. Displayed as an
+     advisory message on the customise search providers settings page explaining how to add new
+     search providers.-->
+<!ENTITY pref_search_tip "TIP: Add any website to your list of search providers by long-pressing on its search field.">
+<!ENTITY pref_category_devtools "Uirlisí forbróra">
+<!ENTITY pref_developer_remotedebugging "Cian-dífhabhtú">
+<!ENTITY pref_developer_remotedebugging_docs "Tuilleadh eolais">
 <!ENTITY pref_remember_signons "Meabhraigh focail fhaire">
 <!-- Localization note: These are shown in the left sidebar on tablets -->
 
-<!ENTITY pref_header_general "Ginearálta">
-<!ENTITY pref_header_privacy "Príobháideacht agus Slándáil">
-<!ENTITY pref_header_content "Ábhar">
+<!ENTITY pref_header_customize "Saincheap">
+<!ENTITY pref_header_display "Taispeáint">
+<!ENTITY pref_header_privacy_short "Príobháideachas">
+<!ENTITY pref_header_help "Cabhair">
+<!ENTITY pref_header_vendor "&vendorShortName;">
+<!ENTITY pref_header_devtools "Uirlisí forbróra">
 
 <!ENTITY pref_cookies_menu "Fianáin">
 <!ENTITY pref_cookies_accept_all "Cumasaithe">
@@ -94,13 +103,16 @@
 <!ENTITY pref_char_encoding "Ionchódú carachtar">
 <!ENTITY pref_char_encoding_on "Taispeáin an roghchlár">
 <!ENTITY pref_char_encoding_off "Ná taispeáin an roghchlár">
-<!ENTITY pref_clear_private_data "Bánaigh sonraí príobháideacha">
+<!ENTITY pref_clear_private_data "Glan sonraí príobháideacha">
 <!ENTITY pref_plugins "Forlíontáin">
 <!ENTITY pref_plugins_enabled "Cumasaithe">
-<!ENTITY pref_plugins_tap_to_play "Cnap le seinm">
+<!ENTITY pref_plugins_tap_to_play "Tapáil le seinm">
 <!ENTITY pref_plugins_disabled "Díchumasaithe">
 <!ENTITY pref_text_size "Méid téacs">
-<!ENTITY pref_reflow_on_zoom2 "Fáisc chun téacs a athshreabhadh">
+<!ENTITY pref_reflow_on_zoom4 "Athscríobh téacs">
+<!ENTITY pref_restore "Cluaisíní">
+<!ENTITY pref_restore_always "Athchóirigh i gcónaí">
+<!ENTITY pref_restore_quit "Ná hathchóirigh tar éis scor ó &brandShortName;">
 <!ENTITY pref_font_size_tiny "An-bheag">
 <!ENTITY pref_font_size_small "Beag">
 <!ENTITY pref_font_size_medium "Measartha">
@@ -132,26 +144,39 @@ size. -->
 <!ENTITY pref_private_data_siteSettings2 "Socruithe an tsuímh">
 <!ENTITY pref_private_data_downloadFiles "Comhaid íosluchtaithe">
 
-<!ENTITY datareporting_notification_title "Staitisticí agus sonraí ó &brandShortName;">
-<!ENTITY datareporting_notification_action "Roghnaigh cad a roinnfidh mé">
-<!ENTITY datareporting_notification_summary "To improve your experience, &brandShortName; automatically sends some information to &vendorShortName;.">
-<!ENTITY datareporting_notification_summary_short "To improve your experience, &brandShortName;…">
-<!-- Localization note (datareporting_fhr_title, datareporting_fhr_summary,
+
+<!ENTITY pref_about_firefox "Maidir le &brandShortName;">
+<!ENTITY pref_vendor_faqs "CCanna">
+<!ENTITY pref_vendor_feedback "Seol aiseolas">
+<!ENTITY pref_search_set_default "Réamhshocraigh">
+<!ENTITY pref_search_default "Réamhshocrú">
+<!ENTITY pref_search_remove "Bain">
+<!ENTITY pref_search_last_toast "Níl cead agat an t-inneall cuardaigh is déanaí a dhíchumasú.">
+
+<!ENTITY datareporting_notification_title "Staitisticí agus sonraí ó &brandShortName;">
+<!ENTITY datareporting_notification_action_long "Roghnaigh cad a roinnfidh tú">
+<!ENTITY datareporting_notification_action "Roghnaigh cad a roinnfidh tú">
+<!ENTITY datareporting_notification_summary "Chun an táirge a fheabhsú, seolann &brandShortName; roinnt faisnéise chuig &vendorShortName;.">
+<!ENTITY datareporting_notification_summary_short "Chun an táirge a fheabhsú, seolann &brandShortName;…">
+<!ENTITY datareporting_notification_ticker_text "datareporting_notification_title;: datareporting_notification_action_long;">
+<!-- Localization note (datareporting_fhr_title, datareporting_fhr_summary2,
      reporting_telemetry_title, datareporting_telemetry_summary,
      datareporting_crashreporter_summary) : These match the strings in
-     chrome/browser/preferences/advanced.dtd (healthReportSection.label,
+     en-US/chrome/browser/preferences/advanced.dtd (healthReportSection.label,
      healthReportDesc.label, telemetrySection.label, telemetryDesc.label,
      crashReporterDesc.label). -->
 
 <!ENTITY datareporting_fhr_title "Tuairisc Shláinte &brandShortName;">
-<!ENTITY datareporting_fhr_summary "Cabhraíonn seo leat feidhmíocht do bhrabhsálaí a thuiscint, agus seolann sé sonraí maidir le sláinte do bhrabhsálaí chuig &vendorShortName;">
+<!ENTITY datareporting_fhr_summary2 "…roinnt faisnéis maidir le sláinte do bhrabhsálaí chuig &vendorShortName;">
+<!ENTITY datareporting_abouthr_title "Féach ar mo Thuairisc Shláinte">
 <!ENTITY datareporting_telemetry_title "Teiliméadracht">
 <!ENTITY datareporting_telemetry_summary "Seolann sé faisnéis maidir le feidhmíocht, úsáid, crua-earraí, agus saincheapadh chuig &vendorShortName; chun cabhrú linn feabhas a chur ar &brandShortName;.">
-<!ENTITY datareporting_crashreporter_summary "Seolann &brandShortName; tuairiscí ar chlistí chuig &vendorShortName; chun cabhrú linn brabhsálaí níos cobhsaí níos sábháilte a fhorbairt">
-<!-- Localization note (datareporting_crashreporter_title) : This string matches
-     (crashReporterSection.label) in chrome/browser/preferences/advanced.dtd
-     except in branding. -->
-<!ENTITY datareporting_crashreporter_title "Tuairisceoir na gClistí &brandShortName;">
+<!ENTITY datareporting_crashreporter_summary "Seolann &brandShortName; tuairiscí ar chlistí chuig &vendorShortName; chun cabhrú linn brabhsálaí níos cobhsaí níos sábháilte a fhorbairt">
+<!-- Localization note (datareporting_crashreporter_title_short) : This string matches
+     (crashReporterSection.label) in en-US/chrome/browser/preferences/advanced.dtd.-->
+<!ENTITY datareporting_crashreporter_title_short "Tuairisceoir na gClistí">
+<!ENTITY datareporting_wifi_title "Seirbhísí geoshuite &vendorShortName;">
+<!ENTITY datareporting_wifi_summary "Tabhair cead do &brandShortName; sonraí gan ainm maidir le túir cheallacha a sheoladh chugainn. Cabhróidh sé seo linn seirbhísí geoshuite ar an nGréasán oscailte a fheabhsú.">
 
 <!ENTITY pref_update_autodownload "Nuashonruithe uathoibríocha">
 <!ENTITY pref_update_autodownload_wifi "Thar Wi-Fi amháin">
@@ -161,7 +186,7 @@ size. -->
 <!ENTITY quit "Scoir">
 
 <!ENTITY addons "Breiseáin">
-<!ENTITY downloads "Íosluchtú">
+<!ENTITY downloads "Íosluchtuithe">
 <!ENTITY apps "Feidhmchláir">
 <!ENTITY char_encoding "Ionchódú Carachtar">
 
@@ -178,9 +203,8 @@ size. -->
 <!ENTITY tabs_normal "Cluaisíní">
 <!ENTITY tabs_private "Príobháideach">
 <!ENTITY tabs_synced "Sioncrónaithe">
-<!ENTITY wallpaper_success "Cúlbhrat nuashonraithe">
-<!ENTITY wallpaper_progress "Cúlbhrat á shocrú">
-<!ENTITY wallpaper_fail "Ní féidir cúlbhrat a shocrú">
+<!ENTITY set_image_fail "Ní féidir íomhá a shocrú">
+<!ENTITY set_image_chooser_title "Socraigh Íomhá Mar">
 <!-- Localization note (find_text, find_prev, find_next, find_close) : These strings are used
      as alternate text for accessibility. They are not visible in the UI. -->
 
@@ -192,8 +216,7 @@ size. -->
 <!ENTITY contextmenu_open_new_tab "Oscail i gCluaisín Nua">
 <!ENTITY contextmenu_open_private_tab "Oscail i gCluaisín Príobháideach">
 <!ENTITY contextmenu_open_in_reader "Oscail i Léitheoir">
-<!ENTITY contextmenu_remove_history "Bain">
-<!ENTITY contextmenu_remove_bookmark "Bain">
+<!ENTITY contextmenu_remove "Bain">
 <!ENTITY contextmenu_add_to_launcher "Cuir leis an Scáileán Baile">
 <!ENTITY contextmenu_share "Roinn">
 <!ENTITY contextmenu_pasteandgo "Greamaigh agus Téigh">
@@ -202,6 +225,9 @@ size. -->
 <!ENTITY contextmenu_edit_bookmark "Eagar">
 <!ENTITY contextmenu_subscribe "Liostáil leis an Leathanach">
 <!ENTITY contextmenu_site_settings "Cuir Socruithe an tSuímh in Eagar">
+<!ENTITY contextmenu_top_sites_edit "Eagar">
+<!ENTITY contextmenu_top_sites_pin "Feistigh an suíomh seo">
+<!ENTITY contextmenu_top_sites_unpin "Dífheistigh an suíomh seo">
 
 <!ENTITY pref_titlebar_mode "Barra teidil">
 <!ENTITY pref_titlebar_mode_title "Taispeáin teideal an leathanaigh">
@@ -221,12 +247,14 @@ size. -->
 <!ENTITY site_settings_clear "Glan">
 <!ENTITY site_settings_no_settings "Níl aon socruithe le glanadh.">
 
-<!ENTITY reading_list "Liosta Léitheoireachta">
 <!ENTITY reading_list_added "Cuireadh le do liosta léitheoireachta é">
 <!ENTITY reading_list_removed "Baineadh ó do liosta léitheoireachta">
 <!ENTITY reading_list_failed "Níor cuireadh an leathanach le do liosta léitheoireachta">
 <!ENTITY reading_list_duplicate "Tá an leathanach seo i do liosta léitheoireachta cheana">
-<!ENTITY reader "Léitheoir">
+<!-- Localization note : These strings are used as alternate text for accessibility.
+     They are not visible in the UI. -->
+
+<!ENTITY page_action_dropmarker_description "Gníomhartha Sa Bhreis">
 
 <!ENTITY masterpassword_create_title "Cruthaigh Príomhfhocal Faire">
 <!ENTITY masterpassword_remove_title "Bánaigh an Príomhfhocal Faire">
@@ -241,28 +269,29 @@ size. -->
 <!ENTITY button_set "Socraigh">
 <!ENTITY button_clear "Glan">
 
-<!ENTITY abouthome_addons_title "Breiseáin le haghaidh &brandShortName;">
-<!ENTITY abouthome_addons_browse "Brabhsáil gach breiseán &brandShortName;">
-<!ENTITY abouthome_last_tabs_title "Do chuid cluaisíní ón uair roimhe seo">
-<!ENTITY abouthome_last_tabs_open "Oscail gach cluaisín ón uair roimhe seo">
-<!ENTITY abouthome_top_sites_title "Barrshuímh">
-<!ENTITY abouthome_topsites_edit "Eagar">
-<!ENTITY abouthome_topsites_pin "Feistigh an suíomh seo">
-<!ENTITY abouthome_topsites_unpin "Dífheistigh an suíomh seo">
-<!-- Localization note (abouthome_about_sync3, abouthome_about_apps2): The
-     chevron (ex: "»"; unicode= U+00BB) is used as an arrow to show that
-     clicking this text in the promotions box will perform some action. Note
-     that a non-breaking space (unicode= U+00A0) should be used between this
-     character and the remainder of the string to prevent word wrap. -->
+<!ENTITY home_top_sites_title "Suímh Is Fearr">
+<!-- Localization note (home_top_sites_add): This string is used as placeholder
+     text underneath empty thumbnails in the Top Sites page on about:home. -->
+<!ENTITY home_top_sites_add "Cuir suíomh leis">
 
-<!ENTITY abouthome_about_sync3 "Socraigh Firefox Sync chun do stair, leabharmharcanna, agus cluaisíní a rochtain ar gach gléas atá agat&#x00A0;»">
-<!ENTITY abouthome_about_apps3 "Faigh feidhmchláir ó Mhargadh Fhirefox agus aimsigh na rudaí is fearr ar an nGréasán&#x00A0;»">
-<!-- Localization note (abouthome_sync_bold_name, abouthome_apps_bold_name):
-     These strings are accentuated as bold text in the "abouthome_about_..."
-     strings above. These strings should be a subset of the strings above and
-     generally be the name of the product the string describes. -->
-<!ENTITY abouthome_sync_bold_name "Firefox Sync">
-<!ENTITY abouthome_apps_bold_name2 "Margadh Fhirefox">
+<!ENTITY home_history_title "Stair">
+<!ENTITY home_bookmarks_empty "Bookmarks you save show up here.">
+<!ENTITY home_last_tabs_title "Cluaisíní ón seisiún roimhe seo">
+<!ENTITY home_last_tabs_open "Oscail gach cluaisín ón uair roimhe seo">
+<!ENTITY home_last_tabs_empty "Taispeántar do chuid cluaisíní is déanaí anseo.">
+<!ENTITY home_most_recent_title "Is déanaí">
+<!ENTITY home_most_recent_empty "Taispeántar na suímh ar thug tú cuairt orthu le déanaí anseo.">
+<!ENTITY home_reading_list_empty "Taispeántar altanna a shábháil tú anseo">
+<!-- Localization note (home_reading_list_hint): The "TIP" string is synonymous to "hint", "clue", etc. This string is displayed
+     as an advisory message on how to add content to the reading list when the reading list empty.
+     The "&#37;I" in the string will be replaced by a small image of the icon described, and can be moved to wherever
+     it is applicable. Please keep the spacing around the "&#37;I" string. -->
+<!ENTITY home_reading_list_hint "TIP: Save articles to your reading list by long pressing the &#37;I icon when it appears in the title bar.">
+<!-- Localization note (home_reading_list_hint_accessible): This string is used
+     as alternate text for accessibility. It is not visible in the UI. -->
+<!ENTITY home_reading_list_hint_accessible "TIP: Save articles to your reading list by long pressing the reader mode button when it appears in the title bar.">
+
+<!ENTITY pin_site_dialog_hint "Cuir téarma cuardaigh isteach">
 
 <!ENTITY filepicker_title "Roghnaigh Comhad">
 <!ENTITY filepicker_audio_title "Roghnaigh nó taifead fuaim">
@@ -283,6 +312,15 @@ substitution variables.  If it is difficult to translate the sense of the string
 with that structure, consider a translation which ignores the preceding domain and
 just addresses the organization to follow, e.g. "This site is run by " -->
 <!ENTITY identity_run_by "atá á reáchtáil ag">
+<!-- Mixed content notifications in site identity popup -->
+
+<!ENTITY loaded_mixed_content_message "Ábhar neamhshlán á thaispeáint ar an leathanach seo.">
+<!ENTITY blocked_mixed_content_message_top "Chuir &brandShortName; cosc ar ábhar neamhshlán.">
+<!ENTITY blocked_mixed_content_message_bottom "Feidhmíonn suímh Ghréasáin mar is ceart fiú nuair a bhíonn bac ar an ábhar seo.">
+<!ENTITY learn_more "Tuilleadh Eolais">
+<!ENTITY enable_protection "Cumasaigh cosaint">
+<!ENTITY disable_protection "Díchumasaigh cosaint">
+<!ENTITY keep_blocking "Coinnigh an bac">
 
 <!ENTITY private_data_success "Glanadh na sonraí príobháideacha">
 <!ENTITY private_data_fail "Níorbh fhéidir sonraí áirithe príobháideacha a ghlanadh">
@@ -299,10 +337,17 @@ just addresses the organization to follow, e.g. "This site is run by " -->
      replaced with the name of the search engine. -->
 
 <!ENTITY suggestions_prompt2 "An bhfuil fonn ort moltaí cuardaigh &formatS; a chur ar siúl?">
+<!-- Localization note (suggestion_for_engine): The placeholder &formatS1; will be
+     replaced with the name of the search engine. The placeholder &formatS2; will be
+     replaced with the search query. -->
+
+<!ENTITY suggestion_for_engine "Déan cuardach ar &formatS2; le &formatS1;">
 
 <!ENTITY webapp_generic_name "Feidhmchlár">
 
 <!ENTITY searchable_description "Leabharmharcanna agus stair">
+
+<!ENTITY devtools_remote_debugging_forward "Ná déan dearmad poirt a chur ar aghaidh!">
 <!-- Updater notifications -->
 
 <!ENTITY updater_start_title2 "Nuashonrú ar fáil: &brandShortName;">
@@ -315,3 +360,14 @@ just addresses the organization to follow, e.g. "This site is run by " -->
 
 <!ENTITY updater_apply_title2 "Nuashonrú ar fáil: &brandShortName;">
 <!ENTITY updater_apply_select2 "Tapáil chun nuashonrú">
+<!-- Guest mode -->
+
+<!ENTITY new_guest_session "Seisiún Nua ar Iasacht">
+<!ENTITY exit_guest_session "Scoir ón Seisiún ar Iasacht">
+<!ENTITY guest_session_dialog_continue "Ar Aghaidh">
+<!ENTITY guest_session_dialog_cancel "Cealaigh">
+<!ENTITY new_guest_session_title "Atosóidh &brandShortName; anois">
+<!ENTITY new_guest_session_text "Má thugann tú do ghléas do chara ar iasacht, ní bheidh sé/sé in ann do chuid sonraí pearsanta a fheiceáil (mar shampla, focail fhaire, stair bhrabhsála, nó leabharmharcanna).\n\nNuair a bheidh do chara críochnaithe, scriosfar a c(h)uid sonraí brabhsála, agus athchóireofar do sheisiún.">
+
+<!ENTITY exit_guest_session_title "Atosóidh &brandShortName; anois">
+<!ENTITY exit_guest_session_text "Scriosfar na sonraí brabhsála ón seisiún seo.">

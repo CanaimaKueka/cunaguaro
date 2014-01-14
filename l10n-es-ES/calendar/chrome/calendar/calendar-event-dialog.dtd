@@ -136,6 +136,8 @@
 <!ENTITY event.location.accesskey "L">
 <!ENTITY event.categories.label "Categoría:">
 <!ENTITY event.categories.accesskey "C">
+<!ENTITY event.categories.textbox.label "Añadir una nueva categoría">
+<!ENTITY event.categories.textbox.accesskey "A">
 <!ENTITY event.calendar.label "Calendario:">
 <!ENTITY event.calendar.accesskey "n">
 <!ENTITY event.attendees.label "Asistentes:">
@@ -296,7 +298,7 @@
 <!ENTITY event.attendee.usertype.group "Grupo">
 <!ENTITY event.attendee.usertype.resource "Recurso">
 <!ENTITY event.attendee.usertype.room "Sala">
-<!ENTITY timezone.title.label "Por favor, especifique la zona horaria">
+<!ENTITY timezone.title.label "Especifique la zona horaria">
 <!ENTITY event.timezone.custom.label "Más zonas horarias…">
 <!ENTITY read.only.general.label "General">
 <!ENTITY read.only.title.label "Título:">

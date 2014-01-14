@@ -11,6 +11,16 @@
   gestellten Fragen zu &brandShortName; suchen, besuchen Sie bitte unsere  <a id='supportLink'>Hilfeseite</a>.
 ">
 
+<!ENTITY aboutSupport.crashes.title "Absturzberichte">
+<!-- LOCALIZATION NOTE (aboutSupport.crashes.id):
+This is likely the same like id.heading in crashes.dtd. -->
+<!ENTITY aboutSupport.crashes.id "Meldungs-ID">
+<!-- LOCALIZATION NOTE (aboutSupport.crashes.id):
+This is likely the same like date.heading in crashes.dtd. -->
+<!ENTITY aboutSupport.crashes.sendDate "Gesendet">
+<!ENTITY aboutSupport.crashes.allReports "Alle Absturzberichte">
+<!ENTITY aboutSupport.crashes.noConfig "Diese Anwendung wurde nicht für die Anzeige von Absturzberichten konfiguriert.">
+
 <!ENTITY aboutSupport.extensionsTitle "Erweiterungen">
 <!ENTITY aboutSupport.extensionName "Name">
 <!ENTITY aboutSupport.extensionEnabled "Aktiviert">
@@ -21,6 +31,11 @@
 <!ENTITY aboutSupport.appBasicsName "Name">
 <!ENTITY aboutSupport.appBasicsVersion "Version">
 
+<!-- LOCALIZATION NOTE (aboutSupport.appBasicsUpdateHistory, aboutSupport.appBasicsShowUpdateHistory):
+"Update" is a noun here, not a verb. -->
+<!ENTITY aboutSupport.appBasicsUpdateHistory "Update-Chronik">
+<!ENTITY aboutSupport.appBasicsShowUpdateHistory "Update-Chronik anzeigen">
+
 <!ENTITY aboutSupport.appBasicsProfileDir "Profilverzeichnis">
 <!-- LOCALIZATION NOTE (aboutSupport.appBasicsProfileDirWinMac):
 This is the Windows- and Mac-specific variant of aboutSupport.appBasicsProfileDir.
@@ -30,7 +45,6 @@ Windows/Mac use the term "Folder" instead of "Directory" -->
 <!ENTITY aboutSupport.appBasicsEnabledPlugins "Aktivierte Plugins">
 <!ENTITY aboutSupport.appBasicsBuildConfig "Build-Konfiguration">
 <!ENTITY aboutSupport.appBasicsUserAgent "User-Agent">
-<!ENTITY aboutSupport.appBasicsCrashIDs "Absturzberichte">
 <!ENTITY aboutSupport.appBasicsMemoryUse "Speicherverwendung">
 
 <!ENTITY aboutSupport.showDir.label "Ordner öffnen">

@@ -2,25 +2,26 @@
    - License, v. 2.0. If a copy of the MPL was not distributed with this
    - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
 
-<!ENTITY debuggerMenu.label2 "Отладчик">
-<!ENTITY debuggerMenu.accesskey "а">
-<!ENTITY remoteDebuggerMenu.label "Удалённый отладчик">
-<!ENTITY chromeDebuggerMenu.label "Отладчик браузера">
-<!ENTITY debuggerMenu.commandkey "S">
 <!ENTITY debuggerUI.closeButton.tooltip "Закрыть">
 <!ENTITY debuggerUI.panesButton.tooltip "Переключить панели">
+<!ENTITY debuggerUI.blackBoxMessage.label "Этот исходник помещён в чёрный ящик: его точки останова отключены, а пошаговое выполнение его пропускает.">
+<!ENTITY debuggerUI.blackBoxMessage.unBlackBoxButton "Вынуть этот исходник из чёрного ящика">
 <!ENTITY debuggerUI.optsButton.tooltip "Настройки отладчика">
+<!ENTITY debuggerUI.sources.blackBoxTooltip "Поместить или вынуть из черного ящика">
+<!ENTITY debuggerUI.sources.prettyPrint "«Красивые» исходники">
 <!ENTITY debuggerUI.pauseExceptions "Приостанавливать на исключениях">
 <!ENTITY debuggerUI.pauseExceptions.key "E">
+<!ENTITY debuggerUI.ignoreCaughtExceptions "Игнорировать пойманные исключения">
+<!ENTITY debuggerUI.ignoreCaughtExceptions.key "C">
 <!ENTITY debuggerUI.showPanesOnInit "При запуске открывать панели">
 <!ENTITY debuggerUI.showPanesOnInit.key "S">
 <!ENTITY debuggerUI.showVarsFilter "Показать панель фильтра переменных">
 <!ENTITY debuggerUI.showVarsFilter.key "V">
 <!ENTITY debuggerUI.showOnlyEnum "Показать только перечислимые свойства">
 <!ENTITY debuggerUI.showOnlyEnum.key "P">
-<!ENTITY debuggerUI.showOriginalSource "Показать оригинальные источники">
+<!ENTITY debuggerUI.showOriginalSource "Показать оригинальные исходники">
 <!ENTITY debuggerUI.showOriginalSource.key "O">
-<!ENTITY debuggerUI.searchPanelTitle "Операторы">
+<!ENTITY debuggerUI.searchPanelOperators "Операторы:">
 <!ENTITY debuggerUI.searchFile "Фильтр сценариев">
 <!ENTITY debuggerUI.searchFile.key "P">
 <!ENTITY debuggerUI.searchFile.altkey "O">
@@ -30,8 +31,8 @@
 <!ENTITY debuggerUI.searchFunction.key "D">
 <!ENTITY debuggerUI.searchToken "Найти">
 <!ENTITY debuggerUI.searchToken.key "F">
-<!ENTITY debuggerUI.searchLine "Перейти к строке…">
-<!ENTITY debuggerUI.searchLine.key "J">
+<!ENTITY debuggerUI.searchGoToLine "Перейти к строке…">
+<!ENTITY debuggerUI.searchGoToLine.key "L">
 <!ENTITY debuggerUI.searchVariable "Фильтр переменных">
 <!ENTITY debuggerUI.searchVariable.key "V">
 <!ENTITY debuggerUI.focusVariables "Сфокусироваться на дереве переменных">
@@ -41,13 +42,19 @@
 <!ENTITY debuggerUI.seMenuBreak.key "B">
 <!ENTITY debuggerUI.seMenuCondBreak "Добавить условную точку останова">
 <!ENTITY debuggerUI.seMenuCondBreak.key "B">
+<!ENTITY debuggerUI.tabs.variables "Переменные">
+<!ENTITY debuggerUI.tabs.events "События">
 <!ENTITY debuggerUI.seMenuAddWatch "Выделение выражения для отслеживания">
 <!ENTITY debuggerUI.seMenuAddWatch.key "E">
 <!ENTITY debuggerUI.addWatch "Добавить выражение для отслеживания">
 <!ENTITY debuggerUI.addWatch.key "E">
 <!ENTITY debuggerUI.removeAllWatch "Удалить все выражения для отслеживания">
 <!ENTITY debuggerUI.removeAllWatch.key "E">
-<!ENTITY debuggerUI.stepping.resume "VK_F6">
-<!ENTITY debuggerUI.stepping.stepOver "VK_F7">
-<!ENTITY debuggerUI.stepping.stepIn "VK_F8">
-<!ENTITY debuggerUI.stepping.stepOut "VK_F8">
+<!ENTITY debuggerUI.stepping.resume1 "VK_F8">
+<!ENTITY debuggerUI.stepping.resume2 "VK_SLASH">
+<!ENTITY debuggerUI.stepping.stepOver1 "VK_F10">
+<!ENTITY debuggerUI.stepping.stepOver2 "VK_QUOTE">
+<!ENTITY debuggerUI.stepping.stepIn1 "VK_F11">
+<!ENTITY debuggerUI.stepping.stepIn2 "VK_SEMICOLON">
+<!ENTITY debuggerUI.stepping.stepOut1 "VK_F11">
+<!ENTITY debuggerUI.stepping.stepOut2 "VK_SEMICOLON">

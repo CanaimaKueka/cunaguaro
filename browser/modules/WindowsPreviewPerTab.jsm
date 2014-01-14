@@ -139,12 +139,10 @@ function PreviewController(win, tab) {
   this.win = win;
   this.tab = tab;
   this.linkedBrowser = tab.linkedBrowser;
+  this.preview = this.win.createTabPreview(this);
 
   this.linkedBrowser.addEventListener("MozAfterPaint", this, false);
   this.tab.addEventListener("TabAttrModified", this, false);
-
-  // Cannot perform the lookup during construction. See TabWindow.newTab 
-  XPCOMUtils.defineLazyGetter(this, "preview", function () this.win.previewFromTab(this.tab));
 
   XPCOMUtils.defineLazyGetter(this, "canvasPreview", function () {
     let canvas = this.win.win.document.createElementNS("http://www.w3.org/1999/xhtml", "canvas");
@@ -399,7 +397,7 @@ function TabWindow(win) {
   this.win = win;
   this.tabbrowser = win.gBrowser;
 
-  this.previews = [];
+  this.previews = new Map();
 
   for (let i = 0; i < this.tabEvents.length; i++)
     this.tabbrowser.tabContainer.addEventListener(this.tabEvents[i], this, false);
@@ -452,13 +450,22 @@ TabWindow.prototype = {
   // Invoked when the given tab is added to this window
   newTab: function (tab) {
     let controller = new PreviewController(this, tab);
+    // It's OK to add the preview now while the favicon still loads.
+    this.previews.set(tab, controller.preview);
+    AeroPeek.addPreview(controller.preview);
+    // updateTitleAndTooltip relies on having controller.preview which is lazily resolved.
+    // Now that we've updated this.previews, it will resolve successfully.
+    controller.updateTitleAndTooltip();
+  },
+
+  createTabPreview: function (controller) {
     let docShell = this.win
                   .QueryInterface(Ci.nsIInterfaceRequestor)
                   .getInterface(Ci.nsIWebNavigation)
                   .QueryInterface(Ci.nsIDocShell);
     let preview = AeroPeek.taskbar.createTaskbarTabPreview(docShell, controller);
     preview.visible = AeroPeek.enabled;
-    preview.active = this.tabbrowser.selectedTab == tab;
+    preview.active = this.tabbrowser.selectedTab == controller.tab;
     // Grab the default favicon
     getFaviconAsImage(null, PrivateBrowsingUtils.isWindowPrivate(this.win), function (img) {
       // It is possible that we've already gotten the real favicon, so make sure
@@ -467,12 +474,7 @@ TabWindow.prototype = {
         preview.icon = img;
     });
 
-    // It's OK to add the preview now while the favicon still loads.
-    this.previews.splice(tab._tPos, 0, preview);
-    AeroPeek.addPreview(preview);
-    // updateTitleAndTooltip relies on having controller.preview which is lazily resolved.
-    // Now that we've updated this.previews, it will resolve successfully.
-    controller.updateTitleAndTooltip();
+    return preview;
   },
 
   // Invoked when the given tab is closed
@@ -483,10 +485,7 @@ TabWindow.prototype = {
     preview.move(null);
     preview.controller.wrappedJSObject.destroy();
 
-    // We don't want to splice from the array if the tabs aren't being removed
-    // from the tab bar as well (as is the case when the window closes).
-    if (!this._destroying)
-      this.previews.splice(tab._tPos, 1);
+    this.previews.delete(tab);
     AeroPeek.removePreview(preview);
   },
 
@@ -499,26 +498,31 @@ TabWindow.prototype = {
     // Because making a tab visible requires that the tab it is next to be
     // visible, it is far simpler to unset the 'next' tab and recreate them all
     // at once.
-    this.previews.forEach(function (preview) {
+    for (let [tab, preview] of this.previews) {
       preview.move(null);
       preview.visible = enable;
-    });
+    }
     this.updateTabOrdering();
   },
 
   previewFromTab: function (tab) {
-    return this.previews[tab._tPos];
+    return this.previews.get(tab);
   },
 
   updateTabOrdering: function () {
+    let previews = this.previews;
+    let tabs = this.tabbrowser.tabs;
+
+    // Previews are internally stored using a map, so we need to iterate the
+    // tabbrowser's array of tabs to retrieve previews in the same order.
+    let inorder = [previews.get(t) for (t of tabs) if (previews.has(t))];
+
     // Since the internal taskbar array has not yet been updated we must force
     // on it the sorting order of our local array.  To do so we must walk
     // the local array backwards, otherwise we would send move requests in the
     // wrong order.  See bug 522610 for details.
-    for (let i = this.previews.length - 1; i >= 0; i--) {
-      let p = this.previews[i];
-      let next = i == this.previews.length - 1 ? null : this.previews[i+1];
-      p.move(next);
+    for (let i = inorder.length - 1; i >= 0; i--) {
+      inorder[i].move(inorder[i + 1] || null);
     }
   },
 
@@ -538,11 +542,6 @@ TabWindow.prototype = {
         this.previewFromTab(tab).active = true;
         break;
       case "TabMove":
-        let oldPos = evt.detail;
-        let newPos = tab._tPos;
-        let preview = this.previews[oldPos];
-        this.previews.splice(oldPos, 1);
-        this.previews.splice(newPos, 0, preview);
         this.updateTabOrdering();
         break;
       case "tabviewshown":
@@ -562,8 +561,10 @@ TabWindow.prototype = {
     getFaviconAsImage(aIconURL, PrivateBrowsingUtils.isWindowPrivate(this.win), function (img) {
       let index = self.tabbrowser.browsers.indexOf(aBrowser);
       // Only add it if we've found the index.  The tab could have closed!
-      if (index != -1)
-        self.previews[index].icon = img;
+      if (index != -1) {
+        let tab = self.tabbrowser.tabs[index];
+        self.previews.get(tab).icon = img;
+      }
     });
   }
 }

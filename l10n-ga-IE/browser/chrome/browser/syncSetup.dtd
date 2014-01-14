@@ -73,7 +73,7 @@
 <!ENTITY addDevice.dialog.connected.label "Gléas Ceangailte">
 <!-- Existing Account Page 2: Manual Login -->
 
-<!ENTITY setup.signInPage.title.label "Sínigh Isteach">
+<!ENTITY setup.signInPage.title.label "Logáil Isteach">
 <!ENTITY existingRecoveryKey.description "Is féidir leat cóip de d'Eochair Athshlánaithe a fháil trí dul go dtí &syncBrand.shortName.label; Roghanna ar do ghléas eile, agus &#x0022;M'Eochair Athshlánaithe&#x0022; a roghnú faoi &#x0022;Bainistiú Cuntais&#x0022;.">
 <!ENTITY verifying.label "Á Dheimhniú…">
 <!ENTITY resetPassword.label "Athshocraigh Focal Faire">
@@ -106,8 +106,8 @@
 
 <!ENTITY setup.optionsConfirmPage.title "Dearbhaigh">
 <!ENTITY confirm.merge2.label "Anois cumascfaidh &syncBrand.fullName.label; na sonraí brabhsála go léir ón ghléas seo le do chuntas Sync.">
-<!ENTITY confirm.client3.label "Rabhadh: Tá tú ar tí na sonraí &brandShortName; seo a leanas a scriosadh ón ghléas seo:">
-<!ENTITY confirm.client2.moreinfo.label "Ansin cóipeálfaidh &brandShortName; do chuid sonraí &syncBrand.fullName.label; go dtí an gléas seo.">
+<!ENTITY confirm.client3.label "Rabhadh: Tá tú ar tí na sonraí &brandShortName; seo a leanas a scriosadh ón ghléas seo:">
+<!ENTITY confirm.client2.moreinfo.label "Ansin cóipeálfaidh &brandShortName; do chuid sonraí &syncBrand.fullName.label; go dtí an gléas seo.">
 <!ENTITY confirm.server2.label "Rabhadh: Forscríobhfar na gléasanna seo a leanas leis na sonraí logánta:">
 <!-- New & Existing Account: Setup Complete -->
 

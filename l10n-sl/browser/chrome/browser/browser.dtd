@@ -20,6 +20,11 @@
 <!ENTITY  reloadTab.accesskey                "n">
 <!ENTITY  reloadAllTabs.label                "Ponovno naloži vse zavihke">
 <!ENTITY  reloadAllTabs.accesskey            "a">
+<!-- LOCALIZATION NOTE (closeTabsToTheEnd.label): This should indicate the
+direction in which tabs are closed, i.e. locales that use RTL mode should say
+left instead of right. -->
+<!ENTITY  closeTabsToTheEnd.label            "Zapri zavihke na desni">
+<!ENTITY  closeTabsToTheEnd.accesskey        "i">
 <!ENTITY  closeOtherTabs.label               "Zapri ostale zavihke">
 <!ENTITY  closeOtherTabs.accesskey           "t">
 
@@ -39,8 +44,13 @@ can reach it easily. -->
 <!ENTITY  moveToNewWindow.accesskey          "k">
 <!ENTITY  bookmarkAllTabs.label              "Dodaj vse zavihke med zaznamke …">
 <!ENTITY  bookmarkAllTabs.accesskey          "v">
-<!ENTITY  undoCloseTab.label                 "Prekliči zapiranje zavihka">
+<!ENTITY  undoCloseTab.label                 "Razveljavi zapiranje zavihka">
 <!ENTITY  undoCloseTab.accesskey             "h">
+<!-- LOCALIZATION NOTE (undoCloseTabs.label) : This label is used
+when the previous tab-closing operation closed more than one tab. It
+replaces the undoCloseTab.label and will use the same accesskey as the
+undoCloseTab.label so users will not need to learn new keyboard controls. -->
+<!ENTITY  undoCloseTabs.label                "Razveljavi zapiranje zavihkov">
 <!ENTITY  closeTab.label                     "Zapri zavihek">
 <!ENTITY  closeTab.accesskey                 "Z">
 
@@ -102,9 +112,8 @@ These should match what Safari and other Apple applications use on OS X Lion. --
 <!ENTITY fullScreenExit.accesskey "C">
 <!ENTITY fullscreenAllowButton.label "Dovoli">
 <!ENTITY fullscreenExitButton.label "Zavrni">
-<!ENTITY fullscreenApproval.value "Dovolim celoten zaslon?">
 
-<!ENTITY fullscreenExitHint.value "Z ESC lahko kadar koli končate celoten zaslon.">
+<!ENTITY fullscreenExitHint2.value "Za izhod lahko kadarkoli pritisnete ESC.">
 <!ENTITY leaveDOMFullScreen.label "Končaj celoten zaslon">
 <!ENTITY leaveDOMFullScreen.accesskey "j">
 
@@ -115,7 +124,18 @@ These should match what Safari and other Apple applications use on OS X Lion. --
 <!ENTITY bookmarksMenu.accesskey "Z">
 <!ENTITY bookmarkThisPageCmd.label "Dodaj stran med zaznamke">
 <!ENTITY bookmarkThisPageCmd.commandkey "d">
-<!ENTITY sharePageCmd.commandkey "l">
+<!ENTITY markPageCmd.commandkey "l">
+<!ENTITY sharePageCmd.label "Deli to stran">
+<!ENTITY sharePageCmd.commandkey "S">
+<!ENTITY sharePageCmd.accesskey "d">
+<!ENTITY shareLinkCmd.label "Deli to povezavo">
+<!ENTITY shareLinkCmd.accesskey "d">
+<!ENTITY shareImageCmd.label "Deli to sliko">
+<!ENTITY shareImageCmd.accesskey "d">
+<!ENTITY shareSelectCmd.label "Deli ta izbor">
+<!ENTITY shareSelectCmd.accesskey "d">
+<!ENTITY shareVideoCmd.label "Deli ta video">
+<!ENTITY shareVideoCmd.accesskey "d">
 <!ENTITY subscribeToPageMenupopup.label "Naroči se na to stran">
 <!ENTITY subscribeToPageMenuitem.label "Naroči se na to stran …">
 <!ENTITY addCurPagesCmd.label "Dodaj vse zavihke med zaznamke …">
@@ -184,8 +204,6 @@ These should match what Safari and other Apple applications use on OS X Lion. --
 
 <!ENTITY keywordfield.label "Dodaj ključno besedo k iskanju …">
 <!ENTITY keywordfield.accesskey "K">
-<!ENTITY search.label "Spletno iskanje">
-<!ENTITY search.accesskey "O">
 <!ENTITY downloads.label "Prenosi">
 <!ENTITY downloads.tooltip "Prikaži napredek trenutnih prenosov">
 <!ENTITY downloads.accesskey "P">
@@ -198,14 +216,20 @@ These should match what Safari and other Apple applications use on OS X Lion. --
 <!ENTITY webDeveloperMenu.label       "Spletni razvoj">
 <!ENTITY webDeveloperMenu.accesskey   "S">
 
+<!ENTITY devToolsCmd.keycode          "VK_F12">
+<!ENTITY devToolsCmd.keytext          "F12">
+
 <!ENTITY devtoolsConnect.label        "Poveži …">
 <!ENTITY devtoolsConnect.accesskey    "e">
 
 <!ENTITY errorConsoleCmd.label "Konzola napak">
 <!ENTITY errorConsoleCmd.accesskey "N">
-<!ENTITY errorConsoleCmd.commandkey "j">
 
 <!ENTITY remoteWebConsoleCmd.label    "Oddaljena spletna konzola">
+
+<!ENTITY browserConsoleCmd.label      "Konzola brskalnika">
+<!ENTITY browserConsoleCmd.commandkey "j">
+<!ENTITY browserConsoleCmd.accesskey  "B">
 
 <!ENTITY inspectContextMenu.label     "Preglej element">
 <!ENTITY inspectContextMenu.accesskey "j">
@@ -229,13 +253,22 @@ These should match what Safari and other Apple applications use on OS X Lion. --
 <!ENTITY scratchpad.keycode           "VK_F4">
 <!ENTITY scratchpad.keytext           "F4">
 
+<!-- LOCALIZATION NOTE (chromeDebuggerMenu.label): This is the label for the
+  -  application menu item that opens the browser debugger UI in the Tools menu. -->
+<!ENTITY chromeDebuggerMenu.label       "Razhroščevalnik brskalnika">
+<!ENTITY chromeDebuggerMenu.accesskey   "e">
+
 <!ENTITY devToolbarCloseButton.tooltiptext "Zapri orodno vrstico za razvoj">
 <!ENTITY devToolbarMenu.label              "Orodna vrstica za razvoj">
 <!ENTITY devToolbarMenu.accesskey          "t">
+<!ENTITY devAppMgrMenu.label               "Upravitelj aplikacij">
+<!ENTITY devAppMgrMenu.accesskey           "a">
 <!ENTITY devToolbar.keycode                "VK_F2">
 <!ENTITY devToolbar.keytext                "F2">
 <!ENTITY devToolboxMenuItem.label          "Preklopi orodja">
 <!ENTITY devToolboxMenuItem.accesskey      "P">
+<!ENTITY devToolboxMenuItem.keycode        "I">
+<!ENTITY devToolboxMenuItem.keytext        "I">
 
 <!ENTITY devToolbarToolsButton.tooltip     "Preklopi razvojna orodja">
 <!ENTITY devToolbarOtherToolsButton.label  "Več orodij">
@@ -303,7 +336,6 @@ These should match what Safari and other Apple applications use on OS X Lion. --
 <!ENTITY historyUndoWindowMenu.label "Nedavno zaprta okna">
 <!ENTITY historyRestoreLastSession.label "Obnovi prejšnjo sejo">
 
-<!ENTITY historyHomeCmd.label "Domov">
 <!ENTITY showAllHistoryCmd2.label "Prikaži vso zgodovino">
 <!ENTITY showAllHistoryCmd.commandkey "S">
 
@@ -385,6 +417,8 @@ These should match what Safari and other Apple applications use on OS X Lion. --
 <!ENTITY viewImageCmd.accesskey "I">
 <!ENTITY viewImageInfoCmd.label       "Podatki o sliki">
 <!ENTITY viewImageInfoCmd.accesskey   "o">
+<!ENTITY viewImageDescCmd.label       "Pokaži opis">
+<!ENTITY viewImageDescCmd.accesskey   "S">
 <!ENTITY viewVideoCmd.label           "Pokaži video">
 <!ENTITY viewVideoCmd.accesskey       "I">
 <!ENTITY viewBGImageCmd.label "Pokaži sliko za ozadje">
@@ -422,9 +456,9 @@ These should match what Safari and other Apple applications use on OS X Lion. --
 <!ENTITY emailVideoCmd.accesskey      "o">
 <!ENTITY emailAudioCmd.label          "Pošlji zvok po e-pošti …">
 <!ENTITY emailAudioCmd.accesskey      "o">
-<!ENTITY playPluginCmd.label          "Omogoči vstavek">
+<!ENTITY playPluginCmd.label          "Omogoči vtičnik">
 <!ENTITY playPluginCmd.accesskey      "m">
-<!ENTITY hidePluginCmd.label          "Skrij vstavek">
+<!ENTITY hidePluginCmd.label          "Skrij vtičnik">
 <!ENTITY hidePluginCmd.accesskey      "S">
 <!ENTITY copyLinkCmd.label "Kopiraj mesto povezave">
 <!ENTITY copyLinkCmd.accesskey "i">
@@ -468,7 +502,7 @@ items are mutually exclusive. -->
 movie "Space Balls" and is meant to say that this speed is very
 fast. -->
 <!ENTITY mediaPlaybackRate200x.label "Dvojna hitrost (2×)">
-<!ENTITY mediaPlaybackRate200x.accesskey "L">
+<!ENTITY mediaPlaybackRate200x.accesskey "j">
 <!-- LOCALIZATION NOTE: The access keys for "Show Controls" and
 "Hide Controls" are the same because the two context-menu
 items are mutually exclusive. -->
@@ -536,7 +570,8 @@ you can use these alternative items. Otherwise, their values should be empty.  -
 <!ENTITY quitApplicationCmd.label "Izhod">
 <!ENTITY quitApplicationCmd.accesskey "I">
 <!ENTITY quitApplicationCmdMac.label "Izhod">
-<!ENTITY quitApplicationCmdMac.key "Q">
+<!-- LOCALIZATION NOTE(quitApplicationCmdUnix.key): This keyboard shortcut is used by both Linux and OSX builds. -->
+<!ENTITY quitApplicationCmdUnix.key     "Q">
 
 <!ENTITY closeCmd.label "Zapri">
 <!ENTITY closeCmd.key "W">
@@ -582,7 +617,7 @@ you can use these alternative items. Otherwise, their values should be empty.  -
 <!ENTITY editBookmark.removeBookmark.accessKey "R">
 
 <!ENTITY identity.unverifiedsite2 "Spletna stran ne vsebuje podatkov o identiteti.">
-<!ENTITY identity.connectedTo "Povezani ste na">
+<!ENTITY identity.connectedTo "Povezani ste na stran">
 <!-- Localization note (identity.runBy) : This string appears between a
 domain name (above) and an organization name (below). E.g.
 
@@ -594,9 +629,16 @@ The layout of the identity dialog prevents combining this into a single string w
 substitution variables.  If it is difficult to translate the sense of the string
 with that structure, consider a translation which ignores the preceding domain and
 just addresses the organization to follow, e.g. "This site is run by " -->
-<!ENTITY identity.runBy "ki jo poganja">
+<!ENTITY identity.runBy "za katero skrbi">
 
 <!ENTITY identity.moreInfoLinkText "Več podatkov …">
+
+<!ENTITY identity.permissions "Dovoljenja">
+
+<!-- LOCALIZATION NOTE (identity.help.tooltip) : This string should be the
+     localized title of this SUMO article
+     https://support.mozilla.org/kb/how-do-i-tell-if-my-connection-is-secure -->
+<!ENTITY identity.help.tooltip "Kako vem, da je moja povezaba na spletno stran varna?">
 
 <!-- Name for the tabs toolbar as spoken by screen readers.
      The word "toolbar" is appended automatically and should not be contained below! -->
@@ -630,12 +672,21 @@ just addresses the organization to follow, e.g. "This site is run by " -->
 <!ENTITY social.toggleNotifications.label "Prikaži namizna obvestila">
 <!ENTITY social.toggleNotifications.accesskey "n">
 
-<!ENTITY social.activated.undobutton.label "Razveljavi">
-<!ENTITY social.activated.undobutton.accesskey "R">
+<!ENTITY social.activated.description "Storitve <label/> so omogočene. Nastavitve storitev lahko spremenite v <label class='text-link'>Upravitelju dodatkov</label>.">
+<!ENTITY social.activated.undo.label "Ups, razveljavi!">
+<!ENTITY social.activated.undo.accesskey "R">
+<!ENTITY social.learnMore.label "Več o tem …">
+<!ENTITY social.learnMore.accesskey "V">
+<!ENTITY social.closeNotificationItem.label "Ne zdaj">
 
 <!ENTITY social.chatBar.commandkey "c">
 <!ENTITY social.chatBar.label "Osredotoči klepet">
 <!ENTITY social.chatBar.accesskey "k">
+
+<!ENTITY social.markpageMenu.accesskey "S">
+<!ENTITY social.markpageMenu.label "Shrani stran na …">
+<!ENTITY social.marklinkMenu.accesskey "P">
+<!ENTITY social.marklinkMenu.label "Shrani povezavo na …">
 
 <!ENTITY getUserMedia.selectCamera.label "Uporabi kamero:">
 <!ENTITY getUserMedia.selectCamera.accesskey "K">
@@ -649,3 +700,23 @@ just addresses the organization to follow, e.g. "This site is run by " -->
 <!ENTITY mixedContentBlocked.moreinfo "Večina strani bo delovala pravilo, čeprav je ta vsebina zavrnjena.">
 
 <!ENTITY pointerLock.notification.message "Pritisnite ESC za ponovni prikaz.">
+
+<!ENTITY pluginNotification.showAll.label "Prikaži vse">
+<!ENTITY pluginNotification.showAll.accesskey "S">
+
+<!-- LOCALIZATION NOTE (pluginActivateNow.label, pluginActivateAlways.label, pluginBlockNow.label): These should be the same as the matching strings in browser.properties -->
+<!ENTITY pluginActivateNow.label "Dovoli zdaj">
+<!ENTITY pluginActivateAlways.label "Dovoli in si zapomni">
+<!ENTITY pluginBlockNow.label "Zavrni vtičnik">
+
+<!-- LOCALIZATION NOTE: (pluginNotification.width): This is used to determine the
+     width of the plugin popup notification that can appear if a plugin has been
+     blocked on a page. Should be wide enough to fit the pluginActivateNow.label
+     and pluginActivateAlways.label strings above on a single line. This must be
+     a CSS length value. -->
+<!ENTITY pluginNotification.width "28em">
+
+<!ENTITY tabCrashed.header "Zavihek se je sesul">
+<!ENTITY tabCrashed.message "No, to je pa nerodno. Nalaganje spletne strani ni uspelo, saj se ne odziva.">
+<!ENTITY tabCrashed.checkSendReport "Pošljite obvestilo o sesutju organizaciji &vendorShortName;, da ga bodo lahko odpravili.">
+<!ENTITY tabCrashed.tryAgain "Poskusi znova">

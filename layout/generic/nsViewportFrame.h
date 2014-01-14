@@ -13,7 +13,6 @@
 
 #include "mozilla/Attributes.h"
 #include "nsContainerFrame.h"
-#include "nsGkAtoms.h"
 
 class nsPresContext;
 
@@ -83,7 +82,7 @@ public:
 #endif
 
 private:
-  virtual mozilla::layout::FrameChildListID GetAbsoluteListID() const { return kFixedList; }
+  virtual mozilla::layout::FrameChildListID GetAbsoluteListID() const MOZ_OVERRIDE { return kFixedList; }
 
 protected:
   /**

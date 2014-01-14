@@ -6,58 +6,42 @@
 #ifndef mozilla_dom_HTMLLegendElement_h
 #define mozilla_dom_HTMLLegendElement_h
 
-#include "nsIDOMHTMLLegendElement.h"
+#include "mozilla/Attributes.h"
 #include "nsGenericHTMLElement.h"
-#include "nsHTMLFormElement.h"
+#include "mozilla/dom/HTMLFormElement.h"
 
 namespace mozilla {
 namespace dom {
 
-class HTMLLegendElement : public nsGenericHTMLElement,
-                          public nsIDOMHTMLLegendElement
+class HTMLLegendElement MOZ_FINAL : public nsGenericHTMLElement
 {
 public:
   HTMLLegendElement(already_AddRefed<nsINodeInfo> aNodeInfo)
     : nsGenericHTMLElement(aNodeInfo)
   {
-    SetIsDOMBinding();
   }
   virtual ~HTMLLegendElement();
 
   NS_IMPL_FROMCONTENT_HTML_WITH_TAG(HTMLLegendElement, legend)
 
-  // nsISupports
-  NS_DECL_ISUPPORTS_INHERITED
-
-  // nsIDOMNode
-  NS_FORWARD_NSIDOMNODE_TO_NSINODE
-
-  // nsIDOMElement
-  NS_FORWARD_NSIDOMELEMENT_TO_GENERIC
-
-  // nsIDOMHTMLLegendElement
-  NS_DECL_NSIDOMHTMLLEGENDELEMENT
-
-  // nsIDOMHTMLElement
-  NS_FORWARD_NSIDOMHTMLELEMENT_TO_GENERIC
-
+  using nsGenericHTMLElement::Focus;
   virtual void Focus(ErrorResult& aError) MOZ_OVERRIDE;
 
   virtual void PerformAccesskey(bool aKeyCausesActivation,
-                                bool aIsTrustedEvent);
+                                bool aIsTrustedEvent) MOZ_OVERRIDE;
 
   // nsIContent
   virtual nsresult BindToTree(nsIDocument* aDocument, nsIContent* aParent,
                               nsIContent* aBindingParent,
-                              bool aCompileEventHandlers);
+                              bool aCompileEventHandlers) MOZ_OVERRIDE;
   virtual void UnbindFromTree(bool aDeep = true,
-                              bool aNullParent = true);
+                              bool aNullParent = true) MOZ_OVERRIDE;
   virtual bool ParseAttribute(int32_t aNamespaceID,
                                 nsIAtom* aAttribute,
                                 const nsAString& aValue,
-                                nsAttrValue& aResult);
+                                nsAttrValue& aResult) MOZ_OVERRIDE;
   virtual nsChangeHint GetAttributeChangeHint(const nsIAtom* aAttribute,
-                                              int32_t aModType) const;
+                                              int32_t aModType) const MOZ_OVERRIDE;
   nsresult SetAttr(int32_t aNameSpaceID, nsIAtom* aName,
                    const nsAString& aValue, bool aNotify)
   {
@@ -65,11 +49,11 @@ public:
   }
   virtual nsresult SetAttr(int32_t aNameSpaceID, nsIAtom* aName,
                            nsIAtom* aPrefix, const nsAString& aValue,
-                           bool aNotify);
+                           bool aNotify) MOZ_OVERRIDE;
   virtual nsresult UnsetAttr(int32_t aNameSpaceID, nsIAtom* aAttribute,
-                             bool aNotify);
+                             bool aNotify) MOZ_OVERRIDE;
 
-  virtual nsresult Clone(nsINodeInfo* aNodeInfo, nsINode** aResult) const;
+  virtual nsresult Clone(nsINodeInfo* aNodeInfo, nsINode** aResult) const MOZ_OVERRIDE;
 
   Element* GetFormElement()
   {
@@ -78,15 +62,17 @@ public:
     return fieldsetControl ? fieldsetControl->GetFormElement() : nullptr;
   }
 
-  virtual nsIDOMNode* AsDOMNode() { return this; }
-
   /**
    * WebIDL Interface
    */
 
-  already_AddRefed<nsHTMLFormElement> GetForm();
+  already_AddRefed<HTMLFormElement> GetForm();
 
-  // The XPCOM GetAlign is OK for us
+  void GetAlign(nsAString& aAlign)
+  {
+    GetHTMLAttr(nsGkAtoms::align, aAlign);
+  }
+
   void SetAlign(const nsAString& aAlign, ErrorResult& aError)
   {
     SetHTMLAttr(nsGkAtoms::align, aAlign, aError);

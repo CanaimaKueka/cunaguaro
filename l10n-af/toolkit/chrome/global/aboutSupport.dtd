@@ -9,6 +9,15 @@
 probleem probeer oplos. Indien u soek vir antwoorde op algemene vrae oor 
 &brandShortName;, besoek gerus ons <a id='supportLink'>steunwerf</a>.">
 
+<!ENTITY aboutSupport.crashes.title "Omvalverslae">
+<!-- LOCALIZATION NOTE (aboutSupport.crashes.id):
+This is likely the same like id.heading in crashes.dtd. -->
+<!ENTITY aboutSupport.crashes.id "Verslag-ID">
+<!-- LOCALIZATION NOTE (aboutSupport.crashes.id):
+This is likely the same like date.heading in crashes.dtd. -->
+
+
+
 <!ENTITY aboutSupport.extensionsTitle "Uitbreidings">
 <!ENTITY aboutSupport.extensionName "Naam">
 <!ENTITY aboutSupport.extensionEnabled "Geaktiveer">
@@ -18,6 +27,11 @@ probleem probeer oplos. Indien u soek vir antwoorde op algemene vrae oor
 <!ENTITY aboutSupport.appBasicsTitle "Basiese toepassingdetails">
 <!ENTITY aboutSupport.appBasicsName "Naam">
 <!ENTITY aboutSupport.appBasicsVersion "Weergawe">
+<!-- LOCALIZATION NOTE (aboutSupport.appBasicsUpdateHistory, aboutSupport.appBasicsShowUpdateHistory):
+"Update" is a noun here, not a verb. -->
+
+<!ENTITY aboutSupport.appBasicsUpdateHistory "Bywerkgeskiedenis">
+<!ENTITY aboutSupport.appBasicsShowUpdateHistory "Wys bywerkgeskiedenis">
 
 <!ENTITY aboutSupport.appBasicsProfileDir "Profielgids">
 <!-- LOCALIZATION NOTE (aboutSupport.appBasicsProfileDirWinMac):
@@ -28,7 +42,6 @@ Windows/Mac use the term "Folder" instead of "Directory" -->
 <!ENTITY aboutSupport.appBasicsEnabledPlugins "Geaktiveerde inproppe">
 <!ENTITY aboutSupport.appBasicsBuildConfig "Boukonfigurasie">
 <!ENTITY aboutSupport.appBasicsUserAgent "Gebruikeragent">
-<!ENTITY aboutSupport.appBasicsCrashIDs "Omvalverslae">
 <!ENTITY aboutSupport.appBasicsMemoryUse "Geheuegebruik">
 
 <!ENTITY aboutSupport.showDir.label "Open gids">
@@ -51,7 +64,7 @@ variant of aboutSupport.showDir.label. -->
 <!ENTITY aboutSupport.graphicsTitle "Grafika">
 
 <!ENTITY aboutSupport.jsTitle "JavaScript">
-<!ENTITY aboutSupport.jsIncrementalGC "Incremental GC">
+
 
 <!ENTITY aboutSupport.a11yTitle "Toeganklikheid">
 <!ENTITY aboutSupport.a11yActivated "Geaktiveer">
@@ -60,7 +73,7 @@ variant of aboutSupport.showDir.label. -->
 <!ENTITY aboutSupport.libraryVersionsTitle "Biblioteekweergawes">
 
 <!ENTITY aboutSupport.installationHistoryTitle "Installasiegeskiedenis">
-<!ENTITY aboutSupport.updateHistoryTitle "Opdateringgeskiedenis">
+<!ENTITY aboutSupport.updateHistoryTitle "Bywerkgeskiedenis">
 
 <!ENTITY aboutSupport.copyTextToClipboard.label "Kopieer teks na die knipbord">
 <!ENTITY aboutSupport.copyRawDataToClipboard.label "Kopieer rou data na die knipbord">

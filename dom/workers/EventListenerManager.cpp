@@ -7,8 +7,9 @@
 
 #include "jsapi.h"
 #include "jsfriendapi.h"
-#include "js/Vector.h"
 #include "js/GCAPI.h"
+#include "js/Tracer.h"
+#include "js/Vector.h"
 #include "mozilla/Util.h"
 #include "nsAutoJSValHolder.h"
 
@@ -60,7 +61,7 @@ private:
 
 struct ListenerData : LinkedListElement<ListenerData>
 {
-  JSObject* mListener;
+  JS::Heap<JSObject*> mListener;
   EventListenerManager::Phase mPhase;
   bool mWantsUntrusted;
 
@@ -184,9 +185,9 @@ EventListenerManager::TraceInternal(JSTracer* aTrc) const
     for (const ListenerData* listenerElem = collection->mListeners.getFirst();
          listenerElem;
          listenerElem = listenerElem->getNext()) {
-      JS_CallObjectTracer(aTrc,
-                          &const_cast<ListenerData*>(listenerElem)->mListener,
-                          "EventListenerManager listener object");
+      JS_CallHeapObjectTracer(aTrc,
+                              &const_cast<ListenerData*>(listenerElem)->mListener,
+                              "EventListenerManager listener object");
     }
   }
 }
@@ -209,7 +210,7 @@ EventListenerManager::FinalizeInternal(JSFreeOp* aFop)
 
 void
 EventListenerManager::Add(JSContext* aCx, const jsid& aType,
-                          JSObject* aListener, Phase aPhase,
+                          JS::Handle<JSObject*> aListener, Phase aPhase,
                           bool aWantsUntrusted, ErrorResult& aRv)
 {
   MOZ_ASSERT(aListener);
@@ -244,7 +245,7 @@ EventListenerManager::Add(JSContext* aCx, const jsid& aType,
 
 void
 EventListenerManager::Remove(JSContext* aCx, const jsid& aType,
-                             JSObject* aListener, Phase aPhase,
+                             JS::Handle<JSObject*> aListener, Phase aPhase,
                              bool aClearEmpty)
 {
   MOZ_ASSERT(aListener);
@@ -298,7 +299,7 @@ EventListenerManager::DispatchEvent(JSContext* aCx, const EventTarget& aTarget,
   }
 
   JS::Rooted<JS::Value> val(aCx);
-  if (!JS_GetProperty(aCx, aEvent, "target", val.address())) {
+  if (!JS_GetProperty(aCx, aEvent, "target", &val)) {
     aRv.Throw(NS_ERROR_FAILURE);
     return false;
   }
@@ -314,9 +315,9 @@ EventListenerManager::DispatchEvent(JSContext* aCx, const EventTarget& aTarget,
   }
 
   JS::Rooted<JSString*> eventType(aCx);
-  JSBool eventIsTrusted;
+  bool eventIsTrusted;
 
-  if (!JS_GetProperty(aCx, aEvent, "type", val.address()) ||
+  if (!JS_GetProperty(aCx, aEvent, "type", &val) ||
       !(eventType = JS_ValueToString(aCx, val)) ||
       !(eventType = JS_InternJSString(aCx, eventType))) {
     aRv.Throw(NS_ERROR_FAILURE);
@@ -325,7 +326,7 @@ EventListenerManager::DispatchEvent(JSContext* aCx, const EventTarget& aTarget,
 
   // We have already ensure that the event is one of our types of events so
   // there is no need to worry about this property being faked.
-  if (!JS_GetProperty(aCx, aEvent, "isTrusted", val.address()) ||
+  if (!JS_GetProperty(aCx, aEvent, "isTrusted", &val) ||
       !JS_ValueToBoolean(aCx, val, &eventIsTrusted)) {
     aRv.Throw(NS_ERROR_FAILURE);
     return false;
@@ -337,29 +338,14 @@ EventListenerManager::DispatchEvent(JSContext* aCx, const EventTarget& aTarget,
     return false;
   }
 
-  ContextAllocPolicy ap(aCx);
-
-  // XXXbent There is no reason to use nsAutoJSValHolder here as we should be
-  //         able to use js::AutoValueVector. Worse, nsAutoJSValHolder is much
-  //         slower. However, js::AutoValueVector causes crashes on Android at
-  //         the moment so we don't have much choice.
-  js::Vector<nsAutoJSValHolder, 10, ContextAllocPolicy> listeners(ap);
-
+  JS::AutoValueVector listeners(aCx);
   for (ListenerData* listenerData = collection->mListeners.getFirst();
        listenerData;
        listenerData = listenerData->getNext()) {
     // Listeners that don't want untrusted events will be skipped if this is an
     // untrusted event.
     if (eventIsTrusted || listenerData->mWantsUntrusted) {
-      nsAutoJSValHolder holder;
-      if (!holder.Hold(aCx)) {
-        aRv.Throw(NS_ERROR_OUT_OF_MEMORY);
-        return false;
-      }
-
-      holder = listenerData->mListener;
-
-      if (!listeners.append(holder)) {
+      if (!listeners.append(OBJECT_TO_JSVAL(listenerData->mListener))) {
         aRv.Throw(NS_ERROR_OUT_OF_MEMORY);
         return false;
       }
@@ -386,7 +372,7 @@ EventListenerManager::DispatchEvent(JSContext* aCx, const EventTarget& aTarget,
     JS::Rooted<JS::Value> listenerVal(aCx, listeners[index]);
 
     JS::Rooted<JSObject*> listenerObj(aCx);
-    if (!JS_ValueToObject(aCx, listenerVal, listenerObj.address())) {
+    if (!JS_ValueToObject(aCx, listenerVal, &listenerObj)) {
       if (!JS_ReportPendingException(aCx)) {
         aRv.Throw(NS_ERROR_FAILURE);
         return false;
@@ -398,7 +384,7 @@ EventListenerManager::DispatchEvent(JSContext* aCx, const EventTarget& aTarget,
 
     JS::Rooted<JSObject*> thisObj(aCx, aTarget.GetJSObject());
 
-    JSBool hasHandleEvent;
+    bool hasHandleEvent;
     if (!JS_HasProperty(aCx, listenerObj, sHandleEventChars, &hasHandleEvent)) {
       if (!JS_ReportPendingException(aCx)) {
         aRv.Throw(NS_ERROR_FAILURE);
@@ -408,7 +394,7 @@ EventListenerManager::DispatchEvent(JSContext* aCx, const EventTarget& aTarget,
     }
 
     if (hasHandleEvent) {
-      if (!JS_GetProperty(aCx, listenerObj, sHandleEventChars, listenerVal.address())) {
+      if (!JS_GetProperty(aCx, listenerObj, sHandleEventChars, &listenerVal)) {
         if (!JS_ReportPendingException(aCx)) {
           aRv.Throw(NS_ERROR_FAILURE);
           return false;
@@ -420,9 +406,9 @@ EventListenerManager::DispatchEvent(JSContext* aCx, const EventTarget& aTarget,
     }
 
     jsval argv[] = { OBJECT_TO_JSVAL(aEvent) };
-    jsval rval = JSVAL_VOID;
+    JS::Rooted<JS::Value> rval(aCx);
     if (!JS_CallFunctionValue(aCx, thisObj, listenerVal, ArrayLength(argv),
-                              argv, &rval)) {
+                              argv, rval.address())) {
       if (!JS_ReportPendingException(aCx)) {
         aRv.Throw(NS_ERROR_FAILURE);
         return false;

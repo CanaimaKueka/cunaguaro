@@ -6,10 +6,12 @@
 #include "DrawTargetSkia.h"
 #include "SourceSurfaceSkia.h"
 #include "ScaledFontBase.h"
+#include "ScaledFontCairo.h"
 #include "skia/SkDevice.h"
 
 #ifdef USE_SKIA_GPU
 #include "skia/SkGpuDevice.h"
+#include "skia/GrGLInterface.h"
 #endif
 
 #include "skia/SkTypeface.h"
@@ -24,12 +26,6 @@
 #include "HelpersSkia.h"
 #include "Tools.h"
 #include <algorithm>
-
-#ifdef ANDROID
-# define USE_SOFT_CLIPPING false
-#else
-# define USE_SOFT_CLIPPING true
-#endif
 
 namespace mozilla {
 namespace gfx {
@@ -79,31 +75,85 @@ public:
   ExtendMode mExtendMode;
 };
 
+#ifdef USE_SKIA_GPU
+int DrawTargetSkia::sTextureCacheCount = 256;
+int DrawTargetSkia::sTextureCacheSizeInBytes = 96*1024*1024;
+
+static std::vector<DrawTargetSkia*>&
+GLDrawTargets()
+{
+  static std::vector<DrawTargetSkia*> targets;
+  return targets;
+}
+
+void
+DrawTargetSkia::RebalanceCacheLimits()
+{
+  // Divide the global cache limits equally between all currently active GL-backed
+  // Skia DrawTargets.
+  std::vector<DrawTargetSkia*>& targets = GLDrawTargets();
+  uint32_t targetCount = targets.size();
+  if (targetCount == 0)
+    return;
+
+  int individualCacheSize = sTextureCacheSizeInBytes / targetCount;
+  for (uint32_t i = 0; i < targetCount; i++) {
+    targets[i]->SetCacheLimits(sTextureCacheCount, individualCacheSize);
+  }
+}
+
+static void
+AddGLDrawTarget(DrawTargetSkia* target)
+{
+  GLDrawTargets().push_back(target);
+  DrawTargetSkia::RebalanceCacheLimits();
+}
+
+static void
+RemoveGLDrawTarget(DrawTargetSkia* target)
+{
+  std::vector<DrawTargetSkia*>& targets = GLDrawTargets();
+  std::vector<DrawTargetSkia*>::iterator it = std::find(targets.begin(), targets.end(), target);
+  if (it != targets.end()) {
+    targets.erase(it);
+    DrawTargetSkia::RebalanceCacheLimits();
+  }
+}
+
+void
+DrawTargetSkia::SetGlobalCacheLimits(int aCount, int aSizeInBytes)
+{
+  sTextureCacheCount = aCount;
+  sTextureCacheSizeInBytes = aSizeInBytes;
+
+  DrawTargetSkia::RebalanceCacheLimits();
+}
+#endif
+
 DrawTargetSkia::DrawTargetSkia()
+  : mSnapshot(nullptr)
 {
 }
 
 DrawTargetSkia::~DrawTargetSkia()
 {
-  if (mSnapshots.size()) {
-    for (std::vector<SourceSurfaceSkia*>::iterator iter = mSnapshots.begin();
-         iter != mSnapshots.end(); iter++) {
-      (*iter)->DrawTargetDestroyed();
-    }
-    // All snapshots will now have copied data.
-    mSnapshots.clear();
-  }
+#ifdef USE_SKIA_GPU
+  RemoveGLDrawTarget(this);
+#endif
 }
 
 TemporaryRef<SourceSurface>
 DrawTargetSkia::Snapshot()
 {
-  RefPtr<SourceSurfaceSkia> source = new SourceSurfaceSkia();
-  if (!source->InitWithBitmap(mBitmap, mFormat, this)) {
-    return nullptr;
+  RefPtr<SourceSurfaceSkia> snapshot = mSnapshot;
+  if (!snapshot) {
+    snapshot = new SourceSurfaceSkia();
+    mSnapshot = snapshot;
+    if (!snapshot->InitFromCanvas(mCanvas.get(), mFormat, this))
+      return nullptr;
   }
-  AppendSnapshot(source);
-  return source;
+
+  return snapshot;
 }
 
 void SetPaintPattern(SkPaint& aPaint, const Pattern& aPattern, Float aAlpha = 1.0)
@@ -273,22 +323,43 @@ DrawTargetSkia::DrawSurface(SourceSurface *aSurface,
 
   MarkChanged();
 
+  IntRect sourceIntRect;
+  bool integerAligned = aSource.ToIntRect(&sourceIntRect);
+
   SkRect destRect = RectToSkRect(aDest);
   SkRect sourceRect = RectToSkRect(aSource);
 
-  SkMatrix matrix;
-  matrix.setRectToRect(sourceRect, destRect, SkMatrix::kFill_ScaleToFit);
-  
+  Rect boundingSource = aSource;
+  boundingSource.RoundOut();
+
+  SkRect sourceBoundingRect = RectToSkRect(boundingSource);
+  SkIRect sourceBoundingIRect = RectToSkIRect(boundingSource);
+
   const SkBitmap& bitmap = static_cast<SourceSurfaceSkia*>(aSurface)->GetBitmap();
  
   AutoPaintSetup paint(mCanvas.get(), aOptions);
-  SkShader *shader = SkShader::CreateBitmapShader(bitmap, SkShader::kClamp_TileMode, SkShader::kClamp_TileMode);
-  shader->setLocalMatrix(matrix);
-  SkSafeUnref(paint.mPaint.setShader(shader));
-  if (aSurfOptions.mFilter != FILTER_LINEAR) {
+  if (aSurfOptions.mFilter == FILTER_POINT) {
     paint.mPaint.setFilterBitmap(false);
   }
-  mCanvas->drawRect(destRect, paint.mPaint);
+
+  if (!integerAligned) {
+    // We need to inflate our destRect by the same amount we inflated sourceRect
+    // by when we rounded up to the nearest integer size to ensure we interpolate
+    // the edge pixels properly, but clip to the true destination rect first so
+    // we don't draw outside our designated area.
+    mCanvas->save();
+    mCanvas->clipRect(destRect);
+
+    SkMatrix rectTransform;
+    rectTransform.setRectToRect(sourceRect, sourceBoundingRect, SkMatrix::kFill_ScaleToFit);
+    rectTransform.mapRect(&destRect);
+  }
+
+  mCanvas->drawBitmapRect(bitmap, &sourceBoundingIRect, destRect, &paint.mPaint);
+
+  if (!integerAligned) {
+    mCanvas->restore();
+  }
 }
 
 void
@@ -445,7 +516,7 @@ DrawTargetSkia::FillGlyphs(ScaledFont *aFont,
                            const GlyphBuffer &aBuffer,
                            const Pattern &aPattern,
                            const DrawOptions &aOptions,
-                           const GlyphRenderingOptions*)
+                           const GlyphRenderingOptions *aRenderingOptions)
 {
   if (aFont->GetType() != FONT_MAC &&
       aFont->GetType() != FONT_SKIA &&
@@ -461,7 +532,30 @@ DrawTargetSkia::FillGlyphs(ScaledFont *aFont,
   paint.mPaint.setTypeface(skiaFont->GetSkTypeface());
   paint.mPaint.setTextSize(SkFloatToScalar(skiaFont->mSize));
   paint.mPaint.setTextEncoding(SkPaint::kGlyphID_TextEncoding);
-  
+
+  if (aRenderingOptions && aRenderingOptions->GetType() == FONT_CAIRO) {
+    switch (static_cast<const GlyphRenderingOptionsCairo*>(aRenderingOptions)->GetHinting()) {
+      case FONT_HINTING_NONE:
+        paint.mPaint.setHinting(SkPaint::kNo_Hinting);
+        break;
+      case FONT_HINTING_LIGHT:
+        paint.mPaint.setHinting(SkPaint::kSlight_Hinting);
+        break;
+      case FONT_HINTING_NORMAL:
+        paint.mPaint.setHinting(SkPaint::kNormal_Hinting);
+        break;
+      case FONT_HINTING_FULL:
+        paint.mPaint.setHinting(SkPaint::kFull_Hinting);
+        break;
+    }
+
+    if (static_cast<const GlyphRenderingOptionsCairo*>(aRenderingOptions)->GetAutoHinting()) {
+      paint.mPaint.setAutohinted(true);
+    }
+  } else {
+    paint.mPaint.setHinting(SkPaint::kNormal_Hinting);
+  }
+
   std::vector<uint16_t> indices;
   std::vector<SkPoint> offsets;
   indices.resize(aBuffer.mNumGlyphs);
@@ -551,7 +645,7 @@ DrawTargetSkia::CopySurface(SourceSurface *aSurface,
 {
   //TODO: We could just use writePixels() here if the sourceRect is the entire source
   
-    if (aSurface->GetType() != SURFACE_SKIA) {
+  if (aSurface->GetType() != SURFACE_SKIA) {
     return;
   }
 
@@ -566,8 +660,7 @@ DrawTargetSkia::CopySurface(SourceSurface *aSurface,
   mCanvas->clipRect(dest, SkRegion::kReplace_Op);
   SkPaint paint;
 
-  if (mBitmap.config() == SkBitmap::kRGB_565_Config &&
-      mCanvas->getDevice()->config() == SkBitmap::kRGB_565_Config) {
+  if (mCanvas->getDevice()->config() == SkBitmap::kRGB_565_Config) {
     // Set the xfermode to SOURCE_OVER to workaround
     // http://code.google.com/p/skia/issues/detail?id=628
     // RGB565 is opaque so they're equivalent anyway
@@ -583,16 +676,18 @@ DrawTargetSkia::CopySurface(SourceSurface *aSurface,
 bool
 DrawTargetSkia::Init(const IntSize &aSize, SurfaceFormat aFormat)
 {
-  mBitmap.setConfig(GfxFormatToSkiaConfig(aFormat), aSize.width, aSize.height);
-  if (!mBitmap.allocPixels()) {
+  SkAutoTUnref<SkDevice> device(new SkDevice(GfxFormatToSkiaConfig(aFormat), aSize.width, aSize.height));
+
+  SkBitmap bitmap = device->accessBitmap(true);
+  if (!bitmap.allocPixels()) {
     return false;
   }
-  mBitmap.eraseARGB(0, 0, 0, 0);
-  SkAutoTUnref<SkDevice> device(new SkDevice(mBitmap));
+
+  bitmap.eraseARGB(0, 0, 0, 0);
+
   SkAutoTUnref<SkCanvas> canvas(new SkCanvas(device.get()));
   mSize = aSize;
 
-  mDevice = device.get();
   mCanvas = canvas.get();
   mFormat = aFormat;
   return true;
@@ -600,45 +695,69 @@ DrawTargetSkia::Init(const IntSize &aSize, SurfaceFormat aFormat)
 
 #ifdef USE_SKIA_GPU
 void
-DrawTargetSkia::InitWithFBO(unsigned int aFBOID, GrContext* aGrContext, const IntSize &aSize, SurfaceFormat aFormat)
+DrawTargetSkia::InitWithGLContextAndGrGLInterface(GenericRefCountedBase* aGLContext,
+                                                  GrGLInterface* aGrGLInterface,
+                                                  const IntSize &aSize,
+                                                  SurfaceFormat aFormat)
 {
-  GrPlatformRenderTargetDesc targetDescriptor;
-
-  targetDescriptor.fWidth = aSize.width;
-  targetDescriptor.fHeight = aSize.height;
-  targetDescriptor.fConfig = GfxFormatToGrConfig(aFormat);
-  targetDescriptor.fSampleCnt = 0;
-  targetDescriptor.fRenderTargetHandle = aFBOID;
-
-  SkAutoTUnref<GrRenderTarget> target(aGrContext->createPlatformRenderTarget(targetDescriptor));
-
-  SkAutoTUnref<SkDevice> device(new SkGpuDevice(aGrContext, target.get()));
-  SkAutoTUnref<SkCanvas> canvas(new SkCanvas(device.get()));
+  mGLContext = aGLContext;
   mSize = aSize;
-
-  mDevice = device.get();
-  mCanvas = canvas.get();
   mFormat = aFormat;
+
+  mGrGLInterface = aGrGLInterface;
+  mGrGLInterface->fCallbackData = reinterpret_cast<GrGLInterfaceCallbackData>(this);
+
+  GrBackendContext backendContext = reinterpret_cast<GrBackendContext>(aGrGLInterface);
+  SkAutoTUnref<GrContext> gr(GrContext::Create(kOpenGL_GrBackend, backendContext));
+  mGrContext = gr.get();
+
+  GrBackendRenderTargetDesc targetDescriptor;
+
+  targetDescriptor.fWidth = mSize.width;
+  targetDescriptor.fHeight = mSize.height;
+  targetDescriptor.fConfig = GfxFormatToGrConfig(mFormat);
+  targetDescriptor.fOrigin = kBottomLeft_GrSurfaceOrigin;
+  targetDescriptor.fSampleCnt = 0;
+  targetDescriptor.fRenderTargetHandle = 0; // GLContext always exposes the right framebuffer as id 0
+
+  SkAutoTUnref<GrRenderTarget> target(mGrContext->wrapBackendRenderTarget(targetDescriptor));
+  SkAutoTUnref<SkDevice> device(new SkGpuDevice(mGrContext.get(), target.get()));
+  SkAutoTUnref<SkCanvas> canvas(new SkCanvas(device.get()));
+  mCanvas = canvas.get();
+
+  AddGLDrawTarget(this);
+}
+
+void
+DrawTargetSkia::SetCacheLimits(int aCount, int aSizeInBytes)
+{
+  MOZ_ASSERT(mGrContext, "No GrContext!");
+  mGrContext->setTextureCacheLimits(aCount, aSizeInBytes);
 }
 #endif
 
 void
 DrawTargetSkia::Init(unsigned char* aData, const IntSize &aSize, int32_t aStride, SurfaceFormat aFormat)
 {
+  bool isOpaque = false;
   if (aFormat == FORMAT_B8G8R8X8) {
     // We have to manually set the A channel to be 255 as Skia doesn't understand BGRX
     ConvertBGRXToBGRA(aData, aSize, aStride);
-    mBitmap.setIsOpaque(true);
+    isOpaque = true;
   }
-
-  mBitmap.setConfig(GfxFormatToSkiaConfig(aFormat), aSize.width, aSize.height, aStride);
-  mBitmap.setPixels(aData);
   
-  SkAutoTUnref<SkDevice> device(new SkDevice(mBitmap));
+  SkAutoTUnref<SkDevice> device(new SkDevice(GfxFormatToSkiaConfig(aFormat), aSize.width, aSize.height, isOpaque));
+
+  SkBitmap bitmap = (SkBitmap)device->accessBitmap(true);
+  bitmap.lockPixels();
+  bitmap.setPixels(aData);
+  bitmap.setConfig(GfxFormatToSkiaConfig(aFormat), aSize.width, aSize.height, aStride);
+  bitmap.unlockPixels();
+  bitmap.notifyPixelsChanged();
+
   SkAutoTUnref<SkCanvas> canvas(new SkCanvas(device.get()));
   mSize = aSize;
 
-  mDevice = device.get();
   mCanvas = canvas.get();
   mFormat = aFormat;
 }
@@ -665,7 +784,7 @@ DrawTargetSkia::ClearRect(const Rect &aRect)
   MarkChanged();
   SkPaint paint;
   mCanvas->save();
-  mCanvas->clipRect(RectToSkRect(aRect), SkRegion::kIntersect_Op, USE_SOFT_CLIPPING);
+  mCanvas->clipRect(RectToSkRect(aRect), SkRegion::kIntersect_Op, true);
   paint.setColor(SkColorSetARGB(0, 0, 0, 0));
   paint.setXfermodeMode(SkXfermode::kSrc_Mode);
   mCanvas->drawPaint(paint);
@@ -681,7 +800,7 @@ DrawTargetSkia::PushClip(const Path *aPath)
 
   const PathSkia *skiaPath = static_cast<const PathSkia*>(aPath);
   mCanvas->save(SkCanvas::kClip_SaveFlag);
-  mCanvas->clipPath(skiaPath->GetPath(), SkRegion::kIntersect_Op, USE_SOFT_CLIPPING);
+  mCanvas->clipPath(skiaPath->GetPath(), SkRegion::kIntersect_Op, true);
 }
 
 void
@@ -690,7 +809,7 @@ DrawTargetSkia::PushClipRect(const Rect& aRect)
   SkRect rect = RectToSkRect(aRect);
 
   mCanvas->save(SkCanvas::kClip_SaveFlag);
-  mCanvas->clipRect(rect, SkRegion::kIntersect_Op, USE_SOFT_CLIPPING);
+  mCanvas->clipRect(rect, SkRegion::kIntersect_Op, true);
 }
 
 void
@@ -713,31 +832,18 @@ DrawTargetSkia::CreateGradientStops(GradientStop *aStops, uint32_t aNumStops, Ex
 }
 
 void
-DrawTargetSkia::AppendSnapshot(SourceSurfaceSkia* aSnapshot)
-{
-  mSnapshots.push_back(aSnapshot);
-}
-
-void
-DrawTargetSkia::RemoveSnapshot(SourceSurfaceSkia* aSnapshot)
-{
-  std::vector<SourceSurfaceSkia*>::iterator iter = std::find(mSnapshots.begin(), mSnapshots.end(), aSnapshot);
-  if (iter != mSnapshots.end()) {
-    mSnapshots.erase(iter);
-  }
-}
-
-void
 DrawTargetSkia::MarkChanged()
 {
-  if (mSnapshots.size()) {
-    for (std::vector<SourceSurfaceSkia*>::iterator iter = mSnapshots.begin();
-         iter != mSnapshots.end(); iter++) {
-      (*iter)->DrawTargetWillChange();
-    }
-    // All snapshots will now have copied data.
-    mSnapshots.clear();
+  if (mSnapshot) {
+    mSnapshot->DrawTargetWillChange();
+    mSnapshot = nullptr;
   }
+}
+
+void
+DrawTargetSkia::SnapshotDestroyed()
+{
+  mSnapshot = nullptr;
 }
 
 }

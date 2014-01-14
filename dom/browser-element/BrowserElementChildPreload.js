@@ -41,6 +41,66 @@ function sendAsyncMsg(msg, data) {
   sendAsyncMessage('browser-element-api:call', data);
 }
 
+function sendSyncMsg(msg, data) {
+  // Ensure that we don't send any messages before BrowserElementChild.js
+  // finishes loading.
+  if (!BrowserElementIsReady)
+    return;
+
+  if (!data) {
+    data = { };
+  }
+
+  data.msg_name = msg;
+  return sendSyncMessage('browser-element-api:call', data);
+}
+
+let CERTIFICATE_ERROR_PAGE_PREF = 'security.alternate_certificate_error_page';
+
+let NS_ERROR_MODULE_BASE_OFFSET = 0x45;
+let NS_ERROR_MODULE_SECURITY= 21;
+function NS_ERROR_GET_MODULE(err) {
+  return ((((err) >> 16) - NS_ERROR_MODULE_BASE_OFFSET) & 0x1fff) 
+}
+
+function NS_ERROR_GET_CODE(err) {
+  return ((err) & 0xffff);
+}
+
+let SEC_ERROR_BASE = Ci.nsINSSErrorsService.NSS_SEC_ERROR_BASE;
+let SEC_ERROR_UNKNOWN_ISSUER = (SEC_ERROR_BASE + 13);
+let SEC_ERROR_CA_CERT_INVALID =   (SEC_ERROR_BASE + 36);
+let SEC_ERROR_UNTRUSTED_ISSUER = (SEC_ERROR_BASE + 20);
+let SEC_ERROR_EXPIRED_ISSUER_CERTIFICATE = (SEC_ERROR_BASE + 30);
+let SEC_ERROR_UNTRUSTED_CERT = (SEC_ERROR_BASE + 21);
+let SEC_ERROR_INADEQUATE_KEY_USAGE = (SEC_ERROR_BASE + 90);
+let SEC_ERROR_EXPIRED_CERTIFICATE = (SEC_ERROR_BASE + 11);
+let SEC_ERROR_CERT_SIGNATURE_ALGORITHM_DISABLED = (SEC_ERROR_BASE + 176);
+
+let SSL_ERROR_BASE = Ci.nsINSSErrorsService.NSS_SSL_ERROR_BASE;
+let SSL_ERROR_BAD_CERT_DOMAIN = (SSL_ERROR_BASE + 12);
+
+function getErrorClass(errorCode) {
+  let NSPRCode = -1 * NS_ERROR_GET_CODE(errorCode);
+ 
+  switch (NSPRCode) {
+    case SEC_ERROR_UNKNOWN_ISSUER:
+    case SEC_ERROR_CA_CERT_INVALID:
+    case SEC_ERROR_UNTRUSTED_ISSUER:
+    case SEC_ERROR_EXPIRED_ISSUER_CERTIFICATE:
+    case SEC_ERROR_UNTRUSTED_CERT:
+    case SEC_ERROR_INADEQUATE_KEY_USAGE:
+    case SSL_ERROR_BAD_CERT_DOMAIN:
+    case SEC_ERROR_EXPIRED_CERTIFICATE:
+    case SEC_ERROR_CERT_SIGNATURE_ALGORITHM_DISABLED:
+      return Ci.nsINSSErrorsService.ERROR_CLASS_BAD_CERT;
+    default:
+      return Ci.nsINSSErrorsService.ERROR_CLASS_SSL_PROTOCOL;
+  }
+
+  return null;
+}
+
 /**
  * The BrowserElementChild implements one half of <iframe mozbrowser>.
  * (The other half is, unsurprisingly, BrowserElementParent.)
@@ -111,7 +171,7 @@ BrowserElementChild.prototype = {
                      /* wantsUntrusted = */ false);
 
     addEventListener('DOMLinkAdded',
-                     this._iconChangedHandler.bind(this),
+                     this._linkAddedHandler.bind(this),
                      /* useCapture = */ true,
                      /* wantsUntrusted = */ false);
 
@@ -150,6 +210,7 @@ BrowserElementChild.prototype = {
       "owner-visibility-change": this._recvOwnerVisibilityChange,
       "exit-fullscreen": this._recvExitFullscreen.bind(this),
       "activate-next-paint-listener": this._activateNextPaintListener.bind(this),
+      "set-input-method-active": this._recvSetInputMethodActive.bind(this),
       "deactivate-next-paint-listener": this._deactivateNextPaintListener.bind(this)
     }
 
@@ -179,6 +240,9 @@ BrowserElementChild.prototype = {
     els.addSystemEventListener(global, 'DOMWindowCreated',
                                this._windowCreatedHandler.bind(this),
                                /* useCapture = */ true);
+    els.addSystemEventListener(global, 'DOMWindowResize',
+                               this._windowResizeHandler.bind(this),
+                               /* useCapture = */ false);
     els.addSystemEventListener(global, 'contextmenu',
                                this._contextmenuHandler.bind(this),
                                /* useCapture = */ false);
@@ -201,11 +265,18 @@ BrowserElementChild.prototype = {
     Services.obs.addObserver(this,
                              'xpcom-shutdown',
                              /* ownsWeak = */ true);
+
+    Services.obs.addObserver(this,
+                             'activity-done',
+                             /* ownsWeak = */ true);
   },
 
   observe: function(subject, topic, data) {
-    // Ignore notifications not about our document.
-    if (subject != content.document)
+    // Ignore notifications not about our document.  (Note that |content| /can/
+    // be null; see bug 874900.)
+    if (topic !== 'activity-done' && (!content || subject != content.document))
+      return;
+    if (topic == 'activity-done' && docShell !== subject)
       return;
     switch (topic) {
       case 'fullscreen-origin-change':
@@ -216,6 +287,9 @@ BrowserElementChild.prototype = {
         break;
       case 'ask-parent-to-rollback-fullscreen':
         sendAsyncMsg('rollback-fullscreen');
+        break;
+      case 'activity-done':
+        sendAsyncMsg('activitydone', { success: (data == 'activity-success') });
         break;
       case 'xpcom-shutdown':
         this._shuttingDown = true;
@@ -255,6 +329,8 @@ BrowserElementChild.prototype = {
 
     let returnValue = this._waitForResult(win);
 
+    Services.obs.notifyObservers(null, 'BEC:ShownModalPrompt', null);
+
     if (args.promptType == 'prompt' ||
         args.promptType == 'confirm' ||
         args.promptType == 'custom-prompt') {
@@ -285,12 +361,7 @@ BrowserElementChild.prototype = {
     debug("Entering modal state (outerWindowID=" + outerWindowID + ", " +
                                 "innerWindowID=" + innerWindowID + ")");
 
-    // In theory, we're supposed to pass |modalStateWin| back to
-    // leaveModalStateWithWindow.  But in practice, the window is always null,
-    // because it's the window associated with this script context, which
-    // doesn't have a window.  But we'll play along anyway in case this
-    // changes.
-    var modalStateWin = utils.enterModalStateWithWindow();
+    utils.enterModalState();
 
     // We'll decrement win.modalDepth when we receive a unblock-modal-prompt message
     // for the window.
@@ -327,7 +398,7 @@ BrowserElementChild.prototype = {
     delete win.modalReturnValue;
 
     if (!this._shuttingDown) {
-      utils.leaveModalStateWithWindow(modalStateWin);
+      utils.leaveModalState();
     }
 
     debug("Leaving modal state (outerID=" + outerWindowID + ", " +
@@ -387,22 +458,49 @@ BrowserElementChild.prototype = {
   },
 
   _iconChangedHandler: function(e) {
-    debug("Got iconchanged: (" + e.target.href + ")");
-    var hasIcon = e.target.rel.split(' ').some(function(x) {
-      return x.toLowerCase() === 'icon';
-    });
-
-    if (hasIcon) {
-      var win = e.target.ownerDocument.defaultView;
-      // Ignore iconchanges which don't come from the top-level
-      // <iframe mozbrowser> window.
-      if (win == content) {
-        sendAsyncMsg('iconchange', { _payload_: e.target.href });
-      }
-      else {
-        debug("Not top level!");
-      }
+    debug('Got iconchanged: (' + e.target.href + ')');
+    let icon = { href: e.target.href };
+    if (e.target.getAttribute('sizes')) {
+      icon.sizes = e.target.getAttribute('sizes');
     }
+
+    sendAsyncMsg('iconchange', icon);
+  },
+
+  _openSearchHandler: function(e) {
+    debug('Got opensearch: (' + e.target.href + ')');
+
+    if (e.target.type !== "application/opensearchdescription+xml") {
+      return;
+    }
+
+    sendAsyncMsg('opensearch', { title: e.target.title,
+                                 href: e.target.href });
+
+  },
+
+  // Processes the "rel" field in <link> tags and forward to specific handlers.
+  _linkAddedHandler: function(e) {
+    let win = e.target.ownerDocument.defaultView;
+    // Ignore links which don't come from the top-level
+    // <iframe mozbrowser> window.
+    if (win != content) {
+      debug('Not top level!');
+      return;
+    }
+
+    let handlers = {
+      'icon': this._iconChangedHandler,
+      'search': this._openSearchHandler
+    };
+
+    debug('Got linkAdded: (' + e.target.href + ') ' + e.target.rel);
+    e.target.rel.split(' ').forEach(function(x) {
+      let token = x.toLowerCase();
+      if (handlers[token]) {
+        handlers[token](e);
+      }
+    }, this);
   },
 
   _addMozAfterPaintHandler: function(callback) {
@@ -471,14 +569,25 @@ BrowserElementChild.prototype = {
     }
   },
 
+  _windowResizeHandler: function(e) {
+    let win = e.target;
+    if (win != content || e.defaultPrevented) {
+      return;
+    }
+
+    debug("resizing window " + win);
+    sendAsyncMsg('resize', { width: e.detail.width, height: e.detail.height });
+
+    // Inform the window implementation that we handled this resize ourselves.
+    e.preventDefault();
+  },
+
   _contextmenuHandler: function(e) {
     debug("Got contextmenu");
 
     if (e.defaultPrevented) {
       return;
     }
-
-    e.preventDefault();
 
     this._ctxCounter++;
     this._ctxHandlers = {};
@@ -508,20 +617,35 @@ BrowserElementChild.prototype = {
         menuData.contextmenu = this._buildMenuObj(menu, '');
       }
     }
-    sendAsyncMsg('contextmenu', menuData);
+
+    // The value returned by the contextmenu sync call is true iff the embedder
+    // called preventDefault() on its contextmenu event.
+    //
+    // We call preventDefault() on our contextmenu event iff the embedder called
+    // preventDefault() on /its/ contextmenu event.  This way, if the embedder
+    // ignored the contextmenu event, TabChild will fire a click.
+    if (sendSyncMsg('contextmenu', menuData)[0]) {
+      e.preventDefault();
+    } else {
+      this._ctxHandlers = {};
+    }
   },
 
   _getSystemCtxMenuData: function(elem) {
     if ((elem instanceof Ci.nsIDOMHTMLAnchorElement && elem.href) ||
         (elem instanceof Ci.nsIDOMHTMLAreaElement && elem.href)) {
-      return elem.href;
+      return {uri: elem.href};
     }
     if (elem instanceof Ci.nsIImageLoadingContent && elem.currentURI) {
-      return elem.currentURI.spec;
+      return {uri: elem.currentURI.spec};
     }
-    if ((elem instanceof Ci.nsIDOMHTMLMediaElement) ||
-        (elem instanceof Ci.nsIDOMHTMLImageElement)) {
-      return elem.currentSrc || elem.src;
+    if (elem instanceof Ci.nsIDOMHTMLImageElement) {
+      return {uri: elem.src};
+    }
+    if (elem instanceof Ci.nsIDOMHTMLMediaElement) {
+      let hasVideo = !(elem.readyState >= elem.HAVE_METADATA &&
+                       (elem.videoWidth == 0 || elem.videoHeight == 0));
+      return {uri: elem.currentSrc || elem.src, hasVideo: hasVideo};
     }
     return false;
   },
@@ -601,6 +725,13 @@ BrowserElementChild.prototype = {
     debug("Taking a screenshot: maxWidth=" + maxWidth +
           ", maxHeight=" + maxHeight +
           ", domRequestID=" + domRequestID + ".");
+
+    if (!content) {
+      // If content is not loaded yet, bail out since even sendAsyncMessage
+      // fails...
+      debug("No content yet!");
+      return;
+    }
 
     let scaleWidth = Math.min(1, maxWidth / content.innerWidth);
     let scaleHeight = Math.min(1, maxHeight / content.innerHeight);
@@ -700,7 +831,7 @@ BrowserElementChild.prototype = {
     var visible = this._forcedVisible && this._ownerVisible;
     if (docShell.isActive !== visible) {
       docShell.isActive = visible;
-      sendAsyncMsg('visibility-change', {visible: visible});
+      sendAsyncMsg('visibilitychange', {visible: visible});
     }
   },
 
@@ -771,6 +902,20 @@ BrowserElementChild.prototype = {
     webNav.stop(webNav.STOP_NETWORK);
   },
 
+  _recvSetInputMethodActive: function(data) {
+    let msgData = { id: data.json.id };
+    // Unwrap to access webpage content.
+    let nav = XPCNativeWrapper.unwrap(content.document.defaultView.navigator);
+    if (nav.mozInputMethod) {
+      // Wrap to access the chrome-only attribute setActive.
+      new XPCNativeWrapper(nav.mozInputMethod).setActive(data.json.args.isActive);
+      msgData.successRv = null;
+    } else {
+      msgData.errorMsg = 'Cannot access mozInputMethod.';
+    }
+    sendAsyncMsg('got-set-input-method-active', msgData);
+  },
+
   _keyEventHandler: function(e) {
     if (whitelistedEvents.indexOf(e.keyCode) != -1 && !e.defaultPrevented) {
       sendAsyncMsg('keyevent', {
@@ -818,13 +963,36 @@ BrowserElementChild.prototype = {
       }
 
       if (stateFlags & Ci.nsIWebProgressListener.STATE_STOP) {
-        sendAsyncMsg('loadend');
+        let bgColor = 'transparent';
+        try {
+          bgColor = content.getComputedStyle(content.document.body)
+                           .getPropertyValue('background-color');
+        } catch (e) {}
+        sendAsyncMsg('loadend', {backgroundColor: bgColor});
 
         // Ignoring NS_BINDING_ABORTED, which is set when loading page is
         // stopped.
         if (status == Cr.NS_OK ||
             status == Cr.NS_BINDING_ABORTED) {
           return;
+        }
+
+        if (NS_ERROR_GET_MODULE(status) == NS_ERROR_MODULE_SECURITY && 
+            getErrorClass(status) == Ci.nsINSSErrorsService.ERROR_CLASS_BAD_CERT) {
+
+          // XXX Is there a point firing the event if the error page is not
+          // certerror? If yes, maybe we should add a property to the
+          // event to to indicate whether there is a custom page. That would
+          // let the embedder have more control over the desired behavior.
+          var errorPage = null;
+          try {
+            errorPage = Services.prefs.getCharPref(CERTIFICATE_ERROR_PAGE_PREF);
+          } catch(e) {}
+
+          if (errorPage == 'certerror') {
+            sendAsyncMsg('error', { type: 'certerror' });
+            return;
+          }
         }
 
         // TODO See nsDocShell::DisplayLoadError for a list of all the error

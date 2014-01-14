@@ -1,0 +1,41 @@
+From: Mike Hommey <mh@glandium.org>
+Date: Thu, 1 Apr 2010 15:34:59 +0200
+Subject: Determine which phishing shavar to use depending on
+ MOZ_OFFICIAL_BRANDING
+
+---
+ modules/libpref/src/Makefile.in | 4 ++++
+ modules/libpref/src/init/all.js | 4 ++++
+ 2 files changed, 8 insertions(+)
+
+diff --git a/modules/libpref/src/Makefile.in b/modules/libpref/src/Makefile.in
+index 31333bc..e833ecd 100644
+--- a/modules/libpref/src/Makefile.in
++++ b/modules/libpref/src/Makefile.in
+@@ -7,6 +7,10 @@ DEFINES += -DOS_ARCH=$(OS_ARCH) \
+            -DMOZ_WIDGET_TOOLKIT=$(MOZ_WIDGET_TOOLKIT) \
+            $(NULL)
+ 
++ifdef MOZ_OFFICIAL_BRANDING
++DEFINES += -DMOZ_OFFICIAL_BRANDING
++endif
++
+ include $(topsrcdir)/config/rules.mk
+ 
+ GARBAGE		+= $(addprefix $(DIST)/bin/defaults/pref/, \
+diff --git a/modules/libpref/src/init/all.js b/modules/libpref/src/init/all.js
+index 24f1574..9c98f3e 100644
+--- a/modules/libpref/src/init/all.js
++++ b/modules/libpref/src/init/all.js
+@@ -4538,7 +4538,11 @@ pref("dom.inter-app-communication-api.enabled", false);
+ 
+ // The tables used for Safebrowsing phishing and malware checks.
+ pref("urlclassifier.malware_table", "goog-malware-shavar");
++#ifdef MOZ_OFFICIAL_BRANDING
+ pref("urlclassifier.phish_table", "goog-phish-shavar");
++#else
++pref("urlclassifier.phish_table", "googpub-phish-shavar");
++#endif
+ pref("urlclassifier.download_block_table", "goog-badbinurl-shavar");
+ pref("urlclassifier.download_allow_table", "goog-downloadwhite-digest256");
+ 

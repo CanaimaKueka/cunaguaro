@@ -5,7 +5,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "FileInfo.h"
-
+#include "nsThreadUtils.h"
 #include "mozilla/dom/quota/QuotaManager.h"
 
 USING_INDEXEDDB_NAMESPACE
@@ -65,8 +65,8 @@ FileInfo::GetReferences(int32_t* aRefCnt, int32_t* aDBRefCnt,
 }
 
 void
-FileInfo::UpdateReferences(nsAutoRefCnt& aRefCount, int32_t aDelta,
-                           bool aClear)
+FileInfo::UpdateReferences(mozilla::ThreadSafeAutoRefCnt& aRefCount,
+                           int32_t aDelta, bool aClear)
 {
   if (IndexedDatabaseManager::IsClosed()) {
     NS_ERROR("Shouldn't be called after shutdown!");

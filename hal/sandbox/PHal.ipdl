@@ -56,6 +56,8 @@ struct SensorData {
 struct NetworkInformation {
   double bandwidth;
   bool   canBeMetered;
+  bool   isWifi;
+  uint32_t dhcpGateway;
 };
 
 struct SwitchEvent {
@@ -141,6 +143,8 @@ parent:
     SetTimezone(nsCString aTimezoneSpec);
     sync GetTimezone()
       returns (nsCString aTimezoneSpec);
+    sync GetTimezoneOffset()
+      returns (int32_t aTimezoneOffset);
     EnableSystemClockChangeNotifications();
     DisableSystemClockChangeNotifications();
     EnableSystemTimezoneChangeNotifications();

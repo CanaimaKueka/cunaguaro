@@ -4,18 +4,18 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef jswatchpoint_h___
-#define jswatchpoint_h___
+#ifndef jswatchpoint_h
+#define jswatchpoint_h
 
 #include "jsalloc.h"
-#include "jsprvtd.h"
-#include "jsapi.h"
-#include "jsfriendapi.h"
 
 #include "gc/Barrier.h"
 #include "js/HashTable.h"
+#include "js/OldDebugAPI.h"
 
 namespace js {
+
+struct WeakMapTracer;
 
 struct WatchKey {
     WatchKey() {}
@@ -29,19 +29,29 @@ struct WatchKey {
     }
 };
 
+struct WatchpointStackValue;
 struct Watchpoint {
     JSWatchPointHandler handler;
     RelocatablePtrObject closure;
     bool held;  /* true if currently running handler */
+
+    inline Watchpoint(const WatchpointStackValue& w);
+    inline Watchpoint &operator=(const WatchpointStackValue& w);
 };
 
 template <>
-struct DefaultHasher<WatchKey> {
+struct DefaultHasher<WatchKey>
+{
     typedef WatchKey Lookup;
     static inline js::HashNumber hash(const Lookup &key);
 
     static bool match(const WatchKey &k, const Lookup &l) {
         return k.object == l.object && k.id.get() == l.id.get();
+    }
+
+    static void rekey(WatchKey &k, const WatchKey& newKey) {
+        k.object.unsafeSet(newKey.object);
+        k.id.unsafeSet(newKey.id);
     }
 };
 
@@ -74,4 +84,4 @@ class WatchpointMap {
 
 }
 
-#endif /* jswatchpoint_h___ */
+#endif /* jswatchpoint_h */

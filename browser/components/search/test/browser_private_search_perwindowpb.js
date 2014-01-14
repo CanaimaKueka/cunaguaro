@@ -42,28 +42,23 @@ function test() {
   }
 
   function addEngine(aCallback) {
-    function observer(aSub, aTopic, aData) {
-      switch (aData) {
-        case "engine-current":
-          ok(Services.search.currentEngine.name == "Bug 426329",
-             "currentEngine set");
-          aCallback();
-          break;
+    let installCallback = {
+      onSuccess: function (engine) {
+        Services.search.currentEngine = engine;
+        aCallback();
+      },
+      onError: function (errorCode) {
+        ok(false, "failed to install engine: " + errorCode);
       }
-    }
-
-    Services.obs.addObserver(observer, "browser-search-engine-modified", false);
-    Services.search.addEngine(
-      engineURL + "426329.xml", Ci.nsISearchEngine.DATA_XML,
-      "data:image/x-icon,%00", false);
+    };
+    Services.search.addEngine(engineURL + "426329.xml",
+                              Ci.nsISearchEngine.DATA_XML,
+                              "data:image/x-icon,%00", false, installCallback);
   }
 
   function testOnWindow(aIsPrivate, aCallback) {
-    let win = OpenBrowserWindow({ private: aIsPrivate });
-    waitForFocus(function() {
-      windowsToClose.push(win);
-      executeSoon(function() aCallback(win));
-    }, win);
+    let win = whenNewWindowLoaded({ private: aIsPrivate }, aCallback);
+    windowsToClose.push(win);
   }
 
   addEngine(function() {

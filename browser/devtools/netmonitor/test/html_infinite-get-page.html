@@ -1,3 +1,5 @@
+<!-- Any copyright is dedicated to the Public Domain.
+     http://creativecommons.org/publicdomain/zero/1.0/ -->
 <!doctype html>
 
 <html>
@@ -25,11 +27,11 @@
       // Use a count parameter to defeat caching.
       var count = 0;
 
-      function performRequests() {
+      (function performRequests() {
         get("request_" + (count++), function() {
-          setTimeout(performRequests, 0);
+          setTimeout(performRequests, 50);
         });
-      }
+      })();
     </script>
   </body>
 

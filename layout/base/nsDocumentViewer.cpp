@@ -11,17 +11,16 @@
 #include "nsCRT.h"
 #include "nsString.h"
 #include "nsReadableUtils.h"
-#include "nsISupports.h"
 #include "nsIContent.h"
 #include "nsIContentViewerContainer.h"
 #include "nsIContentViewer.h"
 #include "nsIDocumentViewerPrint.h"
 #include "nsIDOMBeforeUnloadEvent.h"
 #include "nsIDocument.h"
+#include "nsIDOMWindowUtils.h"
 #include "nsPresContext.h"
 #include "nsIPresShell.h"
 #include "nsStyleSet.h"
-#include "nsIStyleSheet.h"
 #include "nsCSSStyleSheet.h"
 #include "nsIFrame.h"
 #include "nsSubDocumentFrame.h"
@@ -31,22 +30,17 @@
 #include "nsISelectionListener.h"
 #include "nsISelectionPrivate.h"
 #include "nsIDOMHTMLDocument.h"
-#include "nsIDOMHTMLCollection.h"
 #include "nsIDOMHTMLElement.h"
-#include "nsIDOMRange.h"
-#include "nsContentCID.h"
-#include "nsLayoutCID.h"
 #include "nsContentUtils.h"
 #include "nsLayoutStylesheetCache.h"
+#include "mozilla/BasicEvents.h"
 #include "mozilla/Preferences.h"
 #include "mozilla/dom/EncodingUtils.h"
 
-#include "nsIDeviceContextSpec.h"
 #include "nsViewManager.h"
 #include "nsView.h"
 
 #include "nsIPageSequenceFrame.h"
-#include "nsIURL.h"
 #include "nsNetUtil.h"
 #include "nsIContentViewerEdit.h"
 #include "nsIContentViewerFile.h"
@@ -54,16 +48,11 @@
 #include "nsIMarkupDocumentViewer.h"
 #include "nsIInterfaceRequestor.h"
 #include "nsIInterfaceRequestorUtils.h"
-#include "nsIDocShellTreeOwner.h"
 #include "nsIDocShell.h"
 #include "nsIBaseWindow.h"
 #include "nsILayoutHistoryState.h"
 #include "nsCharsetSource.h"
-#include "nsGUIEvent.h"
 #include "nsHTMLReflowState.h"
-#include "nsIDOMHTMLAnchorElement.h"
-#include "nsIDOMHTMLAreaElement.h"
-#include "nsIDOMHTMLLinkElement.h"
 #include "nsIImageLoadingContent.h"
 #include "nsCopySupport.h"
 #include "nsIDOMHTMLFrameSetElement.h"
@@ -81,10 +70,7 @@
 #include "nsFocusManager.h"
 
 #include "nsIScrollableFrame.h"
-#include "nsIHTMLDocument.h"
-#include "nsGfxCIID.h"
 #include "nsStyleSheetService.h"
-#include "nsURILoader.h"
 #include "nsRenderingContext.h"
 #include "nsILoadContext.h"
 
@@ -102,33 +88,13 @@
 
 // Print Options
 #include "nsIPrintSettings.h"
-#include "nsIPrintSettingsService.h"
 #include "nsIPrintOptions.h"
-#include "nsIServiceManager.h"
 #include "nsISimpleEnumerator.h"
-#include "nsXPCOM.h"
-#include "nsISupportsPrimitives.h"
 
 // PrintOptions is now implemented by PrintSettingsService
 static const char sPrintOptionsContractID[]         = "@mozilla.org/gfx/printsettings-service;1";
 
-// Printing Events
-#include "nsPrintPreviewListener.h"
-
-#include "nsIDOMHTMLFrameElement.h"
-#include "nsIDOMHTMLIFrameElement.h"
-#include "nsIDOMHTMLObjectElement.h"
 #include "nsIPluginDocument.h"
-
-// Print Progress
-#include "nsIPrintProgress.h"
-#include "nsIPrintProgressParams.h"
-
-// Print error dialog
-#include "nsIWindowWatcher.h"
-
-// Printing 
-#include "nsPagePrintTimer.h"
 
 #endif // NS_PRINTING
 
@@ -142,18 +108,12 @@ static const char sPrintOptionsContractID[]         = "@mozilla.org/gfx/printset
 #include "nsISHistory.h"
 #include "nsISHistoryInternal.h"
 #include "nsIWebNavigation.h"
-#include "nsWeakPtr.h"
 #include "nsEventDispatcher.h"
 
 //paint forcing
-#include "prenv.h"
 #include <stdio.h>
 
-#include "nsObserverService.h"
-
 #include "mozilla/dom/Element.h"
-
-#include "jsfriendapi.h"
 
 using namespace mozilla;
 using namespace mozilla::dom;
@@ -210,7 +170,7 @@ public:
   NS_DECL_NSISELECTIONLISTENER
 
                        nsDocViewerSelectionListener()
-                       : mDocViewer(NULL)
+                       : mDocViewer(nullptr)
                        , mGotSelectionState(false)
                        , mSelectionWasCollapsed(false)
                        {
@@ -428,6 +388,7 @@ protected:
   //   may consider splitting these out into a subclass
   unsigned      mIsSticky : 1;
   unsigned      mInPermitUnload : 1;
+  unsigned      mInPermitUnloadPrompt: 1;
 
 #ifdef NS_PRINTING
   unsigned      mClosingWhilePrinting : 1;
@@ -455,9 +416,7 @@ protected:
   /* character set member data */
   int32_t mHintCharsetSource;
   nsCString mHintCharset;
-  nsCString mDefaultCharacterSet;
   nsCString mForceCharacterSet;
-  nsCString mPrevDocCharacterSet;
   
   bool mIsPageMode;
   bool mCallerIsClosingWindow;
@@ -1002,7 +961,7 @@ nsDocumentViewer::LoadComplete(nsresult aStatus)
   if(window &&
      (NS_SUCCEEDED(aStatus) || aStatus == NS_ERROR_PARSED_DATA_CACHED)) {
     nsEventStatus status = nsEventStatus_eIgnore;
-    nsEvent event(true, NS_LOAD);
+    WidgetEvent event(true, NS_LOAD);
     event.mFlags.mBubbles = false;
      // XXX Dispatching to |window|, but using |document| as the target.
     event.target = mDocument;
@@ -1090,7 +1049,10 @@ nsDocumentViewer::PermitUnload(bool aCallerClosesWindow, bool *aPermitUnload)
 {
   *aPermitUnload = true;
 
-  if (!mDocument || mInPermitUnload || mCallerIsClosingWindow) {
+  if (!mDocument
+   || mInPermitUnload
+   || mCallerIsClosingWindow
+   || mInPermitUnloadPrompt) {
     return NS_OK;
   }
 
@@ -1130,10 +1092,19 @@ nsDocumentViewer::PermitUnload(bool aCallerClosesWindow, bool *aPermitUnload)
     // how we get here.
     nsAutoPopupStatePusher popupStatePusher(openAbused, true);
 
+    // Never permit dialogs from the beforeunload handler
+    nsCOMPtr<nsIDOMWindowUtils> utils = do_GetInterface(window);
+    bool dialogsWereEnabled;
+    utils->AreDialogsEnabled(&dialogsWereEnabled);
+    utils->DisableDialogs();
+
     mInPermitUnload = true;
     nsEventDispatcher::DispatchDOMEvent(window, nullptr, event, mPresContext,
                                         nullptr);
     mInPermitUnload = false;
+    if (dialogsWereEnabled) {
+      utils->EnableDialogs();
+    }
   }
 
   nsCOMPtr<nsIDocShellTreeNode> docShellNode(do_QueryReferent(mContainer));
@@ -1183,9 +1154,11 @@ nsDocumentViewer::PermitUnload(bool aCallerClosesWindow, bool *aPermitUnload)
                              (nsIPrompt::BUTTON_TITLE_IS_STRING * nsIPrompt::BUTTON_POS_1));
 
       nsAutoSyncOperation sync(mDocument);
+      mInPermitUnloadPrompt = true;
       rv = prompt->ConfirmEx(title, message, buttonFlags,
                              leaveLabel, stayLabel, nullptr, nullptr,
                              &dummy, &buttonPressed);
+      mInPermitUnloadPrompt = false;
       NS_ENSURE_SUCCESS(rv, rv);
 
       // Button 0 == leave, button 1 == stay
@@ -1284,7 +1257,7 @@ nsDocumentViewer::PageHide(bool aIsUnload)
 
     // Now, fire an Unload event to the document...
     nsEventStatus status = nsEventStatus_eIgnore;
-    nsEvent event(true, NS_PAGE_UNLOAD);
+    WidgetEvent event(true, NS_PAGE_UNLOAD);
     event.mFlags.mBubbles = false;
     // XXX Dispatching to |window|, but using |document| as the target.
     event.target = mDocument;
@@ -1541,12 +1514,6 @@ nsDocumentViewer::Destroy()
         nsView *rootView = vm->GetRootView();
 
         if (rootView) {
-          // The invalidate that removing this view causes is dropped because
-          // the Freeze call above sets painting to be suppressed for our
-          // document. So we do it ourselves and make it happen.
-          vm->InvalidateViewNoSuppression(rootView,
-            rootView->GetBounds() - rootView->GetPosition());
-
           nsView *rootViewParent = rootView->GetParent();
           if (rootViewParent) {
             nsViewManager *parentVM = rootViewParent->GetViewManager();
@@ -2496,7 +2463,7 @@ NS_IMETHODIMP nsDocumentViewer::SelectAll()
 
 NS_IMETHODIMP nsDocumentViewer::CopySelection()
 {
-  nsCopySupport::FireClipboardEvent(NS_COPY, mPresShell, nullptr);
+  nsCopySupport::FireClipboardEvent(NS_COPY, nsIClipboard::kGlobalClipboard, mPresShell, nullptr);
   return NS_OK;
 }
 
@@ -2617,17 +2584,6 @@ nsDocumentViewer::Print(bool              aSilent,
 
 
   return Print(printSettings, nullptr);
-#else
-  return NS_ERROR_FAILURE;
-#endif
-}
-
-/* [noscript] void printWithParent (in nsIDOMWindow aParentWin, in nsIPrintSettings aThePrintSettings, in nsIWebProgressListener aWPListener); */
-NS_IMETHODIMP 
-nsDocumentViewer::PrintWithParent(nsIDOMWindow*, nsIPrintSettings *aThePrintSettings, nsIWebProgressListener *aWPListener)
-{
-#ifdef NS_PRINTING
-  return Print(aThePrintSettings, aWPListener);
 #else
   return NS_ERROR_FAILURE;
 #endif
@@ -2971,47 +2927,80 @@ nsDocumentViewer::GetAuthorStyleDisabled(bool* aStyleDisabled)
   return NS_OK;
 }
 
-NS_IMETHODIMP
-nsDocumentViewer::GetDefaultCharacterSet(nsACString& aDefaultCharacterSet)
+static bool
+ExtResourceEmulateMedium(nsIDocument* aDocument, void* aClosure)
 {
-  if (mDefaultCharacterSet.IsEmpty())
-  {
-    const nsAdoptingCString& defCharset =
-      Preferences::GetLocalizedCString("intl.charset.default");
-
-    // Don't let the user break things by setting intl.charset.default to
-    // not a rough ASCII superset
-    nsAutoCString canonical;
-    if (EncodingUtils::FindEncodingForLabel(defCharset, canonical) &&
-        EncodingUtils::IsAsciiCompatible(canonical)) {
-      mDefaultCharacterSet = canonical;
-    } else {
-      mDefaultCharacterSet.AssignLiteral("windows-1252");
+  nsIPresShell* shell = aDocument->GetShell();
+  if (shell) {
+    nsPresContext* ctxt = shell->GetPresContext();
+    if (ctxt) {
+      const nsAString* mediaType = static_cast<nsAString*>(aClosure);
+      ctxt->EmulateMedium(*mediaType);
     }
   }
-  aDefaultCharacterSet = mDefaultCharacterSet;
-  return NS_OK;
+
+  return true;
 }
 
 static void
-SetChildDefaultCharacterSet(nsIMarkupDocumentViewer* aChild, void* aClosure)
+ChildEmulateMedium(nsIMarkupDocumentViewer* aChild, void* aClosure)
 {
-  const nsACString* charset = static_cast<nsACString*>(aClosure);
-  aChild->SetDefaultCharacterSet(*charset);
+  const nsAString* mediaType = static_cast<nsAString*>(aClosure);
+  aChild->EmulateMedium(*mediaType);
 }
 
 NS_IMETHODIMP
-nsDocumentViewer::SetDefaultCharacterSet(const nsACString& aDefaultCharacterSet)
+nsDocumentViewer::EmulateMedium(const nsAString& aMediaType)
 {
-  mDefaultCharacterSet = aDefaultCharacterSet;  // this does a copy of aDefaultCharacterSet
-  // now set the default char set on all children of mContainer
-  CallChildren(SetChildDefaultCharacterSet, (void*) &aDefaultCharacterSet);
+  if (mPresContext) {
+    mPresContext->EmulateMedium(aMediaType);
+  }
+  CallChildren(ChildEmulateMedium, const_cast<nsAString*>(&aMediaType));
+
+  if (mDocument) {
+    mDocument->EnumerateExternalResources(ExtResourceEmulateMedium,
+                                          const_cast<nsAString*>(&aMediaType));
+  }
+
   return NS_OK;
 }
 
-// XXX: SEMANTIC CHANGE!
-//      returns a copy of the string.  Caller is responsible for freeing result
-//      using Recycle(aForceCharacterSet)
+static bool
+ExtResourceStopEmulatingMedium(nsIDocument* aDocument, void* aClosure)
+{
+  nsIPresShell* shell = aDocument->GetShell();
+  if (shell) {
+    nsPresContext* ctxt = shell->GetPresContext();
+    if (ctxt) {
+      ctxt->StopEmulatingMedium();
+    }
+  }
+
+  return true;
+}
+
+static void
+ChildStopEmulatingMedium(nsIMarkupDocumentViewer* aChild, void* aClosure)
+{
+  aChild->StopEmulatingMedium();
+}
+
+NS_IMETHODIMP
+nsDocumentViewer::StopEmulatingMedium()
+{
+  if (mPresContext) {
+    mPresContext->StopEmulatingMedium();
+  }
+  CallChildren(ChildStopEmulatingMedium, nullptr);
+
+  if (mDocument) {
+    mDocument->EnumerateExternalResources(ExtResourceStopEmulatingMedium,
+                                          nullptr);
+  }
+
+  return NS_OK;
+}
+
 NS_IMETHODIMP nsDocumentViewer::GetForceCharacterSet(nsACString& aForceCharacterSet)
 {
   aForceCharacterSet = mForceCharacterSet;
@@ -3034,9 +3023,6 @@ nsDocumentViewer::SetForceCharacterSet(const nsACString& aForceCharacterSet)
   return NS_OK;
 }
 
-// XXX: SEMANTIC CHANGE!
-//      returns a copy of the string.  Caller is responsible for freeing result
-//      using Recycle(aHintCharacterSet)
 NS_IMETHODIMP nsDocumentViewer::GetHintCharacterSet(nsACString& aHintCharacterSet)
 {
 
@@ -3057,31 +3043,6 @@ NS_IMETHODIMP nsDocumentViewer::GetHintCharacterSetSource(int32_t *aHintCharacte
   *aHintCharacterSetSource = mHintCharsetSource;
   return NS_OK;
 }
-
-
-NS_IMETHODIMP nsDocumentViewer::GetPrevDocCharacterSet(nsACString& aPrevDocCharacterSet)
-{
-  aPrevDocCharacterSet = mPrevDocCharacterSet;
-
-  return NS_OK;
-}
-
-static void
-SetChildPrevDocCharacterSet(nsIMarkupDocumentViewer* aChild, void* aClosure)
-{
-  const nsACString* charset = static_cast<nsACString*>(aClosure);
-  aChild->SetPrevDocCharacterSet(*charset);
-}
-
-
-NS_IMETHODIMP
-nsDocumentViewer::SetPrevDocCharacterSet(const nsACString& aPrevDocCharacterSet)
-{
-  mPrevDocCharacterSet = aPrevDocCharacterSet;  
-  CallChildren(SetChildPrevDocCharacterSet, (void*) &aPrevDocCharacterSet);
-  return NS_OK;
-}
-
 
 static void
 SetChildHintCharacterSetSource(nsIMarkupDocumentViewer* aChild, void* aClosure)
@@ -4416,7 +4377,7 @@ nsDocumentShownDispatcher::Run()
   nsCOMPtr<nsIObserverService> observerService =
     mozilla::services::GetObserverService();
   if (observerService) {
-    observerService->NotifyObservers(mDocument, "document-shown", NULL);
+    observerService->NotifyObservers(mDocument, "document-shown", nullptr);
   }
   return NS_OK;
 }

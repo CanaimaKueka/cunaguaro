@@ -137,7 +137,7 @@
 <!ENTITY sortByStatusCmd.label "Estado">
 <!ENTITY sortByStatusCmd.accesskey "E">
 <!ENTITY sortByTagsCmd.label "Etiquetas">
-<!ENTITY sortByTagsCmd.accesskey "i">
+<!ENTITY sortByTagsCmd.accesskey "q">
 <!ENTITY sortByJunkStatusCmd.label "Estado de correo basura">
 <!ENTITY sortByJunkStatusCmd.accesskey "b">
 <!ENTITY sortBySubjectCmd.label "Asunto">
@@ -145,11 +145,11 @@
 <!ENTITY sortByFromCmd.label "Remitente">
 <!ENTITY sortByFromCmd.accesskey "m">
 <!ENTITY sortByRecipientCmd.label "Destinatario">
-<!ENTITY sortByRecipientCmd.accesskey "s">
+<!ENTITY sortByRecipientCmd.accesskey "i">
 <!ENTITY sortByUnreadCmd.label "Leídos">
 <!ENTITY sortByUnreadCmd.accesskey "L">
 <!ENTITY sortByOrderReceivedCmd.label "Orden de recepción">
-<!ENTITY sortByOrderReceivedCmd.accesskey "O">
+<!ENTITY sortByOrderReceivedCmd.accesskey "c">
 <!ENTITY sortByAttachmentsCmd.label "Adjuntos">
 <!ENTITY sortByAttachmentsCmd.accesskey "j">
 <!ENTITY sortAscending.label "Ascendente">
@@ -486,14 +486,3 @@
 <!ENTITY searchButton.accesskey "B">
 <!ENTITY all.label "Todos">
 <!ENTITY all.accesskey "T">
-<!ENTITY junkBarMessage.label "&brandShortName; piensa que este mensaje es correo basura.">
-<!ENTITY junkBarButton.label "No es correo basura">
-<!ENTITY junkInfoButton.label "?">
-<!ENTITY remoteContentMessage.label "Para proteger su privacidad, &brandShortName; ha bloqueado el contenido remoto en este mensaje.">
-<!ENTITY loadRemoteContentButton.label "Mostrar contenido remoto">
-<!ENTITY phishingBarMessage.label "&brandShortName; piensa que este mensaje puede ser fraudulento.">
-<!ENTITY removePhishingBarButton.label "No es fraudulento">
-<!ENTITY mdnBarIgnoreButton.label "Ignorar solicitud">
-<!ENTITY mdnBarIgnoreButton.accesskey "I">
-<!ENTITY mdnBarSendButton.label "Enviar acuse de recibo">
-<!ENTITY mdnBarSendButton.accesskey "E">

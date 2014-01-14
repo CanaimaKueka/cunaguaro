@@ -13,3 +13,13 @@ EXPORTS += [
     'DASHRepReader.h',
 ]
 
+SOURCES += [
+    'DASHDecoder.cpp',
+    'DASHReader.cpp',
+    'DASHRepDecoder.cpp',
+]
+
+LIBRARY_NAME = 'gkcondash_s'
+
+LIBXUL_LIBRARY = True
+

@@ -20,6 +20,11 @@
 <!ENTITY reloadTab.accesskey "O">
 <!ENTITY reloadAllTabs.label "Obnovit všechny panely">
 <!ENTITY reloadAllTabs.accesskey "b">
+<!-- LOCALIZATION NOTE (closeTabsToTheEnd.label): This should indicate the
+direction in which tabs are closed, i.e. locales that use RTL mode should say
+left instead of right. -->
+<!ENTITY  closeTabsToTheEnd.label            "Zavřít panely vpravo">
+<!ENTITY  closeTabsToTheEnd.accesskey        "t">
 <!ENTITY closeOtherTabs.label "Zavřít ostatní panely">
 <!ENTITY closeOtherTabs.accesskey "v">
 
@@ -39,8 +44,13 @@ can reach it easily. -->
 <!ENTITY moveToNewWindow.accesskey "k">
 <!ENTITY bookmarkAllTabs.label "Přidat všechny panely do záložek…">
 <!ENTITY bookmarkAllTabs.accesskey "d">
-<!ENTITY undoCloseTab.label "Otevřít zavřený panel">
+<!ENTITY  undoCloseTab.label                 "Obnovit zavřený panel">
 <!ENTITY undoCloseTab.accesskey "t">
+<!-- LOCALIZATION NOTE (undoCloseTabs.label) : This label is used
+when the previous tab-closing operation closed more than one tab. It
+replaces the undoCloseTab.label and will use the same accesskey as the
+undoCloseTab.label so users will not need to learn new keyboard controls. -->
+<!ENTITY  undoCloseTabs.label                "Obnovit zavřené panely">
 <!ENTITY closeTab.label "Zavřít panel">
 <!ENTITY closeTab.accesskey "Z">
 
@@ -102,9 +112,8 @@ These should match what Safari and other Apple applications use on OS X Lion. --
 <!ENTITY fullScreenExit.accesskey "k">
 <!ENTITY fullscreenAllowButton.label "Povolit">
 <!ENTITY fullscreenExitButton.label "Zakázat">
-<!ENTITY fullscreenApproval.value "Povolit režim celé obrazovky?">
 
-<!ENTITY fullscreenExitHint.value "K ukončení režimu celé obrazovky stiskněte klávesu ESC">
+<!ENTITY fullscreenExitHint2.value "K ukončení stiskněte kdykoliv klávesu ESC">
 <!ENTITY leaveDOMFullScreen.label "Ukončit režim celé obrazovky">
 <!ENTITY leaveDOMFullScreen.accesskey "k">
 
@@ -115,7 +124,18 @@ These should match what Safari and other Apple applications use on OS X Lion. --
 <!ENTITY bookmarksMenu.accesskey "o">
 <!ENTITY bookmarkThisPageCmd.label "Přidat stránku do záložek">
 <!ENTITY bookmarkThisPageCmd.commandkey "d">
-<!ENTITY sharePageCmd.commandkey "l">
+<!ENTITY markPageCmd.commandkey "l">
+<!ENTITY sharePageCmd.label "Sdílet stránku">
+<!ENTITY sharePageCmd.commandkey "S">
+<!ENTITY sharePageCmd.accesskey "S">
+<!ENTITY shareLinkCmd.label "Sdíket odkaz">
+<!ENTITY shareLinkCmd.accesskey "S">
+<!ENTITY shareImageCmd.label "Sdílet obrázek">
+<!ENTITY shareImageCmd.accesskey "S">
+<!ENTITY shareSelectCmd.label "Sdílet výběr">
+<!ENTITY shareSelectCmd.accesskey "S">
+<!ENTITY shareVideoCmd.label "Sdílet video">
+<!ENTITY shareVideoCmd.accesskey "S">
 <!ENTITY subscribeToPageMenupopup.label "Odebírat kanál této stránky">
 <!ENTITY subscribeToPageMenuitem.label "Odebírat kanál této stránky…">
 <!ENTITY addCurPagesCmd.label "Přidat všechny panely do záložek…">
@@ -184,8 +204,6 @@ These should match what Safari and other Apple applications use on OS X Lion. --
 
 <!ENTITY keywordfield.label "K vyhledávání přiřadit klíčové slovo">
 <!ENTITY keywordfield.accesskey "h">
-<!ENTITY search.label "Hledání na webu">
-<!ENTITY search.accesskey "w">
 <!ENTITY downloads.label "Správce stahování">
 <!ENTITY downloads.tooltip "Zobrazí průběh stahování">
 <!ENTITY downloads.accesskey "t">
@@ -198,14 +216,20 @@ These should match what Safari and other Apple applications use on OS X Lion. --
 <!ENTITY webDeveloperMenu.label "Vývoj webu">
 <!ENTITY webDeveloperMenu.accesskey "w">
 
+<!ENTITY devToolsCmd.keycode          "VK_F12">
+<!ENTITY devToolsCmd.keytext          "F12">
+
 <!ENTITY devtoolsConnect.label "Připojit…">
 <!ENTITY devtoolsConnect.accesskey "P">
 
 <!ENTITY errorConsoleCmd.label "Chybová konzola">
 <!ENTITY errorConsoleCmd.accesskey "C">
-<!ENTITY errorConsoleCmd.commandkey "j">
 
 <!ENTITY remoteWebConsoleCmd.label "Vzdálená webová konzola">
+
+<!ENTITY browserConsoleCmd.label "Konzola prohlížeče">
+<!ENTITY browserConsoleCmd.commandkey "j">
+<!ENTITY browserConsoleCmd.accesskey  "K">
 
 <!ENTITY inspectContextMenu.label "Prozkoumat prvek">
 <!ENTITY inspectContextMenu.accesskey "P">
@@ -229,11 +253,23 @@ These should match what Safari and other Apple applications use on OS X Lion. --
 <!ENTITY scratchpad.keycode "VK_F4">
 <!ENTITY scratchpad.keytext "F4">
 
+<!-- LOCALIZATION NOTE (chromeDebuggerMenu.label): This is the label for the
+  -  application menu item that opens the browser debugger UI in the Tools menu. -->
+<!ENTITY chromeDebuggerMenu.label       "Debugger prohlížeče">
+<!ENTITY chromeDebuggerMenu.accesskey   "e">
+
 <!ENTITY devToolbarCloseButton.tooltiptext "Zavře lištu vývoje">
 <!ENTITY devToolbarMenu.label "Lišta vývoje">
 <!ENTITY devToolbarMenu.accesskey "v">
+<!ENTITY devAppMgrMenu.label               "Správce aplikací">
+<!ENTITY devAppMgrMenu.accesskey           "a">
 <!ENTITY devToolbar.keycode "VK_F2">
 <!ENTITY devToolbar.keytext "F2">
+<!ENTITY devToolboxMenuItem.label          "Nástroje vývojáře">
+<!ENTITY devToolboxMenuItem.accesskey      "P">
+<!ENTITY devToolboxMenuItem.keycode        "I">
+<!ENTITY devToolboxMenuItem.keytext        "I">
+
 <!ENTITY devToolboxMenuItem.label "Nástroje vývojáře">
 <!ENTITY devToolboxMenuItem.accesskey "N">
 
@@ -303,7 +339,6 @@ These should match what Safari and other Apple applications use on OS X Lion. --
 <!ENTITY historyUndoWindowMenu.label "Naposledy zavřená okna">
 <!ENTITY historyRestoreLastSession.label "Obnovit předchozí relaci">
 
-<!ENTITY historyHomeCmd.label "Domů">
 <!ENTITY showAllHistoryCmd2.label "Zobrazit celou historii">
 <!ENTITY showAllHistoryCmd.commandkey "H">
 
@@ -353,7 +388,7 @@ These should match what Safari and other Apple applications use on OS X Lion. --
 <!ENTITY openLinkCmdInTab.accesskey "n">
 <!ENTITY openLinkCmd.label "Otevřít odkaz v novém okně">
 <!ENTITY openLinkCmd.accesskey "O">
-<!ENTITY openLinkInPrivateWindowCmd.label "Otevřít odkaz v novém anonymní okně">
+<!ENTITY openLinkInPrivateWindowCmd.label "Otevřít odkaz v novém anonymním okně">
 <!ENTITY openLinkInPrivateWindowCmd.accesskey "t">
 <!ENTITY openLinkCmdInCurrent.label "Otevřít odkaz">
 <!ENTITY openLinkCmdInCurrent.accesskey "O">
@@ -385,10 +420,12 @@ These should match what Safari and other Apple applications use on OS X Lion. --
 <!ENTITY viewImageCmd.accesskey "Z">
 <!ENTITY viewImageInfoCmd.label "Zobrazit vlastnosti obrázku">
 <!ENTITY viewImageInfoCmd.accesskey "v">
+<!ENTITY viewImageDescCmd.label       "Zobrazit popis">
+<!ENTITY viewImageDescCmd.accesskey   "p">
 <!ENTITY viewVideoCmd.label "Zobrazit video">
 <!ENTITY viewVideoCmd.accesskey "Z">
 <!ENTITY viewBGImageCmd.label "Zobrazit obrázek na pozadí">
-<!ENTITY viewBGImageCmd.accesskey "Z">
+<!ENTITY viewBGImageCmd.accesskey "b">
 <!ENTITY setDesktopBackgroundCmd.label "Nastavit pozadí plochy…">
 <!ENTITY setDesktopBackgroundCmd.accesskey  "t">
 <!ENTITY bookmarkPageCmd2.label "Přidat stránku do záložek">
@@ -536,7 +573,8 @@ you can use these alternative items. Otherwise, their values should be empty.  -
 <!ENTITY quitApplicationCmd.label "Ukončit">
 <!ENTITY quitApplicationCmd.accesskey "k">
 <!ENTITY quitApplicationCmdMac.label "Ukončit">
-<!ENTITY quitApplicationCmdMac.key "Q">
+<!-- LOCALIZATION NOTE(quitApplicationCmdUnix.key): This keyboard shortcut is used by both Linux and OSX builds. -->
+<!ENTITY quitApplicationCmdUnix.key "Q">
 
 <!ENTITY closeCmd.label "Zavřít">
 <!ENTITY closeCmd.key "W">
@@ -598,6 +636,13 @@ just addresses the organization to follow, e.g. "This site is run by " -->
 
 <!ENTITY identity.moreInfoLinkText "Více informací…">
 
+<!ENTITY identity.permissions "Oprávnění">
+
+<!-- LOCALIZATION NOTE (identity.help.tooltip) : This string should be the
+     localized title of this SUMO article
+     https://support.mozilla.org/kb/how-do-i-tell-if-my-connection-is-secure -->
+<!ENTITY identity.help.tooltip "Jak zjistím, že je mé připojení k webové stránce zabezpečené?">
+
 <!-- Name for the tabs toolbar as spoken by screen readers.
      The word "toolbar" is appended automatically and should not be contained below! -->
 <!ENTITY tabsToolbar.label "Ouška panelů">
@@ -630,12 +675,21 @@ just addresses the organization to follow, e.g. "This site is run by " -->
 <!ENTITY social.toggleNotifications.label "Zobrazit oznámení">
 <!ENTITY social.toggleNotifications.accesskey "n">
 
-<!ENTITY social.activated.undobutton.label "Zpět">
-<!ENTITY social.activated.undobutton.accesskey "Z">
+<!ENTITY social.activated.description "Služba <label/> byla povolena. Nastavení jednotlivých služeb lze měnit ve <label class='text-link'>Správci doplňků</label>.">
+<!ENTITY social.activated.undo.label "Vzít zpět">
+<!ENTITY social.activated.undo.accesskey "V">
+<!ENTITY social.learnMore.label "Zjistit více…">
+<!ENTITY social.learnMore.accesskey "Z">
+<!ENTITY social.closeNotificationItem.label "Nyní ne">
 
 <!ENTITY social.chatBar.commandkey "c">
 <!ENTITY social.chatBar.label "Přepnout na chat">
 <!ENTITY social.chatBar.accesskey "C">
+
+<!ENTITY social.markpageMenu.accesskey "U">
+<!ENTITY social.markpageMenu.label "Uložit stránku do…">
+<!ENTITY social.marklinkMenu.accesskey "l">
+<!ENTITY social.marklinkMenu.label "Uložit odkaz do…">
 
 <!ENTITY getUserMedia.selectCamera.label "Sdílet kameru::">
 <!ENTITY getUserMedia.selectCamera.accesskey "k">
@@ -649,3 +703,23 @@ just addresses the organization to follow, e.g. "This site is run by " -->
 <!ENTITY mixedContentBlocked.moreinfo "Většina stránek bude fungovat správně, přestože bude takovýto obsah zablokován..">
 
 <!ENTITY pointerLock.notification.message "Pro opětovné zobrazení stiskněte ESC.">
+
+<!ENTITY pluginNotification.showAll.label "Zobrazit vše">
+<!ENTITY pluginNotification.showAll.accesskey "Z">
+
+<!-- LOCALIZATION NOTE (pluginActivateNow.label, pluginActivateAlways.label, pluginBlockNow.label): These should be the same as the matching strings in browser.properties -->
+<!ENTITY pluginActivateNow.label "Povolit nyní">
+<!ENTITY pluginActivateAlways.label "Povolit a zapamatovat">
+<!ENTITY pluginBlockNow.label "Blokovat zásuvný modul">
+
+<!-- LOCALIZATION NOTE: (pluginNotification.width): This is used to determine the
+     width of the plugin popup notification that can appear if a plugin has been
+     blocked on a page. Should be wide enough to fit the pluginActivateNow.label
+     and pluginActivateAlways.label strings above on a single line. This must be
+     a CSS length value. -->
+<!ENTITY pluginNotification.width "28em">
+
+<!ENTITY tabCrashed.header "Panel spadl">
+<!ENTITY tabCrashed.message "Ale toto je nepříjemné. Pokusili jsme se zobrazit webovou stránku, ale ta neodpovídá.">
+<!ENTITY tabCrashed.checkSendReport "Řekněte organizaci &vendorShortName; o pádu, aby ho mohla opravit.">
+<!ENTITY tabCrashed.tryAgain "Zkusit znovu">

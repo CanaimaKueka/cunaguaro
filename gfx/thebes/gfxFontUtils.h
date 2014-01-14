@@ -6,23 +6,15 @@
 #ifndef GFX_FONT_UTILS_H
 #define GFX_FONT_UTILS_H
 
-#include "gfxTypes.h"
 #include "gfxPlatform.h"
-
-#include "nsAlgorithm.h"
-#include "prcpucfg.h"
-
-#include "nsDataHashtable.h"
-
 #include "nsITimer.h"
 #include "nsCOMPtr.h"
-#include "nsIRunnable.h"
-#include "nsThreadUtils.h"
 #include "nsComponentManagerUtils.h"
 #include "nsTArray.h"
 #include "nsAutoPtr.h"
 #include "mozilla/Likely.h"
 #include "mozilla/Endian.h"
+#include "mozilla/MemoryReporting.h"
 
 #include "zlib.h"
 #include <algorithm>
@@ -32,6 +24,8 @@
 #undef min
 #undef max
 #endif
+
+typedef struct hb_blob_t hb_blob_t;
 
 class gfxSparseBitSet {
 private:
@@ -255,7 +249,7 @@ public:
         }
     }
 
-    size_t SizeOfExcludingThis(nsMallocSizeOfFun aMallocSizeOf) const {
+    size_t SizeOfExcludingThis(mozilla::MallocSizeOf aMallocSizeOf) const {
         size_t total = mBlocks.SizeOfExcludingThis(aMallocSizeOf);
         for (uint32_t i = 0; i < mBlocks.Length(); i++) {
             if (mBlocks[i]) {
@@ -265,7 +259,7 @@ public:
         return total;
     }
 
-    size_t SizeOfIncludingThis(nsMallocSizeOfFun aMallocSizeOf) const {
+    size_t SizeOfIncludingThis(mozilla::MallocSizeOf aMallocSizeOf) const {
         return aMallocSizeOf(this) + SizeOfExcludingThis(aMallocSizeOf);
     }
 
@@ -647,7 +641,7 @@ enum gfxUserFontType {
     GFX_USERFONT_WOFF = 3
 };
 
-class THEBES_API gfxFontUtils {
+class gfxFontUtils {
 
 public:
     // these are public because gfxFont.cpp also looks into the name table
@@ -797,21 +791,10 @@ public:
                    uint32_t aUnicode, uint32_t aVarSelector = 0);
 
 #ifdef XP_WIN
-
-    // given a TrueType/OpenType data file, produce a EOT-format header
-    // for use with Windows T2Embed API AddFontResource type API's
-    // effectively hide existing fonts with matching names aHeaderLen is
-    // the size of the header buffer on input, the actual size of the
-    // EOT header on output
-    static nsresult
-    MakeEOTHeader(const uint8_t *aFontData, uint32_t aFontDataLength,
-                  FallibleTArray<uint8_t> *aHeader, FontDataOverlay *aOverlay);
-
     // determine whether a font (which has already been sanitized, so is known
     // to be a valid sfnt) is CFF format rather than TrueType
     static bool
-    IsCffFont(const uint8_t* aFontData, bool& hasVertical);
-
+    IsCffFont(const uint8_t* aFontData);
 #endif
 
     // determine the format of font data
@@ -829,12 +812,12 @@ public:
     // helper to get fullname from name table, constructing from family+style
     // if no explicit fullname is present
     static nsresult
-    GetFullNameFromTable(FallibleTArray<uint8_t>& aNameTable,
+    GetFullNameFromTable(hb_blob_t *aNameTable,
                          nsAString& aFullName);
 
     // helper to get family name from name table
     static nsresult
-    GetFamilyNameFromTable(FallibleTArray<uint8_t>& aNameTable,
+    GetFamilyNameFromTable(hb_blob_t *aNameTable,
                            nsAString& aFamilyName);
 
     // create a new name table and build a new font with that name table
@@ -845,20 +828,20 @@ public:
     
     // read all names matching aNameID, returning in aNames array
     static nsresult
-    ReadNames(FallibleTArray<uint8_t>& aNameTable, uint32_t aNameID, 
+    ReadNames(hb_blob_t *aNameTable, uint32_t aNameID, 
               int32_t aPlatformID, nsTArray<nsString>& aNames);
       
     // reads English or first name matching aNameID, returning in aName
     // platform based on OS
     static nsresult
-    ReadCanonicalName(FallibleTArray<uint8_t>& aNameTable, uint32_t aNameID, 
+    ReadCanonicalName(hb_blob_t *aNameTable, uint32_t aNameID, 
                       nsString& aName);
       
     // convert a name from the raw name table data into an nsString,
     // provided we know how; return true if successful, or false
     // if we can't handle the encoding
     static bool
-    DecodeFontName(const uint8_t *aBuf, int32_t aLength, 
+    DecodeFontName(const char *aBuf, int32_t aLength, 
                    uint32_t aPlatformCode, uint32_t aScriptCode,
                    uint32_t aLangCode, nsAString& dest);
 
@@ -922,8 +905,6 @@ public:
         // otherwise we know this char cannot trigger bidi reordering
         return false;
     }
-
-    static uint8_t CharRangeBit(uint32_t ch);
     
     // for a given font list pref name, set up a list of font names
     static void GetPrefsFontList(const char *aPrefName, 
@@ -934,7 +915,7 @@ public:
 
 protected:
     static nsresult
-    ReadNames(FallibleTArray<uint8_t>& aNameTable, uint32_t aNameID, 
+    ReadNames(hb_blob_t *aNameTable, uint32_t aNameID, 
               int32_t aLangID, int32_t aPlatformID, nsTArray<nsString>& aNames);
 
     // convert opentype name-table platform/encoding/language values to a charset name

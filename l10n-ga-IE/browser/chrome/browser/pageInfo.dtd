@@ -58,17 +58,8 @@
 <!ENTITY permAllowSession "Ceadaigh don Seisiún">
 <!ENTITY permBlock "Coisc">
 <!ENTITY permissionsFor "Ceadanna le haghaidh:">
-<!ENTITY permImage "Luchtaigh Íomhánna">
-<!ENTITY permPopup "Oscail Preabfhuinneoga">
-<!ENTITY permCookie "Socraigh Fianáin">
-<!ENTITY permNotifications "Taispeáin Fógraí">
-<!ENTITY permInstall "Suiteáil Eisínteachtaí nó Téamaí">
-<!ENTITY permGeo "Ceadaigh">
 <!ENTITY permPlugins "Cuir Forlíontáin i nGníomh">
-<!ENTITY permFullscreen "Lánscáileán">
-<!ENTITY permPointerLock2 "Folaigh an Pointeoir Luiche">
 
-<!ENTITY permIndexedDB "Coinnigh Stóras As Líne">
 <!ENTITY permClearStorage "Glan an Stóras">
 <!ENTITY permClearStorage.accesskey "G">
 
@@ -86,7 +77,7 @@
 <!ENTITY securityView.identity.verifier "Fíoraithe ag:">
 
 <!ENTITY securityView.privacy.header "Príobháideacht agus Stair">
-<!ENTITY securityView.privacy.history "An ndearna mé cuairt ar an suíomh seo roimh inniu?">
+<!ENTITY securityView.privacy.history "Ar thug mé cuairt ar an suíomh seo roimh inniu?">
 <!ENTITY securityView.privacy.cookies "An bhfuil an suíomh Gréasáin seo ag stóráil faisnéise (fianáin) ar mo ríomhaire?">
 <!ENTITY securityView.privacy.viewCookies "Féach ar Fhianáin">
 <!ENTITY securityView.privacy.viewCookies.accessKey "k">
@@ -94,4 +85,4 @@
 <!ENTITY securityView.privacy.viewPasswords "Taispeáin Focail Fhaire a Sábháladh">
 <!ENTITY securityView.privacy.viewPasswords.accessKey "w">
 
-<!ENTITY securityView.technical.header "Sonraí Teicniúla">
+<!ENTITY securityView.technical.header "Mionsonraí Teicniúla">

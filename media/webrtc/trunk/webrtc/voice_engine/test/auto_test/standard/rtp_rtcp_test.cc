@@ -8,19 +8,19 @@
  *  be found in the AUTHORS file in the root of the source tree.
  */
 
-#include "test/testsupport/fileutils.h"
-#include "voice_engine/test/auto_test/fixtures/after_streaming_fixture.h"
-#include "voice_engine/test/auto_test/voe_standard_test.h"
+#include "webrtc/test/testsupport/fileutils.h"
+#include "webrtc/voice_engine/test/auto_test/fixtures/after_streaming_fixture.h"
+#include "webrtc/voice_engine/test/auto_test/voe_standard_test.h"
 
 class TestRtpObserver : public webrtc::VoERTPObserver {
  public:
   TestRtpObserver();
   virtual ~TestRtpObserver();
-  virtual void OnIncomingCSRCChanged(const int channel,
-                                     const unsigned int CSRC,
-                                     const bool added);
-  virtual void OnIncomingSSRCChanged(const int channel,
-                                     const unsigned int SSRC);
+  virtual void OnIncomingCSRCChanged(int channel,
+                                     unsigned int CSRC,
+                                     bool added);
+  virtual void OnIncomingSSRCChanged(int channel,
+                                     unsigned int SSRC);
   void Reset();
  public:
   unsigned int ssrc_[2];
@@ -47,9 +47,9 @@ void TestRtpObserver::Reset() {
   }
 }
 
-void TestRtpObserver::OnIncomingCSRCChanged(const int channel,
-                                            const unsigned int CSRC,
-                                            const bool added) {
+void TestRtpObserver::OnIncomingCSRCChanged(int channel,
+                                            unsigned int CSRC,
+                                            bool added) {
   char msg[128];
   sprintf(msg, "=> OnIncomingCSRCChanged(channel=%d, CSRC=%u, added=%d)\n",
           channel, CSRC, added);
@@ -66,8 +66,8 @@ void TestRtpObserver::OnIncomingCSRCChanged(const int channel,
     size_[channel] = 0;
 }
 
-void TestRtpObserver::OnIncomingSSRCChanged(const int channel,
-                                            const unsigned int SSRC) {
+void TestRtpObserver::OnIncomingSSRCChanged(int channel,
+                                            unsigned int SSRC) {
   char msg[128];
   sprintf(msg, "\n=> OnIncomingSSRCChanged(channel=%d, SSRC=%u)\n", channel,
           SSRC);
@@ -78,11 +78,11 @@ void TestRtpObserver::OnIncomingSSRCChanged(const int channel,
 
 class RtcpAppHandler : public webrtc::VoERTCPObserver {
  public:
-  void OnApplicationDataReceived(const int channel,
-                                 const unsigned char sub_type,
-                                 const unsigned int name,
+  void OnApplicationDataReceived(int channel,
+                                 unsigned char sub_type,
+                                 unsigned int name,
                                  const unsigned char* data,
-                                 const unsigned short length_in_bytes);
+                                 unsigned short length_in_bytes);
   void Reset();
   ~RtcpAppHandler() {}
   unsigned short length_in_bytes_;
@@ -101,10 +101,10 @@ class RtpRtcpTest : public AfterStreamingFixture {
     second_channel_ = voe_base_->CreateChannel();
     EXPECT_GE(second_channel_, 0);
 
-    EXPECT_EQ(0, voe_base_->SetSendDestination(
-        second_channel_, 8002, "127.0.0.1"));
-    EXPECT_EQ(0, voe_base_->SetLocalReceiver(
-        second_channel_, 8002));
+    transport_ = new LoopBackTransport(voe_network_);
+    EXPECT_EQ(0, voe_network_->RegisterExternalTransport(second_channel_,
+                                                         *transport_));
+
     EXPECT_EQ(0, voe_base_->StartReceive(second_channel_));
     EXPECT_EQ(0, voe_base_->StartPlayout(second_channel_));
     EXPECT_EQ(0, voe_rtp_rtcp_->SetLocalSSRC(second_channel_, 5678));
@@ -115,16 +115,19 @@ class RtpRtcpTest : public AfterStreamingFixture {
   }
 
   void TearDown() {
+    EXPECT_EQ(0, voe_network_->DeRegisterExternalTransport(second_channel_));
     voe_base_->DeleteChannel(second_channel_);
+    delete transport_;
   }
 
   int second_channel_;
+  LoopBackTransport* transport_;
 };
 
 void RtcpAppHandler::OnApplicationDataReceived(
-    const int /*channel*/, const unsigned char sub_type,
-    const unsigned int name, const unsigned char* data,
-    const unsigned short length_in_bytes) {
+    const int /*channel*/, unsigned char sub_type,
+    unsigned int name, const unsigned char* data,
+    unsigned short length_in_bytes) {
   length_in_bytes_ = length_in_bytes;
   memcpy(data_, &data[0], length_in_bytes);
   sub_type_ = sub_type;

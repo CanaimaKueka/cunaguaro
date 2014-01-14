@@ -4,12 +4,11 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#include "mozilla/TextEvents.h"
 #include "mozilla/Util.h"
 
 #include "nsWindow.h"
 #include "nsQtKeyUtils.h"
-
-#include "nsGUIEvent.h"
 
 using namespace mozilla;
 using namespace mozilla::widget;
@@ -367,7 +366,6 @@ QtKeyCodeToDOMKeyNameIndex(int aKeysym)
             return KEY_NAME_INDEX_PrintableKey;
 
         case Qt::Key_Backtab:
-        case Qt::Key_Print:
         case Qt::Key_Direction_L:
         case Qt::Key_Direction_R:
         case Qt::Key_SingleCandidate:

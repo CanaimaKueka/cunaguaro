@@ -9,7 +9,21 @@ const TEST_URI = "http://example.com/browser/browser/devtools/webconsole/test/te
 
 function test()
 {
-  HUDConsoleUI.toggleBrowserConsole().then(consoleOpened);
+  Services.obs.addObserver(function observer(aSubject) {
+    Services.obs.removeObserver(observer, "web-console-created");
+    aSubject.QueryInterface(Ci.nsISupportsString);
+
+    let hud = HUDService.getBrowserConsole();
+    ok(hud, "browser console is open");
+    is(aSubject.data, hud.hudId, "notification hudId is correct");
+
+    executeSoon(() => consoleOpened(hud));
+  }, "web-console-created", false);
+
+  let hud = HUDService.getBrowserConsole();
+  ok(!hud, "browser console is not open");
+  info("wait for the browser console to open with ctrl-shift-j");
+  EventUtils.synthesizeKey("j", { accelKey: true, shiftKey: true }, content);
 }
 
 function consoleOpened(hud)
@@ -50,15 +64,7 @@ function consoleOpened(hud)
     contentConsole = text.indexOf("bug587757b");
     execValue = text.indexOf("browser.xul");
     exception = text.indexOf("foobarExceptionBug587757");
-
-    xhrRequest = false;
-    let urls = output.querySelectorAll(".webconsole-msg-url");
-    for (let url of urls) {
-      if (url.value.indexOf(TEST_URI) > -1) {
-        xhrRequest = true;
-        break;
-      }
-    }
+    xhrRequest = text.indexOf("test-console.html");
   }
 
   function showResults()
@@ -67,7 +73,7 @@ function consoleOpened(hud)
     isnot(contentConsole, -1, "content window console.log() is displayed");
     isnot(execValue, -1, "jsterm eval result is displayed");
     isnot(exception, -1, "exception is displayed");
-    ok(xhrRequest, "xhr request is displayed");
+    isnot(xhrRequest, -1, "xhr request is displayed");
   }
 
   waitForSuccess({
@@ -78,7 +84,7 @@ function consoleOpened(hud)
              contentConsole > -1 &&
              execValue > -1 &&
              exception > -1 &&
-             xhrRequest;
+             xhrRequest > -1;
     },
     successFn: () => {
       showResults();

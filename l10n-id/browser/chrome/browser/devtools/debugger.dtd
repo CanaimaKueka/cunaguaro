@@ -8,34 +8,23 @@
   - You want to make that choice consistent across the developer tools.
   - A good criteria is the language in which you'd find the best
   - documentation on web development on the web. -->
-<!-- LOCALIZATION NOTE (debuggerMenu.label): This is the label for the
-  -  application menu item that opens the debugger UI. -->
 
-
-
-<!ENTITY debuggerMenu.label2            "Debugger">
-<!-- LOCALIZATION NOTE (debuggerMenu.accesskey): This is accesskey for the
-  -  Tools menu entry of Debugger that opens the debugger UI. -->
-
-<!ENTITY debuggerMenu.accesskey         "D">
-<!-- LOCALIZATION NOTE (remoteDebuggerMenu.label): This is the label for the
-  -  application menu item that opens the remote debugger UI. -->
-
-<!ENTITY remoteDebuggerMenu.label       "Debugger Daring">
-<!-- LOCALIZATION NOTE (chromeDebuggerMenu.label): This is the label for the
-  -  application menu item that opens the browser debugger UI. -->
-
-<!ENTITY chromeDebuggerMenu.label       "Debugger Peramban">
-<!-- LOCALIZATION NOTE (debuggerMenu.commandkey): This is the command key that
-  -  launches the debugger UI. Do not translate this one! -->
-
-<!ENTITY debuggerMenu.commandkey        "S">
 <!-- LOCALIZATION NOTE (debuggerUI.closeButton.tooltip): This is the tooltip for
   -  the button that closes the debugger UI. -->
 
 <!ENTITY debuggerUI.closeButton.tooltip "Tutup">
 <!-- LOCALIZATION NOTE (debuggerUI.panesButton.tooltip): This is the tooltip for
   -  the button that toggles the panes visible or hidden in the debugger UI. -->
+
+<!-- LOCALIZATION NOTE (debuggerUI.blackBoxMessage.label): This is the message
+  - displayed to users when they select a black boxed source from the sources
+  - list in the debugger. -->
+<!ENTITY debuggerUI.blackBoxMessage.label "Kode sumber ini dimasukkan ke kotak hitam: breakpoint yang ada dinonaktifkan, dan proses langkah debug akan dilewati.">
+
+<!-- LOCALIZATION NOTE (debuggerUI.blackBoxMessage.unBlackBoxButton): This is
+  - the text displayed in the button to stop black boxing the currently selected
+  - source. -->
+<!ENTITY debuggerUI.blackBoxMessage.unBlackBoxButton "Keluarkan kode sumber ini dari kotak hitam">
 
 <!ENTITY debuggerUI.panesButton.tooltip "Aktif/Nonaktifkan panel">
 <!-- LOCALIZATION NOTE (debuggerUI.optsButton.tooltip): This is the tooltip for
@@ -45,8 +34,23 @@
 <!-- LOCALIZATION NOTE (debuggerUI.pauseExceptions): This is the label for the
   -  checkbox that toggles pausing on exceptions. -->
 
+<!-- LOCALIZATION NOTE (debuggerUI.sources.blackBoxTooltip): This is the tooltip
+  -  for the button that black boxes the selected source. -->
+<!ENTITY debuggerUI.sources.blackBoxTooltip "Aktifkan/Nonaktifkan Kotak Hitam">
+
+<!-- LOCALIZATION NOTE (debuggerUI.sources.prettyPrint): This is the tooltip for the
+  -  button that pretty prints the selected source. -->
+<!ENTITY debuggerUI.sources.prettyPrint "Format Kode Sumber">
+
 <!ENTITY debuggerUI.pauseExceptions     "Jeda pada eksepsi">
 <!ENTITY debuggerUI.pauseExceptions.key "E">
+
+
+<!-- LOCALIZATION NOTE (debuggerUI.pauseExceptions): This is the label for the
+  -  checkbox that toggles ignoring caught exceptions. -->
+<!ENTITY debuggerUI.ignoreCaughtExceptions     "Abaian eksepsi yang ditangkap">
+<!ENTITY debuggerUI.ignoreCaughtExceptions.key "a">
+
 <!-- LOCALIZATION NOTE (debuggerUI.showPanesOnInit): This is the label for the
   -  checkbox that toggles visibility of panes when opening the debugger. -->
 
@@ -71,10 +75,10 @@
 <!ENTITY debuggerUI.showOriginalSource      "Tampilkan sumber asli">
 <!ENTITY debuggerUI.showOriginalSource.key  "a">
 
-<!-- LOCALIZATION NOTE (debuggerUI.searchPanelTitle): This is the text that
-  -  appears in the filter panel popup as a description. -->
+<!-- LOCALIZATION NOTE (debuggerUI.searchPanelOperators): This is the text that
+  -  appears in the filter panel popup as a header for the operators part. -->
+<!ENTITY debuggerUI.searchPanelOperators    "Operator:">
 
-<!ENTITY debuggerUI.searchPanelTitle    "Operator">
 <!-- LOCALIZATION NOTE (debuggerUI.searchFile): This is the text that appears
   -  in the source editor's context menu for the scripts search operation. -->
 
@@ -99,11 +103,12 @@
 
 <!ENTITY debuggerUI.searchToken         "Cari">
 <!ENTITY debuggerUI.searchToken.key     "F">
+
 <!-- LOCALIZATION NOTE (debuggerUI.searchLine): This is the text that appears
   -  in the source editor's context menu for the line search operation. -->
+<!ENTITY debuggerUI.searchGoToLine      "Loncat ke baris…">
+<!ENTITY debuggerUI.searchGoToLine.key  "L">
 
-<!ENTITY debuggerUI.searchLine          "Loncat ke baris...">
-<!ENTITY debuggerUI.searchLine.key      "L">
 <!-- LOCALIZATION NOTE (debuggerUI.searchVariable): This is the text that appears
   -  in the source editor's context menu for the variables search operation. -->
 
@@ -130,6 +135,11 @@
 
 <!ENTITY debuggerUI.seMenuCondBreak     "Tambahkan breakpoint kondisional">
 <!ENTITY debuggerUI.seMenuCondBreak.key "B">
+<!-- LOCALIZATION NOTE (debuggerUI.instruments.*): This is the text that
+  -  appears in the debugger's instruments pane tabs. -->
+<!ENTITY debuggerUI.tabs.variables      "Variabel">
+<!ENTITY debuggerUI.tabs.events         "Kejadian">
+
 <!-- LOCALIZATION NOTE (debuggerUI.seMenuAddWatch): This is the text that
   -  appears in the source editor context menu for adding an expression. -->
 
@@ -149,7 +159,14 @@
   -  control the stepping commands in the debugger (continue, step over,
   -  step in and step out). -->
 
-<!ENTITY debuggerUI.stepping.resume     "VK_F6">
-<!ENTITY debuggerUI.stepping.stepOver   "VK_F7">
-<!ENTITY debuggerUI.stepping.stepIn     "VK_F8">
-<!ENTITY debuggerUI.stepping.stepOut    "VK_F8">
+<!-- LOCALIZATION NOTE (debuggerUI.stepping): These are the keycodes that
+  -  control the stepping commands in the debugger (continue, step over,
+  -  step in and step out). -->
+<!ENTITY debuggerUI.stepping.resume1    "VK_F8">
+<!ENTITY debuggerUI.stepping.resume2    "VK_SLASH">
+<!ENTITY debuggerUI.stepping.stepOver1  "VK_F10">
+<!ENTITY debuggerUI.stepping.stepOver2  "VK_QUOTE">
+<!ENTITY debuggerUI.stepping.stepIn1    "VK_F11">
+<!ENTITY debuggerUI.stepping.stepIn2    "VK_SEMICOLON">
+<!ENTITY debuggerUI.stepping.stepOut1   "VK_F11">
+<!ENTITY debuggerUI.stepping.stepOut2   "VK_SEMICOLON">

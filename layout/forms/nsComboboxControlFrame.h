@@ -28,17 +28,14 @@
 #include "nsIAnonymousContentCreator.h"
 #include "nsISelectControlFrame.h"
 #include "nsIRollupListener.h"
-#include "nsPresState.h"
-#include "nsCSSFrameConstructor.h"
 #include "nsIStatefulFrame.h"
-#include "nsIScrollableFrame.h"
-#include "nsIDOMEventListener.h"
 #include "nsThreadUtils.h"
 
-class nsView;
 class nsStyleContext;
 class nsIListControlFrame;
 class nsComboboxDisplayFrame;
+class nsIDOMEventListener;
+class nsIScrollableFrame;
 
 class nsComboboxControlFrame : public nsBlockFrame,
                                public nsIFormControlFrame,
@@ -59,7 +56,7 @@ public:
   NS_DECL_FRAMEARENA_HELPERS
 
   // nsIAnonymousContentCreator
-  virtual nsresult CreateAnonymousContent(nsTArray<ContentInfo>& aElements);
+  virtual nsresult CreateAnonymousContent(nsTArray<ContentInfo>& aElements) MOZ_OVERRIDE;
   virtual void AppendAnonymousContentTo(nsBaseContentList& aElements,
                                         uint32_t aFilter) MOZ_OVERRIDE;
   virtual nsIFrame* CreateFrameFor(nsIContent* aContent) MOZ_OVERRIDE;
@@ -78,7 +75,7 @@ public:
                     nsReflowStatus&          aStatus) MOZ_OVERRIDE;
 
   NS_IMETHOD HandleEvent(nsPresContext* aPresContext,
-                         nsGUIEvent* aEvent,
+                         mozilla::WidgetGUIEvent* aEvent,
                          nsEventStatus* aEventStatus);
 
   virtual void BuildDisplayList(nsDisplayListBuilder*   aBuilder,
@@ -123,10 +120,10 @@ public:
    * @param aRepaint if true then force repaint (NOTE: we always force repaint currently)
    * @note This method might destroy |this|.
    */
-  virtual void SetFocus(bool aOn, bool aRepaint);
+  virtual void SetFocus(bool aOn, bool aRepaint) MOZ_OVERRIDE;
 
   //nsIComboboxControlFrame
-  virtual bool IsDroppedDown() { return mDroppedDown; }
+  virtual bool IsDroppedDown() MOZ_OVERRIDE { return mDroppedDown; }
   /**
    * @note This method might destroy |this|.
    */
@@ -156,7 +153,7 @@ public:
   virtual void OnContentReset() MOZ_OVERRIDE;
 
   // nsISelectControlFrame
-  NS_IMETHOD AddOption(int32_t index);
+  NS_IMETHOD AddOption(int32_t index) MOZ_OVERRIDE;
   NS_IMETHOD RemoveOption(int32_t index) MOZ_OVERRIDE;
   NS_IMETHOD DoneAddingChildren(bool aIsDone) MOZ_OVERRIDE;
   NS_IMETHOD OnOptionSelected(int32_t aIndex, bool aSelected) MOZ_OVERRIDE;
@@ -167,30 +164,30 @@ public:
    * Hide the dropdown menu and stop capturing mouse events.
    * @note This method might destroy |this|.
    */
-  virtual bool Rollup(uint32_t aCount, nsIContent** aLastRolledUp);
-  virtual void NotifyGeometryChange();
+  virtual bool Rollup(uint32_t aCount, nsIContent** aLastRolledUp) MOZ_OVERRIDE;
+  virtual void NotifyGeometryChange() MOZ_OVERRIDE;
 
   /**
    * A combobox should roll up if a mousewheel event happens outside of
    * the popup area.
    */
-  virtual bool ShouldRollupOnMouseWheelEvent()
+  virtual bool ShouldRollupOnMouseWheelEvent() MOZ_OVERRIDE
     { return true; }
 
-  virtual bool ShouldConsumeOnMouseWheelEvent()
+  virtual bool ShouldConsumeOnMouseWheelEvent() MOZ_OVERRIDE
     { return false; }
 
   /**
    * A combobox should not roll up if activated by a mouse activate message
    * (eg. X-mouse).
    */
-  virtual bool ShouldRollupOnMouseActivate()
+  virtual bool ShouldRollupOnMouseActivate() MOZ_OVERRIDE
     { return false; }
 
-  virtual uint32_t GetSubmenuWidgetChain(nsTArray<nsIWidget*> *aWidgetChain)
+  virtual uint32_t GetSubmenuWidgetChain(nsTArray<nsIWidget*> *aWidgetChain) MOZ_OVERRIDE
     { return 0; }
 
-  virtual nsIWidget* GetRollupWidget();
+  virtual nsIWidget* GetRollupWidget() MOZ_OVERRIDE;
 
   //nsIStatefulFrame
   NS_IMETHOD SaveState(nsPresState** aState) MOZ_OVERRIDE;

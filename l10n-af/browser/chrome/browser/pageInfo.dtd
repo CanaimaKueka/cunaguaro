@@ -54,23 +54,14 @@
 <!ENTITY  permTab.accesskey     "T">
 <!ENTITY  permUseDefault        "Gebruik verstek">
 <!ENTITY  permAskAlways         "Vra altyd">
-<!ENTITY  permAllow             "Toelaat">
-<!ENTITY  permAllowSession      "Toelaat vir sessie">
+<!ENTITY  permAllow             "Laat toe">
+<!ENTITY  permAllowSession      "Laat toe vir sessie">
 <!ENTITY  permBlock             "Blokkeer">
 <!ENTITY  permissionsFor        "Toestemmings vir:">
-<!ENTITY  permImage             "Laai prente">
-<!ENTITY  permPopup             "Open opspringers">
-<!ENTITY  permCookie            "Stel koekies">
-<!ENTITY  permNotifications     "Wys kennisgewings">
-<!ENTITY  permInstall           "Installeer uitbreidings of temas">
-<!ENTITY  permGeo               "Deel ligging">
 <!ENTITY  permPlugins           "Aktiveer inproppe">
-<!ENTITY  permFullscreen        "Betree volskermmodus">
-<!ENTITY  permPointerLock       "Versteek die muiswyser">
 
-<!ENTITY  permIndexedDB              "Onderhou vanlyn berging">
 <!ENTITY  permClearStorage           "Maak stoorruimte skoon">
-<!ENTITY  permClearStorage.accesskey "C">
+<!ENTITY  permClearStorage.accesskey "M">
 
 <!ENTITY  securityTab           "Sekuriteit">
 <!ENTITY  securityTab.accesskey "S">

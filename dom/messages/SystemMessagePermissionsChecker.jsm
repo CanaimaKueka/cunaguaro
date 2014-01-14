@@ -34,25 +34,13 @@ this.SystemMessagePermissionsTable = {
   "bluetooth-dialer-command": {
     "telephony": []
   },
-  "bluetooth-requestconfirmation": {
-    "bluetooth": []
-  },
-  "bluetooth-requestpasskey": {
-    "bluetooth": []
-  },
-  "bluetooth-requestpincode": {
-    "bluetooth": []
-  },
-  "bluetooth-authorize": {
-    "bluetooth": []
-  },
   "bluetooth-cancel": {
     "bluetooth": []
   },
-  "bluetooth-pairedstatuschanged": {
+  "bluetooth-hid-status-changed": {
     "bluetooth": []
   },
-  "bluetooth-hfp-status-changed": {
+  "bluetooth-pairing-request": {
     "bluetooth": []
   },
   "bluetooth-opp-transfer-complete": {
@@ -67,10 +55,13 @@ this.SystemMessagePermissionsTable = {
   "bluetooth-opp-transfer-start": {
     "bluetooth": []
   },
+  "connection": { },
+  "dummy-system-message": { }, // for system message testing framework
   "headset-button": { },
   "icc-stkcommand": {
     "settings": ["read", "write"]
   },
+  "media-button": { },
   "notification": {
     "desktop-notification": []
   },
@@ -94,7 +85,13 @@ this.SystemMessagePermissionsTable = {
   },
   "ussd-received": {
     "mobileconnection": []
-  }
+  },
+  "wappush-received": {
+    "wappush": []
+  },
+  "cdma-info-rec-received": {
+    "mobileconnection": []
+  },
 };
 
 this.SystemMessagePermissionsChecker = {

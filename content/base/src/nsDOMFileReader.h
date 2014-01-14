@@ -6,6 +6,7 @@
 #ifndef nsDOMFileReader_h__
 #define nsDOMFileReader_h__
 
+#include "mozilla/Attributes.h"
 #include "nsISupportsUtils.h"      
 #include "nsString.h"
 #include "nsWeakReference.h"
@@ -33,6 +34,7 @@ class nsDOMFileReader : public mozilla::dom::FileIOObject,
                         public nsSupportsWeakReference
 {
   typedef mozilla::ErrorResult ErrorResult;
+  typedef mozilla::dom::GlobalObject GlobalObject;
 public:
   nsDOMFileReader();
   virtual ~nsDOMFileReader();
@@ -50,10 +52,10 @@ public:
   virtual void DoAbort(nsAString& aEvent) MOZ_OVERRIDE;
   NS_IMETHOD DoOnStopRequest(nsIRequest* aRequest, nsISupports* aContext,
                              nsresult aStatus, nsAString& aSuccessEvent,
-                             nsAString& aTerminationEvent);
+                             nsAString& aTerminationEvent) MOZ_OVERRIDE;
   NS_IMETHOD DoOnDataAvailable(nsIRequest* aRequest, nsISupports* aContext,
                                nsIInputStream* aInputStream, uint64_t aOffset,
-                               uint32_t aCount);
+                               uint32_t aCount) MOZ_OVERRIDE;
 
   nsPIDOMWindow* GetParentObject() const
   {
@@ -64,7 +66,7 @@ public:
 
   // WebIDL
   static already_AddRefed<nsDOMFileReader>
-  Constructor(const mozilla::dom::GlobalObject& aGlobal, ErrorResult& aRv);
+  Constructor(const GlobalObject& aGlobal, ErrorResult& aRv);
   void ReadAsArrayBuffer(JSContext* aCx, nsIDOMBlob* aBlob, ErrorResult& aRv)
   {
     MOZ_ASSERT(aBlob);
@@ -144,7 +146,7 @@ protected:
   nsString mResult;
   nsCOMPtr<nsIPrincipal> mPrincipal;
   
-  JSObject* mResultArrayBuffer;
+  JS::Heap<JSObject*> mResultArrayBuffer;
 };
 
 #endif

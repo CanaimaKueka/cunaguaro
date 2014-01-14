@@ -6,7 +6,8 @@
 #ifndef WEBGLELEMENTARRAYCACHE_H
 #define WEBGLELEMENTARRAYCACHE_H
 
-#include "mozilla/StandardInteger.h"
+#include "mozilla/MemoryReporting.h"
+#include <stdint.h>
 #include "nscore.h"
 #include "GLDefs.h"
 
@@ -42,11 +43,12 @@ public:
     , mByteSize(0)
     , mUint8Tree(nullptr)
     , mUint16Tree(nullptr)
+    , mUint32Tree(nullptr)
   {}
 
   ~WebGLElementArrayCache();
 
-  size_t SizeOfIncludingThis(nsMallocSizeOfFun aMallocSizeOf) const;
+  size_t SizeOfIncludingThis(mozilla::MallocSizeOf aMallocSizeOf) const;
 
 private:
 
@@ -73,6 +75,7 @@ private:
   size_t mByteSize;
   WebGLElementArrayCacheTree<uint8_t>* mUint8Tree;
   WebGLElementArrayCacheTree<uint16_t>* mUint16Tree;
+  WebGLElementArrayCacheTree<uint32_t>* mUint32Tree;
 };
 
 

@@ -6,10 +6,12 @@
 #ifndef nsMathMLElement_h
 #define nsMathMLElement_h
 
+#include "mozilla/Attributes.h"
+#include "mozilla/dom/ElementInlines.h"
 #include "nsMappedAttributeElement.h"
 #include "nsIDOMElement.h"
-#include "nsILink.h"
 #include "Link.h"
+#include "mozilla/dom/DOMRect.h"
 
 class nsCSSValue;
 
@@ -18,10 +20,9 @@ typedef nsMappedAttributeElement nsMathMLElementBase;
 /*
  * The base class for MathML elements.
  */
-class nsMathMLElement : public nsMathMLElementBase,
-                        public nsIDOMElement,
-                        public nsILink,
-                        public mozilla::dom::Link
+class nsMathMLElement MOZ_FINAL : public nsMathMLElementBase,
+                                  public nsIDOMElement,
+                                  public mozilla::dom::Link
 {
 public:
   nsMathMLElement(already_AddRefed<nsINodeInfo> aNodeInfo);
@@ -36,17 +37,17 @@ public:
 
   nsresult BindToTree(nsIDocument* aDocument, nsIContent* aParent,
                       nsIContent* aBindingParent,
-                      bool aCompileEventHandlers);
+                      bool aCompileEventHandlers) MOZ_OVERRIDE;
   virtual void UnbindFromTree(bool aDeep = true,
-                              bool aNullParent = true);
+                              bool aNullParent = true) MOZ_OVERRIDE;
 
   virtual bool ParseAttribute(int32_t aNamespaceID,
                                 nsIAtom* aAttribute,
                                 const nsAString& aValue,
-                                nsAttrValue& aResult);
+                                nsAttrValue& aResult) MOZ_OVERRIDE;
 
-  NS_IMETHOD_(bool) IsAttributeMapped(const nsIAtom* aAttribute) const;
-  virtual nsMapRuleToAttributesFunc GetAttributeMappingFunction() const;
+  NS_IMETHOD_(bool) IsAttributeMapped(const nsIAtom* aAttribute) const MOZ_OVERRIDE;
+  virtual nsMapRuleToAttributesFunc GetAttributeMappingFunction() const MOZ_OVERRIDE;
 
   enum {
     PARSE_ALLOW_UNITLESS = 0x01, // unitless 0 will be turned into 0px
@@ -66,11 +67,11 @@ public:
   static void MapMathMLAttributesInto(const nsMappedAttributes* aAttributes, 
                                       nsRuleData* aRuleData);
   
-  virtual nsresult PreHandleEvent(nsEventChainPreVisitor& aVisitor);
-  virtual nsresult PostHandleEvent(nsEventChainPostVisitor& aVisitor);
-  nsresult Clone(nsINodeInfo*, nsINode**) const;
-  virtual nsEventStates IntrinsicState() const;
-  virtual bool IsNodeOfType(uint32_t aFlags) const;
+  virtual nsresult PreHandleEvent(nsEventChainPreVisitor& aVisitor) MOZ_OVERRIDE;
+  virtual nsresult PostHandleEvent(nsEventChainPostVisitor& aVisitor) MOZ_OVERRIDE;
+  nsresult Clone(nsINodeInfo*, nsINode**) const MOZ_OVERRIDE;
+  virtual nsEventStates IntrinsicState() const MOZ_OVERRIDE;
+  virtual bool IsNodeOfType(uint32_t aFlags) const MOZ_OVERRIDE;
 
   // Set during reflow as necessary. Does a style change notification,
   // aNotify must be true.
@@ -79,14 +80,11 @@ public:
     return mIncrementScriptLevel;
   }
 
-  NS_IMETHOD LinkAdded() { return NS_OK; }
-  NS_IMETHOD LinkRemoved() { return NS_OK; }
   virtual bool IsFocusable(int32_t *aTabIndex = nullptr,
-                             bool aWithMouse = false);
-  virtual bool IsLink(nsIURI** aURI) const;
-  virtual void GetLinkTarget(nsAString& aTarget);
-  virtual nsLinkState GetLinkState() const;
-  virtual already_AddRefed<nsIURI> GetHrefURI() const;
+                             bool aWithMouse = false) MOZ_OVERRIDE;
+  virtual bool IsLink(nsIURI** aURI) const MOZ_OVERRIDE;
+  virtual void GetLinkTarget(nsAString& aTarget) MOZ_OVERRIDE;
+  virtual already_AddRefed<nsIURI> GetHrefURI() const MOZ_OVERRIDE;
   nsresult SetAttr(int32_t aNameSpaceID, nsIAtom* aName,
                    const nsAString& aValue, bool aNotify)
   {
@@ -94,11 +92,11 @@ public:
   }
   virtual nsresult SetAttr(int32_t aNameSpaceID, nsIAtom* aName,
                            nsIAtom* aPrefix, const nsAString& aValue,
-                           bool aNotify);
+                           bool aNotify) MOZ_OVERRIDE;
   virtual nsresult UnsetAttr(int32_t aNameSpaceID, nsIAtom* aAttribute,
-                             bool aNotify);
+                             bool aNotify) MOZ_OVERRIDE;
 
-  virtual nsIDOMNode* AsDOMNode() { return this; }
+  virtual nsIDOMNode* AsDOMNode() MOZ_OVERRIDE { return this; }
 
 protected:
   virtual JSObject* WrapNode(JSContext *aCx,

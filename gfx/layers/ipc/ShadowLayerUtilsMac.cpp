@@ -21,7 +21,7 @@ namespace layers {
 
 bool
 ISurfaceAllocator::PlatformAllocSurfaceDescriptor(const gfxIntSize& aSize,
-                                                  gfxASurface::gfxContentType aContent,
+                                                  gfxContentType aContent,
                                                   uint32_t aCaps,
                                                   SurfaceDescriptor* aBuffer)
 {
@@ -32,10 +32,22 @@ ISurfaceAllocator::PlatformAllocSurfaceDescriptor(const gfxIntSize& aSize,
 ShadowLayerForwarder::PlatformOpenDescriptor(OpenMode aMode,
                                              const SurfaceDescriptor& aSurface)
 {
-  if (SurfaceDescriptor::TShmem != aSurface.type()) {
-    return nullptr;
+  if (aSurface.type() == SurfaceDescriptor::TShmem) {
+    return gfxSharedQuartzSurface::Open(aSurface.get_Shmem());
+  } else if (aSurface.type() == SurfaceDescriptor::TMemoryImage) {
+    const MemoryImage& image = aSurface.get_MemoryImage();
+    gfxImageFormat format
+      = static_cast<gfxImageFormat>(image.format());
+
+    nsRefPtr<gfxASurface> surf =
+      new gfxQuartzSurface((unsigned char*)image.data(),
+                           image.size(),
+                           image.stride(),
+                           format);
+    return surf.forget();
+
   }
-  return gfxSharedQuartzSurface::Open(aSurface.get_Shmem());
+  return nullptr;
 }
 
 /*static*/ bool
@@ -58,6 +70,16 @@ ShadowLayerForwarder::PlatformGetDescriptorSurfaceSize(
   const SurfaceDescriptor& aDescriptor, OpenMode aMode,
   gfxIntSize* aSize,
   gfxASurface** aSurface)
+{
+  return false;
+}
+
+/*static*/ bool
+ShadowLayerForwarder::PlatformGetDescriptorSurfaceImageFormat(
+  const SurfaceDescriptor&,
+  OpenMode,
+  gfxImageFormat*,
+  gfxASurface**)
 {
   return false;
 }

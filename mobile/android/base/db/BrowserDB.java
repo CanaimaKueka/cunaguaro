@@ -19,7 +19,7 @@ import android.util.SparseArray;
 import java.util.List;
 
 public class BrowserDB {
-    public static String ABOUT_PAGES_URL_FILTER = "about:%";
+    private static boolean sAreContentProvidersEnabled = true;
 
     public static interface URLColumns {
         public static String URL = "url";
@@ -65,6 +65,8 @@ public class BrowserDB {
 
         public boolean isVisited(ContentResolver cr, String uri);
 
+        public int getReadingListCount(ContentResolver cr);
+
         public boolean isBookmark(ContentResolver cr, String uri);
 
         public boolean isReadingListItem(ContentResolver cr, String uri);
@@ -84,8 +86,6 @@ public class BrowserDB {
         public void removeReadingListItemWithURL(ContentResolver cr, String uri);
 
         public Bitmap getFaviconForUrl(ContentResolver cr, String uri);
-
-        public Cursor getFaviconsForUrls(ContentResolver cr, List<String> urls);
 
         public String getFaviconUrlForHistoryUrl(ContentResolver cr, String url);
 
@@ -112,6 +112,8 @@ public class BrowserDB {
         public void unpinAllSites(ContentResolver cr);
 
         public Cursor getPinnedSites(ContentResolver cr, int limit);
+
+        public Cursor getBookmarkForUrl(ContentResolver cr, String url);
     }
 
     static {
@@ -131,29 +133,35 @@ public class BrowserDB {
         return sDb.filter(cr, constraint, limit);
     }
 
-    public static Cursor getTopSites(ContentResolver cr, int limit) {
-        // Note this is not a single query anymore, but actually returns a mixture of two queries, one for topSites
-        // and one for pinned sites
-        Cursor topSites = sDb.getTopSites(cr, limit);
-        Cursor pinnedSites = sDb.getPinnedSites(cr, limit);
-        return new TopSitesCursorWrapper(pinnedSites, topSites, limit);
+    public static Cursor getTopSites(ContentResolver cr, int minLimit, int maxLimit) {
+        // Note this is not a single query anymore, but actually returns a mixture
+        // of two queries, one for topSites and one for pinned sites.
+        Cursor pinnedSites = sDb.getPinnedSites(cr, minLimit);
+        Cursor topSites = sDb.getTopSites(cr, maxLimit - pinnedSites.getCount());
+        return new TopSitesCursorWrapper(pinnedSites, topSites, minLimit);
     }
 
     public static void updateVisitedHistory(ContentResolver cr, String uri) {
-        sDb.updateVisitedHistory(cr, uri);
+        if (sAreContentProvidersEnabled) {
+            sDb.updateVisitedHistory(cr, uri);
+        }
     }
 
     public static void updateHistoryTitle(ContentResolver cr, String uri, String title) {
-        sDb.updateHistoryTitle(cr, uri, title);
+        if (sAreContentProvidersEnabled) {
+            sDb.updateHistoryTitle(cr, uri, title);
+        }
     }
 
     public static void updateHistoryEntry(ContentResolver cr, String uri, String title,
                                           long date, int visits) {
-        sDb.updateHistoryEntry(cr, uri, title, date, visits);
+        if (sAreContentProvidersEnabled) {
+            sDb.updateHistoryEntry(cr, uri, title, date, visits);
+        }
     }
 
     public static Cursor getAllVisitedHistory(ContentResolver cr) {
-        return sDb.getAllVisitedHistory(cr);
+        return (sAreContentProvidersEnabled ? sDb.getAllVisitedHistory(cr) : null);
     }
 
     public static Cursor getRecentHistory(ContentResolver cr, int limit) {
@@ -193,12 +201,16 @@ public class BrowserDB {
         return sDb.isVisited(cr, uri);
     }
 
+    public static int getReadingListCount(ContentResolver cr) {
+        return sDb.getReadingListCount(cr);
+    }
+
     public static boolean isBookmark(ContentResolver cr, String uri) {
-        return sDb.isBookmark(cr, uri);
+        return (sAreContentProvidersEnabled && sDb.isBookmark(cr, uri));
     }
 
     public static boolean isReadingListItem(ContentResolver cr, String uri) {
-        return sDb.isReadingListItem(cr, uri);
+        return (sAreContentProvidersEnabled && sDb.isReadingListItem(cr, uri));
     }
 
     public static void addBookmark(ContentResolver cr, String title, String uri) {
@@ -225,12 +237,8 @@ public class BrowserDB {
         sDb.removeReadingListItemWithURL(cr, uri);
     }
 
-    public static Bitmap getFaviconForUrl(ContentResolver cr, String uri) {
-        return sDb.getFaviconForUrl(cr, uri);
-    }
-
-    public static Cursor getFaviconsForUrls(ContentResolver cr, List<String> urls) {
-        return sDb.getFaviconsForUrls(cr, urls);
+    public static Bitmap getFaviconForFaviconUrl(ContentResolver cr, String faviconURL) {
+        return sDb.getFaviconForUrl(cr, faviconURL);
     }
 
     public static String getFaviconUrlForHistoryUrl(ContentResolver cr, String url) {
@@ -289,6 +297,18 @@ public class BrowserDB {
         return sDb.getPinnedSites(cr, limit);
     }
 
+    public static Cursor getBookmarkForUrl(ContentResolver cr, String url) {
+        return sDb.getBookmarkForUrl(cr, url);
+    }
+
+    public static boolean areContentProvidersDisabled() {
+        return sAreContentProvidersEnabled;
+    }
+
+    public static void setEnableContentProviders(boolean enableContentProviders) {
+        sAreContentProvidersEnabled = enableContentProviders;
+    }
+
     public static class PinnedSite {
         public String title = "";
         public String url = "";
@@ -309,17 +329,25 @@ public class BrowserDB {
         int mSize = 0;
         private SparseArray<PinnedSite> mPinnedSites = null;
 
-        public TopSitesCursorWrapper(Cursor pinnedCursor, Cursor normalCursor, int size) {
+        public TopSitesCursorWrapper(Cursor pinnedCursor, Cursor normalCursor, int minSize) {
             super(normalCursor);
 
             setPinnedSites(pinnedCursor);
             mCursor = normalCursor;
-            mSize = size;
+            mSize = Math.max(minSize, mPinnedSites.size() + mCursor.getCount());
         }
 
         public void setPinnedSites(Cursor c) {
             mPinnedSites = new SparseArray<PinnedSite>();
-            if (c != null && c.getCount() > 0) {
+
+            if (c == null) {
+                return;
+            }
+
+            try {
+                if (c.getCount() <= 0) {
+                    return;
+                }
                 c.moveToPosition(0);
                 do {
                     int pos = c.getInt(c.getColumnIndex(Bookmarks.POSITION));
@@ -327,8 +355,7 @@ public class BrowserDB {
                     String title = c.getString(c.getColumnIndex(URLColumns.TITLE));
                     mPinnedSites.put(pos, new PinnedSite(title, url));
                 } while (c.moveToNext());
-            }
-            if (c != null && !c.isClosed()) {
+            } finally {
                 c.close();
             }
         }
@@ -382,11 +409,16 @@ public class BrowserDB {
         public boolean moveToPosition(int position) {
             mIndex = position;
 
-            // move the real cursor as  if we were stepping through it to this position
-            // be careful not to move it to far, and to account for any pinned sites
+            // Move the real cursor as if we were stepping through it to this position.
+            // Account for pinned sites, and be careful to update its position to the
+            // minimum or maximum position, even if we're moving beyond its bounds.
             int before = getPinnedBefore(position);
             int p2 = position - before;
-            if (p2 >= -1 && p2 <= mCursor.getCount()) {
+            if (p2 <= -1) {
+                super.moveToPosition(-1);
+            } else if (p2 >= mCursor.getCount()) {
+                super.moveToPosition(mCursor.getCount());
+            } else {
                 super.moveToPosition(p2);
             }
 
@@ -404,6 +436,20 @@ public class BrowserDB {
 
             if (!super.isBeforeFirst() && !super.isAfterLast())
                 return super.getLong(columnIndex);
+            return 0;
+        }
+
+        @Override
+        public int getInt(int columnIndex) {
+            if (hasPinnedSites()) {
+                PinnedSite site = getPinnedSite(mIndex);
+                if (site != null) {
+                    return 0;
+                }
+            }
+
+            if (!super.isBeforeFirst() && !super.isAfterLast())
+                return super.getInt(columnIndex);
             return 0;
         }
 

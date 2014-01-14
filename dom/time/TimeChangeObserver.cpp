@@ -11,6 +11,7 @@
 #include "nsDOMEvent.h"
 #include "nsContentUtils.h"
 #include "nsIObserverService.h"
+#include "nsIDocument.h"
 
 using namespace mozilla;
 using namespace mozilla::hal;
@@ -138,7 +139,8 @@ nsSystemTimeChangeObserver::RemoveWindowListenerImpl(nsPIDOMWindow* aWindow)
     }
   }
 
-  mWindowListeners.RemoveElement(NS_GetWeakReference(aWindow));
+  nsWeakPtr windowWeakRef = do_GetWeakReference(aWindow);
+  mWindowListeners.RemoveElement(windowWeakRef);
 
   if (mWindowListeners.IsEmpty()) {
     UnregisterSystemClockChangeObserver(sObserver);

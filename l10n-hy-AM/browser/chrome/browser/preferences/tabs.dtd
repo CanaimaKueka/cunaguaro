@@ -5,7 +5,7 @@
 <!ENTITY newWindowsAsTabs.label       "Նոր պատուհանների փոխարեն բացել նոր ներդիրներ">
 <!ENTITY newWindowsAsTabs.accesskey   "ն">
 
-<!ENTITY warnCloseMultipleTabs.label  "Զգուշացնել բազմակի ներդիրների փակման դեպքում">
+<!ENTITY warnCloseMultipleTabs.label  "Զգուշացնել բազմաթիվ ներդիրներ փակելուց">
 <!ENTITY warnCloseMultipleTabs.accesskey  "Զ">
 
 <!ENTITY warnOpenManyTabs.label       "Զգուշացնել բազմակի ներդիրներ բացելու դեպքում, որոնք կարող են դանդաղեցնել &brandShortName;-ի աշխատանքը:">
@@ -19,3 +19,4 @@
 
 <!ENTITY showTabsInTaskbar.label          "Ցուցադրել ներդիրների նախադիտումը Windows taskbar-ում">
 <!ENTITY showTabsInTaskbar.accesskey      "k">
+<!ENTITY tabsGroup.label          "Ներդիրներ">

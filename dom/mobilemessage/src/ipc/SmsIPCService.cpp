@@ -6,19 +6,32 @@
 #include "mozilla/dom/ContentChild.h"
 #include "SmsIPCService.h"
 #include "nsXULAppAPI.h"
-#include "jsapi.h"
 #include "mozilla/dom/mobilemessage/SmsChild.h"
 #include "SmsMessage.h"
 #include "SmsFilter.h"
 #include "SmsSegmentInfo.h"
 #include "DictionaryHelpers.h"
 #include "nsJSUtils.h"
-#include "nsContentUtils.h"
+#include "nsCxPusher.h"
+#include "mozilla/dom/MobileMessageManagerBinding.h"
+#include "mozilla/dom/MozMmsMessageBinding.h"
+#include "mozilla/dom/BindingUtils.h"
+#include "mozilla/Preferences.h"
+#include "nsString.h"
 
 using namespace mozilla::dom;
 using namespace mozilla::dom::mobilemessage;
 
 namespace {
+
+const char* kPrefRilNumRadioInterfaces = "ril.numRadioInterfaces";
+#define kPrefMmsDefaultServiceId "dom.mms.defaultServiceId"
+#define kPrefSmsDefaultServiceId "dom.sms.defaultServiceId"
+const char* kObservedPrefs[] = {
+  kPrefMmsDefaultServiceId,
+  kPrefSmsDefaultServiceId,
+  nullptr
+};
 
 // TODO: Bug 767082 - WebSMS: sSmsChild leaks at shutdown
 PSmsChild* gSmsChild;
@@ -71,16 +84,69 @@ SendCursorRequest(const IPCMobileMessageCursor& aRequest,
   actor.forget(aResult);
   return NS_OK;
 }
+
+uint32_t
+getDefaultServiceId(const char* aPrefKey)
+{
+  int32_t id = mozilla::Preferences::GetInt(aPrefKey, 0);
+  int32_t numRil = mozilla::Preferences::GetInt(kPrefRilNumRadioInterfaces, 1);
+
+  if (id >= numRil || id < 0) {
+    id = 0;
+  }
+
+  return id;
+}
+
 } // anonymous namespace
 
-NS_IMPL_ISUPPORTS3(SmsIPCService,
+NS_IMPL_ISUPPORTS4(SmsIPCService,
                    nsISmsService,
                    nsIMmsService,
-                   nsIMobileMessageDatabaseService)
+                   nsIMobileMessageDatabaseService,
+                   nsIObserver)
+
+SmsIPCService::SmsIPCService()
+{
+  Preferences::AddStrongObservers(this, kObservedPrefs);
+  mMmsDefaultServiceId = getDefaultServiceId(kPrefMmsDefaultServiceId);
+  mSmsDefaultServiceId = getDefaultServiceId(kPrefSmsDefaultServiceId);
+}
+
+/*
+ * Implementation of nsIObserver.
+ */
+
+NS_IMETHODIMP
+SmsIPCService::Observe(nsISupports* aSubject,
+                       const char* aTopic,
+                       const PRUnichar* aData)
+{
+  if (!strcmp(aTopic, NS_PREFBRANCH_PREFCHANGE_TOPIC_ID)) {
+    nsDependentString data(aData);
+    if (data.EqualsLiteral(kPrefMmsDefaultServiceId)) {
+      mMmsDefaultServiceId = getDefaultServiceId(kPrefMmsDefaultServiceId);
+    } else if (data.EqualsLiteral(kPrefSmsDefaultServiceId)) {
+      mSmsDefaultServiceId = getDefaultServiceId(kPrefSmsDefaultServiceId);
+    }
+    return NS_OK;
+  }
+
+  MOZ_ASSERT(false, "SmsIPCService got unexpected topic!");
+  return NS_ERROR_UNEXPECTED;
+}
 
 /*
  * Implementation of nsISmsService.
  */
+
+NS_IMETHODIMP
+SmsIPCService::GetSmsDefaultServiceId(uint32_t* aServiceId)
+{
+  *aServiceId = mSmsDefaultServiceId;
+  return NS_OK;
+}
+
 NS_IMETHODIMP
 SmsIPCService::HasSupport(bool* aHasSupport)
 {
@@ -93,29 +159,51 @@ SmsIPCService::HasSupport(bool* aHasSupport)
 }
 
 NS_IMETHODIMP
-SmsIPCService::GetSegmentInfoForText(const nsAString & aText,
-                                     nsIDOMMozSmsSegmentInfo** aResult)
+SmsIPCService::GetSegmentInfoForText(const nsAString& aText,
+                                     nsIMobileMessageCallback* aRequest)
 {
-  PSmsChild* smsChild = GetSmsChild();
-  NS_ENSURE_TRUE(smsChild, NS_ERROR_FAILURE);
-
-  SmsSegmentInfoData data;
-  bool ok = smsChild->SendGetSegmentInfoForText(nsString(aText), &data);
-  NS_ENSURE_TRUE(ok, NS_ERROR_FAILURE);
-
-  nsCOMPtr<nsIDOMMozSmsSegmentInfo> info = new SmsSegmentInfo(data);
-  info.forget(aResult);
-  return NS_OK;
+  return SendRequest(GetSegmentInfoForTextRequest(nsString(aText)),
+                                                  aRequest);
 }
 
 NS_IMETHODIMP
 SmsIPCService::Send(const nsAString& aNumber,
                     const nsAString& aMessage,
+                    const bool aSilent,
                     nsIMobileMessageCallback* aRequest)
 {
   return SendRequest(SendMessageRequest(SendSmsMessageRequest(nsString(aNumber),
-                                                              nsString(aMessage))),
+                                                              nsString(aMessage),
+                                                              aSilent)),
                      aRequest);
+}
+
+NS_IMETHODIMP
+SmsIPCService::IsSilentNumber(const nsAString& aNumber,
+                              bool*            aIsSilent)
+{
+  NS_ERROR("We should not be here!");
+  return NS_ERROR_FAILURE;
+}
+
+NS_IMETHODIMP
+SmsIPCService::AddSilentNumber(const nsAString& aNumber)
+{
+  PSmsChild* smsChild = GetSmsChild();
+  NS_ENSURE_TRUE(smsChild, NS_ERROR_FAILURE);
+
+  smsChild->SendAddSilentNumber(nsString(aNumber));
+  return NS_OK;
+}
+
+NS_IMETHODIMP
+SmsIPCService::RemoveSilentNumber(const nsAString& aNumber)
+{
+  PSmsChild* smsChild = GetSmsChild();
+  NS_ENSURE_TRUE(smsChild, NS_ERROR_FAILURE);
+
+  smsChild->SendRemoveSilentNumber(nsString(aNumber));
+  return NS_OK;
 }
 
 /*
@@ -174,77 +262,52 @@ GetSendMmsMessageRequestFromParams(const JS::Value& aParam,
   }
 
   mozilla::AutoJSContext cx;
-  mozilla::idl::MmsParameters params;
-  nsresult rv = params.Init(cx, &aParam);
-  NS_ENSURE_SUCCESS(rv, false);
-
-  uint32_t len;
+  JS::Rooted<JS::Value> param(cx, aParam);
+  RootedDictionary<MmsParameters> params(cx);
+  if (!params.Init(cx, param)) {
+    return false;
+  }
 
   // SendMobileMessageRequest.receivers
-  if (!params.receivers.isObject()) {
+  if (!params.mReceivers.WasPassed()) {
     return false;
   }
-  JS::Rooted<JSObject*> receiversObj(cx, &params.receivers.toObject());
-  if (!JS_GetArrayLength(cx, receiversObj, &len)) {
-    return false;
-  }
-
-  request.receivers().SetCapacity(len);
-
-  for (uint32_t i = 0; i < len; i++) {
-    JS::Rooted<JS::Value> val(cx);
-    if (!JS_GetElement(cx, receiversObj, i, val.address())) {
-      return false;
-    }
-
-    if (!val.isString()) {
-      return false;
-    }
-
-    nsDependentJSString str;
-    if (!str.init(cx, val.toString())) {
-      return false;
-    }
-
-    request.receivers().AppendElement(str);
-  }
+  request.receivers().AppendElements(params.mReceivers.Value());
 
   // SendMobileMessageRequest.attachments
   mozilla::dom::ContentChild* cc = mozilla::dom::ContentChild::GetSingleton();
 
-  if (!params.attachments.isObject()) {
+  if (!params.mAttachments.WasPassed()) {
     return false;
   }
-  JS::Rooted<JSObject*> attachmentsObj(cx, &params.attachments.toObject());
-  if (!JS_GetArrayLength(cx, attachmentsObj, &len)) {
-    return false;
-  }
-  request.attachments().SetCapacity(len);
 
-  for (uint32_t i = 0; i < len; i++) {
-    JS::Rooted<JS::Value> val(cx);
-    if (!JS_GetElement(cx, attachmentsObj, i, val.address())) {
-      return false;
-    }
-
-    mozilla::idl::MmsAttachment attachment;
-    rv = attachment.Init(cx, val.address());
-    NS_ENSURE_SUCCESS(rv, false);
-
+  for (uint32_t i = 0; i < params.mAttachments.Value().Length(); i++) {
+    MmsAttachment& attachment = params.mAttachments.Value()[i];
     MmsAttachmentData mmsAttachment;
-    mmsAttachment.id().Assign(attachment.id);
-    mmsAttachment.location().Assign(attachment.location);
-    mmsAttachment.contentChild() = cc->GetOrCreateActorForBlob(attachment.content);
+    mmsAttachment.id().Assign(attachment.mId);
+    mmsAttachment.location().Assign(attachment.mLocation);
+    mmsAttachment.contentChild() = cc->GetOrCreateActorForBlob(attachment.mContent);
     if (!mmsAttachment.contentChild()) {
       return false;
     }
     request.attachments().AppendElement(mmsAttachment);
   }
 
-  request.smil() = params.smil;
-  request.subject() = params.subject;
+  request.smil() = params.mSmil;
+  request.subject() = params.mSubject;
 
   return true;
+}
+
+/*
+ * Implementation of nsIMmsService.
+ */
+
+NS_IMETHODIMP
+SmsIPCService::GetMmsDefaultServiceId(uint32_t* aServiceId)
+{
+  *aServiceId = mMmsDefaultServiceId;
+  return NS_OK;
 }
 
 NS_IMETHODIMP
@@ -253,7 +316,7 @@ SmsIPCService::Send(const JS::Value& aParameters,
 {
   SendMmsMessageRequest req;
   if (!GetSendMmsMessageRequestFromParams(aParameters, req)) {
-    return NS_ERROR_UNEXPECTED;
+    return NS_ERROR_INVALID_ARG;
   }
   return SendRequest(SendMessageRequest(req), aRequest);
 }

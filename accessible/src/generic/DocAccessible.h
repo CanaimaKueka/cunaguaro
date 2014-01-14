@@ -6,7 +6,6 @@
 #ifndef mozilla_a11y_DocAccessible_h__
 #define mozilla_a11y_DocAccessible_h__
 
-#include "nsIAccessibleCursorable.h"
 #include "nsIAccessibleDocument.h"
 #include "nsIAccessiblePivot.h"
 
@@ -45,7 +44,6 @@ class DocAccessible : public HyperTextAccessibleWrap,
                       public nsIObserver,
                       public nsIScrollPositionListener,
                       public nsSupportsWeakReference,
-                      public nsIAccessibleCursorable,
                       public nsIAccessiblePivotObserver
 {
   NS_DECL_ISUPPORTS_INHERITED
@@ -54,8 +52,6 @@ class DocAccessible : public HyperTextAccessibleWrap,
   NS_DECL_NSIACCESSIBLEDOCUMENT
 
   NS_DECL_NSIOBSERVER
-
-  NS_DECL_NSIACCESSIBLECURSORABLE
 
   NS_DECL_NSIACCESSIBLEPIVOTOBSERVER
 
@@ -246,15 +242,20 @@ public:
    * Return an accessible for the given DOM node or container accessible if
    * the node is not accessible.
    */
-  Accessible* GetAccessibleOrContainer(nsINode* aNode);
+  Accessible* GetAccessibleOrContainer(nsINode* aNode) const;
 
   /**
    * Return a container accessible for the given DOM node.
    */
-  Accessible* GetContainerAccessible(nsINode* aNode)
+  Accessible* GetContainerAccessible(nsINode* aNode) const
   {
     return aNode ? GetAccessibleOrContainer(aNode->GetParentNode()) : nullptr;
   }
+
+  /**
+   * Return an accessible for the given node or its first accessible descendant.
+   */
+  Accessible* GetAccessibleOrDescendant(nsINode* aNode) const;
 
   /**
    * Return true if the given ID is referred by relation attribute.
@@ -273,7 +274,7 @@ public:
    * @param  aRoleMapEntry  [in] the role map entry role the ARIA role or nullptr
    *                          if none
    */
-  bool BindToDocument(Accessible* aAccessible, nsRoleMapEntry* aRoleMapEntry);
+  void BindToDocument(Accessible* aAccessible, nsRoleMapEntry* aRoleMapEntry);
 
   /**
    * Remove from document and shutdown the given accessible.
@@ -448,8 +449,13 @@ protected:
 
   /**
    * Create accessible tree.
+   *
+   * @param aRoot       [in] a root of subtree to create
+   * @param aFocusedAcc [in, optional] a focused accessible under created
+   *                      subtree if any
    */
-  void CacheChildrenInSubtree(Accessible* aRoot);
+  void CacheChildrenInSubtree(Accessible* aRoot,
+                              Accessible** aFocusedAcc = nullptr);
 
   /**
    * Remove accessibles in subtree from node to accessible map.
@@ -492,11 +498,8 @@ protected:
     // Whether scroll listeners were added.
     eScrollInitialized = 1 << 0,
 
-    // Whether we support nsIAccessibleCursorable.
-    eCursorable = 1 << 1,
-
     // Whether the document is a tab document.
-    eTabDocument = 1 << 2
+    eTabDocument = 1 << 1
   };
 
   /**
@@ -539,7 +542,7 @@ protected:
   nsTArray<nsRefPtr<DocAccessible> > mChildDocuments;
 
   /**
-   * The virtual cursor of the document when it supports nsIAccessibleCursorable.
+   * The virtual cursor of the document.
    */
   nsRefPtr<nsAccessiblePivot> mVirtualCursor;
 

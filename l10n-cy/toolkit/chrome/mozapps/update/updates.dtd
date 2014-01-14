@@ -25,6 +25,12 @@ i osod meddalwedd ar y cyfrifiadur hwn.">
 ddigon o le i'w osod.">
 <!ENTITY  manualUpdateGetMsg.label        "Mae modd cael y fersiwn diweddaraf o &brandShortName; yn:">
 
+<!ENTITY  unsupported.title               "System nad yw'n Cael ei Gynnal">
+<!ENTITY  unsupported.label               "Mae eich &brandShortName; yn hen, ond nid yw'r fersiwn diweddaraf yn
+cael ei gynnal ar eich system. Diweddarwch eich system, yna ceisiwch eto. 
+Fyddwch chi ddim yn gweld y rhybudd yma eto, ond mae modd i chi">
+<!ENTITY  unsupportedLink.label           "ddysgu rhagor.">
+
 <!ENTITY  incompatibleCheck.title         "Gwirio Cytunedd yr Ychwanegyn">
 <!ENTITY  incompatibleCheck.label         "Chwilio am fersiwn mwy diweddar o'ch ychwanegion…">
 
@@ -68,8 +74,8 @@ modd diweddaru &brandShortName; oherwydd:">
 <!ENTITY  errorpatching.intro             "Nid oedd modd gosod y Diweddariad rhannol. 
 Bydd &brandShortName; yn ceisio eto drwy lwytho'r Diweddariad cyfan.">
 
-<!ENTITY  genericBackgroundError.label    "Mae &brandShortName; yn methu pennu a oes diweddariad ar gael. 
-Gwnewch yn siŵr fod fersiwn diweddaraf o &brandShortName; gennych o:">
+<!ENTITY  genericBackgroundError.label    "Nid yw &brandShortName; yn gallu penderfynu os oes diweddariad ar gael. 
+Gwnewch yn siŵr fod fersiwn diweddaraf &brandShortName; gennych o:">
 <!ENTITY  errorCertAttrNoUpdate2.label    "Mae rhywbeth yn atal &brandShortName; rhag diweddaru'n ddiogel. 
 Gwnewch yn siŵr fod fersiwn diweddaraf o &brandShortName; gennych o:">
 <!ENTITY  errorCertAttrHasUpdate.label    "Mae rhywbeth yn ceisio twyllo &brandShortName; i dderbyn 

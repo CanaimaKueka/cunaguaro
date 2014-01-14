@@ -6,3 +6,13 @@
 
 MODULE = 'osxproxy'
 
+SOURCES += [
+    'nsOSXSystemProxySettings.mm',
+]
+
+LIBRARY_NAME = 'osxproxy'
+
+LIBXUL_LIBRARY = True
+
+EXPORT_LIBRARY = True
+

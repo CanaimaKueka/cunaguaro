@@ -10,3 +10,11 @@ XPIDL_SOURCES += [
 
 MODULE = 'mozfind'
 
+SOURCES += [
+    'nsFindService.cpp',
+]
+
+LIBRARY_NAME = 'mozfind_s'
+
+LIBXUL_LIBRARY = True
+

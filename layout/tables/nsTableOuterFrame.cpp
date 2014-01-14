@@ -382,7 +382,7 @@ nsTableOuterFrame::GetChildMargin(nsPresContext*           aPresContext,
   // XXX We really shouldn't construct a reflow state to do this.
   nsHTMLReflowState childRS(aPresContext, aOuterRS, aChildFrame,
                             nsSize(aAvailWidth, aOuterRS.availableHeight),
-                            -1, -1, false);
+                            -1, -1, nsHTMLReflowState::CALLER_WILL_INIT);
   InitChildReflowState(*aPresContext, childRS);
 
   aMargin = childRS.mComputedMargin;
@@ -824,18 +824,15 @@ nsTableOuterFrame::OuterBeginReflowChild(nsPresContext*           aPresContext,
   // it
   nsHTMLReflowState &childRS = * new (aChildRSSpace)
     nsHTMLReflowState(aPresContext, aOuterRS, aChildFrame, availSize,
-                      -1, -1, false);
+                      -1, -1, nsHTMLReflowState::CALLER_WILL_INIT);
   InitChildReflowState(*aPresContext, childRS);
 
-  // see if we need to reset top of page due to a caption
-  if (mCaptionFrames.NotEmpty()) {
+  // see if we need to reset top-of-page due to a caption
+  if (childRS.mFlags.mIsTopOfPage &&
+      mCaptionFrames.FirstChild() == aChildFrame) {
     uint8_t captionSide = GetCaptionSide();
-    if (((captionSide == NS_STYLE_CAPTION_SIDE_BOTTOM ||
-          captionSide == NS_STYLE_CAPTION_SIDE_BOTTOM_OUTSIDE) &&
-         mCaptionFrames.FirstChild() == aChildFrame) || 
-        ((captionSide == NS_STYLE_CAPTION_SIDE_TOP ||
-          captionSide == NS_STYLE_CAPTION_SIDE_TOP_OUTSIDE) &&
-         InnerTableFrame() == aChildFrame)) {
+    if (captionSide == NS_STYLE_CAPTION_SIDE_BOTTOM ||
+        captionSide == NS_STYLE_CAPTION_SIDE_BOTTOM_OUTSIDE) {
       childRS.mFlags.mIsTopOfPage = false;
     }
   }

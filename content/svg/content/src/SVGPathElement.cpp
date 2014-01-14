@@ -3,15 +3,17 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include "nsGkAtoms.h"
+#include "mozilla/dom/SVGPathElement.h"
+
+#include <algorithm>
+
 #include "DOMSVGPathSeg.h"
 #include "DOMSVGPathSegList.h"
-#include "nsCOMPtr.h"
-#include "nsContentUtils.h"
-#include "mozilla/dom/SVGPathElement.h"
 #include "DOMSVGPoint.h"
-#include <algorithm>
+#include "gfxPath.h"
 #include "mozilla/dom/SVGPathElementBinding.h"
+#include "nsCOMPtr.h"
+#include "nsGkAtoms.h"
 
 class gfxContext;
 
@@ -42,18 +44,16 @@ SVGPathElement::SVGPathElement(already_AddRefed<nsINodeInfo> aNodeInfo)
 
 NS_IMPL_ELEMENT_CLONE_WITH_INIT(SVGPathElement)
 
-already_AddRefed<nsIDOMSVGAnimatedNumber>
+already_AddRefed<SVGAnimatedNumber>
 SVGPathElement::PathLength()
 {
-  nsCOMPtr<nsIDOMSVGAnimatedNumber> number;
-  mPathLength.ToDOMAnimatedNumber(getter_AddRefs(number), this);
-  return number.forget();
+  return mPathLength.ToDOMAnimatedNumber(this);
 }
 
 float
 SVGPathElement::GetTotalLength(ErrorResult& rv)
 {
-  nsRefPtr<gfxFlattenedPath> flat = GetFlattenedPath(gfxMatrix());
+  nsRefPtr<gfxPath> flat = GetPath(gfxMatrix());
 
   if (!flat) {
     rv.Throw(NS_ERROR_FAILURE);
@@ -66,7 +66,7 @@ SVGPathElement::GetTotalLength(ErrorResult& rv)
 already_AddRefed<nsISVGPoint>
 SVGPathElement::GetPointAtLength(float distance, ErrorResult& rv)
 {
-  nsRefPtr<gfxFlattenedPath> flat = GetFlattenedPath(gfxMatrix());
+  nsRefPtr<gfxPath> flat = GetPath(gfxMatrix());
   if (!flat) {
     rv.Throw(NS_ERROR_FAILURE);
     return nullptr;
@@ -292,10 +292,10 @@ SVGPathElement::IsAttributeMapped(const nsIAtom* name) const
     SVGPathElementBase::IsAttributeMapped(name);
 }
 
-already_AddRefed<gfxFlattenedPath>
-SVGPathElement::GetFlattenedPath(const gfxMatrix &aMatrix)
+already_AddRefed<gfxPath>
+SVGPathElement::GetPath(const gfxMatrix &aMatrix)
 {
-  return mD.GetAnimValue().ToFlattenedPath(aMatrix);
+  return mD.GetAnimValue().ToPath(aMatrix);
 }
 
 //----------------------------------------------------------------------
@@ -341,7 +341,7 @@ SVGPathElement::GetPathLengthScale(PathLengthScaleForType aFor)
         // we need to take that into account.
         matrix = PrependLocalTransformsTo(matrix);
       }
-      nsRefPtr<gfxFlattenedPath> path = GetFlattenedPath(matrix);
+      nsRefPtr<gfxPath> path = GetPath(matrix);
       if (path) {
         return path->GetLength() / authorsPathLengthEstimate;
       }

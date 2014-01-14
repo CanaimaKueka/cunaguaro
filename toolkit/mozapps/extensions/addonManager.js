@@ -54,6 +54,14 @@ amManager.prototype = {
   },
 
   /**
+   * @see amIAddonManager.idl
+   */
+  mapURIToAddonID: function AMC_mapURIToAddonID(uri, id) {
+    id.value = AddonManager.mapURIToAddonID(uri);
+    return !!id.value;
+  },
+
+  /**
    * @see amIWebInstaller.idl
    */
   isInstallEnabled: function AMC_isInstallEnabled(aMimetype, aReferer) {
@@ -175,13 +183,13 @@ amManager.prototype = {
           };
         }
         var window = null;
-        try {
-          // Normal approach for single-process mode
-          window = aMessage.target.contentWindow;
-        } catch (e) {
+        if (aMessage.target.getAttribute("remote") == "true") {
           // Fallback for multiprocess (e10s) mode. Should reimplement this
           // properly with Window IDs when possible, see bug 596109.
           window = aMessage.target.ownerDocument.defaultView;
+        } else {
+          // Normal approach for single-process mode
+          window = aMessage.target.contentWindow;
         }
         return this.installAddonsFromWebpage(payload.mimetype,
           window, referer, payload.uris, payload.hashes, payload.names,
@@ -201,7 +209,8 @@ amManager.prototype = {
       return gSingleton.QueryInterface(aIid);
     }
   },
-  QueryInterface: XPCOMUtils.generateQI([Ci.amIWebInstaller,
+  QueryInterface: XPCOMUtils.generateQI([Ci.amIAddonManager,
+                                         Ci.amIWebInstaller,
                                          Ci.nsITimerCallback,
                                          Ci.nsIObserver])
 };

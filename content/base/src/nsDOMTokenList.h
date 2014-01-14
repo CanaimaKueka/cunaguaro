@@ -12,13 +12,12 @@
 #include "nsCOMPtr.h"
 #include "nsDOMString.h"
 #include "nsWrapperCache.h"
+#include "mozilla/dom/Element.h"
+#include "mozilla/dom/BindingDeclarations.h"
 
 namespace mozilla {
 class ErrorResult;
 
-namespace dom {
-class Element;
-} // namespace dom
 } // namespace mozilla
 
 class nsAttrValue;
@@ -60,16 +59,25 @@ public:
   void IndexedGetter(uint32_t aIndex, bool& aFound, nsAString& aResult);
   bool Contains(const nsAString& aToken, mozilla::ErrorResult& aError);
   void Add(const nsAString& aToken, mozilla::ErrorResult& aError);
+  void Add(const nsTArray<nsString>& aTokens,
+           mozilla::ErrorResult& aError);
   void Remove(const nsAString& aToken, mozilla::ErrorResult& aError);
-  bool Toggle(const nsAString& aToken, mozilla::ErrorResult& aError);
+  void Remove(const nsTArray<nsString>& aTokens,
+              mozilla::ErrorResult& aError);
+  bool Toggle(const nsAString& aToken,
+              const mozilla::dom::Optional<bool>& force,
+              mozilla::ErrorResult& aError);
   void Stringify(nsAString& aResult);
 
 protected:
   virtual ~nsDOMTokenList();
 
   nsresult CheckToken(const nsAString& aStr);
-  void AddInternal(const nsAttrValue* aAttr, const nsAString& aToken);
-  void RemoveInternal(const nsAttrValue* aAttr, const nsAString& aToken);
+  nsresult CheckTokens(const nsTArray<nsString>& aStr);
+  void AddInternal(const nsAttrValue* aAttr,
+                   const nsTArray<nsString>& aTokens);
+  void RemoveInternal(const nsAttrValue* aAttr,
+                      const nsTArray<nsString>& aTokens);
   inline const nsAttrValue* GetParsedAttr();
 
   Element* mElement;

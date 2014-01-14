@@ -1,0 +1,110 @@
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+
+<!-- NAVBAR AND AUTOCOMPLETE -->
+
+<!ENTITY urlbar.emptytext      "ਖੋਜ ਕਰੋ ਜਾਂ ਐਡਰੈਸ ਦਿਉ">
+
+<!ENTITY back.label            "ਪਿੱਛੇ">
+<!ENTITY forward.label         "ਅੱਗੇ">
+<!ENTITY newtab.label          "ਨਵੀਂ ਟੈਬ">
+<!ENTITY closetab.label        "ਟੈਬ ">
+
+<!ENTITY autocompleteResultsHeader.label  "ਤੁਹਾਡੇ ਲਈ ਨਤੀਜੇ">
+
+<!ENTITY appbarErrorConsole.label   "ਗਲਤੀ ਕਨਸੋਲ  ਖੋਲ੍ਹੋ">
+<!ENTITY appbarJSShell.label        "JavaScript ਸ਼ੈੱਲ ਖੋਲ੍ਹੋ">
+<!ENTITY appbarFindInPage2.label    "ਪੇਜ਼ ਵਿੱਚ ਲੱਭੋ">
+<!ENTITY appbarViewOnDesktop2.label "ਡੈਸਕਟਾਪ ਉੱਤੇ ਵੇਖੋ">
+<!ENTITY appbarMSMetaData2.label    "ਇਹ ਸਾਈਟ ਲਈ ਐਪ ਲਵੋ">
+
+<!ENTITY topSitesHeader.label        "ਚੋਟੀ ਦੀਆਂ ਸਾਈਟਾਂ">
+<!ENTITY bookmarksHeader.label       "ਬੁੱਕਮਾਰਕ">
+<!ENTITY recentHistoryHeader.label   "ਤਾਜ਼ਾ ਅਤੀਤ">
+<!ENTITY remoteTabsHeader.label      "ਹੋਰ ਜੰਤਰਾਂ ਤੋਂ ਟੈਬਾਂ">
+
+<!-- LOCALIZATION NOTE (narrowTopSitesHeader.label,
+                        narrowBookmarksHeader.label,
+                        narrowHistoryHeader.label,
+                        narrowRemoteTabsHeader.label )
+     are shortened versions of topSitesHeader.label, bookmarksHeader.label, recentHistoryHeader.label
+     and remoteTabsHeader.label. Need to be two words or shorter to fit in narrow vertical space.
+      -->
+<!ENTITY narrowTopSitesHeader.label      "ਚੋਟੀ ਦੀਆਂ ਸਾਈਟਾਂ">
+<!ENTITY narrowBookmarksHeader.label     "ਬੁੱਕਮਾਰਕ">
+<!ENTITY narrowRecentHistoryHeader.label "ਤਾਜ਼ਾ ਅਤੀਤ">
+<!ENTITY narrowRemoteTabsHeader.label    "ਰਿਮੋਟ ਟੈਬਾਂ">
+
+<!ENTITY downloadsHeader.label     "ਡਾਊਨਲੋਡ">
+<!ENTITY downloadShowPage.label    "ਪੇਜ਼ ਉੱਤੇ ਜਾਓ">
+<!ENTITY downloadShow2.label       "ਖੋਜ">
+<!ENTITY downloadOpen2.label       "ਖੋਲ੍ਹੋ">
+<!ENTITY downloadCancel.label      "ਰੱਦ ਕਰੋ">
+<!ENTITY downloadPause.label       "ਵਿਰਾਮ">
+<!ENTITY downloadResume.label      "ਮੁੜ-ਚਾਲੂ">
+<!ENTITY downloadRetry.label       "ਮੁੜ-ਕੋਸ਼ਿਸ਼">
+<!ENTITY downloadRemove.label      "ਹਟਾਓ">
+<!ENTITY downloadDelete.label      "ਹਟਾਓ">
+<!ENTITY downloadFailed.label      "ਫੇਲ੍ਹ">
+
+<!ENTITY allBookmarks.label        "ਸਭ ਬੁੱਕਮਾਰਕ ਵੇਖੋ">
+
+<!ENTITY consoleHeader.label       "ਗਲਤੀ ਕਨਸੋਲ">
+<!ENTITY consoleAll.label          "ਸਭ">
+<!ENTITY consoleErrors.label       "ਗਲਤੀਆਂ">
+<!ENTITY consoleWarnings.label     "ਚੇਤਾਵਨੀਆਂ">
+<!ENTITY consoleMessages.label     "ਸੁਨੇਹੇ">
+<!ENTITY consoleCodeEval.label     "ਕੋਡ:">
+<!ENTITY consoleClear.label        "ਸਾਫ਼ ਕਰੋ">
+<!ENTITY consoleEvaluate.label     "…">
+<!ENTITY consoleErrFile.label      "ਸਰੋਤ ਫਾਇਲ:">
+<!ENTITY consoleErrLine.label      "ਲਾਈਨ:">
+<!ENTITY consoleErrColumn.label    "ਕਾਲਮ:">
+
+<!--  TEXT CONTEXT MENU -->
+<!ENTITY contextTextCut.label              "ਕੱਟੋ">
+<!ENTITY contextTextCopy.label             "ਕਾਪੀ ਕਰੋ">
+<!ENTITY contextTextPaste.label            "ਚੇਪੋ">
+<!-- unique item that is only added to the url bar context menu -->
+<!ENTITY contextTextPasteAndGo.label       "ਚੇਪੋ ਤੇ ਜਾਓ">
+<!ENTITY contextTextSelect.label           "ਚੁਣੋ">
+<!ENTITY contextTextSelectAll.label        "ਸਭ ਚੁਣੋ">
+
+<!-- LINK CONTEXT MENU -->
+<!ENTITY contextOpenLinkTab.label          "ਲਿੰਕ ਨਵੀਂ ਟੈਬ ਵਿੱਚ ਖੋਲ੍ਹੋ">
+<!ENTITY contextCopyLinkHref.label         "ਲਿੰਕ ਕਾਪੀ ਕਰੋ">
+<!ENTITY contextBookmarkLinkHref.label     "ਲਿੰਕ ਬੁੱਕਮਾਰਕ ਕਰੋ">
+
+<!-- IMAGE CONTEXT MENU -->
+<!-- LOCALIZATION NOTE (contextSaveImageLib.label): saves an image to the users "pictures library"
+     (Explorer -> left hand side navigation pane -> Libraries -> Pictures) -->
+<!ENTITY contextSaveImageLib.label         "ਤਸਵੀਰ ਲਾਇਬਰੇਰੀ ਵਿੱਚ ਸੰਭਾਲੋ">
+<!ENTITY contextCopyImage.label            "ਚਿੱਤਰ ਕਾਪੀ ਕਰੋ">
+<!ENTITY contextCopyImageLocation.label    "ਚਿੱਤਰ ਟਿਕਾਣਾ ਕਾਪੀ ਕਰੋ">
+<!ENTITY contextOpenImageTab.label         "ਚਿੱਤਰ ਨਵੀਂ ਟੈਬ ਵਿੱਚ ਖੋਲ੍ਹੋ">
+
+<!-- VIDEO CONTEXT MENU -->
+<!ENTITY contextSaveVideoLib.label         "ਵਿਡੀਓ ਲਾਇਬਰੇਰੀ ਵਿੱਚ ਸੰਭਾਲੋ">
+<!ENTITY contextCopyVideoLocation.label    "ਵਿਡੀਓ ਟਿਕਾਣਾ ਕਾਪੀ ਕਰੋ">
+<!ENTITY contextOpenVideoTab.label         "ਵਿਡੀਓ ਨਵੀਂ ਟੈਬ ਵਿੱਚ ਖੋਲ੍ਹੋ">
+
+<!-- KEYBOARD SHORTCUTS -->
+<!ENTITY reload.key "r">
+<!ENTITY focusURL.key "l">
+<!ENTITY urlbar.accesskey "d">
+<!ENTITY openFile.key "o">
+<!ENTITY savePage.key "s">
+<!ENTITY find.key "f">
+<!ENTITY findNext.key "g">
+<!ENTITY quit.key "q">
+<!ENTITY addBookmark.key "d">
+<!ENTITY newTab.key "t">
+<!ENTITY newTab2.key "n">
+<!ENTITY closeTab.key "w">
+
+<!-- DEVELOPER SHORTCUTS (control+shift+key) -->
+<!ENTITY jsConsole.key "j">
+<!ENTITY optionsFlyout.key "o">
+<!ENTITY syncFlyout.key "s">
+<!ENTITY aboutFlyout.key "a">

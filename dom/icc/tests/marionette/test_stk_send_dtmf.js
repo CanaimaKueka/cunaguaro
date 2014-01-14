@@ -5,7 +5,7 @@ MARIONETTE_TIMEOUT = 30000;
 
 SpecialPowers.addPermission("mobileconnection", true, document);
 
-let icc = navigator.mozMobileConnection.icc;
+let icc = navigator.mozIccManager;
 ok(icc instanceof MozIccManager, "icc is instanceof " + icc.constructor);
 
 function testSendDTMF(command, expect) {
@@ -192,6 +192,7 @@ let tests = [
             text: "ル"}}
 ];
 
+// TODO - Bug 843455: Import scripts for marionette tests.
 let pendingEmulatorCmdCount = 0;
 function sendStkPduToEmulator(command, func, expect) {
   ++pendingEmulatorCmdCount;

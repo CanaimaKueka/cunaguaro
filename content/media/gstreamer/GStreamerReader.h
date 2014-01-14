@@ -8,14 +8,27 @@
 #include <gst/gst.h>
 #include <gst/app/gstappsrc.h>
 #include <gst/app/gstappsink.h>
+// This include trips -Wreserved-user-defined-literal on clang. Ignoring it
+// trips -Wpragmas on GCC (unknown warning), but ignoring that trips
+// -Wunknown-pragmas on clang (unknown pragma).
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunknown-pragmas"
+#pragma GCC diagnostic ignored "-Wpragmas"
+#pragma GCC diagnostic ignored "-Wreserved-user-defined-literal"
 #include <gst/video/video.h>
+#pragma GCC diagnostic pop
 #include <map>
 #include "MediaDecoderReader.h"
+#include "nsRect.h"
 
 namespace mozilla {
 
 namespace dom {
 class TimeRanges;
+}
+
+namespace layers {
+class PlanarYCbCrImage;
 }
 
 class AbstractMediaDecoder;
@@ -31,7 +44,7 @@ public:
   virtual bool DecodeAudioData();
   virtual bool DecodeVideoFrame(bool &aKeyframeSkip,
                                 int64_t aTimeThreshold);
-  virtual nsresult ReadMetadata(VideoInfo* aInfo,
+  virtual nsresult ReadMetadata(MediaInfo* aInfo,
                                 MetadataTags** aTags);
   virtual nsresult Seek(int64_t aTime,
                         int64_t aStartTime,
@@ -40,18 +53,16 @@ public:
   virtual nsresult GetBuffered(dom::TimeRanges* aBuffered, int64_t aStartTime);
 
   virtual bool HasAudio() {
-    return mInfo.mHasAudio;
+    return mInfo.HasAudio();
   }
 
   virtual bool HasVideo() {
-    return mInfo.mHasVideo;
+    return mInfo.HasVideo();
   }
 
 private:
 
   void ReadAndPushData(guint aLength);
-  bool WaitForDecodedData(int* counter);
-  void NotifyBytesConsumed();
   int64_t QueryDuration();
 
   /* Called once the pipeline is setup to check that the stream only contains
@@ -60,6 +71,9 @@ private:
   nsresult CheckSupportedFormats();
 
   /* Gst callbacks */
+
+  static GstBusSyncReply ErrorCb(GstBus *aBus, GstMessage *aMessage, gpointer aUserData);
+  GstBusSyncReply Error(GstBus *aBus, GstMessage *aMessage);
 
   /* Called on the source-setup signal emitted by playbin. Used to
    * configure appsrc .
@@ -113,7 +127,7 @@ private:
 
   /* Called at end of stream, when decoding has finished */
   static void EosCb(GstAppSink* aSink, gpointer aUserData);
-  void Eos(GstAppSink* aSink);
+  void Eos();
 
   GstElement* mPlayBin;
   GstBus* mBus;
@@ -145,10 +159,6 @@ private:
    * DecodeAudioData and DecodeVideoFrame should not expect any more data
    */
   bool mReachedEos;
-  /* offset we've reached reading from the source */
-  gint64 mByteOffset;
-  /* the last offset we reported with NotifyBytesConsumed */
-  gint64 mLastReportedByteOffset;
   int fpsNum;
   int fpsDen;
 };

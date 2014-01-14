@@ -3,13 +3,16 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+// HttpLog.h should generally be included first
+#include "HttpLog.h"
+
 #include "nsHttpAuthCache.h"
+
 #include <stdlib.h>
-#include "base/compiler_specific.h"
-#include "nsHttp.h"
+
+#include "mozilla/Attributes.h"
 #include "nsString.h"
 #include "nsCRT.h"
-#include "prprf.h"
 #include "mozIApplicationClearPrivateDataParams.h"
 #include "nsIObserverService.h"
 #include "mozilla/Services.h"
@@ -51,7 +54,7 @@ StrEquivalent(const PRUnichar *a, const PRUnichar *b)
 
 nsHttpAuthCache::nsHttpAuthCache()
     : mDB(nullptr)
-    , ALLOW_THIS_IN_INITIALIZER_LIST(mObserver(new AppDataClearObserver(this)))
+    , mObserver(new AppDataClearObserver(MOZ_THIS_IN_INITIALIZER_LIST()))
 {
     nsCOMPtr<nsIObserverService> obsSvc = mozilla::services::GetObserverService();
     if (obsSvc) {
@@ -164,7 +167,7 @@ nsHttpAuthCache::SetAuthEntry(const char *scheme,
         if (NS_FAILED(rv))
             delete node;
         else
-            PL_HashTableAdd(mDB, nsCRT::strdup(key.get()), node);
+            PL_HashTableAdd(mDB, strdup(key.get()), node);
         return rv;
     }
 
@@ -249,7 +252,7 @@ nsHttpAuthCache::FreeEntry(void *self, PLHashEntry *he, unsigned flag)
     else if (flag == HT_FREE_ENTRY) {
         // three wonderful flavors of freeing memory ;-)
         delete (nsHttpAuthNode *) he->value;
-        nsCRT::free((char *) he->key);
+        free((char *) he->key);
         free(he);
     }
 }
@@ -331,7 +334,7 @@ nsHttpAuthIdentity::Set(const PRUnichar *domain,
 
     int domainLen = domain ? NS_strlen(domain) : 0;
     int userLen   = user   ? NS_strlen(user)   : 0;
-    int passLen   = pass   ? NS_strlen(pass)   : 0; 
+    int passLen   = pass   ? NS_strlen(pass)   : 0;
 
     int len = userLen + 1 + passLen + 1 + domainLen + 1;
     newUser = (PRUnichar *) malloc(len * sizeof(PRUnichar));
@@ -414,7 +417,7 @@ nsHttpAuthEntry::AddPath(const char *aPath)
         tempPtr = tempPtr->mNext;
 
     }
-    
+
     //Append the aPath
     nsHttpAuthPath *newAuthPath;
     int newpathLen = strlen(aPath);
@@ -471,7 +474,7 @@ nsHttpAuthEntry::Set(const char *path,
     nsresult rv = NS_OK;
     if (ident) {
         rv = mIdent.Set(*ident);
-    } 
+    }
     else if (mIdent.IsEmpty()) {
         // If we are not given an identity and our cached identity has not been
         // initialized yet (so is currently empty), initialize it now by

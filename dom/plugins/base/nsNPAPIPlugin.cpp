@@ -8,6 +8,7 @@
 /* This must occur *after* layers/PLayerTransaction.h to avoid typedefs conflicts. */
 #include "mozilla/Util.h"
 
+#include "pratom.h"
 #include "prmem.h"
 #include "prenv.h"
 #include "prclist.h"
@@ -29,6 +30,7 @@
 
 #include "nsIDOMElement.h"
 #include "nsPIDOMWindow.h"
+#include "nsGlobalWindow.h"
 #include "nsIDocument.h"
 #include "nsIContent.h"
 #include "nsIScriptGlobalObject.h"
@@ -38,6 +40,7 @@
 #include "nsIPrincipal.h"
 #include "nsWildCard.h"
 #include "nsContentUtils.h"
+#include "nsCxPusher.h"
 
 #include "nsIXPConnect.h"
 
@@ -90,7 +93,7 @@ using mozilla::plugins::PluginModuleParent;
 
 #ifdef XP_WIN
 #include <windows.h>
-#include "nsWindowsHelpers.h"
+#include "mozilla/WindowsVersion.h"
 #ifdef ACCESSIBILITY
 #include "mozilla/a11y/Compatibility.h"
 #endif
@@ -164,8 +167,8 @@ static NPNetscapeFuncs sBrowserFuncs = {
   _unscheduletimer,
   _popupcontextmenu,
   _convertpoint,
-  NULL, // handleevent, unimplemented
-  NULL, // unfocusinstance, unimplemented
+  nullptr, // handleevent, unimplemented
+  nullptr, // unfocusinstance, unimplemented
   _urlredirectresponse,
   _initasyncsurface,
   _finalizeasyncsurface,
@@ -180,8 +183,6 @@ enum eNPPStreamTypeInternal {
   eNPPStreamTypeInternal_Get,
   eNPPStreamTypeInternal_Post
 };
-
-static NS_DEFINE_IID(kMemoryCID, NS_MEMORY_CID);
 
 PRIntervalTime NS_NotifyBeginPluginCall(NSPluginCallReentry aReentryState)
 {
@@ -496,7 +497,7 @@ nsNPAPIPlugin::RetainStream(NPStream *pstream, nsISupports **aRetainedPeer)
   if (!aRetainedPeer)
     return NS_ERROR_NULL_POINTER;
 
-  *aRetainedPeer = NULL;
+  *aRetainedPeer = nullptr;
 
   if (!pstream || !pstream->ndata)
     return NS_ERROR_NULL_POINTER;
@@ -559,13 +560,15 @@ MakeNewNPAPIStreamInternal(NPP npp, const char *relativeURL, const char *target,
   case eNPPStreamTypeInternal_Get:
     {
       if (NS_FAILED(pluginHost->GetURL(inst, relativeURL, target, listener,
-                                       NULL, NULL, false)))
+                                       nullptr, nullptr, false)))
         return NPERR_GENERIC_ERROR;
       break;
     }
   case eNPPStreamTypeInternal_Post:
     {
-      if (NS_FAILED(pluginHost->PostURL(inst, relativeURL, len, buf, file, target, listener, NULL, NULL, false, 0, NULL)))
+      if (NS_FAILED(pluginHost->PostURL(inst, relativeURL, len, buf, file,
+                                        target, listener, nullptr, nullptr,
+                                        false, 0, nullptr)))
         return NPERR_GENERIC_ERROR;
       break;
     }
@@ -642,7 +645,7 @@ GetDocumentFromNPP(NPP npp)
 static JSContext *
 GetJSContextFromDoc(nsIDocument *doc)
 {
-  nsIScriptGlobalObject *sgo = doc->GetScriptGlobalObject();
+  nsCOMPtr<nsIScriptGlobalObject> sgo = do_QueryInterface(doc->GetWindow());
   NS_ENSURE_TRUE(sgo, nullptr);
 
   nsIScriptContext *scx = sgo->GetContext();
@@ -686,7 +689,7 @@ doGetIdentifier(JSContext *cx, const NPUTF8* name)
                                        utf16name.Length());
 
   if (!str)
-    return NULL;
+    return nullptr;
 
   return StringToNPIdentifier(cx, str);
 }
@@ -697,7 +700,7 @@ InHeap(HANDLE hHeap, LPVOID lpMem)
 {
   BOOL success = FALSE;
   PROCESS_HEAP_ENTRY he;
-  he.lpData = NULL;
+  he.lpData = nullptr;
   while (HeapWalk(hHeap, &he) != 0) {
     if (he.lpData == lpMem) {
       success = TRUE;
@@ -773,7 +776,7 @@ nsPluginThreadRunnable::Run()
     PluginDestructionGuard guard(mInstance);
 
     NS_TRY_SAFE_CALL_VOID(mFunc(mUserData), nullptr,
-                          NS_PLUGIN_CALL_UNSAFE_TO_REENTER_GECKO);
+                          NS_PLUGIN_CALL_SAFE_TO_REENTER_GECKO);
   }
 
   return NS_OK;
@@ -1205,13 +1208,17 @@ _getwindowobject(NPP npp)
     NPN_PLUGIN_LOG(PLUGIN_LOG_ALWAYS,("NPN_getwindowobject called from the wrong thread\n"));
     return nullptr;
   }
-  AutoPushJSContext cx(GetJSContextFromNPP(npp));
-  NS_ENSURE_TRUE(cx, nullptr);
 
-  // Using ::JS_GetGlobalObject(cx) is ok here since the window we
-  // want to return here is the outer window, *not* the inner (since
+  // The window want to return here is the outer window, *not* the inner (since
   // we don't know what the plugin will do with it).
-  return nsJSObjWrapper::GetNewOrUsed(npp, cx, ::JS_GetGlobalObject(cx));
+  nsIDocument* doc = GetDocumentFromNPP(npp);
+  NS_ENSURE_TRUE(doc, nullptr);
+  nsCOMPtr<nsPIDOMWindow> outer = do_QueryInterface(doc->GetWindow());
+  NS_ENSURE_TRUE(outer, nullptr);
+
+  AutoJSContext cx;
+  JS::Rooted<JSObject*> global(cx, static_cast<nsGlobalWindow*>(outer.get())->GetGlobalJSObject());
+  return nsJSObjWrapper::GetNewOrUsed(npp, cx, global);
 }
 
 NPObject* NP_CALLBACK
@@ -1234,18 +1241,18 @@ _getpluginelement(NPP npp)
 
   AutoPushJSContext cx(GetJSContextFromNPP(npp));
   NS_ENSURE_TRUE(cx, nullptr);
+  JSAutoRequest ar(cx); // Unnecessary once bug 868130 lands.
 
   nsCOMPtr<nsIXPConnect> xpc(do_GetService(nsIXPConnect::GetCID()));
   NS_ENSURE_TRUE(xpc, nullptr);
 
   nsCOMPtr<nsIXPConnectJSObjectHolder> holder;
-  xpc->WrapNative(cx, ::JS_GetGlobalObject(cx), element,
+  xpc->WrapNative(cx, ::JS::CurrentGlobalOrNull(cx), element,
                   NS_GET_IID(nsIDOMElement),
                   getter_AddRefs(holder));
   NS_ENSURE_TRUE(holder, nullptr);
 
-  JS::Rooted<JSObject*> obj(cx);
-  holder->GetJSObject(obj.address());
+  JS::Rooted<JSObject*> obj(cx, holder->GetJSObject());
   NS_ENSURE_TRUE(obj, nullptr);
 
   return nsJSObjWrapper::GetNewOrUsed(npp, cx, obj);
@@ -1256,14 +1263,13 @@ _getstringidentifier(const NPUTF8* name)
 {
   if (!name) {
     NPN_PLUGIN_LOG(PLUGIN_LOG_ALWAYS, ("NPN_getstringidentifier: passed null name"));
-    return NULL;
+    return nullptr;
   }
   if (!NS_IsMainThread()) {
     NPN_PLUGIN_LOG(PLUGIN_LOG_ALWAYS,("NPN_getstringidentifier called from the wrong thread\n"));
   }
 
   AutoSafeJSContext cx;
-  JSAutoRequest ar(cx);
   return doGetIdentifier(cx, name);
 }
 
@@ -1276,14 +1282,13 @@ _getstringidentifiers(const NPUTF8** names, int32_t nameCount,
   }
 
   AutoSafeJSContext cx;
-  JSAutoRequest ar(cx);
 
   for (int32_t i = 0; i < nameCount; ++i) {
     if (names[i]) {
       identifiers[i] = doGetIdentifier(cx, names[i]);
     } else {
       NPN_PLUGIN_LOG(PLUGIN_LOG_ALWAYS, ("NPN_getstringidentifiers: passed null name"));
-      identifiers[i] = NULL;
+      identifiers[i] = nullptr;
     }
   }
 }
@@ -1304,7 +1309,7 @@ _utf8fromidentifier(NPIdentifier id)
     NPN_PLUGIN_LOG(PLUGIN_LOG_ALWAYS,("NPN_utf8fromidentifier called from the wrong thread\n"));
   }
   if (!id)
-    return NULL;
+    return nullptr;
 
   if (!NPIdentifierIsString(id)) {
     return nullptr;
@@ -1491,8 +1496,6 @@ _evaluate(NPP npp, NPObject* npobj, NPString *script, NPVariant *result)
 
   nsCOMPtr<nsIScriptContext> scx = GetScriptContextFromJSContext(cx);
   NS_ENSURE_TRUE(scx, false);
-
-  JSAutoRequest req(cx);
 
   JS::Rooted<JSObject*> obj(cx, nsNPObjWrapper::GetNewOrUsed(npp, cx, npobj));
 
@@ -1921,7 +1924,7 @@ _getvalue(NPP npp, NPNVariable variable, void *result)
         return NPERR_NO_ERROR;
       }
     }
-#ifdef MOZ_WIDGET_GTK2
+#if (MOZ_WIDGET_GTK == 2)
     // adobe nppdf calls XtGetApplicationNameAndClass(display,
     // &instance, &class) we have to init Xt toolkit before get
     // XtDisplay just call gtk_xtbin_new(w,0) once
@@ -1942,7 +1945,7 @@ _getvalue(NPP npp, NPNVariable variable, void *result)
     return NPERR_GENERIC_ERROR;
 #endif
 
-#if defined(XP_WIN) || defined(XP_OS2) || defined(MOZ_WIDGET_GTK2) \
+#if defined(XP_WIN) || defined(XP_OS2) || (MOZ_WIDGET_GTK == 2) \
  || defined(MOZ_WIDGET_QT)
   case NPNVnetscapeWindow: {
     if (!npp || !npp->ndata)
@@ -2259,16 +2262,14 @@ _getvalue(NPP npp, NPNVariable variable, void *result)
     }  
 
     case kJavaContext_ANPGetValue: {
-      LOG("get context");
-      JNIEnv* env = GetJNIForThread();
-      if (!env)
+      AndroidBridge *bridge = AndroidBridge::Bridge();
+      if (!bridge)
         return NPERR_GENERIC_ERROR;
 
-      jclass cls     = env->FindClass("org/mozilla/gecko/GeckoApp");
-      jfieldID field = env->GetStaticFieldID(cls, "mAppContext",
-                                             "Lorg/mozilla/gecko/GeckoApp;");
-      jobject ret = env->GetStaticObjectField(cls, field);
-      env->DeleteLocalRef(cls);
+      jobject ret = bridge->GetContext();
+      if (!ret)
+        return NPERR_GENERIC_ERROR;
+
       int32_t* i  = reinterpret_cast<int32_t*>(result);
       *i = reinterpret_cast<int32_t>(ret);
       return NPERR_NO_ERROR;
@@ -2502,7 +2503,7 @@ void* NP_CALLBACK /* OJI type: JRIEnv* */
 _getJavaEnv()
 {
   NPN_PLUGIN_LOG(PLUGIN_LOG_NORMAL, ("NPN_GetJavaEnv\n"));
-  return NULL;
+  return nullptr;
 }
 
 const char * NP_CALLBACK
@@ -2543,7 +2544,7 @@ void* NP_CALLBACK /* OJI type: jref */
 _getJavaPeer(NPP npp)
 {
   NPN_PLUGIN_LOG(PLUGIN_LOG_NORMAL, ("NPN_GetJavaPeer: npp=%p\n", (void*)npp));
-  return NULL;
+  return nullptr;
 }
 
 void NP_CALLBACK
@@ -2553,7 +2554,7 @@ _pushpopupsenabledstate(NPP npp, NPBool enabled)
     NPN_PLUGIN_LOG(PLUGIN_LOG_ALWAYS,("NPN_pushpopupsenabledstate called from the wrong thread\n"));
     return;
   }
-  nsNPAPIPluginInstance *inst = npp ? (nsNPAPIPluginInstance *)npp->ndata : NULL;
+  nsNPAPIPluginInstance *inst = npp ? (nsNPAPIPluginInstance *)npp->ndata : nullptr;
   if (!inst)
     return;
 
@@ -2567,7 +2568,7 @@ _poppopupsenabledstate(NPP npp)
     NPN_PLUGIN_LOG(PLUGIN_LOG_ALWAYS,("NPN_poppopupsenabledstate called from the wrong thread\n"));
     return;
   }
-  nsNPAPIPluginInstance *inst = npp ? (nsNPAPIPluginInstance *)npp->ndata : NULL;
+  nsNPAPIPluginInstance *inst = npp ? (nsNPAPIPluginInstance *)npp->ndata : nullptr;
   if (!inst)
     return;
 

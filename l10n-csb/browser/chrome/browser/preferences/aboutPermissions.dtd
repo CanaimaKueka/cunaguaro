@@ -1,3 +1,7 @@
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+
 <!--
 # Translator(s):
 #
@@ -28,7 +32,7 @@
 
 <!ENTITY permission.alwaysAsk            "Wiedno pëtôj">
 <!ENTITY permission.allow                "Zezwòlë">
-<!ENTITY permission.allowForSession      "Zezwòlë dlô sesji">
+<!ENTITY permission.allowForSession      "Zezwòlë dlô sesje">
 <!ENTITY permission.block                "Blokùjë">
 
 <!ENTITY password.label                  "Spamiãtôj parole">

@@ -1,10 +1,12 @@
-/* -*- Mode: C++; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+/* -*- Mode: C++; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+/* vim: set ts=8 sts=2 et sw=2 tw=80: */
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 /* Implementation of xptiInterfaceInfoManager. */
 
+#include "mozilla/MemoryReporting.h"
 #include "mozilla/XPTInterfaceInfoManager.h"
 
 #include "xptiprivate.h"
@@ -18,48 +20,48 @@
 
 using namespace mozilla;
 
-NS_IMPL_THREADSAFE_ISUPPORTS1(XPTInterfaceInfoManager, 
-                              nsIInterfaceInfoManager)
+NS_IMPL_ISUPPORTS1(XPTInterfaceInfoManager,
+                   nsIInterfaceInfoManager)
 
 static XPTInterfaceInfoManager* gInterfaceInfoManager = nullptr;
 #ifdef DEBUG
 static int gCallCount = 0;
 #endif
 
-
-NS_MEMORY_REPORTER_MALLOC_SIZEOF_FUN(XPTMallocSizeOf)
-
 size_t
-XPTInterfaceInfoManager::SizeOfIncludingThis(nsMallocSizeOfFun aMallocSizeOf)
+XPTInterfaceInfoManager::SizeOfIncludingThis(MallocSizeOf aMallocSizeOf)
 {
     size_t n = aMallocSizeOf(this);
     ReentrantMonitorAutoEnter monitor(mWorkingSet.mTableReentrantMonitor);
     // The entries themselves are allocated out of an arena accounted
     // for elsewhere, so don't measure them
-    n += mWorkingSet.mIIDTable.SizeOfExcludingThis(NULL, XPTMallocSizeOf);
-    n += mWorkingSet.mNameTable.SizeOfExcludingThis(NULL, XPTMallocSizeOf);
+    n += mWorkingSet.mIIDTable.SizeOfExcludingThis(nullptr, aMallocSizeOf);
+    n += mWorkingSet.mNameTable.SizeOfExcludingThis(nullptr, aMallocSizeOf);
     return n;
 }
 
-// static
-int64_t
-XPTInterfaceInfoManager::GetXPTIWorkingSetSize()
+class XPTIWorkingSetReporter MOZ_FINAL : public MemoryUniReporter
 {
-    size_t n = XPT_SizeOfArena(gXPTIStructArena, XPTMallocSizeOf);
+public:
+    XPTIWorkingSetReporter()
+      : MemoryUniReporter("explicit/xpti-working-set", KIND_HEAP, UNITS_BYTES,
+                           "Memory used by the XPCOM typelib system.")
+    {}
+private:
+    int64_t Amount() MOZ_OVERRIDE
+    {
+        size_t n = gInterfaceInfoManager
+                 ? gInterfaceInfoManager->SizeOfIncludingThis(MallocSizeOf)
+                 : 0;
 
-    if (gInterfaceInfoManager) {
-        n += gInterfaceInfoManager->SizeOfIncludingThis(XPTMallocSizeOf);
+        // Measure gXPTIStructArena here, too.  This is a bit grotty because it
+        // doesn't belong to the xptiInterfaceInfoManager, but there's no
+        // obviously better place to measure it.
+        n += XPT_SizeOfArena(gXPTIStructArena, MallocSizeOf);
+
+        return n;
     }
-
-    return n;
-}
-
-NS_MEMORY_REPORTER_IMPLEMENT(XPTInterfaceInfoManager,
-                             "explicit/xpti-working-set",
-                             KIND_HEAP,
-                             UNITS_BYTES,
-                             XPTInterfaceInfoManager::GetXPTIWorkingSetSize,
-                             "Memory used by the XPCOM typelib system.")
+};
 
 // static
 XPTInterfaceInfoManager*
@@ -82,13 +84,16 @@ XPTInterfaceInfoManager::XPTInterfaceInfoManager()
     :   mWorkingSet(),
         mResolveLock("XPTInterfaceInfoManager.mResolveLock")
 {
-    NS_RegisterMemoryReporter(new NS_MEMORY_REPORTER_NAME(XPTInterfaceInfoManager));
+    mReporter = new XPTIWorkingSetReporter();
+    NS_RegisterMemoryReporter(mReporter);
 }
 
 XPTInterfaceInfoManager::~XPTInterfaceInfoManager()
 {
     // We only do this on shutdown of the service.
     mWorkingSet.InvalidateInterfaceInfos();
+
+    NS_UnregisterMemoryReporter(mReporter);
 
     gInterfaceInfoManager = nullptr;
 #ifdef DEBUG
@@ -183,20 +188,13 @@ XPTInterfaceInfoManager::VerifyAndAddEntryIfNew(XPTInterfaceDirectoryEntry* ifac
 static nsresult 
 EntryToInfo(xptiInterfaceEntry* entry, nsIInterfaceInfo **_retval)
 {
-    xptiInterfaceInfo* info;
-    nsresult rv;
-
     if (!entry) {
         *_retval = nullptr;
         return NS_ERROR_FAILURE;    
     }
 
-    rv = entry->GetInterfaceInfo(&info);
-    if (NS_FAILED(rv))
-        return rv;
-
-    // Transfer the AddRef done by GetInterfaceInfo.
-    *_retval = static_cast<nsIInterfaceInfo*>(info);
+    nsRefPtr<xptiInterfaceInfo> info = entry->InterfaceInfo();
+    info.forget(_retval);
     return NS_OK;    
 }
 
@@ -268,32 +266,27 @@ XPTInterfaceInfoManager::GetNameForIID(const nsIID * iid, char **_retval)
 static PLDHashOperator
 xpti_ArrayAppender(const char* name, xptiInterfaceEntry* entry, void* arg)
 {
-    nsISupportsArray* array = (nsISupportsArray*) arg;
+    nsCOMArray<nsIInterfaceInfo>* array = static_cast<nsCOMArray<nsIInterfaceInfo>*>(arg);
 
-    nsCOMPtr<nsIInterfaceInfo> ii;
-    if (NS_SUCCEEDED(EntryToInfo(entry, getter_AddRefs(ii))))
+    if (entry->GetScriptableFlag()) {
+        nsCOMPtr<nsIInterfaceInfo> ii = entry->InterfaceInfo();
         array->AppendElement(ii);
+    }
     return PL_DHASH_NEXT;
 }
 
 /* nsIEnumerator enumerateInterfaces (); */
-NS_IMETHODIMP
-XPTInterfaceInfoManager::EnumerateInterfaces(nsIEnumerator **_retval)
+void
+XPTInterfaceInfoManager::GetScriptableInterfaces(nsCOMArray<nsIInterfaceInfo>& aInterfaces)
 {
     // I didn't want to incur the size overhead of using nsHashtable just to
     // make building an enumerator easier. So, this code makes a snapshot of 
     // the table using an nsISupportsArray and builds an enumerator for that.
     // We can afford this transient cost.
 
-    nsCOMPtr<nsISupportsArray> array;
-    NS_NewISupportsArray(getter_AddRefs(array));
-    if (!array)
-        return NS_ERROR_UNEXPECTED;
-
     ReentrantMonitorAutoEnter monitor(mWorkingSet.mTableReentrantMonitor);
-    mWorkingSet.mNameTable.EnumerateRead(xpti_ArrayAppender, array);
-
-    return array->Enumerate(_retval);
+    aInterfaces.SetCapacity(mWorkingSet.mNameTable.Count());
+    mWorkingSet.mNameTable.EnumerateRead(xpti_ArrayAppender, &aInterfaces);
 }
 
 struct ArrayAndPrefix

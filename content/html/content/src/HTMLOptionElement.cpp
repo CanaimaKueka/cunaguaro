@@ -32,27 +32,7 @@
  * Implementation of &lt;option&gt;
  */
 
-nsGenericHTMLElement*
-NS_NewHTMLOptionElement(already_AddRefed<nsINodeInfo> aNodeInfo,
-                        mozilla::dom::FromParser aFromParser)
-{
-  /*
-   * HTMLOptionElement's will be created without a nsINodeInfo passed in
-   * if someone says "var opt = new Option();" in JavaScript, in a case like
-   * that we request the nsINodeInfo from the document's nodeinfo list.
-   */
-  nsCOMPtr<nsINodeInfo> nodeInfo(aNodeInfo);
-  if (!nodeInfo) {
-    nsCOMPtr<nsIDocument> doc = nsContentUtils::GetDocumentFromCaller();
-    NS_ENSURE_TRUE(doc, nullptr);
-
-    nodeInfo = doc->NodeInfoManager()->GetNodeInfo(nsGkAtoms::option, nullptr,
-                                                   kNameSpaceID_XHTML,
-                                                   nsIDOMNode::ELEMENT_NODE);
-  }
-
-  return new mozilla::dom::HTMLOptionElement(nodeInfo.forget());
-}
+NS_IMPL_NS_NEW_HTML_ELEMENT(Option)
 
 namespace mozilla {
 namespace dom {
@@ -63,8 +43,6 @@ HTMLOptionElement::HTMLOptionElement(already_AddRefed<nsINodeInfo> aNodeInfo)
     mIsSelected(false),
     mIsInSetDefaultSelected(false)
 {
-  SetIsDOMBinding();
-
   // We start off enabled
   AddStatesSilently(NS_EVENT_STATE_ENABLED);
 }
@@ -73,21 +51,8 @@ HTMLOptionElement::~HTMLOptionElement()
 {
 }
 
-// ISupports
-
-
-NS_IMPL_ADDREF_INHERITED(HTMLOptionElement, Element)
-NS_IMPL_RELEASE_INHERITED(HTMLOptionElement, Element)
-
-
-// QueryInterface implementation for HTMLOptionElement
-NS_INTERFACE_TABLE_HEAD(HTMLOptionElement)
-  NS_HTML_CONTENT_INTERFACE_TABLE1(HTMLOptionElement,
-                                   nsIDOMHTMLOptionElement)
-  NS_HTML_CONTENT_INTERFACE_TABLE_TO_MAP_SEGUE(HTMLOptionElement,
-                                               nsGenericHTMLElement)
-NS_HTML_CONTENT_INTERFACE_MAP_END
-
+NS_IMPL_ISUPPORTS_INHERITED1(HTMLOptionElement, nsGenericHTMLElement,
+                             nsIDOMHTMLOptionElement)
 
 NS_IMPL_ELEMENT_CLONE(HTMLOptionElement)
 
@@ -99,7 +64,7 @@ HTMLOptionElement::GetForm(nsIDOMHTMLFormElement** aForm)
   return NS_OK;
 }
 
-nsHTMLFormElement*
+mozilla::dom::HTMLFormElement*
 HTMLOptionElement::GetForm()
 {
   HTMLSelectElement* selectControl = GetSelect();
@@ -134,15 +99,16 @@ HTMLOptionElement::SetSelected(bool aValue)
   // so defer to it to get the answer
   HTMLSelectElement* selectInt = GetSelect();
   if (selectInt) {
-    int32_t index;
-    GetIndex(&index);
+    int32_t index = Index();
+    uint32_t mask = HTMLSelectElement::SET_DISABLED | HTMLSelectElement::NOTIFY;
+    if (aValue) {
+      mask |= HTMLSelectElement::IS_SELECTED;
+    }
+
     // This should end up calling SetSelectedInternal
-    return selectInt->SetOptionsSelectedByIndex(index, index, aValue,
-                                                false, true, true,
-                                                nullptr);
+    selectInt->SetOptionsSelectedByIndex(index, index, mask);
   } else {
     SetSelectedInternal(aValue, true);
-    return NS_OK;
   }
 
   return NS_OK;
@@ -157,22 +123,30 @@ NS_IMPL_BOOL_ATTR(HTMLOptionElement, Disabled, disabled)
 NS_IMETHODIMP
 HTMLOptionElement::GetIndex(int32_t* aIndex)
 {
-  // When the element is not in a list of options, the index is 0.
-  *aIndex = 0;
+  *aIndex = Index();
+  return NS_OK;
+}
+
+int32_t
+HTMLOptionElement::Index()
+{
+  static int32_t defaultIndex = 0;
 
   // Only select elements can contain a list of options.
   HTMLSelectElement* selectElement = GetSelect();
   if (!selectElement) {
-    return NS_OK;
+    return defaultIndex;
   }
 
   HTMLOptionsCollection* options = selectElement->GetOptions();
   if (!options) {
-    return NS_OK;
+    return defaultIndex;
   }
 
-  // aIndex will not be set if GetOptionsIndex fails.
-  return options->GetOptionIndex(this, 0, true, aIndex);
+  int32_t index = defaultIndex;
+  MOZ_ALWAYS_TRUE(NS_SUCCEEDED(
+    options->GetOptionIndex(this, 0, true, &index)));
+  return index;
 }
 
 bool
@@ -232,18 +206,23 @@ HTMLOptionElement::BeforeSetAttr(int32_t aNamespaceID, nsIAtom* aName,
   // true it doesn't matter what value mIsSelected has.
   NS_ASSERTION(!mSelectedChanged, "Shouldn't be here");
 
-  bool newSelected = (aValue != nullptr);
   bool inSetDefaultSelected = mIsInSetDefaultSelected;
   mIsInSetDefaultSelected = true;
 
-  int32_t index;
-  GetIndex(&index);
+  int32_t index = Index();
+  uint32_t mask = HTMLSelectElement::SET_DISABLED;
+  if (aValue) {
+    mask |= HTMLSelectElement::IS_SELECTED;
+  }
+
+  if (aNotify) {
+    mask |= HTMLSelectElement::NOTIFY;
+  }
+
   // This should end up calling SetSelectedInternal, which we will allow to
   // take effect so that parts of SetOptionsSelectedByIndex that might depend
   // on it working don't get confused.
-  rv = selectInt->SetOptionsSelectedByIndex(index, index, newSelected,
-                                            false, true, aNotify,
-                                            nullptr);
+  selectInt->SetOptionsSelectedByIndex(index, index, mask);
 
   // Now reset our members; when we finish the attr set we'll end up with the
   // rigt selected state.
@@ -251,7 +230,7 @@ HTMLOptionElement::BeforeSetAttr(int32_t aNamespaceID, nsIAtom* aName,
   mSelectedChanged = false;
   // mIsSelected doesn't matter while mSelectedChanged is false
 
-  return rv;
+  return NS_OK;
 }
 
 NS_IMETHODIMP
@@ -367,7 +346,7 @@ HTMLOptionElement::Option(const GlobalObject& aGlobal,
                           const Optional<bool>& aDefaultSelected,
                           const Optional<bool>& aSelected, ErrorResult& aError)
 {
-  nsCOMPtr<nsPIDOMWindow> win = do_QueryInterface(aGlobal.Get());
+  nsCOMPtr<nsPIDOMWindow> win = do_QueryInterface(aGlobal.GetAsSupports());
   nsIDocument* doc;
   if (!win || !(doc = win->GetExtantDoc())) {
     aError.Throw(NS_ERROR_FAILURE);

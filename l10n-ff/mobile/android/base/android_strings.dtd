@@ -3,26 +3,26 @@
    - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
 
 
-<!ENTITY  splash_settingup "Teelto &brandShortName; maa">
-<!ENTITY  splash_bookmarks_history "Min ngoni ko e hesɗitinde maantore e aslol maa, ena waawi ɓamde hojom walla ɓura.">
-
 <!ENTITY  no_space_to_start_error "Boowal mbeɗu ena ŋakki ngam &brandShortName; waawa hurmude.">
 <!ENTITY  error_loading_file "Juumre waɗii tuma nde piille coklaaɗe etaa looweede ngam hurminde &brandShortName;">
+<!-- Localization note: These are used as the titles of different pages on the home screen.
+     They are automatically converted to all caps by the Android platform. -->
 
-<!ENTITY  awesomebar_all_pages_title "Lowe Dowrowe">
-<!ENTITY  awesomebar_bookmarks_title "Maantore">
-<!ENTITY  awesomebar_history_title "Aslol">
-<!ENTITY  awesomebar_switch_to_tab "Switch to tab">
+<!ENTITY  bookmarks_title "Maantore">
 
-<!ENTITY  crash_reporter_title "&brandShortName; Crash Reporter">
-<!ENTITY  crash_message2 "&brandShortName; had a problem and crashed. Your tabs should be listed on the &brandShortName; Start page when you restart.">
-<!ENTITY  crash_send_report_message2 "Tell Mozilla about this crash so they can fix it">
-<!ENTITY  crash_include_url2 "Include the address of the page I was on">
-<!ENTITY  crash_sorry "We\'re sorry">
-<!ENTITY  crash_comment "Add a comment (comments are publicly visible)">
-<!ENTITY  crash_allow_contact "Allow Mozilla to contact me about this report">
-<!ENTITY  crash_email "Your email">
-<!ENTITY  crash_closing_alert "Exit without sending a crash report?">
+<!ENTITY  reading_list_title "Nana Tara Doggol">
+
+<!ENTITY  switch_to_tab "Yah to tabbere">
+
+<!ENTITY  crash_reporter_title "Jaŋtorde Kooke &brandShortName;">
+<!ENTITY  crash_message2 "&brandShortName; hookii. Tabbe maa fof maa kollire e Jaɓɓorgo &brandShortName; tuma nde hurmitinaa.">
+<!ENTITY  crash_send_report_message3 "Jaŋtano &vendorShortName; baɗte ndee hookre ngam ɓe mbaawa ñawndude nde">
+<!ENTITY  crash_include_url2 "Ɗisor heen hello ngo ngonnoo-mi ngoo">
+<!ENTITY  crash_sorry "Amin njaafnoo">
+<!ENTITY  crash_comment "Ɓeydu heen yowre (jowe ena njiyee e peñcu)">
+<!ENTITY  crash_allow_contact2 "Yamir &vendorShortName; yoo jokkondir e am baɗte ngol jaŋtol">
+<!ENTITY  crash_email "Iimeel maa">
+<!ENTITY  crash_closing_alert "Yaltu tawa a danndaani jaŋtol hookre?">
 <!ENTITY  sending_crash_report "Nana nelda jaŋtol hookre\u2026">
 <!ENTITY  crash_close_label "Uddu">
 <!ENTITY  crash_restart_label "Hurmitin &brandShortName;">
@@ -33,15 +33,13 @@
 
 <!ENTITY choose_file "Labo Fiilde">
 
-<!ENTITY awesomebar_default_text "Naatnu Njiilaw walla Ñiiɓirde">
-
-<!ENTITY remote_tabs "Tabbe synckaaɗe">
-<!ENTITY remote_tabs_show_all "Hollu tabbe fof">
+<!ENTITY url_bar_default_text "Naatnu Njiilaw walla Ñiiɓirde">
 
 <!ENTITY bookmark "Maantorol">
 <!ENTITY bookmark_added "Maantorol ɓeydaama">
 <!ENTITY bookmark_removed "Maantorol omtaama">
 <!ENTITY bookmark_updated "Maantorol hesɗitinaama">
+<!ENTITY bookmark_options "Cuɓe">
 
 <!ENTITY history_today_section "Hannde">
 <!ENTITY history_yesterday_section "Haŋki">
@@ -66,30 +64,40 @@
 
 <!ENTITY settings "Teelte">
 <!ENTITY settings_title "Teelte">
-<!ENTITY pref_category_general "General">
-<!ENTITY pref_category_privacy "Privacy &amp; Security">
-<!ENTITY pref_category_content "Content">
-<!-- Localization note (datareporting_title) : This string matches
-     (dataChoicesTab.label) in chrome/browser/preferences/advanced.dtd except in
-     capitalization. -->
-<!ENTITY pref_category_datareporting "Data choices">
-<!ENTITY pref_about_firefox "Baɗte &brandShortName;">
+<!ENTITY pref_category_advanced "Ceeɓore">
+<!ENTITY pref_category_customize "Heertin">
+<!ENTITY pref_category_search2 "Yiylo teelte">
+<!ENTITY pref_category_display "Jaytino">
+<!ENTITY pref_category_privacy_short "Suturo">
+<!ENTITY pref_category_vendor "&vendorShortName;">
+<!ENTITY pref_category_datareporting "Cuɓe keɓe">
+<!ENTITY pref_category_installed_search_engines "Jiylorɗe aafaaɗe">
+
+<!-- Localization note (pref_search_tip) : "TIP" as in "hint", "clue" etc. Displayed as an
+     advisory message on the customise search providers settings page explaining how to add new
+     search providers.-->
+<!ENTITY pref_category_devtools "Kuutorɗe topaajo">
+<!ENTITY pref_developer_remotedebugging "Buggitagol goɗɗungol">
+<!ENTITY pref_developer_remotedebugging_docs "Ɓeydu humpito">
 <!ENTITY pref_remember_signons "Siiftor finndeeji">
 <!-- Localization note: These are shown in the left sidebar on tablets -->
 
-<!ENTITY pref_header_general "General">
-<!ENTITY pref_header_privacy "Privacy &amp; Security">
-<!ENTITY pref_header_content "Content">
+<!ENTITY pref_header_customize "Heertin">
+<!ENTITY pref_header_display "Jaytino">
+<!ENTITY pref_header_privacy_short "Suturo">
+<!ENTITY pref_header_help "Ballal">
+<!ENTITY pref_header_vendor "&vendorShortName;">
+<!ENTITY pref_header_devtools "Kuutorɗe topaajo">
 
 <!ENTITY pref_cookies_menu "Kukiije">
 <!ENTITY pref_cookies_accept_all "Daaƴtaaɗo">
 <!ENTITY pref_cookies_not_accept_foreign "Daaƴtaaɗo, wondaani e ɓe woɗɓe">
 <!ENTITY pref_cookies_disabled "Daaƴaama">
 
-<!ENTITY pref_donottrack_menu "Tracking">
-<!ENTITY pref_donottrack_disallow_tracking "Tell sites that I do not want to be tracked">
-<!ENTITY pref_donottrack_allow_tracking "Tell sites that I want to be tracked">
-<!ENTITY pref_donottrack_no_pref "Do not tell sites anything about my tracking preferences">
+<!ENTITY pref_donottrack_menu "Rewindagol">
+<!ENTITY pref_donottrack_disallow_tracking "Haalan lowe wonde mi yiɗaa rewindeede">
+<!ENTITY pref_donottrack_allow_tracking "Haalan lowe wonde miɗo yiɗi rewindeede">
+<!ENTITY pref_donottrack_no_pref "Hoto haala lowe hay huunde baɗte cuɓoraaɗe am dewindagol">
 
 <!ENTITY pref_char_encoding "Dokkitannde alkule">
 <!ENTITY pref_char_encoding_on "Hollu dosol">
@@ -100,7 +108,10 @@
 <!ENTITY pref_plugins_tap_to_play "Fiy ngam tarde">
 <!ENTITY pref_plugins_disabled "Daaƴaama">
 <!ENTITY pref_text_size "Ɓetol binndi">
-<!ENTITY pref_reflow_on_zoom2 "Ɓottu ngam waltinde binndi">
+
+
+
+
 <!ENTITY pref_font_size_tiny "Pamarum">
 <!ENTITY pref_font_size_small "Tokoosum">
 <!ENTITY pref_font_size_medium "Hakindiinde">
@@ -132,26 +143,39 @@ size. -->
 <!ENTITY pref_private_data_siteSettings2 "Teelte lowre">
 <!ENTITY pref_private_data_downloadFiles "Piille gaawtaaɗe">
 
-<!ENTITY datareporting_notification_title "&brandShortName; stats &amp; data">
-<!ENTITY datareporting_notification_action "Choose what to share">
-<!ENTITY datareporting_notification_summary "To improve your experience, &brandShortName; automatically sends some information to &vendorShortName;.">
-<!ENTITY datareporting_notification_summary_short "To improve your experience, &brandShortName;…">
-<!-- Localization note (datareporting_fhr_title, datareporting_fhr_summary,
+
+<!ENTITY pref_about_firefox "Baɗte &brandShortName;">
+
+<!ENTITY pref_vendor_feedback "Hokku duttinal">
+
+<!ENTITY pref_search_default "Goowaaɗo">
+
+
+
+<!ENTITY datareporting_notification_title "&brandShortName; limlimte &amp; keɓe">
+<!ENTITY datareporting_notification_action_long "Suɓo humpito ngo lollintaa">
+<!ENTITY datareporting_notification_action "Suɓo ko lollintee">
+<!ENTITY datareporting_notification_summary "Ngam ƴellitde dawtol maa, &brandShortName; neldat won humpito e jaajol to &vendorShortName;.">
+<!ENTITY datareporting_notification_summary_short "Ngam ƴellitde dawtol maa, &brandShortName;…">
+<!ENTITY datareporting_notification_ticker_text "datareporting_notification_title;: datareporting_notification_action_long;">
+<!-- Localization note (datareporting_fhr_title, datareporting_fhr_summary2,
      reporting_telemetry_title, datareporting_telemetry_summary,
      datareporting_crashreporter_summary) : These match the strings in
-     chrome/browser/preferences/advanced.dtd (healthReportSection.label,
+     en-US/chrome/browser/preferences/advanced.dtd (healthReportSection.label,
      healthReportDesc.label, telemetrySection.label, telemetryDesc.label,
      crashReporterDesc.label). -->
 
 <!ENTITY datareporting_fhr_title "&brandShortName; Health Report">
-<!ENTITY datareporting_fhr_summary "Helps you understand your browser performance and shares data with &vendorShortName; about your browser health">
-<!ENTITY datareporting_telemetry_title "Telemetry">
-<!ENTITY datareporting_telemetry_summary "Shares performance, usage, hardware and customization data about your browser with &vendorShortName; to help us make &brandShortName; better">
-<!ENTITY datareporting_crashreporter_summary "&brandShortName; submits crash reports to help &vendorShortName; make your browser more stable and secure">
-<!-- Localization note (datareporting_crashreporter_title) : This string matches
-     (crashReporterSection.label) in chrome/browser/preferences/advanced.dtd
-     except in branding. -->
-<!ENTITY datareporting_crashreporter_title "&brandShortName; Crash Reporter">
+<!ENTITY datareporting_fhr_summary2 "Lollinat keɓe to &vendorShortName; baɗte cellal wanngorde maa tee ena walla faamde ñisgol wanngorde maa">
+<!ENTITY datareporting_abouthr_title "Yiyto Jaŋtol Cellal al">
+<!ENTITY datareporting_telemetry_title "Telemeetiri">
+<!ENTITY datareporting_telemetry_summary "Lollintu keɓe moƴƴugol, kuutorgol, masiŋeeri e keertine baɗte wanngorde maa e &vendorShortName; ngam wallude min moƴƴinde &brandShortName;">
+<!ENTITY datareporting_crashreporter_summary "&brandShortName; naatnoytu jaŋte kooke ngam wallude &vendorShortName; ɓeydude yamɗinde e hisnude wanngorde maa">
+<!-- Localization note (datareporting_crashreporter_title_short) : This string matches
+     (crashReporterSection.label) in en-US/chrome/browser/preferences/advanced.dtd.-->
+<!ENTITY datareporting_crashreporter_title_short "Jaŋtorde Kooke">
+<!ENTITY datareporting_wifi_title "Carwe nokkuure &vendorShortName;">
+<!ENTITY datareporting_wifi_summary "Wallu moƴƴitinde carwe tolnoode Web Udditiiɗo so woppude &brandShortName; roɓindoo tee nelda keɓe humpito seluleer cuuriiɗo">
 
 <!ENTITY pref_update_autodownload "Kesɗitine jaajol">
 <!ENTITY pref_update_autodownload_wifi "E Wifi tan">
@@ -175,12 +199,11 @@ size. -->
 <!ENTITY new_tab "Tabbere Hesere">
 <!ENTITY new_private_tab "Tabbere Suuriinde Hesere">
 <!ENTITY close_all_tabs "Uddu Tabbe Fofo">
-<!ENTITY tabs_normal "Tabbe">
+
 <!ENTITY tabs_private "Cuuriɗum">
 <!ENTITY tabs_synced "Synced">
-<!ENTITY wallpaper_success "Wutte ɓalal hesɗitinaama">
-<!ENTITY wallpaper_progress "Teeltagol wutte ɓalal">
-<!ENTITY wallpaper_fail "Horiima teeltaade wutte ɓalal">
+
+
 <!-- Localization note (find_text, find_prev, find_next, find_close) : These strings are used
      as alternate text for accessibility. They are not visible in the UI. -->
 
@@ -192,20 +215,22 @@ size. -->
 <!ENTITY contextmenu_open_new_tab "Uddit e Tabbere Hesere">
 <!ENTITY contextmenu_open_private_tab "Uddit e Henorde Suuriinde">
 <!ENTITY contextmenu_open_in_reader "Uddit e Tarirde">
-<!ENTITY contextmenu_remove_history "Momtu">
-<!ENTITY contextmenu_remove_bookmark "Momtu">
+
 <!ENTITY contextmenu_add_to_launcher "Ɓeydu to Hello Jaɓɓorgo">
 <!ENTITY contextmenu_share "Simmin">
 <!ENTITY contextmenu_pasteandgo "Ɗakku &amp; Yah">
 <!ENTITY contextmenu_paste "Ɗakku">
 <!ENTITY contextmenu_copyurl "Natto Ñiiɓirde">
 <!ENTITY contextmenu_edit_bookmark "Taƴto">
-<!ENTITY contextmenu_subscribe "Subscribe to Page">
-<!ENTITY contextmenu_site_settings "Edit Site Settings">
+<!ENTITY contextmenu_subscribe "Lulno e Hello">
+<!ENTITY contextmenu_site_settings "Taƴto Teelte Lowre">
 
-<!ENTITY pref_titlebar_mode "Title bar">
-<!ENTITY pref_titlebar_mode_title "Show page title">
-<!ENTITY pref_titlebar_mode_url "Show page address">
+<!ENTITY contextmenu_top_bookmarks_pin "Ñippu Lowre">
+<!ENTITY contextmenu_top_bookmarks_unpin "Ñippit Lowre">
+
+<!ENTITY pref_titlebar_mode "Palal tiitoonde">
+<!ENTITY pref_titlebar_mode_title "Hollu tiitoonde hello">
+<!ENTITY pref_titlebar_mode_url "Hollu ñiiɓirde hello">
 
 <!ENTITY history_removed "Hello momtaama">
 
@@ -216,17 +241,17 @@ size. -->
 <!-- Localization note (site_settings_*) : These strings are used in the "Site Settings"
      dialog that appears after selecting the "Edit Site Settings" context menu item. -->
 
-<!ENTITY site_settings_title3       "Site Settings">
+<!ENTITY site_settings_title3       "Teelte Lowre">
 <!ENTITY site_settings_cancel       "Haaytu">
 <!ENTITY site_settings_clear        "Momtu">
 <!ENTITY site_settings_no_settings  "Teelte ngalaa saka momtee.">
 
-<!ENTITY reading_list "Nana Tara Doggol">
 <!ENTITY reading_list_added "Hello ɓeydaama e Doggol Taro maa">
 <!ENTITY reading_list_removed "Hello momtaama e Doggol Taro maa">
 <!ENTITY reading_list_failed "Horiima ɓeydude hello to Doggol Taro">
-<!ENTITY reading_list_duplicate "Page already in your Reading List">
-<!ENTITY reader "Tarirde">
+<!ENTITY reading_list_duplicate "Hello ɓeydaanooma e Doggol Taro maa">
+<!-- Localization note : These strings are used as alternate text for accessibility.
+     They are not visible in the UI. -->
 
 <!ENTITY masterpassword_create_title "Sos Finnde Baabaare">
 <!ENTITY masterpassword_remove_title "Momtu Finnde Baabaare">
@@ -241,28 +266,25 @@ size. -->
 <!ENTITY button_set "Suɓo">
 <!ENTITY button_clear "Momtu">
 
-<!ENTITY abouthome_addons_title "Ɓeyditte &brandShortName; maa">
-<!ENTITY abouthome_addons_browse "Yiylo ɓeyditte &brandShortName; fof">
-<!ENTITY abouthome_last_tabs_title "Tabbe maa laawol ɓennungol">
-<!ENTITY abouthome_last_tabs_open "Uddit tabbe cakkitiiɗe fof">
-<!ENTITY abouthome_top_sites_title "Lowe dowrowe">
-<!ENTITY abouthome_topsites_edit "Taƴto">
-<!ENTITY abouthome_topsites_pin "Ñippu Lowre">
-<!ENTITY abouthome_topsites_unpin "Ñippit Lowre">
-<!-- Localization note (abouthome_about_sync3, abouthome_about_apps2): The
-     chevron (ex: "»"; unicode= U+00BB) is used as an arrow to show that
-     clicking this text in the promotions box will perform some action. Note
-     that a non-breaking space (unicode= U+00A0) should be used between this
-     character and the remainder of the string to prevent word wrap. -->
+<!ENTITY home_top_sites_title "Lowe Dowrowe">
+<!-- Localization note (home_top_sites_add): This string is used as placeholder
+     text underneath empty thumbnails in the Top Sites page on about:home. -->
 
-<!ENTITY abouthome_about_sync3 "Teelto Firefox Sync ngam naatde e maantore, aslol e tabbe ummoraade e kaɓirɗi goɗɗi&#x00A0;»">
-<!ENTITY abouthome_about_apps3 "Heɓ jaaɓɗe iwɗe e Mozilla Marketplace tee njytaa ko ɓuri yuɓɓude ko Geese addan-maa&#x00A0;»">
-<!-- Localization note (abouthome_sync_bold_name, abouthome_apps_bold_name):
-     These strings are accentuated as bold text in the "abouthome_about_..."
-     strings above. These strings should be a subset of the strings above and
-     generally be the name of the product the string describes. -->
-<!ENTITY abouthome_sync_bold_name "Firefox Sync">
-<!ENTITY abouthome_apps_bold_name2 "Firefox Marketplace">
+
+<!ENTITY home_last_tabs_open "Uddit tabbe cakkitiiɗe fof">
+
+
+
+
+
+<!-- Localization note (home_reading_list_hint): The "TIP" string is synonymous to "hint", "clue", etc. This string is displayed
+     as an advisory message on how to add content to the reading list when the reading list empty.
+     The "&#37;I" in the string will be replaced by a small image of the icon described, and can be moved to wherever
+     it is applicable. Please keep the spacing around the "&#37;I" string. -->
+<!-- Localization note (home_reading_list_hint_accessible): This string is used
+     as alternate text for accessibility. It is not visible in the UI. -->
+
+
 
 <!ENTITY filepicker_title "Labo Fiilde">
 <!ENTITY filepicker_audio_title "Labo walla nanngito ojoo">
@@ -283,6 +305,15 @@ substitution variables.  If it is difficult to translate the sense of the string
 with that structure, consider a translation which ignores the preceding domain and
 just addresses the organization to follow, e.g. "This site is run by " -->
 <!ENTITY identity_run_by "yuɓɓini ɗum ko">
+<!-- Mixed content notifications in site identity popup -->
+
+<!ENTITY loaded_mixed_content_message "Ngoo hello ena jaytina loowdi ndi hisaani.">
+<!ENTITY blocked_mixed_content_message_top "&brandShortName; faliima loowdi ndi hisaani.">
+<!ENTITY blocked_mixed_content_message_bottom "Lowe ɓurɗe heewde maa mbaaw wanngeede hay so tawii ndii loowdi daaƴaama.">
+<!ENTITY learn_more "Ɓeydu Humpito">
+<!ENTITY enable_protection "Hurmin kisnugol">
+<!ENTITY disable_protection "Daaƴ kisnugol">
+<!ENTITY keep_blocking "Jokku falaade">
 
 <!ENTITY private_data_success "Keɓe curaaɗe momtaama">
 <!ENTITY private_data_fail "Won e keɓe cuuriiɗe ɗe keɓaani momteede">
@@ -299,10 +330,14 @@ iwde e Android">
      replaced with the name of the search engine. -->
 
 <!ENTITY suggestions_prompt2 "Aɗa yiɗi hurminde basiye njiilaw &formatS;?">
+<!-- Localization note (suggestion_for_engine): The placeholder &formatS1; will be
+     replaced with the name of the search engine. The placeholder &formatS2; will be
+     replaced with the search query. -->
 
 <!ENTITY webapp_generic_name "Jaaɓngal">
 
 <!ENTITY searchable_description "Maantore e aslol">
+
 <!-- Updater notifications --> 
 
 <!ENTITY updater_start_title2 "Kesɗitinal &brandShortName; ena woodi">
@@ -315,3 +350,11 @@ iwde e Android">
 
 <!ENTITY updater_apply_title2 "Kesɗitinal &brandShortName; ena woodi">
 <!ENTITY updater_apply_select2 "Mem ɗoo ngam hesɗitinde">
+<!-- Guest mode -->
+
+<!ENTITY guest_session_dialog_continue "Jokku">
+
+
+
+
+

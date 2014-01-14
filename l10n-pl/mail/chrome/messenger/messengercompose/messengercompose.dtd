@@ -49,6 +49,8 @@
 <!ENTITY sendLaterCmd.keycode        "VK_RETURN">
 <!ENTITY printSetupCmd.label         "Ustawienia strony…">
 <!ENTITY printSetupCmd.accesskey     "e">
+<!ENTITY printPreviewCmd.label "Podgląd wydruku">
+<!ENTITY printPreviewCmd.accesskey "o">
 <!ENTITY printCmd.label              "Drukuj…">
 <!ENTITY printCmd.accesskey          "D">
 <!ENTITY printCmd.key                "P">
@@ -86,6 +88,7 @@
 <!ENTITY findCmd.label            "Znajdź i zamień…">
 <!ENTITY findCmd.accesskey        "m">
 <!ENTITY findCmd.key              "F">
+<!ENTITY findReplaceCmd.key "H">
 <!ENTITY findAgainCmd.label       "Znajdź następne">
 <!ENTITY findAgainCmd.accesskey   "n">
 <!ENTITY findAgainCmd.key         "G">

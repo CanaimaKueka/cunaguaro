@@ -20,9 +20,10 @@ extern PRLogModuleInfo* gPIPNSSLog;
 
 /* nsNSSCertificateFakeTransport */
 
-NS_IMPL_THREADSAFE_ISUPPORTS3(nsNSSCertificateFakeTransport, nsIX509Cert,
-                                                nsISerializable,
-                                                nsIClassInfo)
+NS_IMPL_ISUPPORTS3(nsNSSCertificateFakeTransport,
+                   nsIX509Cert,
+                   nsISerializable,
+                   nsIClassInfo)
 
 nsNSSCertificateFakeTransport::nsNSSCertificateFakeTransport() :
   mCertSerialization(nullptr)
@@ -190,13 +191,6 @@ nsNSSCertificateFakeTransport::GetRawDER(uint32_t *aLength, uint8_t **aArray)
 
 NS_IMETHODIMP
 nsNSSCertificateFakeTransport::GetValidity(nsIX509CertValidity **aValidity)
-{
-  NS_NOTREACHED("Unimplemented on content process");
-  return NS_ERROR_NOT_IMPLEMENTED;
-}
-
-NS_IMETHODIMP
-nsNSSCertificateFakeTransport::VerifyForUsage(uint32_t usage, uint32_t *verificationResult)
 {
   NS_NOTREACHED("Unimplemented on content process");
   return NS_ERROR_NOT_IMPLEMENTED;

@@ -26,13 +26,16 @@
 #include "nsRDFCID.h"
 #include "nsXULCommandDispatcher.h"
 #include "prlog.h"
-#include "nsGUIEvent.h"
 #include "nsContentUtils.h"
 #include "nsReadableUtils.h"
 #include "nsCRT.h"
 #include "nsError.h"
 #include "nsEventDispatcher.h"
 #include "nsDOMClassInfoID.h"
+#include "mozilla/BasicEvents.h"
+#include "mozilla/dom/Element.h"
+
+using namespace mozilla;
 
 #ifdef PR_LOGGING
 static PRLogModuleInfo* gLog;
@@ -69,6 +72,8 @@ NS_INTERFACE_MAP_END
 NS_IMPL_CYCLE_COLLECTING_ADDREF(nsXULCommandDispatcher)
 NS_IMPL_CYCLE_COLLECTING_RELEASE(nsXULCommandDispatcher)
 
+NS_IMPL_CYCLE_COLLECTION_CLASS(nsXULCommandDispatcher)
+
 NS_IMPL_CYCLE_COLLECTION_UNLINK_BEGIN(nsXULCommandDispatcher)
   tmp->Disconnect();
 NS_IMPL_CYCLE_COLLECTION_UNLINK_END
@@ -97,7 +102,7 @@ already_AddRefed<nsPIWindowRoot>
 nsXULCommandDispatcher::GetWindowRoot()
 {
   if (mDocument) {
-    nsCOMPtr<nsPIDOMWindow> window(do_QueryInterface(mDocument->GetScriptGlobalObject()));
+    nsCOMPtr<nsPIDOMWindow> window(mDocument->GetWindow());
     if (window) {
       return window->GetTopWindowRoot();
     }
@@ -203,7 +208,8 @@ nsXULCommandDispatcher::SetFocusedWindow(nsIDOMWindow* aWindow)
   // end up focusing whatever is currently focused inside the frame. Since
   // setting the command dispatcher's focused window doesn't raise the window,
   // setting it to a top-level window doesn't need to do anything.
-  nsCOMPtr<nsIDOMElement> frameElement = window->GetFrameElementInternal();
+  nsCOMPtr<nsIDOMElement> frameElement =
+    do_QueryInterface(window->GetFrameElementInternal());
   if (frameElement)
     return fm->SetFocus(frameElement, 0);
 
@@ -415,7 +421,7 @@ nsXULCommandDispatcher::UpdateCommands(const nsAString& aEventName)
       // Handle the DOM event
       nsEventStatus status = nsEventStatus_eIgnore;
 
-      nsEvent event(true, NS_XUL_COMMAND_UPDATE);
+      WidgetEvent event(true, NS_XUL_COMMAND_UPDATE);
 
       nsEventDispatcher::Dispatch(content, context, &event, nullptr, &status);
     }

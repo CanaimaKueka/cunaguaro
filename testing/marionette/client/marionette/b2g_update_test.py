@@ -7,19 +7,16 @@ import imp
 import os
 import re
 import subprocess
-import sys
-import tempfile
 import time
 import types
-import unittest
 import weakref
 
 from b2ginstance import B2GInstance
 from client import MarionetteClient
-from errors import MarionetteException, InvalidResponseException
+from errors import InvalidResponseException
 from marionette import Marionette
 from marionette_test import MarionetteTestCase
-from runtests import MarionetteTestRunner, cli, parse_options, startTestRunner
+from runtests import MarionetteTestRunner, cli
 
 class B2GUpdateMarionetteClient(MarionetteClient):
     RETRY_TIMEOUT   = 5
@@ -70,7 +67,7 @@ class B2GUpdateTestRunner(MarionetteTestRunner):
         self.b2g = B2GInstance(homedir=kwargs.get('homedir'))
         self.update_tools = self.b2g.import_update_tools()
         self.adb = self.update_tools.AdbTool(path=self.b2g.adb_path,
-                                             device=self.device)
+                                             device=self.device_serial)
 
     def match(self, filename):
         return self.match_re.match(filename) is not None
@@ -361,7 +358,6 @@ class B2GUpdateTestCase(MarionetteTestCase):
         self.fail('Timed out waiting for B2G process to start during FOTA update')
 
     def flash(self, flash_script):
-        update_tools = self.runner.update_tools
         flash_build = os.path.basename(os.path.dirname(flash_script))
         self.print_status('FLASH-BUILD', flash_build)
 

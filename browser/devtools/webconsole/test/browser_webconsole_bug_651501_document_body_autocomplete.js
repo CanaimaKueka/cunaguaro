@@ -22,11 +22,6 @@ function consoleOpened(aHud) {
   let popup = jsterm.autocompletePopup;
   let completeNode = jsterm.completeNode;
 
-  let tmp = {};
-  Cu.import("resource://gre/modules/devtools/WebConsoleUtils.jsm", tmp);
-  let WCU = tmp.WebConsoleUtils;
-  tmp = null;
-
   ok(!popup.isOpen, "popup is not open");
 
   popup._panel.addEventListener("popupshown", function onShown() {
@@ -79,28 +74,17 @@ function testPropertyPanel()
 {
   let jsterm = gHUD.jsterm;
   jsterm.clearOutput();
-  jsterm.execute("document");
-
-  waitForSuccess({
-    name: "jsterm document object output",
-    validatorFn: function()
-    {
-      return gHUD.outputNode.querySelector(".webconsole-msg-output");
-    },
-    successFn: function()
-    {
-      jsterm.once("variablesview-fetched", onVariablesViewReady);
-      let node = gHUD.outputNode.querySelector(".webconsole-msg-output");
-      EventUtils.synthesizeMouse(node, 2, 2, {}, gHUD.iframeWindow);
-    },
-    failureFn: finishTest,
+  jsterm.execute("document", (msg) => {
+    jsterm.once("variablesview-fetched", onVariablesViewReady);
+    let anchor = msg.querySelector(".body a");
+    EventUtils.synthesizeMouse(anchor, 2, 2, {}, gHUD.iframeWindow);
   });
 }
 
 function onVariablesViewReady(aEvent, aView)
 {
   findVariableViewProperties(aView, [
-    { name: "body", value: "[object HTMLBodyElement]" },
+    { name: "body", value: "HTMLBodyElement" },
   ], { webconsole: gHUD }).then(finishTest);
 }
 

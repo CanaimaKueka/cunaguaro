@@ -1,3 +1,7 @@
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+
 <!ENTITY pluginWizard.title                                  "Serviciu de gueta de complementos">
 <!ENTITY pluginWizard.firstPage.title                        "Bienllegáu al &pluginWizard.title;">
 
@@ -48,3 +52,4 @@
 <!ENTITY report.pageURL "Inclúi la URL de la páxina">
 <!ENTITY report.comment "Amiesta un comentariu (los comentarios son visibles pa tol mundu)">
 <!ENTITY clickToActivatePlugin "Activar plugin.">
+<!ENTITY hidePluginBtn.label "Anubrir plugin">

@@ -1108,7 +1108,6 @@ var gCSSProperties = {
 			"translate(calc(5px - 10% * 3))",
 			"translate(calc(5px - 3 * 10%), 50px)",
 			"translate(-50px, calc(5px - 10% * 3))",
-		].concat(SpecialPowers.getBoolPref("layout.3d-transforms.enabled") ? [
 			"translatez(1px)", "translatez(4em)", "translatez(-4px)",
 			"translatez(0px)", "translatez(2px) translatez(5px)",
 			"translate3d(3px, 4px, 5px)", "translate3d(2em, 3px, 1em)",
@@ -1118,7 +1117,7 @@ var gCSSProperties = {
 			"rotate3d(-3, 7, 0, 12rad)", "rotatex(15deg)", "rotatey(-12grad)",
 			"rotatez(72rad)", "rotatex(0.125turn)", "perspective(1000px)",
 			"matrix3d(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16)",
-		] : []),
+		],
 		invalid_values: ["1px", "#0000ff", "red", "auto",
 			"translatex(1)", "translatey(1)", "translate(2)",
 			"translate(-3, -4)",
@@ -1135,8 +1134,7 @@ var gCSSProperties = {
 			"translatex(-moz-max(5px,10%))",
 			"translate(10px, calc(min(5px,10%)))",
 			"translate(calc(max(5px,10%)), 10%)",
-			"matrix(1, 0, 0, 1, max(5px * 3), calc(10% - 3px))"
-		].concat(SpecialPowers.getBoolPref("layout.3d-transforms.enabled") ? [
+			"matrix(1, 0, 0, 1, max(5px * 3), calc(10% - 3px))",
 			"perspective(0px)", "perspective(-10px)", "matrix3d(dinosaur)",
 			"matrix3d(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17)",
 			"matrix3d(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15)",
@@ -1145,7 +1143,7 @@ var gCSSProperties = {
 			"rotatey(words)", "rotatex(7)", "translate3d(3px, 4px, 1px, 7px)",
 			"matrix3d(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13px, 14em, 15px, 16)",
 			"matrix3d(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 20%, 10%, 15, 16)"
-		] : [])
+		],
 	},
 	"transform-origin": {
 		domProp: "transformOrigin",
@@ -1169,11 +1167,10 @@ var gCSSProperties = {
 			"calc(20px + 1em) calc(20px / 2)",
 			"calc(20px + 50%) calc(50% - 10px)",
 			"calc(-20px) calc(-50%)",
-			"calc(-20%) calc(-50%)"
-		].concat(SpecialPowers.getBoolPref("layout.3d-transforms.enabled") ? [
+			"calc(-20%) calc(-50%)",
 			"6px 5px 5px",
 			"top center 10px"
-		] : []),
+		],
 		invalid_values: ["red", "auto", "none", "0.5 0.5", "40px #0000ff",
 						 "border", "center red", "right diagonal",
 						 "#00ffff bottom"]
@@ -1366,7 +1363,7 @@ var gCSSProperties = {
 		inherited: false,
 		type: CSS_TYPE_LONGHAND,
 		initial_values: [ "scroll" ],
-		other_values: [ "fixed", "scroll,scroll", "fixed, scroll", "scroll, fixed, scroll", "fixed, fixed" ],
+		other_values: [ "fixed", "local", "scroll,scroll", "fixed, scroll", "scroll, fixed, local, scroll", "fixed, fixed" ],
 		invalid_values: []
 	},
 	"background-clip": {
@@ -2339,7 +2336,7 @@ var gCSSProperties = {
 		inherited: true,
 		type: CSS_TYPE_LONGHAND,
 		initial_values: [ "auto" ],
-		other_values: [ "crosshair", "default", "pointer", "move", "e-resize", "ne-resize", "nw-resize", "n-resize", "se-resize", "sw-resize", "s-resize", "w-resize", "text", "wait", "help", "progress", "copy", "alias", "context-menu", "cell", "not-allowed", "col-resize", "row-resize", "no-drop", "vertical-text", "all-scroll", "nesw-resize", "nwse-resize", "ns-resize", "ew-resize", "none", "-moz-grab", "-moz-grabbing", "-moz-zoom-in", "-moz-zoom-out", "url(foo.png), move", "url(foo.png) 5 7, move", "url(foo.png) 12 3, url(bar.png), no-drop", "url(foo.png), url(bar.png) 7 2, wait", "url(foo.png) 3 2, url(bar.png) 7 9, pointer" ],
+		other_values: [ "crosshair", "default", "pointer", "move", "e-resize", "ne-resize", "nw-resize", "n-resize", "se-resize", "sw-resize", "s-resize", "w-resize", "text", "wait", "help", "progress", "copy", "alias", "context-menu", "cell", "not-allowed", "col-resize", "row-resize", "no-drop", "vertical-text", "all-scroll", "nesw-resize", "nwse-resize", "ns-resize", "ew-resize", "none", "grab", "grabbing", "zoom-in", "zoom-out", "-moz-grab", "-moz-grabbing", "-moz-zoom-in", "-moz-zoom-out", "url(foo.png), move", "url(foo.png) 5 7, move", "url(foo.png) 12 3, url(bar.png), no-drop", "url(foo.png), url(bar.png) 7 2, wait", "url(foo.png) 3 2, url(bar.png) 7 9, pointer" ],
 		invalid_values: [ "url(foo.png)", "url(foo.png) 5 5" ]
 	},
 	"direction": {
@@ -2403,7 +2400,7 @@ var gCSSProperties = {
 		  // Gecko-specific system fonts
 		  "-moz-window", "-moz-document", "-moz-desktop", "-moz-info", "-moz-dialog", "-moz-button", "-moz-pull-down-menu", "-moz-list", "-moz-field", "-moz-workspace",
 		],
-		invalid_values: [ "9 fantasy" ]
+		invalid_values: [ "9 fantasy", "-2px fantasy" ]
 	},
 	"font-family": {
 		domProp: "fontFamily",
@@ -2491,7 +2488,7 @@ var gCSSProperties = {
 		type: CSS_TYPE_LONGHAND,
 		initial_values: [ "normal" ],
 		other_values: [ "small-caps" ],
-		invalid_values: []
+		invalid_values: [ "small-caps normal" ]
 	},
 	"font-weight": {
 		domProp: "fontWeight",
@@ -2791,6 +2788,7 @@ var gCSSProperties = {
 		],
 		invalid_values: [ "auto", "none", "5" ]
 	},
+
 	"opacity": {
 		domProp: "opacity",
 		inherited: false,
@@ -3081,7 +3079,7 @@ var gCSSProperties = {
 		// don't know whether left and right are same as start
 		initial_values: [ "start" ],
 		other_values: [ "center", "justify", "end" ],
-		invalid_values: []
+		invalid_values: [ "true", "true true" ]
 	},
 	"-moz-text-align-last": {
 		domProp: "MozTextAlignLast",
@@ -3091,19 +3089,11 @@ var gCSSProperties = {
 		other_values: [ "center", "justify", "start", "end", "left", "right" ],
 		invalid_values: []
 	},
-	"-moz-text-blink": {
-		domProp: "MozTextBlink",
-		inherited: false,
-		type: CSS_TYPE_LONGHAND,
-		initial_values: [ "none" ],
-		other_values: [ "blink" ],
-		invalid_values: [ "underline", "overline", "line-through", "none underline", "underline blink", "blink underline" ]
-	},
 	"text-decoration": {
 		domProp: "textDecoration",
 		inherited: false,
 		type: CSS_TYPE_SHORTHAND_AND_LONGHAND,
-		subproperties: [ "-moz-text-blink", "-moz-text-decoration-color", "-moz-text-decoration-line", "-moz-text-decoration-style" ],
+		subproperties: [ "-moz-text-decoration-color", "-moz-text-decoration-line", "-moz-text-decoration-style" ],
 		initial_values: [ "none" ],
 		other_values: [ "underline", "overline", "line-through", "blink", "blink line-through underline", "underline overline line-through blink", "-moz-anchor-decoration", "blink -moz-anchor-decoration" ],
 		invalid_values: [ "none none", "underline none", "none underline", "blink none", "none blink", "line-through blink line-through", "underline overline line-through blink none", "underline overline line-throuh blink blink",
@@ -3123,7 +3113,7 @@ var gCSSProperties = {
 		inherited: false,
 		type: CSS_TYPE_LONGHAND,
 		initial_values: [ "none" ],
-		other_values: [ "underline", "overline", "line-through", "line-through underline", "underline overline line-through", "-moz-anchor-decoration", "-moz-anchor-decoration" ],
+		other_values: [ "underline", "overline", "line-through", "blink", "blink line-through underline", "underline overline line-through blink", "-moz-anchor-decoration", "blink -moz-anchor-decoration" ],
 		invalid_values: [ "none none", "underline none", "none underline", "line-through blink line-through", "underline overline line-through blink none", "underline overline line-throuh blink blink" ]
 	},
 	"-moz-text-decoration-style": {
@@ -3489,14 +3479,14 @@ var gCSSProperties = {
 		type: CSS_TYPE_LONGHAND,
 		prerequisites: { "color": "blue" },
 		initial_values: [ "black", "#000", "#000000", "rgb(0,0,0)", "rgba(0,0,0,1)" ],
-		other_values: [ "green", "#fc3", "url('#myserver')", "url(foo.svg#myserver)", 'url("#myserver") green', "none", "currentColor", "-moz-objectFill", "-moz-objectStroke" ],
+		other_values: [ "green", "#fc3", "url('#myserver')", "url(foo.svg#myserver)", 'url("#myserver") green', "none", "currentColor", "context-fill", "context-stroke" ],
 		invalid_values: [ "000000", "ff00ff" ]
 	},
 	"fill-opacity": {
 		domProp: "fillOpacity",
 		inherited: true,
 		type: CSS_TYPE_LONGHAND,
-		initial_values: [ "1", "2.8", "1.000", "-moz-objectFillOpacity", "-moz-objectStrokeOpacity" ],
+		initial_values: [ "1", "2.8", "1.000", "context-fill-opacity", "context-stroke-opacity" ],
 		other_values: [ "0", "0.3", "-7.3" ],
 		invalid_values: []
 	},
@@ -3621,14 +3611,14 @@ var gCSSProperties = {
 		inherited: true,
 		type: CSS_TYPE_LONGHAND,
 		initial_values: [ "none" ],
-		other_values: [ "black", "#000", "#000000", "rgb(0,0,0)", "rgba(0,0,0,1)", "green", "#fc3", "url('#myserver')", "url(foo.svg#myserver)", 'url("#myserver") green', "currentColor", "-moz-objectFill", "-moz-objectStroke" ],
+		other_values: [ "black", "#000", "#000000", "rgb(0,0,0)", "rgba(0,0,0,1)", "green", "#fc3", "url('#myserver')", "url(foo.svg#myserver)", 'url("#myserver") green', "currentColor", "context-fill", "context-stroke" ],
 		invalid_values: [ "000000", "ff00ff" ]
 	},
 	"stroke-dasharray": {
 		domProp: "strokeDasharray",
 		inherited: true,
 		type: CSS_TYPE_LONGHAND,
-		initial_values: [ "none", "-moz-objectValue" ],
+		initial_values: [ "none", "context-value" ],
 		other_values: [ "5px,3px,2px", "5px 3px 2px", "  5px ,3px	, 2px ", "1px", "5%", "3em" ],
 		invalid_values: [ "-5px,3px,2px", "5px,3px,-2px" ]
 	},
@@ -3636,7 +3626,7 @@ var gCSSProperties = {
 		domProp: "strokeDashoffset",
 		inherited: true,
 		type: CSS_TYPE_LONGHAND,
-		initial_values: [ "0", "-0px", "0em", "-moz-objectValue" ],
+		initial_values: [ "0", "-0px", "0em", "context-value" ],
 		other_values: [ "3px", "3%", "1em" ],
 		invalid_values: []
 	},
@@ -3668,7 +3658,7 @@ var gCSSProperties = {
 		domProp: "strokeOpacity",
 		inherited: true,
 		type: CSS_TYPE_LONGHAND,
-		initial_values: [ "1", "2.8", "1.000", "-moz-objectFillOpacity", "-moz-objectStrokeOpacity" ],
+		initial_values: [ "1", "2.8", "1.000", "context-fill-opacity", "context-stroke-opacity" ],
 		other_values: [ "0", "0.3", "-7.3" ],
 		invalid_values: []
 	},
@@ -3676,7 +3666,7 @@ var gCSSProperties = {
 		domProp: "strokeWidth",
 		inherited: true,
 		type: CSS_TYPE_LONGHAND,
-		initial_values: [ "1px", "-moz-objectValue" ],
+		initial_values: [ "1px", "context-value" ],
 		other_values: [ "0", "0px", "-0em", "17px", "0.2em" ],
 		invalid_values: [ "-0.1px", "-3px" ]
 	},
@@ -3740,7 +3730,6 @@ var gCSSProperties = {
 			"matrix(1, 2, 3, 4, 5%, 6%)",
 			"matrix(1, 2, 3, 4, 5px, 6em)",
 			"matrix(1, 0, 0, 1, calc(5px * 3), calc(10% - 3px))",
-		].concat(SpecialPowers.getBoolPref("layout.3d-transforms.enabled") ? [
 			"translatez(1px)", "translatez(4em)", "translatez(-4px)",
 			"translatez(0px)", "translatez(2px) translatez(5px)",
 			"translate3d(3px, 4px, 5px)", "translate3d(2em, 3px, 1em)",
@@ -3753,7 +3742,7 @@ var gCSSProperties = {
 			/* valid only when prefixed */
 			"matrix3d(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13px, 14em, 15px, 16)",
 			"matrix3d(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 20%, 10%, 15, 16)",
-		] : []),
+		],
 		invalid_values: ["1px", "#0000ff", "red", "auto",
 			"translatex(1)", "translatey(1)", "translate(2)",
 			"translate(-3, -4)",
@@ -3768,15 +3757,14 @@ var gCSSProperties = {
 			"translatex(-moz-max(5px,10%))",
 			"translate(10px, calc(min(5px,10%)))",
 			"translate(calc(max(5px,10%)), 10%)",
-			"matrix(1, 0, 0, 1, max(5px * 3), calc(10% - 3px))"
-		].concat(SpecialPowers.getBoolPref("layout.3d-transforms.enabled") ? [
+			"matrix(1, 0, 0, 1, max(5px * 3), calc(10% - 3px))",
 			"perspective(0px)", "perspective(-10px)", "matrix3d(dinosaur)",
 			"matrix3d(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17)",
 			"matrix3d(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15)",
 			"matrix3d(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15%, 16)",
 			"matrix3d(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16px)",
 			"rotatey(words)", "rotatex(7)", "translate3d(3px, 4px, 1px, 7px)",
-		] : [])
+		],
 	},
 	"-moz-transform-origin": {
 		domProp: "MozTransformOrigin",
@@ -3801,11 +3789,10 @@ var gCSSProperties = {
 			"calc(20px + 1em) calc(20px / 2)",
 			"calc(20px + 50%) calc(50% - 10px)",
 			"calc(-20px) calc(-50%)",
-			"calc(-20%) calc(-50%)"
-		].concat(SpecialPowers.getBoolPref("layout.3d-transforms.enabled") ? [
+			"calc(-20%) calc(-50%)",
 			"6px 5px 5px",
 			"top center 10px"
-		] : []),
+		],
 		invalid_values: ["red", "auto", "none", "0.5 0.5", "40px #0000ff",
 						 "border", "center red", "right diagonal",
 						 "#00ffff bottom"]
@@ -4257,6 +4244,163 @@ if (SpecialPowers.getBoolPref("layout.css.flexbox.enabled")) {
 	gCSSProperties["display"].other_values.push("inline-flex");
 }
 
+if (SpecialPowers.getBoolPref("layout.css.vertical-text.enabled")) {
+	var verticalTextProperties = {
+		"writing-mode": {
+			domProp: "writingMode",
+			inherited: true,
+			type: CSS_TYPE_LONGHAND,
+			initial_values: [ "horizontal-tb" ],
+			other_values: [ "vertical-lr", "vertical-rl" ],
+			invalid_values: [ "10px", "30%", "justify", "auto", "1em" ]
+		},
+		"text-orientation": {
+			domProp: "textOrientation",
+			inherited: true,
+			type: CSS_TYPE_LONGHAND,
+			initial_values: [ "auto" ],
+			other_values: [ "upright", "sideways" ],
+			invalid_values: [ "none", "3em" ]
+		},
+		"text-combine-horizontal": {
+			domProp: "textCombineHorizontal",
+			inherited: true,
+			type: CSS_TYPE_LONGHAND,
+			initial_values: [ "none" ],
+			other_values: [ "all", "digits", "digits 2", "digits 3", "digits 4", "digits     3" ],
+			invalid_values: [ "auto", "all 2", "none all", "digits -3", "digits 0",
+			                  "digits 12", "none 3", "digits 3.1415", "digits3", "digits 1",
+			                  "digits 3 all", "digits foo", "digits all", "digits 3.0" ]
+		}
+	};
+	for (var prop in verticalTextProperties) {
+		gCSSProperties[prop] = verticalTextProperties[prop];
+	}
+}
+
+if (SpecialPowers.getBoolPref("layout.css.font-features.enabled")) {
+	var fontFeatureProperties = {
+		"font-kerning": {
+			domProp: "fontKerning",
+			inherited: true,
+			type: CSS_TYPE_LONGHAND,
+			initial_values: [ "auto" ],
+			other_values: [ "normal", "none" ],
+			invalid_values: [ "on" ]
+		},
+		"font-variant-alternates": {
+			domProp: "fontVariantAlternates",
+			inherited: true,
+			type: CSS_TYPE_LONGHAND,
+			initial_values: [ "normal" ],
+			other_values: [ "historical-forms",
+	                        "styleset(alt-a, alt-b)", "character-variant(a, b, c)", "annotation(circled)",
+	                        "swash(squishy)", "styleset(complex\\ blob, a)", "annotation(\\62 lah)" ],
+			invalid_values: [ "historical-forms normal", "historical-forms historical-forms",
+	                          "swash", "swash(3)", "annotation(a, b)", "ornaments(a,b)",
+	                          "styleset(1234blah)", "annotation(a), annotation(b)", "annotation(a) normal" ]
+		},
+	 	"font-variant-caps": {
+			domProp: "fontVariantCaps",
+			inherited: true,
+			type: CSS_TYPE_LONGHAND,
+			initial_values: [ "normal" ],
+			other_values: [ "small-caps", "all-small-caps", "petite-caps", "all-petite-caps", "titling-caps", "unicase" ],
+			invalid_values: [ "normal small-caps", "petite-caps normal", "unicase unicase" ]
+		},
+		"font-variant-east-asian": {
+			domProp: "fontVariantEastAsian",
+			inherited: true,
+			type: CSS_TYPE_LONGHAND,
+			initial_values: [ "normal" ],
+			other_values: [ "jis78", "jis83", "jis90", "jis04", "simplified", "traditional", "full-width", "proportional-width", "ruby",
+			                "jis78 full-width", "jis78 full-width ruby", "simplified proportional-width", "ruby simplified" ],
+			invalid_values: [ "jis78 normal", "jis90 jis04", "simplified traditional", "full-width proportional-width",
+	                          "ruby simplified ruby", "jis78 ruby simplified" ]
+		},
+		"font-variant-ligatures": {
+			domProp: "fontVariantLigatures",
+			inherited: true,
+			type: CSS_TYPE_LONGHAND,
+			initial_values: [ "normal" ],
+			other_values: [ "common-ligatures", "no-common-ligatures", "discretionary-ligatures", "no-discretionary-ligatures",
+			                "historical-ligatures", "no-historical-ligatures", "contextual", "no-contextual",
+			                "common-ligatures no-discretionary-ligatures", "contextual no-discretionary-ligatures",
+			                "historical-ligatures no-common-ligatures", "no-historical-ligatures discretionary-ligatures",
+			                "common-ligatures no-discretionary-ligatures historical-ligatures no-contextual" ],
+			invalid_values: [ "common-ligatures normal", "common-ligatures no-common-ligatures", "common-ligatures common-ligatures",
+			                  "no-historical-ligatures historical-ligatures", "no-discretionary-ligatures discretionary-ligatures",
+			                  "no-contextual contextual", "common-ligatures no-discretionary-ligatures no-common-ligatures" ]
+		},
+		"font-variant-numeric": {
+			domProp: "fontVariantNumeric",
+			inherited: true,
+			type: CSS_TYPE_LONGHAND,
+			initial_values: [ "normal" ],
+			other_values: [ "lining-nums", "oldstyle-nums", "proportional-nums", "tabular-nums", "diagonal-fractions",
+			                "stacked-fractions", "slashed-zero", "ordinal", "lining-nums diagonal-fractions",
+			                "tabular-nums stacked-fractions", "tabular-nums slashed-zero stacked-fractions",
+			                "proportional-nums slashed-zero diagonal-fractions oldstyle-nums ordinal" ],
+			invalid_values: [ "lining-nums normal", "lining-nums oldstyle-nums", "lining-nums normal slashed-zero ordinal",
+			                  "proportional-nums tabular-nums", "diagonal-fractions stacked-fractions", "slashed-zero diagonal-fractions slashed-zero",
+			                  "lining-nums slashed-zero diagonal-fractions oldstyle-nums", "diagonal-fractions diagonal-fractions" ]
+		},
+		"font-variant-position": {
+			domProp: "fontVariantPosition",
+			inherited: true,
+			type: CSS_TYPE_LONGHAND,
+			initial_values: [ "normal" ],
+			other_values: [ "super", "sub" ],
+			invalid_values: [ "normal sub", "super sub" ]
+		},
+		"font-synthesis": {
+			domProp: "fontSynthesis",
+			inherited: true,
+			type: CSS_TYPE_LONGHAND,
+			initial_values: [ "weight style" ],
+			other_values: [ "none", "weight", "style" ],
+			invalid_values: [ "weight none", "style none", "none style", "weight 10px", "weight weight", "style style" ]
+		},
+		// aliases for prefixed properties
+		"font-feature-settings": {
+			domProp: "fontFeatureSettings",
+			inherited: true,
+			type: CSS_TYPE_SHORTHAND_AND_LONGHAND,
+			alias_for: "-moz-font-feature-settings",
+			subproperties: [ "-moz-font-feature-settings" ],
+			initial_values: [ "normal" ],
+			other_values: [
+				"'liga' on", "'liga'", "\"liga\" 1", "'liga', 'clig' 1",
+				"\"liga\" off", "\"liga\" 0", '"cv01" 3, "cv02" 4',
+				'"cswh", "smcp" off, "salt" 4', '"cswh" 1, "smcp" off, "salt" 4',
+				'"cswh" 0, \'blah\', "liga", "smcp" off, "salt" 4',
+				'"liga"        ,"smcp" 0         , "blah"'
+			],
+			invalid_values: [
+				'liga', 'liga 1', 'liga normal', '"liga" normal', 'normal liga',
+				'normal "liga"', 'normal, "liga"', '"liga=1"', "'foobar' on",
+				'"blahblah" 0', '"liga" 3.14', '"liga" 1 3.14', '"liga" 1 normal',
+				'"liga" 1 off', '"liga" on off', '"liga" , 0 "smcp"', '"liga" "smcp"'
+			]
+		},
+		"font-language-override": {
+			domProp: "fontLanguageOverride",
+			inherited: true,
+			type: CSS_TYPE_SHORTHAND_AND_LONGHAND,
+			alias_for: "-moz-font-language-override",
+			subproperties: [ "-moz-font-language-override" ],
+			initial_values: [ "normal" ],
+			other_values: [ "'ENG'", "'TRK'", "\"TRK\"", "'N\\'Ko'" ],
+			invalid_values: [ "TRK", "ja" ]
+		}
+	};
+	for (var prop in fontFeatureProperties) {
+		gCSSProperties[prop] = fontFeatureProperties[prop];
+	}
+	var fontAdditions = [ "font-kerning", "font-synthesis", "font-variant-alternates", "font-variant-caps", "font-variant-east-asian", "font-variant-ligatures", "font-variant-numeric", "font-variant-position" ];
+	gCSSProperties["font"].subproperties = gCSSProperties["font"].subproperties.concat(fontAdditions);
+}
+
 if (SpecialPowers.getBoolPref("layout.css.masking.enabled")) {
 	gCSSProperties["mask-type"] = {
 		domProp: "maskType",
@@ -4277,4 +4421,381 @@ if (SpecialPowers.getBoolPref("svg.paint-order.enabled")) {
     other_values: [ "fill", "fill stroke", "fill stroke markers", "stroke markers fill" ],
     invalid_values: [ "fill stroke markers fill", "fill normal" ]
   };
+}
+
+if (SpecialPowers.getBoolPref("layout.css.filters.enabled")) {
+	gCSSProperties["filter"] = {
+		domProp: "filter",
+		inherited: false,
+		type: CSS_TYPE_LONGHAND,
+		initial_values: [ "none" ],
+		other_values: [
+			// SVG reference filters
+			"url(#my-filter)",
+			"url(#my-filter-1) url(#my-filter-2)",
+
+			// Filter functions
+			"opacity(50%) saturate(1.0)",
+			"invert(50%) sepia(0.1) brightness(90%)",
+
+			// Mixed SVG reference filters and filter functions
+			"grayscale(1) url(#my-filter-1)",
+			"url(#my-filter-1) brightness(50%) contrast(0.9)",
+
+			// The CSS parser will accept these weird URLs. However, we'll fail
+			// to resolve them when computing style, so we'll fall back to the
+			// initial value ("none").
+			"url('feed:javascript:5')",
+			"blur(3px) url('feed:javascript:5') grayscale(50%)",
+
+			"blur(0)",
+			"blur(0px)",
+			"blur(0.5px)",
+			"blur(3px)",
+			"blur(100px)",
+			"blur(0.1em)",
+			"blur(calc(-1px))", // Parses and becomes blur(0px).
+			"blur(calc(0px))",
+			"blur(calc(5px))",
+			"blur(calc(2 * 5px))",
+
+			"brightness(0)",
+			"brightness(50%)",
+			"brightness(1)",
+			"brightness(1.0)",
+			"brightness(2)",
+			"brightness(350%)",
+			"brightness(4.567)",
+
+			"contrast(0)",
+			"contrast(50%)",
+			"contrast(1)",
+			"contrast(1.0)",
+			"contrast(2)",
+			"contrast(350%)",
+			"contrast(4.567)",
+
+			"drop-shadow(2px 2px)",
+			"drop-shadow(2px 2px 1px)",
+			"drop-shadow(2px 2px green)",
+			"drop-shadow(2px 2px 1px green)",
+			"drop-shadow(green 2px 2px)",
+			"drop-shadow(green 2px 2px 1px)",
+			"drop-shadow(currentColor 3px 3px)",
+			"drop-shadow(2px 2px calc(-5px))", /* clamped */
+			"drop-shadow(calc(3em - 2px) 2px green)",
+			"drop-shadow(green calc(3em - 2px) 2px)",
+			"drop-shadow(2px calc(2px + 0.2em))",
+			"drop-shadow(blue 2px calc(2px + 0.2em))",
+			"drop-shadow(2px calc(2px + 0.2em) blue)",
+			"drop-shadow(calc(-2px) calc(-2px))",
+			"drop-shadow(-2px -2px)",
+			"drop-shadow(calc(2px) calc(2px))",
+			"drop-shadow(calc(2px) calc(2px) calc(2px))",
+
+			"grayscale(0)",
+			"grayscale(50%)",
+			"grayscale(1)",
+			"grayscale(1.0)",
+			"grayscale(2)",
+			"grayscale(350%)",
+			"grayscale(4.567)",
+
+			"hue-rotate(0deg)",
+			"hue-rotate(90deg)",
+			"hue-rotate(540deg)",
+			"hue-rotate(-90deg)",
+			"hue-rotate(10grad)",
+			"hue-rotate(1.6rad)",
+			"hue-rotate(-1.6rad)",
+			"hue-rotate(0.5turn)",
+			"hue-rotate(-2turn)",
+
+			"invert(0)",
+			"invert(50%)",
+			"invert(1)",
+			"invert(1.0)",
+			"invert(2)",
+			"invert(350%)",
+			"invert(4.567)",
+
+			"opacity(0)",
+			"opacity(50%)",
+			"opacity(1)",
+			"opacity(1.0)",
+			"opacity(2)",
+			"opacity(350%)",
+			"opacity(4.567)",
+
+			"saturate(0)",
+			"saturate(50%)",
+			"saturate(1)",
+			"saturate(1.0)",
+			"saturate(2)",
+			"saturate(350%)",
+			"saturate(4.567)",
+
+			"sepia(0)",
+			"sepia(50%)",
+			"sepia(1)",
+			"sepia(1.0)",
+			"sepia(2)",
+			"sepia(350%)",
+			"sepia(4.567)",
+		],
+		invalid_values: [
+			// none
+			"none none",
+			"url(#my-filter) none",
+			"none url(#my-filter)",
+			"blur(2px) none url(#my-filter)",
+
+			// Nested filters
+			"grayscale(invert(1.0))",
+
+			// Comma delimited filters
+			"url(#my-filter),",
+			"invert(50%), url(#my-filter), brightness(90%)",
+
+			// Test the following situations for each filter function:
+			// - Invalid number of arguments
+			// - Comma delimited arguments
+			// - Wrong argument type
+			// - Argument value out of range
+			"blur()",
+			"blur(3px 5px)",
+			"blur(3px,)",
+			"blur(3px, 5px)",
+			"blur(#my-filter)",
+			"blur(0.5)",
+			"blur(50%)",
+			"blur(calc(0))", // Unitless zero in calc is not a valid length.
+			"blur(calc(0.1))",
+			"blur(calc(10%))",
+			"blur(calc(20px - 5%))",
+			"blur(-3px)",
+
+			"brightness()",
+			"brightness(0.5 0.5)",
+			"brightness(0.5,)",
+			"brightness(0.5, 0.5)",
+			"brightness(#my-filter)",
+			"brightness(10px)",
+			"brightness(-1)",
+
+			"contrast()",
+			"contrast(0.5 0.5)",
+			"contrast(0.5,)",
+			"contrast(0.5, 0.5)",
+			"contrast(#my-filter)",
+			"contrast(10px)",
+			"contrast(-1)",
+
+			"drop-shadow()",
+			"drop-shadow(3% 3%)",
+			"drop-shadow(2px 2px -5px)",
+			"drop-shadow(2px 2px 2px 2px)",
+			"drop-shadow(2px 2px, none)",
+			"drop-shadow(none, 2px 2px)",
+			"drop-shadow(inherit, 2px 2px)",
+			"drop-shadow(2px 2px, inherit)",
+			"drop-shadow(2 2px)",
+			"drop-shadow(2px 2)",
+			"drop-shadow(2px 2px 2)",
+			"drop-shadow(2px 2px 2px 2)",
+			"drop-shadow(calc(2px) calc(2px) calc(2px) calc(2px))",
+			"drop-shadow(green 2px 2px, blue 1px 3px 4px)",
+			"drop-shadow(blue 2px 2px, currentColor 1px 2px)",
+
+			"grayscale()",
+			"grayscale(0.5 0.5)",
+			"grayscale(0.5,)",
+			"grayscale(0.5, 0.5)",
+			"grayscale(#my-filter)",
+			"grayscale(10px)",
+			"grayscale(-1)",
+
+			"hue-rotate()",
+			"hue-rotate(0)",
+			"hue-rotate(0.5 0.5)",
+			"hue-rotate(0.5,)",
+			"hue-rotate(0.5, 0.5)",
+			"hue-rotate(#my-filter)",
+			"hue-rotate(10px)",
+			"hue-rotate(-1)",
+			"hue-rotate(45deg,)",
+
+			"invert()",
+			"invert(0.5 0.5)",
+			"invert(0.5,)",
+			"invert(0.5, 0.5)",
+			"invert(#my-filter)",
+			"invert(10px)",
+			"invert(-1)",
+
+			"opacity()",
+			"opacity(0.5 0.5)",
+			"opacity(0.5,)",
+			"opacity(0.5, 0.5)",
+			"opacity(#my-filter)",
+			"opacity(10px)",
+			"opacity(-1)",
+
+			"saturate()",
+			"saturate(0.5 0.5)",
+			"saturate(0.5,)",
+			"saturate(0.5, 0.5)",
+			"saturate(#my-filter)",
+			"saturate(10px)",
+			"saturate(-1)",
+
+			"sepia()",
+			"sepia(0.5 0.5)",
+			"sepia(0.5,)",
+			"sepia(0.5, 0.5)",
+			"sepia(#my-filter)",
+			"sepia(10px)",
+			"sepia(-1)",
+		]
+	};
+}
+
+if (SpecialPowers.getBoolPref("layout.css.image-orientation.enabled")) {
+	gCSSProperties["image-orientation"] = {
+		domProp: "imageOrientation",
+		inherited: true,
+		type: CSS_TYPE_LONGHAND,
+		initial_values: [
+			"0deg",
+			"0grad",
+			"0rad",
+			"0turn",
+
+			// Rounded initial values.
+			"-90deg",
+			"15deg",
+			"360deg",
+		],
+		other_values: [
+			"0deg flip",
+			"90deg",
+			"90deg flip",
+			"180deg",
+			"180deg flip",
+			"270deg",
+			"270deg flip",
+			"flip",
+			"from-image",
+
+			// Grad units.
+			"0grad flip",
+			"100grad",
+			"100grad flip",
+			"200grad",
+			"200grad flip",
+			"300grad",
+			"300grad flip",
+
+			// Radian units.
+			"0rad flip",
+			"1.57079633rad",
+			"1.57079633rad flip",
+			"3.14159265rad",
+			"3.14159265rad flip",
+			"4.71238898rad",
+			"4.71238898rad flip",
+
+			// Turn units.
+			"0turn flip",
+			"0.25turn",
+			"0.25turn flip",
+			"0.5turn",
+			"0.5turn flip",
+			"0.75turn",
+			"0.75turn flip",
+
+			// Rounded values.
+			"-45deg flip",
+			"65deg flip",
+			"400deg flip",
+		],
+		invalid_values: [
+			"none",
+			"0deg none",
+			"flip 0deg",
+			"flip 0deg",
+			"0",
+			"0 flip",
+			"flip 0",
+			"0deg from-image",
+			"from-image 0deg",
+			"flip from-image",
+			"from-image flip",
+		]
+	};
+}
+
+if (SpecialPowers.getBoolPref("layout.css.osx-font-smoothing.enabled")) {
+	gCSSProperties["-moz-osx-font-smoothing"] = {
+		domProp: "MozOSXFontSmoothing",
+		inherited: true,
+		type: CSS_TYPE_LONGHAND,
+		initial_values: [ "auto" ],
+		other_values: [ "grayscale" ],
+		invalid_values: [ "none", "subpixel-antialiased", "antialiased" ]
+	};
+}
+
+if (SpecialPowers.getBoolPref("layout.css.sticky.enabled")) {
+	gCSSProperties["position"].other_values.push("sticky");
+}
+
+if (SpecialPowers.getBoolPref("layout.css.mix-blend-mode.enabled")) {
+        gCSSProperties["mix-blend-mode"] = {
+        domProp: "mixBlendMode",
+        inherited: false,
+        type: CSS_TYPE_LONGHAND,
+        initial_values: [ "normal" ],
+        other_values: ["multiply", "screen", "overlay", "darken", "lighten", "color-dodge", "color-burn",
+            "hard-light", "soft-light", "difference", "exclusion", "hue", "saturation", "color", "luminosity"],
+        invalid_values: []
+    };
+}
+
+if (SpecialPowers.getBoolPref("layout.css.unset-value.enabled")) {
+  gCSSProperties["animation-direction"].invalid_values.push("normal, unset");
+  gCSSProperties["animation-name"].invalid_values.push("bounce, unset", "unset, bounce");
+  gCSSProperties["-moz-border-bottom-colors"].invalid_values.push("red unset", "unset red");
+  gCSSProperties["-moz-border-left-colors"].invalid_values.push("red unset", "unset red");
+  gCSSProperties["border-radius"].invalid_values.push("unset 2px", "unset / 2px", "2px unset", "2px / unset");
+  gCSSProperties["border-bottom-left-radius"].invalid_values.push("unset 2px", "2px unset");
+  gCSSProperties["border-bottom-right-radius"].invalid_values.push("unset 2px", "2px unset");
+  gCSSProperties["border-top-left-radius"].invalid_values.push("unset 2px", "2px unset");
+  gCSSProperties["border-top-right-radius"].invalid_values.push("unset 2px", "2px unset");
+  gCSSProperties["-moz-border-right-colors"].invalid_values.push("red unset", "unset red");
+  gCSSProperties["-moz-border-top-colors"].invalid_values.push("red unset", "unset red");
+  gCSSProperties["-moz-outline-radius"].invalid_values.push("unset 2px", "unset / 2px", "2px unset", "2px / unset");
+  gCSSProperties["-moz-outline-radius-bottomleft"].invalid_values.push("unset 2px", "2px unset");
+  gCSSProperties["-moz-outline-radius-bottomright"].invalid_values.push("unset 2px", "2px unset");
+  gCSSProperties["-moz-outline-radius-topleft"].invalid_values.push("unset 2px", "2px unset");
+  gCSSProperties["-moz-outline-radius-topright"].invalid_values.push("unset 2px", "2px unset");
+  gCSSProperties["background-image"].invalid_values.push("-moz-linear-gradient(unset, 10px 10px, from(blue))", "-moz-linear-gradient(unset, 10px 10px, blue 0)", "-moz-repeating-linear-gradient(unset, 10px 10px, blue 0)");
+  gCSSProperties["box-shadow"].invalid_values.push("unset, 2px 2px", "2px 2px, unset", "inset unset");
+  gCSSProperties["text-overflow"].invalid_values.push('"hello" unset', 'unset "hello"', 'clip unset', 'unset clip', 'unset inherit', 'unset none', 'initial unset');
+  gCSSProperties["text-shadow"].invalid_values.push("unset, 2px 2px", "2px 2px, unset");
+  gCSSProperties["transition"].invalid_values.push("2s unset");
+  gCSSProperties["transition-property"].invalid_values.push("unset, color", "color, unset");
+  gCSSProperties["-moz-transition"].invalid_values.push("2s unset");
+  gCSSProperties["-moz-transition-property"].invalid_values.push("unset, color", "color, unset");
+  gCSSProperties["-moz-animation"].invalid_values.push("2s unset");
+  gCSSProperties["-moz-animation-direction"].invalid_values.push("unset, normal");
+  gCSSProperties["-moz-animation-name"].invalid_values.push("bounce, unset", "unset, bounce");
+  if (SpecialPowers.getBoolPref("layout.css.filters.enabled")) {
+    gCSSProperties["filter"].invalid_values.push("drop-shadow(unset, 2px 2px)", "drop-shadow(2px 2px, unset)");
+  }
+  if (SpecialPowers.getBoolPref("layout.css.text-align-true-value.enabled")) {
+    gCSSProperties["text-align"].other_values.push("true left");
+  } else {
+    gCSSProperties["text-align"].invalid_values.push("true left");
+  }
 }

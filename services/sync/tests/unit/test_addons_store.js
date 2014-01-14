@@ -67,11 +67,15 @@ function createAndStartHTTPServer(port) {
 
 function run_test() {
   initTestLogging("Trace");
-  Log4Moz.repository.getLogger("Sync.Engine.Addons").level = Log4Moz.Level.Trace;
-  Log4Moz.repository.getLogger("Sync.AddonsRepository").level =
-    Log4Moz.Level.Trace;
+  Log.repository.getLogger("Sync.Engine.Addons").level = Log.Level.Trace;
+  Log.repository.getLogger("Sync.AddonsRepository").level =
+    Log.Level.Trace;
 
   reconciler.startListening();
+
+  // Don't flush to disk in the middle of an event listener!
+  // This causes test hangs on WinXP.
+  reconciler._shouldPersist = false;
 
   run_next_test();
 }
@@ -461,3 +465,10 @@ add_test(function test_wipe_and_install() {
   Svc.Prefs.reset("addons.ignoreRepositoryChecking");
   server.stop(run_next_test);
 });
+
+add_test(function cleanup() {
+  // There's an xpcom-shutdown hook for this, but let's give this a shot.
+  reconciler.stopListening();
+  run_next_test();
+});
+

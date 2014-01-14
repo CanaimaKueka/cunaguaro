@@ -4,10 +4,9 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef StringBuffer_h___
-#define StringBuffer_h___
+#ifndef vm_StringBuffer_h
+#define vm_StringBuffer_h
 
-#include "mozilla/Attributes.h"
 #include "mozilla/DebugOnly.h"
 
 #include "jscntxt.h"
@@ -34,13 +33,15 @@ class StringBuffer
 
     CharBuffer cb;
 
-    JSContext *context() const { return cb.allocPolicy().context(); }
+    ExclusiveContext *context() const {
+        return cb.allocPolicy().context()->asExclusiveContext();
+    }
 
     StringBuffer(const StringBuffer &other) MOZ_DELETE;
     void operator=(const StringBuffer &other) MOZ_DELETE;
 
   public:
-    explicit StringBuffer(JSContext *cx) : cb(cx) { }
+    explicit StringBuffer(ExclusiveContext *cx) : cb(cx) { }
 
     inline bool reserve(size_t len) { return cb.reserve(len); }
     inline bool resize(size_t len) { return cb.resize(len); }
@@ -121,10 +122,7 @@ StringBuffer::appendInflated(const char *cstr, size_t cstrlen)
     size_t lengthBefore = length();
     if (!cb.growByUninitialized(cstrlen))
         return false;
-    mozilla::DebugOnly<size_t> oldcstrlen = cstrlen;
-    mozilla::DebugOnly<bool> ok = InflateStringToBuffer(context(), cstr, cstrlen,
-                                                        begin() + lengthBefore, &cstrlen);
-    JS_ASSERT(ok && oldcstrlen == cstrlen);
+    InflateStringToBuffer(cstr, cstrlen, begin() + lengthBefore);
     return true;
 }
 
@@ -150,4 +148,4 @@ BooleanToStringBuffer(JSContext *cx, bool b, StringBuffer &sb)
 
 }  /* namespace js */
 
-#endif /* StringBuffer_h___ */
+#endif /* vm_StringBuffer_h */

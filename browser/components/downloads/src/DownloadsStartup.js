@@ -86,10 +86,6 @@ DownloadsStartup.prototype = {
   {
     switch (aTopic) {
       case "profile-after-change":
-        kObservedTopics.forEach(
-          function (topic) Services.obs.addObserver(this, topic, true),
-          this);
-
         // Override Toolkit's nsIDownloadManagerUI implementation with our own.
         // This must be done at application startup and not in the manifest to
         // ensure that our implementation overrides the original one.
@@ -97,23 +93,13 @@ DownloadsStartup.prototype = {
                           .registerFactory(kDownloadsUICid, "",
                                            kDownloadsUIContractId, null);
 
-        // If the integration preference is enabled, override Toolkit's
-        // nsITransfer implementation with the one from the JavaScript API for
-        // downloads.  This should be used only by developers while testing new
-        // code that uses the JavaScript API, and will eventually be removed
-        // when nsIDownloadManager will not be available anymore (bug 851471).
-        let useJSTransfer = false;
-        try {
-          useJSTransfer =
-            Services.prefs.getBoolPref("browser.download.useJSTransfer");
-        } catch (ex) {
-          // This is a hidden preference that does not exist by default.
-        }
-        if (useJSTransfer) {
-          Components.manager.QueryInterface(Ci.nsIComponentRegistrar)
-                            .registerFactory(kTransferCid, "",
-                                             kTransferContractId, null);
-        }
+        // Override Toolkit's nsITransfer implementation with the one from the
+        // JavaScript API for downloads.  This will eventually be removed when
+        // nsIDownloadManager will not be available anymore (bug 851471).  The
+        // old code in this module will be removed in bug 899110.
+        Components.manager.QueryInterface(Ci.nsIComponentRegistrar)
+                          .registerFactory(kTransferCid, "",
+                                           kTransferContractId, null);
         break;
 
       case "sessionstore-windows-restored":

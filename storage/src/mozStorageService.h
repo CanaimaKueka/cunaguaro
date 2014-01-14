@@ -17,7 +17,6 @@
 #include "mozIStorageService.h"
 
 class nsIMemoryReporter;
-class nsIMemoryMultiReporter;
 class nsIXPConnect;
 struct sqlite3_vfs;
 
@@ -53,7 +52,7 @@ public:
 
   static Service *getSingleton();
 
-  NS_DECL_ISUPPORTS
+  NS_DECL_THREADSAFE_ISUPPORTS
   NS_DECL_MOZISTORAGESERVICE
   NS_DECL_NSIOBSERVER
 
@@ -174,7 +173,6 @@ private:
   nsCOMPtr<nsIFile> mProfileStorageFile;
 
   nsCOMPtr<nsIMemoryReporter> mStorageSQLiteReporter;
-  nsCOMPtr<nsIMemoryMultiReporter> mStorageSQLiteMultiReporter;
 
   static Service *gService;
 

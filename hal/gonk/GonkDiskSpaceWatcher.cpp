@@ -74,8 +74,7 @@ public:
   // We should never write to the fanotify fd.
   virtual void OnFileCanWriteWithoutBlocking(int aFd)
   {
-    MOZ_NOT_REACHED("Must not write to fanotify fd");
-    MOZ_CRASH();
+    MOZ_CRASH("Must not write to fanotify fd");
   }
 
   void DoStart();
@@ -134,7 +133,10 @@ public:
   NS_IMETHOD Run()
   {
     MOZ_ASSERT(NS_IsMainThread());
-    delete gHalDiskSpaceWatcher;
+    if (gHalDiskSpaceWatcher) {
+      delete gHalDiskSpaceWatcher;
+      gHalDiskSpaceWatcher = nullptr;
+    }
     return NS_OK;
   }
 };
@@ -232,8 +234,13 @@ GonkDiskSpaceWatcher::OnFileCanReadWithoutBlocking(int aFd)
     len = read(aFd, buf, sizeof(buf));
   } while(len == -1 && errno == EINTR);
 
+  // Bail out if the file is busy.
+  if (len < 0 && errno == ETXTBSY) {
+    return;
+  }
+
   // We should get an exact multiple of fanotify_event_metadata
-  if (len <= 0 || (len % sizeof(*fem) != 0)) {
+  if (len <= 0 || (len % FAN_EVENT_METADATA_LEN != 0)) {
     printf_stderr("About to crash: fanotify_event_metadata read error.");
     MOZ_CRASH();
   }

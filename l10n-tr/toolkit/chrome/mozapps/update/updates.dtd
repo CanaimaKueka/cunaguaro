@@ -20,6 +20,12 @@
 ancak kurulum için yeterli alanınız yok.">
 <!ENTITY  manualUpdateGetMsg.label        "&brandShortName; uygulamasının en son sürümüne her zaman buradan ulaşabilirsiniz:">
 
+<!ENTITY  unsupported.title               "Desteklenmeyen Sistem">
+<!ENTITY  unsupported.label               "&brandShortName; güncel değil, fakat sisteminiz 
+en son sürümü desteklemiyor. Lütfen sisteminizi yükseltin ve tekrar deneyin. 
+Bu bildirimi tekrar görmeyeceksiniz ancak konuyla ilgili">
+<!ENTITY  unsupportedLink.label           "daha fazla bilgi alabilirsiniz.">
+
 <!ENTITY  incompatibleCheck.title         "Eklenti uyumluluk denetimi">
 <!ENTITY  incompatibleCheck.label         "Eklentilerinizin yeni sürümleri aranıyor…">
 
@@ -63,7 +69,8 @@ ancak kurulum için yeterli alanınız yok.">
 bir bağlantıyı kabul ettirmeye çalışıyor. Hizmet sağlayıcınızla görüşün ve yardım alın.">
 
 <!ENTITY  finishedPage.title              "Güncelleme kurulmaya hazır">
-<!ENTITY  finishedPage.text               "Güncelleme &brandShortName; yeniden başlatıldığında kurulacak. &brandShortName; uygulamasını şu an da başlatabilirsiniz, şimdi işinize devam edip daha sonra da baştan başlatabilirsiniz.">
+<!ENTITY  finishedPage.text               "Güncelleme &brandShortName; yeniden başlatıldığında kurulacak. &brandShortName; tarayıcısını 
+hemen baştan başlatabilir veya şimdi işinize devam edip daha sonra da baştan başlatabilirsiniz.">
 
 <!ENTITY  finishedBackgroundPage.text     "&brandShortName; uygulamasına ait bir güvenlik ve kararlılık güncellemesi indirildi ve kuruluma hazır.">
 <!ENTITY  finishedBackground.name         "Güncelleme:">

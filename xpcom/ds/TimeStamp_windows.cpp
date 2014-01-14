@@ -14,11 +14,11 @@
 #include "mozilla/MathAlgorithms.h"
 #include "mozilla/Mutex.h"
 #include "mozilla/TimeStamp.h"
+#include "nsWindowsHelpers.h"
 #include <windows.h>
 
 #include "nsCRT.h"
 #include "prlog.h"
-#include "prenv.h"
 #include "prprf.h"
 #include <stdio.h>
 
@@ -183,31 +183,8 @@ static DWORD sLastGTCRollover = 0;
 
 namespace mozilla {
 
-TimeStamp TimeStamp::sFirstTimeStamp;
-TimeStamp TimeStamp::sProcessCreation;
-
 typedef ULONGLONG (WINAPI* GetTickCount64_t)();
 static GetTickCount64_t sGetTickCount64 = nullptr;
-
-// ----------------------------------------------------------------------------
-// Critical Section helper class
-// ----------------------------------------------------------------------------
-
-class AutoCriticalSection
-{
-public:
-  AutoCriticalSection(LPCRITICAL_SECTION section)
-    : mSection(section)
-  {
-    ::EnterCriticalSection(mSection);
-  }
-  ~AutoCriticalSection()
-  {
-    ::LeaveCriticalSection(mSection);
-  }
-private:
-  LPCRITICAL_SECTION mSection;
-};
 
 // Function protecting GetTickCount result from rolling over,
 // result is in [ms]
@@ -321,15 +298,6 @@ InitResolution()
 // ----------------------------------------------------------------------------
 // TimeStampValue implementation
 // ----------------------------------------------------------------------------
-
-TimeStampValue::TimeStampValue(_SomethingVeryRandomHere* nullValue)
-  : mGTC(0)
-  , mQPC(0)
-  , mHasQPC(false)
-  , mIsNull(true)
-{
-  MOZ_ASSERT(!nullValue);
-}
 
 TimeStampValue::TimeStampValue(ULONGLONG aGTC, ULONGLONG aQPC, bool aHasQPC)
   : mGTC(aGTC)
@@ -571,11 +539,11 @@ TimeStamp::Now(bool aHighResolution)
   return TimeStamp(TimeStampValue(GTC, QPC, useQPC));
 }
 
-// Computes and returns the current process uptime in microseconds.
-// Returns 0 if an error was encountered while computing the uptime.
+// Computes and returns the process uptime in microseconds.
+// Returns 0 if an error was encountered.
 
-static uint64_t
-ComputeProcessUptime()
+uint64_t
+TimeStamp::ComputeProcessUptime()
 {
   SYSTEMTIME nowSys;
   GetSystemTime(&nowSys);
@@ -602,43 +570,6 @@ ComputeProcessUptime()
   };
 
   return (nowUsec.QuadPart - startUsec.QuadPart) / 10ULL;
-}
-
-TimeStamp
-TimeStamp::ProcessCreation(bool& aIsInconsistent)
-{
-  aIsInconsistent = false;
-
-  if (sProcessCreation.IsNull()) {
-    char *mozAppRestart = PR_GetEnv("MOZ_APP_RESTART");
-    TimeStamp ts;
-
-    if (mozAppRestart) {
-      ts = TimeStamp(TimeStampValue(nsCRT::atoll(mozAppRestart), 0, false));
-    } else {
-      TimeStamp now = TimeStamp::Now();
-      uint64_t uptime = ComputeProcessUptime();
-      ts = now - TimeDuration::FromMicroseconds(static_cast<double>(uptime));
-
-      if ((ts > sFirstTimeStamp) || (uptime == 0)) {
-        // If the process creation timestamp was inconsistent replace it with the
-        // first one instead and notify that a telemetry error was detected.
-        aIsInconsistent = true;
-        ts = sFirstTimeStamp;
-      }
-    }
-
-    sProcessCreation = ts;
-  }
-
-  return sProcessCreation;
-}
-
-void
-TimeStamp::RecordProcessRestart()
-{
-  PR_SetEnv(PR_smprintf("MOZ_APP_RESTART=%lld", ms2mt(sGetTickCount64())));
-  sProcessCreation = TimeStamp();
 }
 
 } // namespace mozilla

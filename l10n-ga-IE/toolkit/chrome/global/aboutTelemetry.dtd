@@ -10,13 +10,15 @@
 
 <!ENTITY aboutTelemetry.slowSqlSection "  Ráitis Mhalla SQL">
 
-<!ENTITY aboutTelemetry.chromeHangsSection "
-  Browser Hangs
-">
+<!ENTITY aboutTelemetry.chromeHangsSection "  Brabhsálaí Reoite">
 
 <!ENTITY aboutTelemetry.histogramsSection "  Histeagraim">
 
 <!ENTITY aboutTelemetry.simpleMeasurementsSection "  Tomhais Shimplí">
+
+<!ENTITY aboutTelemetry.addonDetailsSection "
+  Add-on Details
+">
 
 <!ENTITY aboutTelemetry.lateWritesSection "
   Late Writes

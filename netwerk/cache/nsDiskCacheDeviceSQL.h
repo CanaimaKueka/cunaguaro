@@ -20,6 +20,7 @@
 #include "nsClassHashtable.h"
 #include "nsWeakReference.h"
 #include "mozilla/Attributes.h"
+#include "mozilla/Mutex.h"
 
 class nsIURI;
 class nsOfflineCacheDevice;
@@ -41,7 +42,7 @@ private:
 
 class nsOfflineCacheEvictionFunction MOZ_FINAL : public mozIStorageFunction {
 public:
-  NS_DECL_ISUPPORTS
+  NS_DECL_THREADSAFE_ISUPPORTS
   NS_DECL_MOZISTORAGEFUNCTION
 
   nsOfflineCacheEvictionFunction(nsOfflineCacheDevice *device)
@@ -63,7 +64,7 @@ class nsOfflineCacheDevice : public nsCacheDevice
 public:
   nsOfflineCacheDevice();
 
-  NS_DECL_ISUPPORTS
+  NS_DECL_THREADSAFE_ISUPPORTS
 
   /**
    * nsCacheDevice methods
@@ -147,6 +148,8 @@ public:
 
   nsresult                GetApplicationCache(const nsACString &clientID,
                                               nsIApplicationCache **out);
+  nsresult                GetApplicationCache_Unlocked(const nsACString &clientID,
+                                                       nsIApplicationCache **out);
 
   nsresult                GetActiveCache(const nsACString &group,
                                          nsIApplicationCache **out);
@@ -154,7 +157,7 @@ public:
   nsresult                DeactivateGroup(const nsACString &group);
 
   nsresult                ChooseApplicationCache(const nsACString &key,
-                                                 nsILoadContext *loadContext,
+                                                 nsILoadContextInfo *loadContext,
                                                  nsIApplicationCache **out);
 
   nsresult                CacheOpportunistically(nsIApplicationCache* cache,
@@ -205,7 +208,7 @@ private:
   nsresult EnableEvictionObserver();
   nsresult DisableEvictionObserver();
 
-  bool CanUseCache(nsIURI *keyURI, const nsACString &clientID, nsILoadContext *loadContext);
+  bool CanUseCache(nsIURI *keyURI, const nsACString &clientID, nsILoadContextInfo *loadContext);
 
   nsresult MarkEntry(const nsCString &clientID,
                      const nsACString &key,
@@ -270,6 +273,8 @@ private:
   uint32_t                        mCacheCapacity; // in bytes
   int32_t                         mDeltaCounter;
   bool                            mAutoShutdown;
+
+  mozilla::Mutex                  mLock;
 
   nsInterfaceHashtable<nsCStringHashKey, nsIWeakReference> mCaches;
   nsClassHashtable<nsCStringHashKey, nsCString> mActiveCachesByGroup;

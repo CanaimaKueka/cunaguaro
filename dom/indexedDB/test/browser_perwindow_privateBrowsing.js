@@ -17,10 +17,14 @@ function test1()
 {
   gBrowser.selectedTab = gBrowser.addTab();
   gBrowser.selectedBrowser.addEventListener("load", function () {
+    if (content.location != testPageURL) {
+      content.location = testPageURL;
+      return;
+    }
     gBrowser.selectedBrowser.removeEventListener("load", arguments.callee, true);
 
     setFinishedCallback(function(result, exception) {
-      ok(result instanceof Components.interfaces.nsIIDBDatabase,
+      ok(result instanceof IDBDatabase,
          "First database creation was successful");
       ok(!exception, "No exception");
       gBrowser.removeCurrentTab();
@@ -45,6 +49,10 @@ function test3(win)
 {
   win.gBrowser.selectedTab = win.gBrowser.addTab();
   win.gBrowser.selectedBrowser.addEventListener("load", function () {
+    if (win.content.location != testPageURL) {
+      win.content.location = testPageURL;
+      return;
+    }
     win.gBrowser.selectedBrowser.removeEventListener("load", arguments.callee, true);
 
     setFinishedCallback(function(result, exception) {

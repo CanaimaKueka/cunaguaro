@@ -2,23 +2,33 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include "mozilla/layers/PLayerTransactionChild.h"
 #include "ClientTiledThebesLayer.h"
-#include "gfxImageSurface.h"
-#include "GeckoProfiler.h"
-#include "gfxPlatform.h"
-
+#include "FrameMetrics.h"               // for FrameMetrics
+#include "Units.h"                      // for ScreenIntRect, CSSPoint, etc
+#include "ClientLayerManager.h"         // for ClientLayerManager, etc
+#include "gfx3DMatrix.h"                // for gfx3DMatrix
+#include "gfxPlatform.h"                // for gfxPlatform
+#include "gfxPoint.h"                   // for gfxSize
+#include "gfxRect.h"                    // for gfxRect
+#include "mozilla/Assertions.h"         // for MOZ_ASSERT, etc
+#include "mozilla/gfx/BaseSize.h"       // for BaseSize
+#include "mozilla/gfx/Rect.h"           // for Rect, RectTyped
+#include "mozilla/layers/LayersMessages.h"
+#include "mozilla/mozalloc.h"           // for operator delete, etc
+#include "nsRect.h"                     // for nsIntRect
+#include "nsTraceRefcnt.h"              // for MOZ_COUNT_CTOR, etc
 
 namespace mozilla {
 namespace layers {
 
 
 ClientTiledThebesLayer::ClientTiledThebesLayer(ClientLayerManager* const aManager)
-  : ThebesLayer(aManager, static_cast<ClientLayer*>(this))
+  : ThebesLayer(aManager,
+                static_cast<ClientLayer*>(MOZ_THIS_IN_INITIALIZER_LIST()))
   , mContentClient()
 {
   MOZ_COUNT_CTOR(ClientTiledThebesLayer);
-  mPaintData.mLastScrollOffset = gfx::Point(0, 0);
+  mPaintData.mLastScrollOffset = CSSPoint(0, 0);
   mPaintData.mFirstPaint = true;
 }
 
@@ -57,7 +67,9 @@ ClientTiledThebesLayer::BeginPaint()
 
   // Compute the critical display port in layer space.
   mPaintData.mLayerCriticalDisplayPort.SetEmpty();
-  const gfx::Rect& criticalDisplayPort = GetParent()->GetFrameMetrics().mCriticalDisplayPort;
+  const FrameMetrics& metrics = GetParent()->GetFrameMetrics();
+  const gfx::Rect& criticalDisplayPort =
+    (metrics.mCriticalDisplayPort * metrics.mDevPixelsPerCSSPixel).ToUnknownRect();
   if (!criticalDisplayPort.IsEmpty()) {
     gfxRect transformedCriticalDisplayPort =
       mPaintData.mTransformScreenToLayer.TransformBounds(
@@ -74,8 +86,8 @@ ClientTiledThebesLayer::BeginPaint()
   mPaintData.mResolution.SizeTo(1, 1);
   for (ContainerLayer* parent = GetParent(); parent; parent = parent->GetParent()) {
     const FrameMetrics& metrics = parent->GetFrameMetrics();
-    mPaintData.mResolution.width *= metrics.mResolution.width;
-    mPaintData.mResolution.height *= metrics.mResolution.height;
+    mPaintData.mResolution.width *= metrics.mResolution.scale;
+    mPaintData.mResolution.height *= metrics.mResolution.scale;
   }
 
   // Calculate the scroll offset since the last transaction, and the

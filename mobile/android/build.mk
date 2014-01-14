@@ -4,7 +4,7 @@
 
 include  $(topsrcdir)/toolkit/mozapps/installer/package-name.mk
 
-installer: 
+installer:
 	@$(MAKE) -C mobile/android/installer installer
 
 package:
@@ -21,17 +21,23 @@ ifneq ($(ANDROID_SERIAL),)
 export ANDROID_SERIAL
 else
 # Determine if there's more than one device connected
-android_devices=$(filter device,$(shell $(ANDROID_PLATFORM_TOOLS)/adb devices))
+android_devices=$(filter device,$(shell $(ADB) devices))
+ifeq ($(android_devices),)
+install::
+	@echo "No devices are connected.  Connect a device or start an emulator."
+	@exit 1
+else
 ifneq ($(android_devices),device)
 install::
 	@echo "Multiple devices are connected. Define ANDROID_SERIAL to specify the install target."
-	$(ANDROID_PLATFORM_TOOLS)/adb devices
+	$(ADB) devices
 	@exit 1
+endif
 endif
 endif
 
 install::
-	$(ANDROID_PLATFORM_TOOLS)/adb install -r $(DIST)/$(PKG_PATH)$(PKG_BASENAME).apk
+	$(ADB) install -r $(DIST)/$(PKG_PATH)$(PKG_BASENAME).apk
 else
 	@echo "Mobile can't be installed directly."
 	@exit 1

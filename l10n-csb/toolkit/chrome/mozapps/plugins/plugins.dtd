@@ -1,3 +1,7 @@
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+
 <!--
 # Translator(s):
 #
@@ -12,7 +16,7 @@
 <!ENTITY pluginWizard.availablePluginsPage.title             "Wtëkôcze przistãpné do zladënkù">
 <!ENTITY pluginWizard.availablePluginsPage.description.label "Nôslédné wtëkôcze sã przistãpné:">
 <!ENTITY pluginWizard.availablePluginsPage.continueMsg.label "Abë winstalowac ne wtëkôcze, klëkni knąpã Dali.">
-<!ENTITY pluginWizard.availablePluginsPage.installerUI       "Niejednym wtëkôczom mòże bëc nót dodôwny wëdowiédzë przë instalacji.">
+<!ENTITY pluginWizard.availablePluginsPage.installerUI       "Niejednym wtëkôczom mòże bëc nót dodôwny wëdowiédzë przë instalacje.">
 
 <!ENTITY pluginWizard.licensePage.title                      "Licencjô wtëkôcza">
 <!ENTITY pluginWizard.licensePage.accept.label               "Zgôdzóm sã.">
@@ -46,14 +50,14 @@
 <!ENTITY report.disabled                                     "Sélanié rapòrtów ò awariach je wëłączoné.">
 <!ENTITY report.failed                                       "Felënk wësłaniô.">
 <!ENTITY report.unavailable                                  "Felënk przistãpnëch repòrtów.">
-<!ENTITY report.please                                       "Sélôj rapòrt ò awarii">
+<!ENTITY report.please                                       "Sélôj rapòrt ò awarie">
 <!ENTITY checkForUpdates 								"Szëkôj za zaktualnieniema…">
 <!ENTITY unsupportedPlatform.learnMore 					"Wicy wëdowiédzë…">
 <!ENTITY unsupportedPlatform.post 			"">
-<!ENTITY unsupportedPlatform.pre 			"Przprôszómë, ale &brandShortName; ni mòże òdtwòrzëc Flasha na tim ùrządzeniu.">
+<!ENTITY unsupportedPlatform.pre 			"Przeprôszómë, &brandShortName; ni mòże òdtwòrzëc Flasha na tim ùrządzeniu.">
 <!ENTITY plugin.file                                         "Lopk">
 <!ENTITY plugin.mimeTypes                                    "Tipë MIME">
-
+<!ENTITY hidePluginBtn.label                                 "Zatacë wtëkôcz">
 <!ENTITY clickToActivatePlugin                               "Włączë wtëkôcz">
 <!ENTITY report.comment                                      "Dodôj kòmentôrz (widzóné pùbliczno)">
 <!ENTITY report.pageURL                                      "Dodôj adres URL stronë">

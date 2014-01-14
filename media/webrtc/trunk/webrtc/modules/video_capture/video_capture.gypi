@@ -25,8 +25,6 @@
         'include',
         '../interface',
         '<(webrtc_root)/common_video/libyuv/include',
-# added for mozilla for use_system_libjpeg
-        '$(DIST)/include',
       ],
       'sources': [
         'device_info_impl.cc',
@@ -48,7 +46,7 @@
           ],
         }, {  # include_internal_video_capture == 1
           'conditions': [
-            ['OS=="linux"', {
+            ['include_v4l2_video_capture==1', {
               'include_dirs': [
                 'linux',
               ],
@@ -70,8 +68,6 @@
                 'mac/qtkit/video_capture_qtkit_objc.h',
                 'mac/qtkit/video_capture_qtkit_objc.mm',
                 'mac/qtkit/video_capture_qtkit_utility.h',
-                'mac/qtkit/video_capture_recursive_lock.h',
-                'mac/qtkit/video_capture_recursive_lock.mm',
                 'mac/video_capture_mac.mm',
               ],
               'include_dirs': [
@@ -141,7 +137,7 @@
     ['include_tests==1', {
       'targets': [
         {
-          'target_name': 'video_capture_module_test',
+          'target_name': 'video_capture_integrationtests',
           'type': 'executable',
           'dependencies': [
             'video_capture_module',
@@ -157,7 +153,7 @@
             'test/video_capture_main_mac.mm',
           ],
           'conditions': [
-            ['OS=="mac" or OS=="linux"', {
+            ['OS!="win" and OS!="android"', {
               'cflags': [
                 '-Wno-write-strings',
               ],
@@ -165,11 +161,15 @@
                 '-lpthread -lm',
               ],
             }],
+            ['include_v4l2_video_capture==1', {
+              'libraries': [
+                '-lXext',
+                '-lX11',
+              ],
+            }],
             ['OS=="linux"', {
               'libraries': [
                 '-lrt',
-                '-lXext',
-                '-lX11',
               ],
             }],
             ['OS=="mac"', {

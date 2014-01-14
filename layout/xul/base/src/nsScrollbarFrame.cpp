@@ -18,6 +18,7 @@
 #include "mozilla/LookAndFeel.h"
 #include "nsThemeConstants.h"
 #include "nsRenderingContext.h"
+#include "nsIContent.h"
 
 using namespace mozilla;
 
@@ -96,39 +97,40 @@ nsScrollbarFrame::AttributeChanged(int32_t aNameSpaceID,
   if (!scrollable)
     return rv;
 
+  nsCOMPtr<nsIContent> kungFuDeathGrip(mContent);
   scrollable->CurPosAttributeChanged(mContent);
   return rv;
 }
 
 NS_IMETHODIMP
-nsScrollbarFrame::HandlePress(nsPresContext* aPresContext, 
-                     nsGUIEvent*     aEvent,
-                     nsEventStatus*  aEventStatus)
+nsScrollbarFrame::HandlePress(nsPresContext* aPresContext,
+                              WidgetGUIEvent* aEvent,
+                              nsEventStatus* aEventStatus)
 {
   return NS_OK;
 }
 
 NS_IMETHODIMP
-nsScrollbarFrame::HandleMultiplePress(nsPresContext* aPresContext, 
-                                      nsGUIEvent*     aEvent,
-                                      nsEventStatus*  aEventStatus,
+nsScrollbarFrame::HandleMultiplePress(nsPresContext* aPresContext,
+                                      WidgetGUIEvent* aEvent,
+                                      nsEventStatus* aEventStatus,
                                       bool aControlHeld)
 {
   return NS_OK;
 }
 
 NS_IMETHODIMP 
-nsScrollbarFrame::HandleDrag(nsPresContext* aPresContext, 
-                              nsGUIEvent*     aEvent,
-                              nsEventStatus*  aEventStatus)
+nsScrollbarFrame::HandleDrag(nsPresContext* aPresContext,
+                             WidgetGUIEvent* aEvent,
+                             nsEventStatus* aEventStatus)
 {
   return NS_OK;
 }
 
 NS_IMETHODIMP 
-nsScrollbarFrame::HandleRelease(nsPresContext* aPresContext, 
-                                 nsGUIEvent*     aEvent,
-                                 nsEventStatus*  aEventStatus)
+nsScrollbarFrame::HandleRelease(nsPresContext* aPresContext,
+                                WidgetGUIEvent* aEvent,
+                                nsEventStatus* aEventStatus)
 {
   return NS_OK;
 }

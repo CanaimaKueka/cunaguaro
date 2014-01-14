@@ -8,6 +8,11 @@
   intente resolver un problema. Si está buscando respuestas a preguntas comunes
   acerca de &brandShortName;, mire en nuestro <a id='supportLink'>sitio web de soporte</a>.
 ">
+<!ENTITY aboutSupport.crashes.title "Reportes de fallos">
+<!ENTITY aboutSupport.crashes.id "ID del reporte">
+<!ENTITY aboutSupport.crashes.sendDate "Enviado">
+<!ENTITY aboutSupport.crashes.allReports "Todos los reportes de fallos">
+<!ENTITY aboutSupport.crashes.noConfig "Esta aplicación no ha sido configurada para mostrar reportes de fallos.">
 <!ENTITY aboutSupport.extensionsTitle "Extensiones">
 <!ENTITY aboutSupport.extensionName "Nombre">
 <!ENTITY aboutSupport.extensionEnabled "Habilitada">
@@ -16,12 +21,13 @@
 <!ENTITY aboutSupport.appBasicsTitle "Detalles básicos de la aplicación">
 <!ENTITY aboutSupport.appBasicsName "Nombre">
 <!ENTITY aboutSupport.appBasicsVersion "Versión">
+<!ENTITY aboutSupport.appBasicsUpdateHistory "Historial de actualización">
+<!ENTITY aboutSupport.appBasicsShowUpdateHistory "Mostrar historial de actualización">
 <!ENTITY aboutSupport.appBasicsProfileDir "Directorio del perfil">
 <!ENTITY aboutSupport.appBasicsProfileDirWinMac "Carpeta de perfil">
 <!ENTITY aboutSupport.appBasicsEnabledPlugins "Complementos habilitados">
 <!ENTITY aboutSupport.appBasicsBuildConfig "Configuración de Build">
 <!ENTITY aboutSupport.appBasicsUserAgent "Agente de usuario">
-<!ENTITY aboutSupport.appBasicsCrashIDs "Informes de fallos">
 <!ENTITY aboutSupport.appBasicsMemoryUse "Uso de memoria">
 <!ENTITY aboutSupport.showDir.label "Abrir directorio">
 <!ENTITY aboutSupport.showMac.label "Mostrar en Finder">

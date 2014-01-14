@@ -6,8 +6,18 @@
 <!-- LOCALIZATION NOTE (aboutSupport.pageSubtitle): don't change the 'supportLink' id. -->
 
 <!ENTITY aboutSupport.pageSubtitle "  এই পৃষ্ঠাত কাৰিকৰী তথ্য আছে যোনটো লাভদায়ক হব পাৰে যদি আপুনি এটা সমস্যা সমাধান কৰিব বিচাৰিছে। 
-যদি আপুনি  &brandShortName; ৰ সাধাৰণ প্ৰশ্ন কিছুমানৰ উত্তৰ বিচাৰিছে, আমাৰ  সমৰ্থন ৱেবছাইট 
-<a id='supportLink'>  </a> চাওক।">
+যদি আপুনি &brandShortName; ৰ সাধাৰণ প্ৰশ্ন কিছুমানৰ উত্তৰ বিচাৰিছে, আমাৰ সমৰ্থন ৱেবছাইট 
+<a id='supportLink'>সমৰ্থন ৱেবছাইট</a> চাওক।">
+
+<!ENTITY aboutSupport.crashes.title "স্খলন সংবাদসমূহ">
+<!-- LOCALIZATION NOTE (aboutSupport.crashes.id):
+This is likely the same like id.heading in crashes.dtd. -->
+<!ENTITY aboutSupport.crashes.id "সংবাদ ID">
+<!-- LOCALIZATION NOTE (aboutSupport.crashes.id):
+This is likely the same like date.heading in crashes.dtd. -->
+<!ENTITY aboutSupport.crashes.sendDate "জমা দিয়া হল">
+<!ENTITY aboutSupport.crashes.allReports "সকলো স্খলন সংবাদ">
+<!ENTITY aboutSupport.crashes.noConfig "এই এপ্লিকেচনক স্খলন সংবাদসমূহ প্ৰদৰ্শন কৰিবলৈ সংৰূপণ কৰা হোৱা নাই।">
 
 <!ENTITY aboutSupport.extensionsTitle "প্ৰসাৰনসমূহ">
 <!ENTITY aboutSupport.extensionName "নাম">
@@ -18,6 +28,11 @@
 <!ENTITY aboutSupport.appBasicsTitle "এপ্লিকেচন মৌলিকসমূহ">
 <!ENTITY aboutSupport.appBasicsName "নাম">
 <!ENTITY aboutSupport.appBasicsVersion "সংস্কৰণ">
+<!-- LOCALIZATION NOTE (aboutSupport.appBasicsUpdateHistory, aboutSupport.appBasicsShowUpdateHistory):
+"Update" is a noun here, not a verb. -->
+
+<!ENTITY aboutSupport.appBasicsUpdateHistory "ইতিহাস আপডেইট কৰক">
+<!ENTITY aboutSupport.appBasicsShowUpdateHistory "আপডেইটৰ ইতিহাস দেখুৱাওক">
 
 <!ENTITY aboutSupport.appBasicsProfileDir "আলেখ্য ডাইৰেকটৰি">
 <!-- LOCALIZATION NOTE (aboutSupport.appBasicsProfileDirWinMac):
@@ -28,7 +43,6 @@ Windows/Mac use the term "Folder" instead of "Directory" -->
 <!ENTITY aboutSupport.appBasicsEnabledPlugins "সামৰ্থবান কৰি থোৱা প্লাগিনসমূহ">
 <!ENTITY aboutSupport.appBasicsBuildConfig "সংৰূপ নিৰ্মাণ কৰক">
 <!ENTITY aboutSupport.appBasicsUserAgent "ব্যৱহাৰকাৰী সহায়ক">
-<!ENTITY aboutSupport.appBasicsCrashIDs "ক্ৰেশ সংবাদসমূহ">
 <!ENTITY aboutSupport.appBasicsMemoryUse "মেমৰিৰ ব্যৱহাৰ">
 
 <!ENTITY aboutSupport.showDir.label "ডাইৰেকটৰি খোলক">

@@ -2,25 +2,34 @@
    - License, v. 2.0. If a copy of the MPL was not distributed with this
    - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
 
+<!-- NAVBAR AND AUTOCOMPLETE -->
+
 <!ENTITY urlbar.emptytext "Sláðu inn leitarorð eða veffang">
-<!ENTITY urlbar.accesskey "d">
 <!ENTITY back.label "Til baka">
 <!ENTITY forward.label "Áfram">
 <!ENTITY newtab.label "Nýr flipi">
 <!ENTITY closetab.label "Loka flipa">
+<!ENTITY autocompleteResultsHeader.label "Þínar niðurstöður">
+<!ENTITY appbarErrorConsole.label "Opna villuglugga">
+<!ENTITY appbarJSShell.label "Opna JavaScript skel">
 <!ENTITY appbarFindInPage2.label "Finna á síðu">
 <!ENTITY appbarViewOnDesktop2.label "Skoða á skjáborði">
-<!ENTITY startTopSitesHeader.label "Efstu vefsvæði">
-<!ENTITY startBookmarksHeader.label "Bókamerki">
-<!ENTITY startHistoryHeader.label "Nýlegir ferlar">
-<!ENTITY startRemoteTabsHeader.label "Flipar frá öðrum tækjum">
-<!-- LOCALIZATION NOTE (snappedRemoteTabsHeader.label): shortened version of startRemoteTabsHeader.label.
-     Needs to be two words or shorter to fit in narrow vertical space.-->
-<!ENTITY snappedRemoteTabsHeader.label "Fjarlægir flipar">
-<!ENTITY autocompleteResultsHeader.label "Þínar niðurstöður">
-<!ENTITY autocompleteSearchesHeader.label "Internet leitir">
- 
-
+<!ENTITY appbarMSMetaData2.label "Ná í app fyrir þetta vefsvæði">
+<!ENTITY topSitesHeader.label "Efstu vefsvæði">
+<!ENTITY bookmarksHeader.label "Bókamerki">
+<!ENTITY recentHistoryHeader.label "Nýlegir ferlar">
+<!ENTITY remoteTabsHeader.label "Flipar frá öðrum tækjum">
+<!-- LOCALIZATION NOTE (narrowTopSitesHeader.label,
+                        narrowBookmarksHeader.label,
+                        narrowHistoryHeader.label,
+                        narrowRemoteTabsHeader.label )
+     are shortened versions of topSitesHeader.label, bookmarksHeader.label, recentHistoryHeader.label
+     and remoteTabsHeader.label. Need to be two words or shorter to fit in narrow vertical space.
+      -->
+<!ENTITY narrowTopSitesHeader.label "Efstu vefsvæði">
+<!ENTITY narrowBookmarksHeader.label "Bókamerki">
+<!ENTITY narrowRecentHistoryHeader.label "Nýlegir ferlar">
+<!ENTITY narrowRemoteTabsHeader.label "Fjarlægir flipar">
 <!ENTITY downloadsHeader.label "Niðurhal">
 <!ENTITY downloadShowPage.label "Fara á síðu">
 <!ENTITY downloadShow2.label "Leita">
@@ -33,7 +42,6 @@
 <!ENTITY downloadDelete.label "Eyða">
 <!ENTITY downloadFailed.label "Mistókst
 ">
-<!ENTITY bookmarksHeader.label "Bókamerki">
 <!ENTITY allBookmarks.label "Sýna öll bókamerki">
 <!ENTITY consoleHeader.label "Villugluggi">
 <!ENTITY consoleAll.label "Allir">
@@ -69,3 +77,21 @@
 <!ENTITY contextSaveVideoLib.label "Vista myndband í myndbandasafn">
 <!ENTITY contextCopyVideoLocation.label "Afrita myndbandatengil">
 <!ENTITY contextOpenVideoTab.label "Opna myndband í nýjum flipa">
+<!-- KEYBOARD SHORTCUTS -->
+<!ENTITY reload.key "r">
+<!ENTITY focusURL.key "l">
+<!ENTITY urlbar.accesskey "d">
+<!ENTITY openFile.key "o">
+<!ENTITY savePage.key "s">
+<!ENTITY find.key "f">
+<!ENTITY findNext.key "g">
+<!ENTITY quit.key "q">
+<!ENTITY addBookmark.key "d">
+<!ENTITY newTab.key "t">
+<!ENTITY newTab2.key "n">
+<!ENTITY closeTab.key "w">
+<!-- DEVELOPER SHORTCUTS (control+shift+key) -->
+<!ENTITY jsConsole.key "j">
+<!ENTITY optionsFlyout.key "o">
+<!ENTITY syncFlyout.key "s">
+<!ENTITY aboutFlyout.key "a">

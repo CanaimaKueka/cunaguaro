@@ -67,8 +67,6 @@ FileManager::Init(nsIFile* aDirectory,
   NS_ASSERTION(aDirectory, "Null directory!");
   NS_ASSERTION(aConnection, "Null connection!");
 
-  mFileInfos.Init();
-
   bool exists;
   nsresult rv = aDirectory->Exists(&exists);
   NS_ENSURE_SUCCESS(rv, rv);
@@ -268,6 +266,8 @@ FileManager::GetFileForId(nsIFile* aDirectory, int64_t aId)
 nsresult
 FileManager::InitDirectory(nsIFile* aDirectory,
                            nsIFile* aDatabaseFile,
+                           PersistenceType aPersistenceType,
+                           const nsACString& aGroup,
                            const nsACString& aOrigin)
 {
   AssertIsOnIOThread();
@@ -313,7 +313,8 @@ FileManager::InitDirectory(nsIFile* aDirectory,
     if (hasElements) {
       nsCOMPtr<mozIStorageConnection> connection;
       rv = OpenDatabaseHelper::CreateDatabaseConnection(aDatabaseFile,
-        aDirectory, NullString(), aOrigin, getter_AddRefs(connection));
+        aDirectory, NullString(), aPersistenceType, aGroup, aOrigin,
+        getter_AddRefs(connection));
       NS_ENSURE_SUCCESS(rv, rv);
 
       mozStorageTransaction transaction(connection, false);
@@ -388,11 +389,20 @@ FileManager::GetUsage(nsIFile* aDirectory, uint64_t* aUsage)
 {
   AssertIsOnIOThread();
 
-  uint64_t usage = 0;
+  bool exists;
+  nsresult rv = aDirectory->Exists(&exists);
+  NS_ENSURE_SUCCESS(rv, rv);
+
+  if (!exists) {
+    *aUsage = 0;
+    return NS_OK;
+  }
 
   nsCOMPtr<nsISimpleEnumerator> entries;
-  nsresult rv = aDirectory->GetDirectoryEntries(getter_AddRefs(entries));
+  rv = aDirectory->GetDirectoryEntries(getter_AddRefs(entries));
   NS_ENSURE_SUCCESS(rv, rv);
+
+  uint64_t usage = 0;
 
   bool hasMore;
   while (NS_SUCCEEDED((rv = entries->HasMoreElements(&hasMore))) && hasMore) {

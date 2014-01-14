@@ -7,7 +7,6 @@
 
 #include "xptiprivate.h"
 #include "mozilla/XPTInterfaceInfoManager.h"
-#include "nsAtomicRefcnt.h"
 
 using namespace mozilla;
 
@@ -60,8 +59,8 @@ xptiInterfaceEntry::xptiInterfaceEntry(const char* name,
     , mMethodBaseIndex(0)
     , mConstantBaseIndex(0)
     , mTypelib(aTypelib)
-    , mParent(NULL)
-    , mInfo(NULL)
+    , mParent(nullptr)
+    , mInfo(nullptr)
     , mFlags(0)
 {
     memcpy(mName, name, nameLength);
@@ -192,7 +191,7 @@ xptiInterfaceEntry::GetMethodInfo(uint16_t index, const nsXPTMethodInfo** info)
                 mDescriptor->num_methods)
     {
         NS_ERROR("bad param");
-        *info = NULL;
+        *info = nullptr;
         return NS_ERROR_INVALID_ARG;
     }
 
@@ -246,7 +245,7 @@ xptiInterfaceEntry::GetConstant(uint16_t index, const nsXPTConstant** constant)
                 mDescriptor->num_constants)
     {
         NS_PRECONDITION(0, "bad param");
-        *constant = NULL;
+        *constant = nullptr;
         return NS_ERROR_INVALID_ARG;
     }
 
@@ -315,12 +314,8 @@ xptiInterfaceEntry::GetInfoForParam(uint16_t methodIndex,
     if(NS_FAILED(rv))
         return rv;
 
-    xptiInterfaceInfo* theInfo;
-    rv = entry->GetInterfaceInfo(&theInfo);    
-    if(NS_FAILED(rv))
-        return rv;
+    *info = entry->InterfaceInfo().get();
 
-    *info = static_cast<nsIInterfaceInfo*>(theInfo);
     return NS_OK;
 }
 
@@ -537,8 +532,8 @@ xptiInterfaceEntry::HasAncestor(const nsIID * iid, bool *_retval)
 
 /***************************************************/
 
-nsresult 
-xptiInterfaceEntry::GetInterfaceInfo(xptiInterfaceInfo** info)
+already_AddRefed<xptiInterfaceInfo> 
+xptiInterfaceEntry::InterfaceInfo()
 {
 #ifdef DEBUG
     XPTInterfaceInfoManager::GetSingleton()->mWorkingSet.mTableReentrantMonitor.
@@ -549,15 +544,10 @@ xptiInterfaceEntry::GetInterfaceInfo(xptiInterfaceInfo** info)
     if(!mInfo)
     {
         mInfo = new xptiInterfaceInfo(this);
-        if(!mInfo)
-        {
-            *info = nullptr;    
-            return NS_ERROR_OUT_OF_MEMORY;
-        }
     }
     
-    NS_ADDREF(*info = mInfo);
-    return NS_OK;    
+    nsRefPtr<xptiInterfaceInfo> info = mInfo;
+    return info.forget();
 }
     
 void     
@@ -580,7 +570,8 @@ xptiInterfaceInfo::BuildParent()
                  !mParent &&
                  mEntry->Parent(),
                 "bad BuildParent call");
-    return NS_SUCCEEDED(mEntry->Parent()->GetInterfaceInfo(&mParent));
+    mParent = mEntry->Parent()->InterfaceInfo().get();
+    return true;
 }
 
 /***************************************************************************/
@@ -603,7 +594,7 @@ xptiInterfaceInfo::~xptiInterfaceInfo()
 nsrefcnt
 xptiInterfaceInfo::AddRef(void)
 {
-    nsrefcnt cnt = NS_AtomicIncrementRefcnt(mRefCnt);
+    nsrefcnt cnt = ++mRefCnt;
     NS_LOG_ADDREF(this, cnt, "xptiInterfaceInfo", sizeof(*this));
     return cnt;
 }
@@ -612,7 +603,7 @@ nsrefcnt
 xptiInterfaceInfo::Release(void)
 {
     xptiInterfaceEntry* entry = mEntry;
-    nsrefcnt cnt = NS_AtomicDecrementRefcnt(mRefCnt);
+    nsrefcnt cnt = --mRefCnt;
     NS_LOG_RELEASE(this, cnt, "xptiInterfaceInfo");
     if(!cnt)
     {
@@ -621,7 +612,7 @@ xptiInterfaceInfo::Release(void)
                                           mTableReentrantMonitor);
         LOG_INFO_MONITOR_ENTRY;
 
-        // If GetInterfaceInfo added and *released* a reference before we 
+        // If InterfaceInfo added and *released* a reference before we 
         // acquired the monitor then 'this' might already be dead. In that
         // case we would not want to try to access any instance data. We
         // would want to bail immediately. If 'this' is already dead then the
@@ -630,7 +621,7 @@ xptiInterfaceInfo::Release(void)
         if(entry && !entry->InterfaceInfoEquals(this))
             return 0;
 
-        // If GetInterfaceInfo added a reference before we acquired the monitor
+        // If InterfaceInfo added a reference before we acquired the monitor
         // then we want to bail out of here without destorying the object.
         if(mRefCnt)
             return 1;

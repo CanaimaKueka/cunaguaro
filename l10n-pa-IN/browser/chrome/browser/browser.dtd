@@ -19,6 +19,11 @@
 <!ENTITY  reloadTab.accesskey                "R">
 <!ENTITY  reloadAllTabs.label                "ਸਭ ਟੈਬਾਂ ਮੁੜ-ਲੋਡ ਕਰੋ">
 <!ENTITY  reloadAllTabs.accesskey            "A">
+<!-- LOCALIZATION NOTE (closeTabsToTheEnd.label): This should indicate the
+direction in which tabs are closed, i.e. locales that use RTL mode should say
+left instead of right. -->
+<!ENTITY  closeTabsToTheEnd.label            "ਸੱਜੇ ਪਾਸੇ ਵਾਲੀਆਂ ਟੈਬਾਂ ਬੰਦ ਕਰੋ">
+<!ENTITY  closeTabsToTheEnd.accesskey        "i">
 <!ENTITY  closeOtherTabs.label               "ਹੋਰ ਟੈਬਾਂ ਬੰਦ ਕਰੋ">
 <!ENTITY  closeOtherTabs.accesskey           "o">
 
@@ -30,8 +35,13 @@
 <!ENTITY  moveToNewWindow.accesskey          "W">
 <!ENTITY  bookmarkAllTabs.label              "…ਸਭ ਟੈਬਾਂ ਬੁੱਕਮਾਰਕ ਕਰੋ">
 <!ENTITY  bookmarkAllTabs.accesskey          "T">
-<!ENTITY  undoCloseTab.label                 "ਬੰਦ ਕੀਤੀ ਟੈਬ ਵਾਪਸ ਲਵੋ">
+<!ENTITY  undoCloseTab.label                 "ਬੰਦ ਕੀਤੀ ਟੈਬ ਵਾਪਸ ਖੋਲ੍ਹੋ">
 <!ENTITY  undoCloseTab.accesskey             "U">
+<!-- LOCALIZATION NOTE (undoCloseTabs.label) : This label is used
+when the previous tab-closing operation closed more than one tab. It
+replaces the undoCloseTab.label and will use the same accesskey as the
+undoCloseTab.label so users will not need to learn new keyboard controls. -->
+<!ENTITY  undoCloseTabs.label                "ਬੰਦ ਕੀਤੀਆਂ ਟੈਬਾਂ ਵਾਪਿਸ ਖੋਲ੍ਹੋ">
 <!ENTITY  closeTab.label                     "ਟੈਬ ਬੰਦ ਕਰੋ">
 <!ENTITY  closeTab.accesskey                 "c">
 
@@ -94,8 +104,7 @@ These should match what Safari and other Apple applications use on OS X Lion. --
 <!ENTITY fullScreenExit.accesskey "F">
 <!ENTITY fullscreenAllowButton.label "ਮਨਜ਼ੂਰ">
 <!ENTITY fullscreenExitButton.label "ਇਨਕਾਰ">
-<!ENTITY fullscreenApproval.value "ਪੂਰੀ ਸਕਰੀਨ ਮਨਜ਼ੂਰ?">
-<!ENTITY fullscreenExitHint.value "ਪੂਰੀ ਸਕਰੀਨ ਤੋਂ ਬਾਹਰ ਆਉਣ ਲਈ ਕਿਸੇ ਵੀ ਸਮੇਂ ESC ਦੱਬੋ।">
+<!ENTITY fullscreenExitHint2.value "ਬਾਹਰ ਆਉਣ ਲਈ ਕਿਸੇ ਵੀ ਸਮੇਂ ESC ਦੱਬੋ।">
 <!ENTITY leaveDOMFullScreen.label "ਪੂਰੀ ਸਕਰੀਨ ਬੰਦ ਕਰੋ">
 <!ENTITY leaveDOMFullScreen.accesskey "u">
 
@@ -189,8 +198,7 @@ These should match what Safari and other Apple applications use on OS X Lion. --
 
 <!ENTITY keywordfield.label           "ਇਸ ਖੋਜ ਲਈ ਸ਼ਬਦ ਦਿਓ…">
 <!ENTITY keywordfield.accesskey       "K">
-<!ENTITY search.label                 "ਵੈੱਬ ਖੋਜ">
-<!ENTITY search.accesskey             "S">
+
 <!ENTITY downloads.label              "ਡਾਊਨਲੋਡ">
 <!ENTITY downloads.tooltip            "ਡਾਊਨਲੋਡ ਦੀ ਤਰੱਕੀ ਵੇਖੋ">
 <!ENTITY downloads.accesskey          "D">
@@ -202,17 +210,22 @@ These should match what Safari and other Apple applications use on OS X Lion. --
 
 <!ENTITY webDeveloperMenu.label       "ਵੈੱਬ ਡਿਵੈਲਪਰ">
 <!ENTITY webDeveloperMenu.accesskey   "W">
+<!ENTITY devAppMgrMenu.label               "ਐਪ ਮੈਨੇਜਰ">
+<!ENTITY devAppMgrMenu.accesskey           "a">
+<!ENTITY devToolsCmd.keycode          "VK_F12">
+<!ENTITY devToolsCmd.keytext          "F12">
 
 <!ENTITY devtoolsConnect.label        "…ਕੁਨੈਕਟ">
 <!ENTITY devtoolsConnect.accesskey    "e">
   
 <!ENTITY errorConsoleCmd.label        "ਗਲਤੀ ਕਨਸੋਂਲ">
 <!ENTITY errorConsoleCmd.accesskey    "C">
-<!ENTITY errorConsoleCmd.commandkey   "j">
 
 <!ENTITY remoteWebConsoleCmd.label    "ਰਿਮੋਟ ਵੈੱਬ ਕਨਸੋਲ">
 
 <!ENTITY browserConsoleCmd.label      "ਬਰਾਊਜ਼ਰ ਕਨਸੋਲ">
+<!ENTITY browserConsoleCmd.commandkey "j">
+<!ENTITY browserConsoleCmd.accesskey  "B">
 
 <!ENTITY inspectContextMenu.label     "ਐਲੀਮੈਂਟ ਜਾਂਚ">
 <!ENTITY inspectContextMenu.accesskey "Q">
@@ -236,6 +249,11 @@ These should match what Safari and other Apple applications use on OS X Lion. --
 <!ENTITY scratchpad.keycode           "VK_F4">
 <!ENTITY scratchpad.keytext           "F4">
 
+<!-- LOCALIZATION NOTE (chromeDebuggerMenu.label): This is the label for the
+  -  application menu item that opens the browser debugger UI in the Tools menu. -->
+<!ENTITY chromeDebuggerMenu.label       "ਬਰਾਊਜ਼ਰ ਡੀਬੱਗਰ">
+<!ENTITY chromeDebuggerMenu.accesskey   "e">
+
 <!ENTITY devToolbarCloseButton.tooltiptext "ਡਿਵੈਲਪਰ ਟੂਲਬਾਰ ਬੰਦ ਕਰੋ">
 <!ENTITY devToolbarMenu.label              "ਡਿਵੈਲਪਰ ਮੋਡ">
 <!ENTITY devToolbarMenu.accesskey          "v">
@@ -243,6 +261,8 @@ These should match what Safari and other Apple applications use on OS X Lion. --
 <!ENTITY devToolbar.keytext                "F2">
 <!ENTITY devToolboxMenuItem.label          "ਟੂਲ ਬਦਲੋ">
 <!ENTITY devToolboxMenuItem.accesskey      "T">
+<!ENTITY devToolboxMenuItem.keycode        "I">
+<!ENTITY devToolboxMenuItem.keytext        "I">
 
 <!ENTITY devToolbarToolsButton.tooltip     "ਡਿਵੈਲਪਰ ਟੂਲ ਬਦਲੋ">
 <!ENTITY devToolbarOtherToolsButton.label  "ਹੋਰ ਟੂਲ">
@@ -321,7 +341,6 @@ can reach it easily. -->
 <!ENTITY historyUndoWindowMenu.label "ਤਾਜ਼ਾ ਬੰਦ ਕੀਤੀਆਂ ਵਿੰਡੋ">
 <!ENTITY historyRestoreLastSession.label "ਪਿਛਲਾ ਸ਼ੈਸ਼ਨ ਮੁੜ-ਸਟੋਰ ਕਰੋ">
 
-<!ENTITY historyHomeCmd.label "ਘਰ">
 <!ENTITY showAllHistoryCmd2.label "ਸਭ ਅਤੀਤ ਵੇਖੋ">
 <!ENTITY showAllHistoryCmd.commandkey "H">
 
@@ -404,6 +423,8 @@ can reach it easily. -->
 <!ENTITY viewImageCmd.accesskey       "I">
 <!ENTITY viewImageInfoCmd.label       "ਚਿੱਤਰ ਜਾਣਕਾਰੀ ਵੇਖੋ">
 <!ENTITY viewImageInfoCmd.accesskey   "f">
+<!ENTITY viewImageDescCmd.label       "ਵੇਰਵਾ ਵੇਖੋ">
+<!ENTITY viewImageDescCmd.accesskey   "D">
 <!ENTITY viewVideoCmd.label           "ਵਿਡੀਓ ਵੇਖੋ">
 <!ENTITY viewVideoCmd.accesskey       "I">
 <!ENTITY viewBGImageCmd.label         "ਬੈਕਗਰਾਊਂਡ ਚਿੱਤਰ ਵੇਖੋ">
@@ -621,6 +642,13 @@ just addresses the organization to follow, e.g. "This site is run by " -->
 
 <!ENTITY identity.moreInfoLinkText "…ਹੋਰ ਜਾਣਕਾਰੀ">
 
+<!ENTITY identity.permissions "ਅਧਿਕਾਰ">
+
+
+<!-- LOCALIZATION NOTE (identity.help.tooltip) : This string should be the
+     localized title of this SUMO article
+     https://support.mozilla.org/kb/how-do-i-tell-if-my-connection-is-secure -->
+<!ENTITY identity.help.tooltip "ਮੈਨੂੰ ਕਿਵੇਂ ਪਤਾ ਲੱਗੇਗਾ ਕਿ ਵੈੱਬਸਾਈਟ ਨਾਲ ਮੇਰਾ ਕੁਨੈਕਸ਼ਨ ਸੁਰੱਖਿਅਤ ਹੈ?">
 
 <!-- Name for the tabs toolbar as spoken by screen readers.
      The word "toolbar" is appended automatically and should not be contained below! -->
@@ -669,7 +697,7 @@ just addresses the organization to follow, e.g. "This site is run by " -->
 <!ENTITY social.toggleNotifications.label "ਡੈਸਕਟਾਪ ਸੂਚਨਾਵਾਂ ਵੇਖਾਓ">
 <!ENTITY social.toggleNotifications.accesskey "n">
 
-<!ENTITY social.activated.description "Services from <label/> ਤੋਂ ਸੇਵਾਵਾਂ ਨੂੰ ਚਾਲੂ ਕੀਤਾ ਜਾ ਚੁੱਕਾ ਹੈ। ਤੁਸੀਂ ਸੇਵਾਵਾਂ ਨੂੰ <label class='text-link'>ਐਡ-ਆਨ ਮੈਨੇਜਰ</label> ਵਿੱਚੋਂ ਆਪਣੀ ਸੈਟਿੰਗ ਨੂੰ ਬਦਲ ਸਕਦੇ ਹੋ।">
+<!ENTITY social.activated.description "<label/> ਤੋਂ ਸੇਵਾਵਾਂ ਨੂੰ ਚਾਲੂ ਕੀਤਾ ਜਾ ਚੁੱਕਾ ਹੈ। ਤੁਸੀਂ ਸੇਵਾਵਾਂ ਨੂੰ <label class='text-link'>ਐਡ-ਆਨ ਮੈਨੇਜਰ</label> ਵਿੱਚੋਂ ਆਪਣੀ ਸੈਟਿੰਗ ਰਾਹੀਂ ਬਦਲ ਸਕਦੇ ਹੋ।">
 <!ENTITY social.activated.undo.label "ਓਹ, ਇਹ ਵਾਪਿਸ ਲਵੋ!">
 <!ENTITY social.activated.undo.accesskey "U">
 <!ENTITY social.learnMore.label "…ਹੋਰ ਜਾਣੋ">
@@ -680,9 +708,10 @@ just addresses the organization to follow, e.g. "This site is run by " -->
 <!ENTITY social.chatBar.label "ਗੱਲਬਾਤ ਫੋਕਸ">
 <!ENTITY social.chatBar.accesskey "c">
 
-<!-- labels are set dynamically, see browser.properties -->
-<!ENTITY social.markpage.accesskey "m">
-<!ENTITY social.marklink.accesskey "M">
+<!ENTITY social.markpageMenu.accesskey "P">
+<!ENTITY social.markpageMenu.label "…ਲਈ ਪੇਜ਼ ਸੰਭਾਲੋ">
+<!ENTITY social.marklinkMenu.accesskey "L">
+<!ENTITY social.marklinkMenu.label "…ਲਈ ਲਿੰਕ ਸੰਭਾਲੋ">
 
 <!ENTITY getUserMedia.selectCamera.label "ਸਾਂਝਾ ਕਰਨ ਲਈ ਕੈਮਰਾ:">
 <!ENTITY getUserMedia.selectCamera.accesskey "C">
@@ -696,3 +725,23 @@ just addresses the organization to follow, e.g. "This site is run by " -->
 <!ENTITY mixedContentBlocked.moreinfo "ਬਹੁਤੀਆਂ ਵੈੱਬਸਾਈਟਾਂ ਹਾਲੇ ਵੀ ਠੀਕ ਢੰਗ ਨਾਲ ਕੰਮ ਕਰਨਗੀਆਂ, ਭਾਵੇਂ ਕਿ ਇਹ ਸਮੱਗਰੀ ਉੱਤੇ ਪਾਬੰਦੀ ਲਗਾਈ ਹੈ।">
 
 <!ENTITY pointerLock.notification.message "ਇਹ ਫੇਰ ਵੇਖਣ ਲਈ ਕਿਸੇ ਵੀ ਵੇਲੇ ESC ਦਬਾਉ।">
+
+<!ENTITY pluginNotification.showAll.label "ਸਭ ਵੇਖਾਓ">
+<!ENTITY pluginNotification.showAll.accesskey "S">
+
+<!-- LOCALIZATION NOTE (pluginActivateNow.label, pluginActivateAlways.label, pluginBlockNow.label): These should be the same as the matching strings in browser.properties -->
+<!ENTITY pluginActivateNow.label "ਹੁਣ ਲਈ ਮਨਜ਼ੂਰ">
+<!ENTITY pluginActivateAlways.label "ਮਨਜ਼ੂਰ ਤੇ ਯਾਦ ਰੱਖੋ">
+<!ENTITY pluginBlockNow.label "ਪਲੱਗਇਨ ਉੱਤੇ ਪਾਬੰਦੀ">
+<!-- LOCALIZATION NOTE: (pluginNotification.width): This is used to determine the
+     width of the plugin popup notification that can appear if a plugin has been
+     blocked on a page. Should be wide enough to fit the pluginActivateNow.label
+     and pluginActivateAlways.label strings above on a single line. This must be
+     a CSS length value. -->
+<!ENTITY pluginNotification.width "28em">
+
+
+<!ENTITY tabCrashed.header "ਟੈਬ ਕਰੈਸ਼ ਹੋਈ">
+<!ENTITY tabCrashed.message "ਇਹ ਸ਼ਰਮਨਾਕ ਹੈ। ਅਸੀਂ ਇਹ ਵੈੱਬ ਪੇਜ਼ ਵੇਖਾਉਣ ਦੀ ਕੋਸ਼ਿਸ ਕੀਤੀ ਅਤੇ ਇਹ ਜਵਾਬ ਨਹੀਂ ਦੇ ਰਿਹਾ ਹੈ।">
+<!ENTITY tabCrashed.checkSendReport "&vendorShortName; ਨੂੰ ਇਹ ਕਰੈਸ਼ ਬਾਰੇ ਦੱਸੋ ਤਾਂ ਕਿ ਉਹ ਇਹ ਠੀਕ ਕਰ ਸਕਣ।">
+<!ENTITY tabCrashed.tryAgain "ਫੇਰ ਕੋਸ਼ਿਸ਼ ਕਰੋ">

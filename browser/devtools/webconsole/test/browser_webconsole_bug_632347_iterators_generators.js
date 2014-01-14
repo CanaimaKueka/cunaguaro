@@ -14,11 +14,8 @@ function test() {
 }
 
 function consoleOpened(HUD) {
-  let tmp = {};
-  Cu.import("resource://gre/modules/devtools/WebConsoleUtils.jsm", tmp);
-  let WCU = tmp.WebConsoleUtils;
-  let JSPropertyProvider = tmp.JSPropertyProvider;
-  tmp = null;
+  let tools = Cu.import("resource://gre/modules/devtools/Loader.jsm", {}).devtools;
+  let JSPropertyProvider = tools.require("devtools/toolkit/webconsole/utils").JSPropertyProvider;
 
   let jsterm = HUD.jsterm;
   let win = content.wrappedJSObject;
@@ -58,21 +55,10 @@ function consoleOpened(HUD) {
 
   jsterm.clearOutput();
 
-  jsterm.execute("window");
-
-  waitForSuccess({
-    name: "jsterm window object output",
-    validatorFn: function()
-    {
-      return HUD.outputNode.querySelector(".webconsole-msg-output");
-    },
-    successFn: function()
-    {
-      jsterm.once("variablesview-fetched", testVariablesView.bind(null, HUD));
-      let node = HUD.outputNode.querySelector(".webconsole-msg-output");
-      EventUtils.synthesizeMouse(node, 2, 2, {}, HUD.iframeWindow);
-    },
-    failureFn: finishTest,
+  jsterm.execute("window", (msg) => {
+    jsterm.once("variablesview-fetched", testVariablesView.bind(null, HUD));
+    let anchor = msg.querySelector(".body a");
+    EventUtils.synthesizeMouse(anchor, 2, 2, {}, HUD.iframeWindow);
   });
 }
 

@@ -6,3 +6,13 @@
 
 MODULE = 'ogg'
 
+SOURCES += [
+    'ogg_bitwise.c',
+    'ogg_framing.c',
+]
+
+LIBRARY_NAME = 'ogg'
+
+MSVC_ENABLE_PGO = True
+
+FORCE_STATIC_LIB = True

@@ -6,3 +6,25 @@
 
 MODULE = 'breakpad_mac_common'
 
+SOURCES += [
+    'arch_utilities.cc',
+    'bootstrap_compat.cc',
+    'file_id.cc',
+    'macho_id.cc',
+    'macho_reader.cc',
+    'macho_utilities.cc',
+    'macho_walker.cc',
+    'string_utilities.cc',
+]
+
+HOST_SOURCES += SOURCES
+
+HOST_LIBRARY_NAME = 'host_breakpad_mac_common_s'
+SOURCES += [
+    'MachIPC.mm',
+]
+
+LIBRARY_NAME = 'breakpad_mac_common_s'
+
+# need static lib
+FORCE_STATIC_LIB = True

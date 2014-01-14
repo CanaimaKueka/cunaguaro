@@ -8,6 +8,7 @@
 
 #include "nsIDOMClipboardEvent.h"
 #include "nsDOMEvent.h"
+#include "mozilla/EventForwards.h"
 #include "mozilla/dom/ClipboardEventBinding.h"
 
 class nsDOMClipboardEvent : public nsDOMEvent,
@@ -16,8 +17,7 @@ class nsDOMClipboardEvent : public nsDOMEvent,
 public:
   nsDOMClipboardEvent(mozilla::dom::EventTarget* aOwner,
                       nsPresContext* aPresContext,
-                      nsClipboardEvent* aEvent);
-  virtual ~nsDOMClipboardEvent();
+                      mozilla::InternalClipboardEvent* aEvent);
 
   NS_DECL_ISUPPORTS_INHERITED
 
@@ -25,9 +25,6 @@ public:
 
   // Forward to base class
   NS_FORWARD_TO_NSDOMEVENT
-
-  nsresult InitFromCtor(const nsAString& aType,
-                        JSContext* aCx, jsval* aVal);
 
   virtual JSObject* WrapObject(JSContext* aCx,
                                JS::Handle<JSObject*> aScope) MOZ_OVERRIDE

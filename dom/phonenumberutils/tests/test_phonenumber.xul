@@ -21,6 +21,7 @@
 "use strict";
 
 Components.utils.import("resource://gre/modules/PhoneNumber.jsm");
+Components.utils.import("resource://gre/modules/PhoneNumberNormalizer.jsm");
 
 function IsPlain(dial, expected) {
   var result = PhoneNumber.IsPlain(dial);
@@ -32,7 +33,7 @@ function IsPlain(dial, expected) {
 }
 
 function Normalize(dial, expected) {
-  var result = PhoneNumber.Normalize(dial);
+  var result = PhoneNumberNormalizer.Normalize(dial);
   if (result !== expected) {
     ok(false, "normalized " + dial + " to " + result + ", expected " + expected + " instead.");
   } else {
@@ -41,7 +42,7 @@ function Normalize(dial, expected) {
 }
 
 function Normalize(dial, expected) {
-  var result = PhoneNumber.Normalize(dial);
+  var result = PhoneNumberNormalizer.Normalize(dial);
   if (result != expected) {
     ok(false, "Normalize error!\n");
     print("expected: " + expected);
@@ -114,6 +115,31 @@ function TestProperties(dial, currentRegion) {
   }
 }
 
+function TestPropertiesWithExpectedCountry(dial, currentRegion, expectedRegion) {
+  var result = PhoneNumber.Parse(dial, currentRegion);
+  if (result) {
+    ok(true, "found it");
+    ok(true, "InternationalFormat: " + result.internationalFormat);
+    ok(true, "InternationalNumber: " + result.internationalNumber);
+    ok(true, "NationalNumber: " + result.nationalNumber);
+    ok(true, "NationalFormat: " + result.nationalFormat);
+    ok(true, "CountryName: " + result.countryName);
+    is(result.countryName, expectedRegion, "Same region");
+  } else {
+    ok(true, "not found");
+  }
+}
+
+function AllEqual(list, currentRegion) {
+  var first = PhoneNumber.Parse(list.shift(), currentRegion);
+  ok(!!first, "first parses");
+  for (var index in list) {
+    var other = PhoneNumber.Parse(list[index], currentRegion);
+    ok(!!other, "other parses");
+    ok(first.internationalNumber == other.internationalNumber, "first and other match");
+  }
+}
+
 TestProperties("+0988782456");
 TestProperties("+33442020", "ES");
 TestProperties("+43987614", "ES");
@@ -122,6 +148,9 @@ TestProperties("+34556657");
 TestProperties("+66554433");
 TestProperties("+43442075");
 TestProperties("+13442074");
+
+TestPropertiesWithExpectedCountry("+4333822222", "DE", "AT");
+TestPropertiesWithExpectedCountry("+19491234567", "DE", "US");
 
 // Test whether could a string be a phone number.
 IsPlain(null, false);
@@ -318,6 +347,10 @@ Format("15955042864", "CN", "15955042864", "CN", "0159 5504 2864", "+86 159 5504
 Normalize("+ABC # * , 9 _ 1 _0", "+222#*,910");
 Normalize("ABCDEFGHIJKLMNOPQRSTUVWXYZ", "22233344455566677778889999");
 Normalize("abcdefghijklmnopqrstuvwxyz", "22233344455566677778889999");
+
+// 8 and 9 digit numbers with area code in Brazil with collect call prefix (90)
+AllEqual(["01187654321","0411187654321","551187654321","90411187654321","+551187654321"],"BR");
+AllEqual(["011987654321","04111987654321","5511987654321","904111987654321","+5511987654321"],"BR");
 
 </script>
 </window>

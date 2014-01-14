@@ -9,6 +9,7 @@
 #include "mozilla/dom/EventSourceBinding.h"
 #include "mozilla/Util.h"
 
+#include "js/OldDebugAPI.h"
 #include "nsNetUtil.h"
 #include "nsMimeTypes.h"
 #include "nsDOMMessageEvent.h"
@@ -20,7 +21,6 @@
 #include "nsIConsoleService.h"
 #include "nsIObserverService.h"
 #include "nsIScriptObjectPrincipal.h"
-#include "jsdbgapi.h"
 #include "nsJSUtils.h"
 #include "nsIAsyncVerifyRedirectCallback.h"
 #include "nsIScriptError.h"
@@ -28,6 +28,7 @@
 #include "nsIChannelPolicy.h"
 #include "nsIContentSecurityPolicy.h"
 #include "nsContentUtils.h"
+#include "nsCxPusher.h"
 #include "mozilla/Preferences.h"
 #include "xpcpublic.h"
 #include "nsCrossSiteListenerProxy.h"
@@ -61,6 +62,7 @@ EventSource::EventSource() :
   mGoingToDispatchAllMessages(false),
   mWithCredentials(false),
   mWaitingForOnStopRequest(false),
+  mInterrupted(false),
   mLastConvertionResult(NS_OK),
   mReadyState(CONNECTING),
   mScriptLine(0),
@@ -78,6 +80,8 @@ EventSource::~EventSource()
 // EventSource::nsISupports
 //-----------------------------------------------------------------------------
 
+NS_IMPL_CYCLE_COLLECTION_CLASS(EventSource)
+
 NS_IMPL_CYCLE_COLLECTION_CAN_SKIP_BEGIN(EventSource)
   bool isBlack = tmp->IsBlack();
   if (isBlack || tmp->mWaitingForOnStopRequest) {
@@ -85,7 +89,8 @@ NS_IMPL_CYCLE_COLLECTION_CAN_SKIP_BEGIN(EventSource)
       tmp->mListenerManager->MarkForCC();
     }
     if (!isBlack && tmp->PreservingWrapper()) {
-      xpc_UnmarkGrayObject(tmp->GetWrapperPreserveColor());
+      // This marks the wrapper black.
+      tmp->GetWrapper();
     }
     return true;
   }
@@ -281,12 +286,13 @@ EventSource::WrapObject(JSContext* aCx, JS::Handle<JSObject*> aScope)
 }
 
 /* static */ already_AddRefed<EventSource>
-EventSource::Constructor(const GlobalObject& aGlobal, const nsAString& aURL,
+EventSource::Constructor(const GlobalObject& aGlobal,
+                         const nsAString& aURL,
                          const EventSourceInit& aEventSourceInitDict,
                          ErrorResult& aRv)
 {
   nsRefPtr<EventSource> eventSource = new EventSource();
-  aRv = eventSource->Init(aGlobal.Get(), aURL,
+  aRv = eventSource->Init(aGlobal.GetAsSupports(), aURL,
                           aEventSourceInitDict.mWithCredentials);
   return eventSource.forget();
 }
@@ -345,9 +351,23 @@ EventSource::OnStartRequest(nsIRequest *aRequest,
   rv = httpChannel->GetContentType(contentType);
   NS_ENSURE_SUCCESS(rv, rv);
 
-  if (!requestSucceeded || !contentType.EqualsLiteral(TEXT_EVENT_STREAM)) {
+  nsresult status;
+  aRequest->GetStatus(&status);
+
+  if (NS_FAILED(status) || !requestSucceeded ||
+      !contentType.EqualsLiteral(TEXT_EVENT_STREAM)) {
     DispatchFailConnection();
     return NS_ERROR_NOT_AVAILABLE;
+  }
+
+  uint32_t httpStatus;
+  rv = httpChannel->GetResponseStatus(&httpStatus);
+  NS_ENSURE_SUCCESS(rv, rv);
+
+  if (httpStatus != 200) {
+    mInterrupted = true;
+    DispatchFailConnection();
+    return NS_ERROR_ABORT;
   }
 
   nsCOMPtr<nsIPrincipal> principal = mPrincipal;
@@ -970,7 +990,7 @@ EventSource::ConsoleError()
   NS_ConvertUTF8toUTF16 specUTF16(targetSpec);
   const PRUnichar *formatStrings[] = { specUTF16.get() };
 
-  if (mReadyState == CONNECTING) {
+  if (mReadyState == CONNECTING && !mInterrupted) {
     rv = PrintErrorOnConsole("chrome://global/locale/appstrings.properties",
                              NS_LITERAL_STRING("connectionFailure").get(),
                              formatStrings, ArrayLength(formatStrings));
@@ -1235,7 +1255,6 @@ EventSource::DispatchAllMessageEvents()
     JS::Rooted<JS::Value> jsData(cx);
     {
       JSString* jsString;
-      JSAutoRequest ar(cx);
       jsString = JS_NewUCStringCopyN(cx,
                                      message->mData.get(),
                                      message->mData.Length());

@@ -12,6 +12,7 @@ class nsWrapperCache;
 [ptr] native nsWrapperCachePtr(nsWrapperCache);
 
 typedef unsigned long long DOMTimeStamp;
+typedef double DOMHighResTimeStamp;
 
 // Core
 interface nsIDOMAttr;
@@ -36,21 +37,14 @@ interface DOMException;
 
 // Style Sheets
 interface nsIDOMStyleSheetList;
-interface nsIDOMLinkStyle;
 interface nsIDOMStyleSheet;
 interface nsIDOMMediaList;
 
 // Base
 interface nsIDOMWindow;
 interface nsIDOMWindowCollection;
-interface nsIDOMPlugin;
-interface nsIDOMPluginArray;
-interface nsIDOMMimeType;
-interface nsIDOMMimeTypeArray;
-interface nsIDOMBarProp;
 interface nsIDOMNavigator;
 interface nsIDOMScreen;
-interface nsIDOMHistory;
 
 // Events
 interface nsIDOMEvent;
@@ -69,6 +63,7 @@ interface nsIDOMCSSPrimitiveValue;
 interface nsIDOMCSSRule;
 interface nsIDOMCSSRuleList;
 interface nsIDOMMozCSSKeyframeRule;
+interface nsIDOMCSSFontFeatureValuesRule;
 interface nsIDOMCSSStyleSheet;
 interface nsIDOMCSSStyleDeclaration;
 interface nsIDOMCounter;
@@ -76,7 +71,6 @@ interface nsIDOMRect;
 interface nsIDOMCSSStyleRule;
 interface nsIDOMCSSStyleRuleCollection;
 interface nsIDOMHTMLTableCaptionElement;
-interface nsIDOMHTMLTableSectionElement;
 
 // Range
 interface nsIDOMRange;
@@ -91,5 +85,4 @@ interface nsIDOMFontFace;
 interface nsIDOMFontFaceList;
 
 // Power
-interface nsIDOMMozPowerManager;
 interface nsIDOMMozWakeLock;

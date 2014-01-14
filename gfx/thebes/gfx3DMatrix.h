@@ -9,8 +9,9 @@
 #include <gfxTypes.h>
 #include <gfxPoint3D.h>
 #include <gfxPointH3D.h>
-#include <gfxMatrix.h>
 #include <gfxQuad.h>
+
+struct gfxMatrix;
 
 /**
  * This class represents a 3D transformation. The matrix is laid
@@ -27,7 +28,7 @@
  * vectors as column vectors, the double transposition makes everything work
  * out nicely.
  */
-class THEBES_API gfx3DMatrix
+class gfx3DMatrix
 {
 public:
   /**

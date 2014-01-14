@@ -17,7 +17,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "system_wrappers/interface/trace.h"
+#include "webrtc/system_wrappers/interface/trace.h"
 
 namespace webrtc {
 
@@ -67,6 +67,7 @@ class ScopedTracing {
 
   void StopTrace() {
     if (logging_) {
+      Trace::SetTraceCallback(NULL);
       Trace::ReturnTrace();
     }
   }

@@ -8,36 +8,27 @@
 #include "nsContainerFrame.h"
 
 #include "nsAbsoluteContainingBlock.h"
-#include "nsIContent.h"
 #include "nsIDocument.h"
 #include "nsPresContext.h"
 #include "nsStyleContext.h"
 #include "nsRect.h"
 #include "nsPoint.h"
-#include "nsGUIEvent.h"
 #include "nsStyleConsts.h"
 #include "nsView.h"
-#include "nsFrameManager.h"
 #include "nsIPresShell.h"
 #include "nsCOMPtr.h"
 #include "nsGkAtoms.h"
-#include "nsCSSAnonBoxes.h"
 #include "nsViewManager.h"
 #include "nsIWidget.h"
-#include "nsGfxCIID.h"
-#include "nsIServiceManager.h"
 #include "nsCSSRendering.h"
-#include "nsTransform2D.h"
-#include "nsRegion.h"
 #include "nsError.h"
 #include "nsDisplayList.h"
-#include "nsListControlFrame.h"
 #include "nsIBaseWindow.h"
-#include "nsThemeConstants.h"
 #include "nsBoxLayoutState.h"
-#include "nsRenderingContext.h"
 #include "nsCSSFrameConstructor.h"
-#include "mozilla/dom/Element.h"
+#include "nsBlockFrame.h"
+#include "mozilla/AutoRestore.h"
+#include "nsIFrameInlines.h"
 #include <algorithm>
 
 #ifdef DEBUG
@@ -820,7 +811,7 @@ nsContainerFrame::SyncFrameViewProperties(nsPresContext*  aPresContext,
     }
   }
 
-  vm->SetViewZIndex(aView, autoZIndex, zIndex, isPositioned);
+  vm->SetViewZIndex(aView, autoZIndex, zIndex);
 }
 
 static nscoord GetCoord(const nsStyleCoord& aCoord, nscoord aIfNotCoord)
@@ -975,11 +966,11 @@ nsContainerFrame::ReflowChild(nsIFrame*                aKidFrame,
   if (NS_SUCCEEDED(result) && NS_FRAME_IS_FULLY_COMPLETE(aStatus) &&
       !(aFlags & NS_FRAME_NO_DELETE_NEXT_IN_FLOW_CHILD)) {
     nsIFrame* kidNextInFlow = aKidFrame->GetNextInFlow();
-    if (nullptr != kidNextInFlow) {
+    if (kidNextInFlow) {
       // Remove all of the childs next-in-flows. Make sure that we ask
       // the right parent to do the removal (it's possible that the
       // parent is not this because we are executing pullup code)
-      if (aTracker) aTracker->Finish(aKidFrame);
+      nsOverflowContinuationTracker::AutoFinish fini(aTracker, aKidFrame);
       static_cast<nsContainerFrame*>(kidNextInFlow->GetParent())
         ->DeleteNextInFlowChild(aPresContext, kidNextInFlow, true);
     }
@@ -1402,10 +1393,7 @@ nsContainerFrame::DeleteNextInFlowChild(nsPresContext* aPresContext,
   }
 
   // Take the next-in-flow out of the parent's child list
-#ifdef DEBUG
-  nsresult rv =
-#endif
-    StealFrame(aPresContext, aNextInFlow);
+  DebugOnly<nsresult> rv = StealFrame(aPresContext, aNextInFlow);
   NS_ASSERTION(NS_SUCCEEDED(rv), "StealFrame failure");
 
 #ifdef DEBUG
@@ -1571,18 +1559,27 @@ nsOverflowContinuationTracker::nsOverflowContinuationTracker(nsPresContext*    a
     mWalkOOFFrames(aWalkOOFFrames)
 {
   NS_PRECONDITION(aFrame, "null frame pointer");
-  nsContainerFrame* next = static_cast<nsContainerFrame*>
-                             (aFrame->GetNextInFlow());
-  if (next) {
-    mOverflowContList = next->GetPropTableFrames(aPresContext,
+  SetupOverflowContList();
+}
+
+void
+nsOverflowContinuationTracker::SetupOverflowContList()
+{
+  NS_PRECONDITION(mParent, "null frame pointer");
+  NS_PRECONDITION(!mOverflowContList, "already have list");
+  nsPresContext* pc = mParent->PresContext();
+  nsContainerFrame* nif =
+    static_cast<nsContainerFrame*>(mParent->GetNextInFlow());
+  if (nif) {
+    mOverflowContList = nif->GetPropTableFrames(pc,
       nsContainerFrame::OverflowContainersProperty());
     if (mOverflowContList) {
-      mParent = next;
+      mParent = nif;
       SetUpListWalker();
     }
   }
   if (!mOverflowContList) {
-    mOverflowContList = mParent->GetPropTableFrames(aPresContext,
+    mOverflowContList = mParent->GetPropTableFrames(pc,
       nsContainerFrame::ExcessOverflowContainersProperty());
     if (mOverflowContList) {
       SetUpListWalker();
@@ -1762,37 +1759,59 @@ nsOverflowContinuationTracker::Insert(nsIFrame*       aOverflowCont,
 }
 
 void
-nsOverflowContinuationTracker::Finish(nsIFrame* aChild)
+nsOverflowContinuationTracker::BeginFinish(nsIFrame* aChild)
 {
   NS_PRECONDITION(aChild, "null ptr");
   NS_PRECONDITION(aChild->GetNextInFlow(),
                   "supposed to call Finish *before* deleting next-in-flow!");
-
-  for (nsIFrame* f = aChild; f; ) {
-    // Make sure we drop all references if all the frames in the
-    // overflow containers list are about to be destroyed.
-    nsIFrame* nif = f->GetNextInFlow();
-    if (mOverflowContList &&
-        mOverflowContList->FirstChild() == nif &&
-        (!nif->GetNextSibling() ||
-         nif->GetNextSibling() == nif->GetNextInFlow())) {
-      mOverflowContList = nullptr;
-      mPrevOverflowCont = nullptr;
+  for (nsIFrame* f = aChild; f; f = f->GetNextInFlow()) {
+    // We'll update these in EndFinish after the next-in-flows are gone.
+    if (f == mPrevOverflowCont) {
       mSentry = nullptr;
-      mParent = static_cast<nsContainerFrame*>(f->GetParent());
+      mPrevOverflowCont = nullptr;
       break;
     }
     if (f == mSentry) {
-      // Step past aChild
-      nsIFrame* prevOverflowCont = mPrevOverflowCont;
-      StepForward();
-      if (mPrevOverflowCont == nif) {
-        // Pull mPrevOverflowChild back to aChild's prevSibling:
-        // aChild will be removed from our list by our caller
-        mPrevOverflowCont = prevOverflowCont;
-      }
+      mSentry = nullptr;
+      break;
     }
-    f = nif;
+  }
+}
+
+void
+nsOverflowContinuationTracker::EndFinish(nsIFrame* aChild)
+{
+  if (!mOverflowContList) {
+    return;
+  }
+  // Forget mOverflowContList if it was deleted.
+  nsPresContext* pc = aChild->PresContext();
+  FramePropertyTable* propTable = pc->PropertyTable();
+  nsFrameList* eoc = static_cast<nsFrameList*>(propTable->Get(mParent,
+                       nsContainerFrame::ExcessOverflowContainersProperty()));
+  if (eoc != mOverflowContList) {
+    nsFrameList* oc = static_cast<nsFrameList*>(propTable->Get(mParent,
+                        nsContainerFrame::OverflowContainersProperty()));
+    if (oc != mOverflowContList) {
+      // mOverflowContList was deleted
+      mPrevOverflowCont = nullptr;
+      mSentry = nullptr;
+      mParent = static_cast<nsContainerFrame*>(aChild->GetParent());
+      mOverflowContList = nullptr;
+      SetupOverflowContList();
+      return;
+    }
+  }
+  // The list survived, update mSentry if needed.
+  if (!mSentry) {
+    if (!mPrevOverflowCont) {
+      SetUpListWalker();
+    } else {
+      mozilla::AutoRestore<nsIFrame*> saved(mPrevOverflowCont);
+      // step backward to make StepForward() use our current mPrevOverflowCont
+      mPrevOverflowCont = mPrevOverflowCont->GetPrevSibling();
+      StepForward();
+    }
   }
 }
 

@@ -7,17 +7,8 @@
 #define nsHTMLButtonControlFrame_h___
 
 #include "mozilla/Attributes.h"
-#include "nsCOMPtr.h"
 #include "nsContainerFrame.h"
 #include "nsIFormControlFrame.h"
-#include "nsHTMLParts.h"
-
-#include "nsStyleContext.h"
-#include "nsLeafFrame.h"
-#include "nsCSSRendering.h"
-#include "nsISupports.h"
-#include "nsStyleConsts.h"
-#include "nsIComponentManager.h"
 #include "nsButtonFrameRenderer.h"
 
 class nsRenderingContext;
@@ -49,14 +40,14 @@ public:
                     nsReflowStatus&          aStatus) MOZ_OVERRIDE;
 
   NS_IMETHOD HandleEvent(nsPresContext* aPresContext, 
-                         nsGUIEvent* aEvent,
+                         mozilla::WidgetGUIEvent* aEvent,
                          nsEventStatus* aEventStatus) MOZ_OVERRIDE;
 
   virtual void Init(nsIContent*      aContent,
                     nsIFrame*        aParent,
                     nsIFrame*        asPrevInFlow) MOZ_OVERRIDE;
 
-  virtual nsStyleContext* GetAdditionalStyleContext(int32_t aIndex) const;
+  virtual nsStyleContext* GetAdditionalStyleContext(int32_t aIndex) const MOZ_OVERRIDE;
   virtual void SetAdditionalStyleContext(int32_t aIndex, 
                                          nsStyleContext* aStyleContext) MOZ_OVERRIDE;
  
@@ -82,18 +73,18 @@ public:
   }
 #endif
 
-  virtual bool HonorPrintBackgroundSettings() { return false; }
+  virtual bool HonorPrintBackgroundSettings() MOZ_OVERRIDE { return false; }
 
   // nsIFormControlFrame
-  void SetFocus(bool aOn, bool aRepaint);
+  void SetFocus(bool aOn, bool aRepaint) MOZ_OVERRIDE;
   virtual nsresult SetFormProperty(nsIAtom* aName, const nsAString& aValue) MOZ_OVERRIDE;
 
   // Inserted child content gets its frames parented by our child block
-  virtual nsIFrame* GetContentInsertionFrame() {
+  virtual nsIFrame* GetContentInsertionFrame() MOZ_OVERRIDE {
     return GetFirstPrincipalChild()->GetContentInsertionFrame();
   }
 
-  virtual bool IsFrameOfType(uint32_t aFlags) const
+  virtual bool IsFrameOfType(uint32_t aFlags) const MOZ_OVERRIDE
   {
     return nsContainerFrame::IsFrameOfType(aFlags &
       ~(nsIFrame::eReplaced | nsIFrame::eReplacedContainsBlock));
@@ -101,12 +92,12 @@ public:
 
 protected:
   virtual bool IsInput() { return false; }
+  // Reflows the button's sole child frame, and computes the desired size
+  // of the button itself from the results.
   void ReflowButtonContents(nsPresContext* aPresContext,
-                            nsHTMLReflowMetrics& aDesiredSize,
-                            const nsHTMLReflowState& aReflowState,
-                            nsIFrame* aFirstKid,
-                            nsMargin aFocusPadding,
-                            nsReflowStatus& aStatus);
+                            nsHTMLReflowMetrics& aButtonDesiredSize,
+                            const nsHTMLReflowState& aButtonReflowState,
+                            nsIFrame* aFirstKid);
 
   nsButtonFrameRenderer mRenderer;
 };

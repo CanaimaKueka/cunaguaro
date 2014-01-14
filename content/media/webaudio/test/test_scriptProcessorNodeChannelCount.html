@@ -17,8 +17,6 @@
 
 SimpleTest.waitForExplicitFinish();
 addLoadEvent(function() {
-  SpecialPowers.setBoolPref("media.webaudio.enabled", true);
-
   var context = new AudioContext();
   var buffer = context.createBuffer(6, 2048, context.sampleRate);
   for (var i = 0; i < 2048; ++i) {
@@ -34,9 +32,14 @@ addLoadEvent(function() {
 
   var source = context.createBufferSource();
 
-  var sp = context.createScriptProcessor(2048);
-  sp.channelCount = 3;
+  var sp = context.createScriptProcessor(2048, 3);
+  expectException(function() { sp.channelCount = 2; },
+                  DOMException.NOT_SUPPORTED_ERR);
   sp.channelCountMode = "explicit";
+  expectException(function() { sp.channelCountMode = "max"; },
+                  DOMException.NOT_SUPPORTED_ERR);
+  expectException(function() { sp.channelCountMode = "clamped-max"; },
+                  DOMException.NOT_SUPPORTED_ERR);
   sp.channelInterpretation = "discrete";
   source.start(0);
   source.buffer = buffer;
@@ -66,7 +69,6 @@ addLoadEvent(function() {
       sp.onaudioprocess = null;
       sp.disconnect(context.destination);
 
-      SpecialPowers.clearUserPref("media.webaudio.enabled");
       SimpleTest.finish();
     };
   };

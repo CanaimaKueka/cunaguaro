@@ -10,3 +10,14 @@ EXPORTS += [
     'nsUCvTW2CID.h',
 ]
 
+SOURCES += [
+    'UnifiedUCVTW2.cpp',
+]
+
+LIBRARY_NAME = 'ucvtw2_s'
+
+LIBXUL_LIBRARY = True
+
+LOCAL_INCLUDES += [
+    '../util',
+]

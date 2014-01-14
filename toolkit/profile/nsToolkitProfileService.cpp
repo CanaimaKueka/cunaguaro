@@ -7,7 +7,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <prlong.h>
 #include <prprf.h>
 #include <prtime.h>
 #include "nsProfileLock.h"
@@ -862,8 +861,7 @@ nsToolkitProfileService::CreateTimesInternal(nsIFile* aProfileDir)
     NS_ENSURE_SUCCESS(rv, rv);
 
     // We don't care about microsecond resolution.
-    int64_t msec;
-    LL_DIV(msec, PR_Now(), PR_USEC_PER_MSEC);
+    int64_t msec = PR_Now() / PR_USEC_PER_MSEC;
 
     // Write it out.
     PRFileDesc *writeFile;
@@ -1028,7 +1026,7 @@ XRE_GetFileFromPath(const char *aPath, nsIFile* *aResult)
         return NS_ERROR_INVALID_ARG;
 
     CFURLRef fullPath =
-        CFURLCreateFromFileSystemRepresentation(NULL, (const UInt8 *) aPath,
+        CFURLCreateFromFileSystemRepresentation(nullptr, (const UInt8 *) aPath,
                                                 pathLen, true);
     if (!fullPath)
         return NS_ERROR_FAILURE;

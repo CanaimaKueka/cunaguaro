@@ -6,12 +6,14 @@
 #ifndef _GFXALPHARECOVERY_H_
 #define _GFXALPHARECOVERY_H_
 
-#include "gfxContext.h"
-#include "gfxImageSurface.h"
 #include "mozilla/SSE.h"
+#include "gfxTypes.h"
 #include "nsRect.h"
 
-class THEBES_API gfxAlphaRecovery {
+struct nsIntRect;
+class gfxImageSurface;
+
+class gfxAlphaRecovery {
 public:
     struct Analysis {
         bool uniformColor;

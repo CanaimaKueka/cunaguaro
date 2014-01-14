@@ -77,6 +77,32 @@ function testLocationData(aMessageObject) {
     is(aMessageObject.arguments[i], a, "correct arg " + i);
   });
 
+  startNativeCallbackTest();
+}
+
+function startNativeCallbackTest() {
+  // Reset the observer function to cope with the fabricated test data.
+  ConsoleObserver.observe = function CO_observe(aSubject, aTopic, aData) {
+    try {
+      testNativeCallback(aSubject.wrappedJSObject);
+    } catch (ex) {
+      // XXX Bug 906593 - Exceptions in this function currently aren't
+      // reported, because of some XPConnect weirdness, so report them manually
+      ok(false, "Exception thrown in CO_observe: " + ex);
+    }
+  };
+
+  let button = gWindow.document.getElementById("test-nativeCallback");
+  ok(button, "found #test-nativeCallback button");
+  EventUtils.synthesizeMouseAtCenter(button, {}, gWindow);
+}
+
+function testNativeCallback(aMessageObject) {
+  is(aMessageObject.level, "log", "expected level received");
+  is(aMessageObject.filename, "", "filename matches");
+  is(aMessageObject.lineNumber, 0, "lineNumber matches");
+  is(aMessageObject.functionName, "", "functionName matches");
+
   startGroupTest();
 }
 
@@ -86,8 +112,8 @@ function startGroupTest() {
     try {
       testConsoleGroup(aSubject.wrappedJSObject);
     } catch (ex) {
-      // XXX Exceptions in this function currently aren't reported, because of
-      // some XPConnect weirdness, so report them manually
+      // XXX Bug 906593 - Exceptions in this function currently aren't
+      // reported, because of some XPConnect weirdness, so report them manually
       ok(false, "Exception thrown in CO_observe: " + ex);
     }
   };
@@ -149,8 +175,8 @@ function startLocationTest() {
     try {
       testLocationData(aSubject.wrappedJSObject);
     } catch (ex) {
-      // XXX Exceptions in this function currently aren't reported, because of
-      // some XPConnect weirdness, so report them manually
+      // XXX Bug 906593 - Exceptions in this function currently aren't
+      // reported, because of some XPConnect weirdness, so report them manually
       ok(false, "Exception thrown in CO_observe: " + ex);
     }
   };
@@ -173,11 +199,11 @@ function observeConsoleTest() {
   let win = XPCNativeWrapper.unwrap(gWindow);
   expect("log", "arg");
   win.console.log("arg");
-  yield;
+  yield undefined;
 
   expect("info", "arg", "extra arg");
   win.console.info("arg", "extra arg");
-  yield;
+  yield undefined;
 
   // We don't currently support width and precision qualifiers, but we don't
   // choke on them either.
@@ -186,53 +212,53 @@ function observeConsoleTest() {
                    1,
                    "PI",
                    3.14159);
-  yield;
+  yield undefined;
 
   expect("log", "%d, %s, %l");
   win.console.log("%d, %s, %l");
-  yield;
+  yield undefined;
 
   expect("log", "%a %b %c");
   win.console.log("%a %b %c");
-  yield;
+  yield undefined;
 
   expect("log", "%a %b %c", "a", "b");
   win.console.log("%a %b %c", "a", "b");
-  yield;
+  yield undefined;
 
   expect("log", "2, a, %l", 3);
   win.console.log("%d, %s, %l", 2, "a", 3);
-  yield;
+  yield undefined;
 
   // Bug #692550 handle null and undefined.
   expect("log", "null, undefined");
   win.console.log("%s, %s", null, undefined);
-  yield;
+  yield undefined;
 
   // Bug #696288 handle object as first argument.
   let obj = { a: 1 };
   expect("log", obj, "a");
   win.console.log(obj, "a");
-  yield;
+  yield undefined;
 
   expect("dir", win.toString());
   win.console.dir(win);
-  yield;
+  yield undefined;
 
   expect("error", "arg");
   win.console.error("arg");
-  yield;
+  yield undefined;
 
   let obj2 = { b: 2 };
   expect("log", "omg ", obj, " foo ", 4, obj2);
   win.console.log("omg %o foo %o", obj, 4, obj2);
-  yield;
+  yield undefined;
 
   startTraceTest();
-  yield;
+  yield undefined;
 
   startLocationTest();
-  yield;
+  yield undefined;
 }
 
 function consoleAPISanityTest() {
@@ -259,8 +285,8 @@ function startTimeTest() {
     try {
       testConsoleTime(aSubject.wrappedJSObject);
     } catch (ex) {
-      // XXX Exceptions in this function currently aren't reported, because of
-      // some XPConnect weirdness, so report them manually
+      // XXX Bug 906593 - Exceptions in this function currently aren't
+      // reported, because of some XPConnect weirdness, so report them manually
       ok(false, "Exception thrown in CO_observe: " + ex);
     }
   };
@@ -302,8 +328,8 @@ function startTimeEndTest() {
     try {
       testConsoleTimeEnd(aSubject.wrappedJSObject);
     } catch (ex) {
-      // XXX Exceptions in this function currently aren't reported, because of
-      // some XPConnect weirdness, so report them manually
+      // XXX Bug 906593 - Exceptions in this function currently aren't
+      // reported, because of some XPConnect weirdness, so report them manually
       ok(false, "Exception thrown in CO_observe: " + ex);
     }
   };
@@ -349,8 +375,8 @@ function startEmptyTimerTest() {
     try {
       testEmptyTimer(aSubject.wrappedJSObject);
     } catch (ex) {
-      // XXX Exceptions in this function currently aren't reported, because of
-      // some XPConnect weirdness, so report them manually
+      // XXX Bug 906593 - Exceptions in this function currently aren't
+      // reported, because of some XPConnect weirdness, so report them manually
       ok(false, "Exception thrown in CO_observe: " + ex);
     }
   };
@@ -392,8 +418,8 @@ var ConsoleObserver = {
     try {
       testConsoleData(aSubject.wrappedJSObject);
     } catch (ex) {
-      // XXX Exceptions in this function currently aren't reported, because of
-      // some XPConnect weirdness, so report them manually
+      // XXX Bug 906593 - Exceptions in this function currently aren't
+      // reported, because of some XPConnect weirdness, so report them manually
       ok(false, "Exception thrown in CO_observe: " + ex);
     }
   }

@@ -9,9 +9,10 @@ import platform
 import sys
 
 from mozboot.centos import CentOSBootstrapper
+from mozboot.debian import DebianBootstrapper
 from mozboot.fedora import FedoraBootstrapper
+from mozboot.freebsd import FreeBSDBootstrapper
 from mozboot.gentoo import GentooBootstrapper
-from mozboot.mint import MintBootstrapper
 from mozboot.osx import OSXBootstrapper
 from mozboot.openbsd import OpenBSDBootstrapper
 from mozboot.ubuntu import UbuntuBootstrapper
@@ -41,13 +42,22 @@ class Bootstrapper(object):
 
             if distro == 'CentOS':
                 cls = CentOSBootstrapper
+            elif distro in ('Debian', 'debian'):
+                cls = DebianBootstrapper
             elif distro == 'Fedora':
                 cls = FedoraBootstrapper
             elif distro == 'Gentoo Base System':
                 cls = GentooBootstrapper
             elif distro in ('Mint', 'LinuxMint'):
-                cls = MintBootstrapper
+                # Most Linux Mint editions are based on Ubuntu; one is based on
+                # Debian, and reports this in dist_id
+                if dist_id == 'debian':
+                    cls = DebianBootstrapper
+                else:
+                    cls = UbuntuBootstrapper
             elif distro == 'Ubuntu':
+                cls = UbuntuBootstrapper
+            elif distro == 'Elementary':
                 cls = UbuntuBootstrapper
             else:
                 raise NotImplementedError('Bootstrap support for this Linux '
@@ -67,11 +77,17 @@ class Bootstrapper(object):
             cls = OpenBSDBootstrapper
             args['version'] = platform.uname()[2]
 
+        elif sys.platform.startswith('freebsd'):
+            cls = FreeBSDBootstrapper
+            args['version'] = platform.release()
+
         if cls is None:
             raise NotImplementedError('Bootstrap support is not yet available '
                                       'for your OS.')
 
         instance = cls(**args)
         instance.install_system_packages()
+        instance.ensure_mercurial_modern()
+        instance.ensure_python_modern()
 
         print(FINISHED)

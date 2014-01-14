@@ -5,6 +5,17 @@
 const nsIBLS = Components.interfaces.nsIBlocklistService;
 Components.utils.import("resource://testing-common/httpd.js");
 
+var gBlocklistService = null;
+var gNotifier = null;
+var gNextTest = null;
+var gPluginHost = null;
+
+var gServer = new HttpServer();
+gServer.start(-1);
+gPort = gServer.identity.primaryPort;
+mapFile("/data/test_pluginBlocklistCtp.xml", gServer);
+mapFile("/data/test_pluginBlocklistCtpUndo.xml", gServer);
+
 var PLUGINS = [{
   // severity=0, vulnerabilitystatus=0 -> outdated
   name: "test_plugin_0",
@@ -48,12 +59,6 @@ var PLUGINS = [{
   blocklisted: false
 }];
 
-var gBlocklistService = null;
-var gNotifier = null;
-var gNextTest = null;
-var gServer = null;
-var gPluginHost = null;
-
 function test_basic() {
   var blocklist = Components.classes["@mozilla.org/extensions/blocklist;1"].getService(nsIBLS);
 
@@ -90,9 +95,8 @@ function test_is_not_clicktoplay() {
   var blocklistState = gBlocklistService.getPluginBlocklistState(plugin, "1", "1.9");
   do_check_neq(blocklistState, Components.interfaces.nsIBlocklistService.STATE_VULNERABLE_UPDATE_AVAILABLE);
   do_check_neq(blocklistState, Components.interfaces.nsIBlocklistService.STATE_VULNERABLE_NO_UPDATE);
-  do_check_false(gPluginHost.isPluginClickToPlayForType("application/x-test"));
 
-  Services.prefs.setCharPref("extensions.blocklist.url", "http://localhost:4444/data/test_pluginBlocklistCtpUndo.xml");
+  Services.prefs.setCharPref("extensions.blocklist.url", "http://localhost:" + gPort + "/data/test_pluginBlocklistCtpUndo.xml");
   gNextTest = test_is_clicktoplay;
   gNotifier.notify(null);
 }
@@ -103,9 +107,8 @@ function test_is_clicktoplay() {
   var plugin = get_test_plugin();
   var blocklistState = gBlocklistService.getPluginBlocklistState(plugin, "1", "1.9");
   do_check_eq(blocklistState, Components.interfaces.nsIBlocklistService.STATE_VULNERABLE_NO_UPDATE);
-  do_check_true(gPluginHost.isPluginClickToPlayForType("application/x-test"));
 
-  Services.prefs.setCharPref("extensions.blocklist.url", "http://localhost:4444/data/test_pluginBlocklistCtp.xml");
+  Services.prefs.setCharPref("extensions.blocklist.url", "http://localhost:" + gPort + "/data/test_pluginBlocklistCtp.xml");
   gNextTest = test_is_not_clicktoplay2;
   gNotifier.notify(null);
 }
@@ -117,9 +120,8 @@ function test_is_not_clicktoplay2() {
   var blocklistState = gBlocklistService.getPluginBlocklistState(plugin, "1", "1.9");
   do_check_neq(blocklistState, Components.interfaces.nsIBlocklistService.STATE_VULNERABLE_UPDATE_AVAILABLE);
   do_check_neq(blocklistState, Components.interfaces.nsIBlocklistService.STATE_VULNERABLE_NO_UPDATE);
-  do_check_false(gPluginHost.isPluginClickToPlayForType("application/x-test"));
 
-  Services.prefs.setCharPref("extensions.blocklist.url", "http://localhost:4444/data/test_pluginBlocklistCtpUndo.xml");
+  Services.prefs.setCharPref("extensions.blocklist.url", "http://localhost:" + gPort + "/data/test_pluginBlocklistCtpUndo.xml");
   gNextTest = test_disable_blocklist;
   gNotifier.notify(null);
 }
@@ -130,21 +132,19 @@ function test_disable_blocklist() {
   var plugin = get_test_plugin();
   var blocklistState = gBlocklistService.getPluginBlocklistState(plugin, "1", "1.9");
   do_check_eq(blocklistState, Components.interfaces.nsIBlocklistService.STATE_VULNERABLE_NO_UPDATE);
-  do_check_true(gPluginHost.isPluginClickToPlayForType("application/x-test"));
 
   gNextTest = null;
   Services.prefs.setBoolPref("extensions.blocklist.enabled", false);
   blocklistState = gBlocklistService.getPluginBlocklistState(plugin, "1", "1.9");
   do_check_neq(blocklistState, Components.interfaces.nsIBlocklistService.STATE_VULNERABLE_NO_UPDATE);
   do_check_neq(blocklistState, Components.interfaces.nsIBlocklistService.STATE_VULNERABLE_UPDATE_AVAILABLE);
-  do_check_false(gPluginHost.isPluginClickToPlayForType("application/x-test"));
 
   // it should still be possible to make a plugin click-to-play via the pref
   // and setting that plugin's enabled state to click-to-play
   Services.prefs.setBoolPref("plugins.click_to_play", true);
   let previousEnabledState = plugin.enabledState;
   plugin.enabledState = Components.interfaces.nsIPluginTag.STATE_CLICKTOPLAY;
-  do_check_true(gPluginHost.isPluginClickToPlayForType("application/x-test"));
+  do_check_eq(gPluginHost.getStateForType("application/x-test"), Components.interfaces.nsIPluginTag.STATE_CLICKTOPLAY);
   // clean up plugin state
   plugin.enabledState = previousEnabledState;
 
@@ -160,11 +160,7 @@ function observer() {
 function run_test() {
   createAppInfo("xpcshell@tests.mozilla.org", "XPCShell", "1", "1.9");
 
-  gServer = new HttpServer();
-  gServer.registerDirectory("/data/", do_get_file("data"));
-  gServer.start(4444);
-
-  Services.prefs.setCharPref("extensions.blocklist.url", "http://localhost:4444/data/test_pluginBlocklistCtp.xml");
+  Services.prefs.setCharPref("extensions.blocklist.url", "http://localhost:" + gPort + "/data/test_pluginBlocklistCtp.xml");
   startupManager();
 
   gPluginHost = Components.classes["@mozilla.org/plugin/host;1"].getService(Components.interfaces.nsIPluginHost);

@@ -35,6 +35,8 @@
 
 namespace webrtc {
 
+class Config;
+
 class InStream
 {
 public:
@@ -134,27 +136,6 @@ enum ProcessingTypes
     kRecordingPerChannel,
     kRecordingAllChannelsMixed,
     kRecordingPreprocessing
-};
-
-// Encryption enums
-enum CipherTypes
-{
-    kCipherNull               = 0,
-    kCipherAes128CounterMode  = 1
-};
-
-enum AuthenticationTypes
-{
-    kAuthNull       = 0,
-    kAuthHmacSha1   = 3
-};
-
-enum SecurityLevels
-{
-    kNoProtection                    = 0,
-    kEncryption                      = 1,
-    kAuthentication                  = 2,
-    kEncryptionAndAuthentication     = 3
 };
 
 // Interface for encrypting and decrypting regular data and rtp/rtcp packets.
@@ -287,23 +268,23 @@ enum VadModes                 // degree of bandwidth reduction
 struct NetworkStatistics           // NETEQ statistics
 {
     // current jitter buffer size in ms
-    WebRtc_UWord16 currentBufferSize;
+    uint16_t currentBufferSize;
     // preferred (optimal) buffer size in ms
-    WebRtc_UWord16 preferredBufferSize;
+    uint16_t preferredBufferSize;
     // adding extra delay due to "peaky jitter"
     bool jitterPeaksFound;
     // loss rate (network + late) in percent (in Q14)
-    WebRtc_UWord16 currentPacketLossRate;
+    uint16_t currentPacketLossRate;
     // late loss rate in percent (in Q14)
-    WebRtc_UWord16 currentDiscardRate;
+    uint16_t currentDiscardRate;
     // fraction (of original stream) of synthesized speech inserted through
     // expansion (in Q14)
-    WebRtc_UWord16 currentExpandRate;
+    uint16_t currentExpandRate;
     // fraction of synthesized speech inserted through pre-emptive expansion
     // (in Q14)
-    WebRtc_UWord16 currentPreemptiveRate;
+    uint16_t currentPreemptiveRate;
     // fraction of data removed through acceleration (in Q14)
-    WebRtc_UWord16 currentAccelerateRate;
+    uint16_t currentAccelerateRate;
     // clock-drift in parts-per-million (negative or positive)
     int32_t clockDriftPPM;
     // average packet waiting time in the jitter buffer (ms)
@@ -341,13 +322,6 @@ typedef struct        // All levels are reported in dB
     // Echo suppression inside EC at the point just before its NLP
     StatVal a_nlp;
 } EchoStatistics;
-
-enum TelephoneEventDetectionMethods
-{
-    kInBand = 0,
-    kOutOfBand = 1,
-    kInAndOutOfBand = 2
-};
 
 enum NsModes    // type of Noise Suppression
 {
@@ -437,18 +411,6 @@ enum NetEqModes             // NetEQ playout configurations
     kNetEqOff = 3
 };
 
-enum NetEqBgnModes          // NetEQ Background Noise (BGN) configurations
-{
-    // BGN is always on and will be generated when the incoming RTP stream
-    // stops (default).
-    kBgnOn = 0,
-    // The BGN is faded to zero (complete silence) after a few seconds.
-    kBgnFade = 1,
-    // BGN is not used at all. Silence is produced after speech extrapolation
-    // has faded.
-    kBgnOff = 2
-};
-
 enum OnHoldModes            // On Hold direction
 {
     kHoldSendAndPlay = 0,    // Put both sending and playing in on-hold state.
@@ -530,6 +492,7 @@ struct VideoCodecVP8
     bool                 errorConcealmentOn;
     bool                 automaticResizeOn;
     bool                 frameDroppingOn;
+    int                  keyFrameInterval;
 };
 
 // Unknown specific
@@ -544,6 +507,7 @@ enum VideoCodecType
     kVideoCodecI420,
     kVideoCodecRED,
     kVideoCodecULPFEC,
+    kVideoCodecGeneric,
     kVideoCodecUnknown
 };
 
@@ -562,7 +526,14 @@ struct SimulcastStream
     unsigned short      height;
     unsigned char       numberOfTemporalLayers;
     unsigned int        maxBitrate;
+    unsigned int        targetBitrate;
+    unsigned int        minBitrate;
     unsigned int        qpMax; // minimum quality
+};
+
+enum VideoCodecMode {
+  kRealtimeVideo,
+  kScreensharing
 };
 
 // Common video codec properties
@@ -585,6 +556,12 @@ struct VideoCodec
     unsigned int        qpMax;
     unsigned char       numberOfSimulcastStreams;
     SimulcastStream     simulcastStream[kMaxSimulcastStreams];
+
+    VideoCodecMode      mode;
+
+    // When using an external encoder/decoder this allows to pass
+    // extra options without requiring webrtc to be aware of them.
+    Config*  extra_options;
 };
 
 // Bandwidth over-use detector options.  These are used to drive

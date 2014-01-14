@@ -11,8 +11,8 @@
 #include "nsStyleSet.h"
 #include "nsDisplayList.h"
 #include "nsITheme.h"
-#include "nsThemeConstants.h"
 #include "nsEventStates.h"
+#include "nsFrame.h"
 #include "mozilla/dom/Element.h"
 
 #define ACTIVE   "active"
@@ -118,6 +118,9 @@ public:
   virtual void Paint(nsDisplayListBuilder* aBuilder,
                      nsRenderingContext* aCtx);
   virtual nsRect GetBounds(nsDisplayListBuilder* aBuilder, bool* aSnap);
+  virtual void ComputeInvalidationRegion(nsDisplayListBuilder* aBuilder,
+                                         const nsDisplayItemGeometry* aGeometry,
+                                         nsRegion *aInvalidRegion) MOZ_OVERRIDE;
   NS_DISPLAY_DECL_NAME("ButtonBorderBackground", TYPE_BUTTON_BORDER_BACKGROUND)
 private:
   nsButtonFrameRenderer* mBFR;
@@ -150,6 +153,16 @@ private:
   nsButtonFrameRenderer* mBFR;
 };
 
+void
+nsDisplayButtonBorderBackground::ComputeInvalidationRegion(nsDisplayListBuilder* aBuilder,
+                                                           const nsDisplayItemGeometry* aGeometry,
+                                                           nsRegion *aInvalidRegion)
+{
+  AddInvalidRegionForSyncDecodeBackgroundImages(aBuilder, aGeometry, aInvalidRegion);
+
+  nsDisplayItem::ComputeInvalidationRegion(aBuilder, aGeometry, aInvalidRegion);
+}
+
 void nsDisplayButtonBorderBackground::Paint(nsDisplayListBuilder* aBuilder,
                                             nsRenderingContext* aCtx)
 {
@@ -168,7 +181,7 @@ void nsDisplayButtonForeground::Paint(nsDisplayListBuilder* aBuilder,
   nsPresContext *presContext = mFrame->PresContext();
   const nsStyleDisplay *disp = mFrame->StyleDisplay();
   if (!mFrame->IsThemed(disp) ||
-      !presContext->GetTheme()->ThemeDrawsFocusForWidget(presContext, mFrame, disp->mAppearance)) {
+      !presContext->GetTheme()->ThemeDrawsFocusForWidget(disp->mAppearance)) {
     // draw the focus and outline borders
     nsRect r = nsRect(ToReferenceFrame(), mFrame->GetSize());
     mBFR->PaintOutlineAndFocusBorders(presContext, *aCtx, mVisibleRect, r);

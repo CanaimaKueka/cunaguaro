@@ -7,7 +7,9 @@
 #ifndef mozilla_layers_GeckoContentController_h
 #define mozilla_layers_GeckoContentController_h
 
-#include "FrameMetrics.h"
+#include "FrameMetrics.h"               // for FrameMetrics, etc
+#include "Units.h"                      // for CSSIntPoint, CSSRect, etc
+#include "mozilla/Assertions.h"         // for MOZ_ASSERT_HELPER2
 #include "nsISupportsImpl.h"
 
 class Task;
@@ -15,7 +17,8 @@ class Task;
 namespace mozilla {
 namespace layers {
 
-class GeckoContentController {
+class GeckoContentController
+{
 public:
   NS_INLINE_DECL_THREADSAFE_REFCOUNTING(GeckoContentController)
 
@@ -31,34 +34,56 @@ public:
    * AsyncPanZoomController::ZoomToRect with the dimensions that we want to zoom
    * to.
    */
-  virtual void HandleDoubleTap(const nsIntPoint& aPoint) = 0;
+  virtual void HandleDoubleTap(const CSSIntPoint& aPoint) = 0;
 
   /**
    * Requests handling a single tap. |aPoint| is in CSS pixels, relative to the
    * current scroll offset. This should simulate and send to content a mouse
    * button down, then mouse button up at |aPoint|.
    */
-  virtual void HandleSingleTap(const nsIntPoint& aPoint) = 0;
+  virtual void HandleSingleTap(const CSSIntPoint& aPoint) = 0;
 
   /**
    * Requests handling a long tap. |aPoint| is in CSS pixels, relative to the
    * current scroll offset.
    */
-  virtual void HandleLongTap(const nsIntPoint& aPoint) = 0;
+  virtual void HandleLongTap(const CSSIntPoint& aPoint) = 0;
 
   /**
    * Requests sending a mozbrowserasyncscroll domevent to embedder.
    * |aContentRect| is in CSS pixels, relative to the current cssPage.
    * |aScrollableSize| is the current content width/height in CSS pixels.
    */
-  virtual void SendAsyncScrollDOMEvent(const gfx::Rect &aContentRect,
-                                       const gfx::Size &aScrollableSize) = 0;
+  virtual void SendAsyncScrollDOMEvent(FrameMetrics::ViewID aScrollId,
+                                       const CSSRect &aContentRect,
+                                       const CSSSize &aScrollableSize) = 0;
 
   /**
    * Schedules a runnable to run on the controller/UI thread at some time
    * in the future.
    */
   virtual void PostDelayedTask(Task* aTask, int aDelayMs) = 0;
+
+  /**
+   * Retrieves the last known zoom constraints. This function should return
+   * false if there are no last known zoom constraints.
+   */
+  virtual bool GetZoomConstraints(bool* aOutAllowZoom,
+                                  CSSToScreenScale* aOutMinZoom,
+                                  CSSToScreenScale* aOutMaxZoom)
+  {
+    return false;
+  }
+
+  /**
+   * Request any special actions be performed when panning starts
+   */
+  virtual void HandlePanBegin() {}
+
+  /**
+   * Request any special actions be performed when panning ends
+   */
+  virtual void HandlePanEnd() {}
 
   GeckoContentController() {}
   virtual ~GeckoContentController() {}

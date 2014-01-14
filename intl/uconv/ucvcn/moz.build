@@ -10,3 +10,14 @@ EXPORTS += [
     'nsUCvCnCID.h',
 ]
 
+SOURCES += [
+    'UnifiedUCVCN.cpp',
+]
+
+LIBRARY_NAME = 'ucvcn_s'
+
+LIBXUL_LIBRARY = True
+
+LOCAL_INCLUDES += [
+    '../util',
+]

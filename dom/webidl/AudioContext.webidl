@@ -21,43 +21,56 @@ interface AudioContext : EventTarget {
     readonly attribute double currentTime;
     readonly attribute AudioListener listener;
 
-    [Creator, Throws]
+    [NewObject, Throws]
     AudioBuffer createBuffer(unsigned long numberOfChannels, unsigned long length, float sampleRate);
-
-    [Creator, Throws]
-    AudioBuffer? createBuffer(ArrayBuffer buffer, boolean mixToMono);
 
     void decodeAudioData(ArrayBuffer audioData,
                          DecodeSuccessCallback successCallback,
                          optional DecodeErrorCallback errorCallback);
 
     // AudioNode creation 
-    [Creator]
+    [NewObject]
     AudioBufferSourceNode createBufferSource();
 
-    [Creator, Throws]
+    [NewObject, Throws]
+    MediaStreamAudioDestinationNode createMediaStreamDestination();
+
+    [NewObject, Throws]
     ScriptProcessorNode createScriptProcessor(optional unsigned long bufferSize = 0,
                                               optional unsigned long numberOfInputChannels = 2,
                                               optional unsigned long numberOfOutputChannels = 2);
 
-    [Creator]
+    [NewObject]
     AnalyserNode createAnalyser();
-    [Creator]
+    [NewObject, Throws]
+    MediaElementAudioSourceNode createMediaElementSource(HTMLMediaElement mediaElement);
+    [NewObject, Throws]
+    MediaStreamAudioSourceNode createMediaStreamSource(MediaStream mediaStream);
+    [NewObject]
     GainNode createGain();
-    [Creator, Throws]
+    [NewObject, Throws]
     DelayNode createDelay(optional double maxDelayTime = 1);
-    [Creator]
+    [NewObject]
     BiquadFilterNode createBiquadFilter();
-    [Creator]
+    [NewObject]
+    WaveShaperNode createWaveShaper();
+    [NewObject]
     PannerNode createPanner();
+    [NewObject]
+    ConvolverNode createConvolver();
 
-    [Creator, Throws]
+    [NewObject, Throws]
     ChannelSplitterNode createChannelSplitter(optional unsigned long numberOfOutputs = 6);
-    [Creator, Throws]
+    [NewObject, Throws]
     ChannelMergerNode createChannelMerger(optional unsigned long numberOfInputs = 6);
 
-    [Creator]
+    [NewObject]
     DynamicsCompressorNode createDynamicsCompressor();
+
+    [NewObject]
+    OscillatorNode createOscillator();
+    [NewObject, Throws]
+    PeriodicWave createPeriodicWave(Float32Array real, Float32Array imag);
 
 };
 
@@ -67,19 +80,37 @@ interface AudioContext : EventTarget {
  */
 [PrefControlled]
 partial interface AudioContext {
+    [NewObject, Throws]
+    AudioBuffer? createBuffer(ArrayBuffer buffer, boolean mixToMono);
+
     // Same as createGain()
-    [Creator]
+    [NewObject,Pref="media.webaudio.legacy.AudioContext"]
     GainNode createGainNode();
-    
+
     // Same as createDelay()
-    [Creator, Throws]
+    [NewObject, Throws, Pref="media.webaudio.legacy.AudioContext"]
     DelayNode createDelayNode(optional double maxDelayTime = 1);
 
     // Same as createScriptProcessor()
-    [Creator, Throws]
+    [NewObject, Throws, Pref="media.webaudio.legacy.AudioContext"]
     ScriptProcessorNode createJavaScriptNode(optional unsigned long bufferSize = 0,
                                              optional unsigned long numberOfInputChannels = 2,
                                              optional unsigned long numberOfOutputChannels = 2);
 };
 
+enum AudioChannel {
+  "normal",
+  "content",
+  "notification",
+  "alarm",
+  "telephony",
+  "ringer",
+  "publicnotification",
+};
 
+// Mozilla extensions
+partial interface AudioContext {
+  // Read HTMLMediaElement.webidl for more information about this attribute.
+  [Pref="media.useAudioChannelService", SetterThrows]
+  attribute AudioChannel mozAudioChannelType;
+};

@@ -72,11 +72,13 @@ struct VideoChunk {
   {
     mDuration = aDuration;
     mFrame.SetNull();
+    mTimeStamp = TimeStamp();
   }
   void SetForceBlack(bool aForceBlack) { mFrame.SetForceBlack(aForceBlack); }
 
   TrackTicks mDuration;
   VideoFrame mFrame;
+  mozilla::TimeStamp mTimeStamp;
 };
 
 class VideoSegment : public MediaSegmentBase<VideoSegment, VideoChunk> {
@@ -106,6 +108,14 @@ public:
       *aStart = mDuration - c->mDuration;
     }
     return &c->mFrame;
+  }
+  // Override default impl
+  virtual void ReplaceWithDisabled() MOZ_OVERRIDE {
+    for (ChunkIterator i(*this);
+         !i.IsEnded(); i.Next()) {
+      VideoChunk& chunk = *i;
+      chunk.SetForceBlack(true);
+    }
   }
 
   // Segment-generic methods not in MediaSegmentBase

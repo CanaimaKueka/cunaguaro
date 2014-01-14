@@ -23,6 +23,8 @@
 #include "nsContentUtils.h"
 #include "nsPluginInstanceOwner.h"
 
+#include "nsThreadUtils.h"
+#include "nsIDOMElement.h"
 #include "nsIDocument.h"
 #include "nsIDocShell.h"
 #include "nsIScriptGlobalObject.h"
@@ -36,6 +38,7 @@
 #include "nsVersionComparator.h"
 #include "mozilla/Preferences.h"
 #include "mozilla/unused.h"
+#include "nsILoadContext.h"
 
 using namespace mozilla;
 
@@ -49,6 +52,7 @@ using namespace mozilla;
 #include "mozilla/dom/ScreenOrientation.h"
 #include "mozilla/Hal.h"
 #include "GLContextProvider.h"
+#include "GLContext.h"
 #include "TexturePoolOGL.h"
 
 using namespace mozilla::gl;
@@ -134,9 +138,9 @@ public:
       return 0;
 
     SharedTextureHandle handle =
-      sPluginContext->CreateSharedHandle(GLContext::SameProcess,
+      sPluginContext->CreateSharedHandle(gl::SameProcess,
                                          (void*)mTextureInfo.mTexture,
-                                         GLContext::TextureID);
+                                         gl::TextureID);
 
     // We want forget about this now, so delete the texture. Assigning it to zero
     // ensures that we create a new one in Lock()
@@ -162,7 +166,7 @@ using namespace mozilla::layers;
 
 static NS_DEFINE_IID(kIOutputStreamIID, NS_IOUTPUTSTREAM_IID);
 
-NS_IMPL_THREADSAFE_ISUPPORTS0(nsNPAPIPluginInstance)
+NS_IMPL_ISUPPORTS0(nsNPAPIPluginInstance)
 
 nsNPAPIPluginInstance::nsNPAPIPluginInstance()
   :
@@ -189,7 +193,7 @@ nsNPAPIPluginInstance::nsNPAPIPluginInstance()
 #endif
   , mHaveJavaC2PJSObjectQuirk(false)
 {
-  mNPP.pdata = NULL;
+  mNPP.pdata = nullptr;
   mNPP.ndata = this;
 
   PLUGIN_LOG(PLUGIN_LOG_BASIC, ("nsNPAPIPluginInstance ctor: this=%p\n",this));
@@ -532,7 +536,9 @@ nsNPAPIPluginInstance::Start()
   // before returning. If the plugin returns failure, we'll clear it out below.
   mRunning = RUNNING;
 
-  nsresult newResult = library->NPP_New((char*)mimetype, &mNPP, (uint16_t)mode, count, (char**)names, (char**)values, NULL, &error);
+  nsresult newResult = library->NPP_New((char*)mimetype, &mNPP, (uint16_t)mode,
+                                        count, (char**)names, (char**)values,
+                                        nullptr, &error);
   mInPluginInitCall = oldVal;
 
   NPP_PLUGIN_LOG(PLUGIN_LOG_NORMAL,
@@ -550,11 +556,11 @@ nsNPAPIPluginInstance::Start()
 
 nsresult nsNPAPIPluginInstance::SetWindow(NPWindow* window)
 {
-  // NPAPI plugins don't want a SetWindow(NULL).
+  // NPAPI plugins don't want a SetWindow(nullptr).
   if (!window || RUNNING != mRunning)
     return NS_OK;
 
-#if defined(MOZ_WIDGET_GTK2)
+#if (MOZ_WIDGET_GTK == 2)
   // bug 108347, flash plugin on linux doesn't like window->width <=
   // 0, but Java needs wants this call.
   if (!nsPluginHost::IsJavaMIMEType(mMIMEType) && window->type == NPWindowTypeWindow &&
@@ -1012,9 +1018,9 @@ SharedTextureHandle nsNPAPIPluginInstance::CreateSharedHandle()
     return mContentTexture->CreateSharedHandle();
   } else if (mContentSurface) {
     EnsureGLContext();
-    return sPluginContext->CreateSharedHandle(GLContext::SameProcess,
+    return sPluginContext->CreateSharedHandle(gl::SameProcess,
                                               mContentSurface,
-                                              GLContext::SurfaceTexture);
+                                              gl::SurfaceTexture);
   } else return 0;
 }
 
@@ -1201,23 +1207,6 @@ nsNPAPIPluginInstance::AsyncSetWindow(NPWindow* window)
 
   return library->AsyncSetWindow(&mNPP, window);
 }
-
-#if defined(MOZ_WIDGET_QT) && (MOZ_PLATFORM_MAEMO == 6)
-nsresult
-nsNPAPIPluginInstance::HandleGUIEvent(const nsGUIEvent& anEvent, bool* handled)
-{
-  if (RUNNING != mRunning) {
-    *handled = false;
-    return NS_OK;
-  }
-
-  AutoPluginLibraryCall library(this);
-  if (!library)
-    return NS_ERROR_FAILURE;
-
-  return library->HandleGUIEvent(&mNPP, anEvent, handled);
-}
-#endif
 
 nsresult
 nsNPAPIPluginInstance::GetImageContainer(ImageContainer**aContainer)
@@ -1452,7 +1441,7 @@ PluginTimerCallback(nsITimer *aTimer, void *aClosure)
   // Make sure we still have an instance and the timer is still alive
   // after the callback.
   nsNPAPIPluginInstance *inst = (nsNPAPIPluginInstance*)npp->ndata;
-  if (!inst || !inst->TimerWithID(id, NULL))
+  if (!inst || !inst->TimerWithID(id, nullptr))
     return;
 
   // use UnscheduleTimer to clean up if this is a one-shot timer
@@ -1489,7 +1478,7 @@ nsNPAPIPluginInstance::ScheduleTimer(uint32_t interval, NPBool repeat, void (*ti
 
   // generate ID that is unique to this instance
   uint32_t uniqueID = mTimers.Length();
-  while ((uniqueID == 0) || TimerWithID(uniqueID, NULL))
+  while ((uniqueID == 0) || TimerWithID(uniqueID, nullptr))
     uniqueID++;
   newTimer->id = uniqueID;
 
@@ -1612,13 +1601,14 @@ nsNPAPIPluginInstance::GetJSContext(JSContext* *outContext)
 
   nsRefPtr<nsPluginInstanceOwner> deathGrip(mOwner);
 
-  *outContext = NULL;
+  *outContext = nullptr;
   nsCOMPtr<nsIDocument> document;
 
   nsresult rv = mOwner->GetDocument(getter_AddRefs(document));
 
   if (NS_SUCCEEDED(rv) && document) {
-    nsIScriptGlobalObject *global = document->GetScriptGlobalObject();
+    nsCOMPtr<nsIScriptGlobalObject> global =
+      do_QueryInterface(document->GetWindow());
 
     if (global) {
       nsIScriptContext *context = global->GetContext();
@@ -1790,13 +1780,6 @@ nsNPAPIPluginInstance::CheckJavaC2PJSObjectQuirk(uint16_t paramCount,
     return;
   }
 
-  bool isClickToPlay;
-  nsAutoCString mimeType(mMIMEType);
-  rv = pluginHost->IsPluginClickToPlayForType(mimeType, &isClickToPlay);
-  if (NS_FAILED(rv) || !isClickToPlay) {
-    return;
-  }
-
   nsPluginTag* pluginTag = pluginHost->TagForPlugin(mPlugin);
   if (!pluginTag ||
       !pluginTag->mIsJavaPlugin) {
@@ -1807,10 +1790,10 @@ nsNPAPIPluginInstance::CheckJavaC2PJSObjectQuirk(uint16_t paramCount,
   bool haveCodeParam = false;
   bool isCodeParamEmpty = true;
 
-  for (uint16_t i = 0; i < paramCount; ++i) {
-    if (PL_strcasecmp(paramNames[i], "code") == 0) {
+  for (uint16_t i = paramCount; i > 0; --i) {
+    if (PL_strcasecmp(paramNames[i - 1], "code") == 0) {
       haveCodeParam = true;
-      if (strlen(paramValues[i]) > 0) {
+      if (strlen(paramValues[i - 1]) > 0) {
         isCodeParamEmpty = false;
       }
       break;

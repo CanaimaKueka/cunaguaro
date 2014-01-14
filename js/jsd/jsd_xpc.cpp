@@ -4,11 +4,11 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include "jsdbgapi.h"
-#include "jslock.h"
+#include "jsfriendapi.h"
 #include "jsd_xpc.h"
 
 #include "js/GCAPI.h"
+#include "js/OldDebugAPI.h"
 
 #include "nsIXPConnect.h"
 #include "mozilla/ModuleUtils.h"
@@ -30,9 +30,14 @@
 
 /* XXX DOM dependency */
 #include "nsIScriptContext.h"
+#include "nsDOMJSUtils.h"
 #include "SandboxPrivate.h"
 #include "nsJSPrincipals.h"
 #include "nsContentUtils.h"
+#include "nsCxPusher.h"
+
+using mozilla::AutoSafeJSContext;
+using mozilla::AutoPushJSContext;
 
 /*
  * defining CAUTIOUS_SCRIPTHOOK makes jsds disable GC while calling out to the
@@ -123,7 +128,6 @@ enum PatternType {
 static struct FilterRecord {
     PRCList      links;
     jsdIFilter  *filterObject;
-    void        *glob;
     nsCString    urlPattern;
     PatternType  patternType;
     uint32_t     startLine;
@@ -233,20 +237,9 @@ jsds_SyncFilter (FilterRecord *rec, jsdIFilter *filter)
 {
     NS_ASSERTION (rec, "jsds_SyncFilter without rec");
     NS_ASSERTION (filter, "jsds_SyncFilter without filter");
-    
-    JSObject *glob_proper = nullptr;
-    nsCOMPtr<nsISupports> glob;
-    nsresult rv = filter->GetGlobalObject(getter_AddRefs(glob));
-    if (NS_FAILED(rv))
-        return false;
-    if (glob) {
-        nsCOMPtr<nsIScriptGlobalObject> nsiglob = do_QueryInterface(glob);
-        if (nsiglob)
-            glob_proper = nsiglob->GetGlobalJSObject();
-    }
-    
+
     uint32_t startLine;
-    rv = filter->GetStartLine(&startLine);
+    nsresult rv = filter->GetStartLine(&startLine);
     if (NS_FAILED(rv))
         return false;
 
@@ -298,8 +291,6 @@ jsds_SyncFilter (FilterRecord *rec, jsdIFilter *filter)
         rec->filterObject = filter;
     }
     
-    rec->glob = glob_proper;
-    
     rec->startLine     = startLine;
     rec->endLine       = endLine;
     
@@ -331,14 +322,6 @@ jsds_FindFilter (jsdIFilter *filter)
 bool
 jsds_FilterHook (JSDContext *jsdc, JSDThreadState *state)
 {
-    JSContext *cx = JSD_GetJSContext (jsdc, state);
-    void *glob = static_cast<void *>(JS_GetGlobalObject (cx));
-
-    if (!glob) {
-        NS_WARNING("No global in threadstate");
-        return false;
-    }
-    
     JSDStackFrameInfo *frame = JSD_GetStackFrame (jsdc, state);
 
     if (!frame) {
@@ -374,11 +357,9 @@ jsds_FilterHook (JSDContext *jsdc, JSDThreadState *state)
         NS_ASSERTION(NS_SUCCEEDED(rv), "Error getting flags for filter");
 
         if (flags & jsdIFilter::FLAG_ENABLED) {
-            /* if there is no glob, or the globs match */
-            if ((!currentFilter->glob || currentFilter->glob == glob) &&
-                /* and there is no start line, or the start line is before 
-                 * or equal to the current */
-                (!currentFilter->startLine || 
+            /* If there is no start line, or the start line is before 
+             * or equal to the current */
+            if ((!currentFilter->startLine ||
                  currentFilter->startLine <= currentLine) &&
                 /* and there is no end line, or the end line is after
                  * or equal to the current */
@@ -514,17 +495,17 @@ jsds_ErrorHookProc (JSDContext *jsdc, JSContext *cx, const char *message,
 
     if (running)
         return JSD_ERROR_REPORTER_PASS_ALONG;
-    
+
     running = true;
-    
+
     nsCOMPtr<jsdIValue> val;
     if (JS_IsExceptionPending(cx)) {
-        jsval jv;
+        JS::RootedValue jv(cx);
         JS_GetPendingException(cx, &jv);
         JSDValue *jsdv = JSD_NewValue (jsdc, jv);
-        val = getter_AddRefs(jsdValue::FromPtr(jsdc, jsdv));
+        val = dont_AddRef(jsdValue::FromPtr(jsdc, jsdv));
     }
-    
+
     nsAutoCString fileName;
     uint32_t    line;
     uint32_t    pos;
@@ -557,7 +538,7 @@ jsds_ErrorHookProc (JSDContext *jsdc, JSContext *cx, const char *message,
     return JSD_ERROR_REPORTER_PASS_ALONG;
 }
 
-static JSBool
+static bool
 jsds_CallHookProc (JSDContext* jsdc, JSDThreadState* jsdthreadstate,
                    unsigned type, void* callerdata)
 {
@@ -580,21 +561,20 @@ jsds_CallHookProc (JSDContext* jsdc, JSDThreadState* jsdthreadstate,
     }
     
     if (!hook)
-        return JS_TRUE;
+        return true;
 
     if (!jsds_FilterHook (jsdc, jsdthreadstate))
-        return JS_FALSE;
+        return false;
 
     JSDStackFrameInfo *native_frame = JSD_GetStackFrame (jsdc, jsdthreadstate);
     nsCOMPtr<jsdIStackFrame> frame =
-        getter_AddRefs(jsdStackFrame::FromPtr(jsdc, jsdthreadstate,
-                                              native_frame));
+        dont_AddRef(jsdStackFrame::FromPtr(jsdc, jsdthreadstate, native_frame));
     gJsds->DoPause(nullptr, true);
     hook->OnCall(frame, type);    
     gJsds->DoUnPause(nullptr, true);
     jsdStackFrame::InvalidateAll();
 
-    return JS_TRUE;
+    return true;
 }
 
 static uint32_t
@@ -633,7 +613,7 @@ jsds_ExecutionHookProc (JSDContext* jsdc, JSDThreadState* jsdthreadstate,
             gJsds->GetThrowHook(getter_AddRefs(hook));
             if (hook) {
                 JSDValue *jsdv = JSD_GetException (jsdc, jsdthreadstate);
-                js_rv = getter_AddRefs(jsdValue::FromPtr (jsdc, jsdv));
+                js_rv = dont_AddRef(jsdValue::FromPtr (jsdc, jsdv));
             }
             break;
         }
@@ -649,8 +629,7 @@ jsds_ExecutionHookProc (JSDContext* jsdc, JSDThreadState* jsdthreadstate,
     
     JSDStackFrameInfo *native_frame = JSD_GetStackFrame (jsdc, jsdthreadstate);
     nsCOMPtr<jsdIStackFrame> frame =
-        getter_AddRefs(jsdStackFrame::FromPtr(jsdc, jsdthreadstate,
-                                              native_frame));
+        dont_AddRef(jsdStackFrame::FromPtr(jsdc, jsdthreadstate, native_frame));
     gJsds->DoPause(nullptr, true);
     jsdIValue *inout_rv = js_rv;
     NS_IF_ADDREF(inout_rv);
@@ -674,12 +653,11 @@ jsds_ExecutionHookProc (JSDContext* jsdc, JSDThreadState* jsdthreadstate,
 }
 
 static void
-jsds_ScriptHookProc (JSDContext* jsdc, JSDScript* jsdscript, JSBool creating,
+jsds_ScriptHookProc (JSDContext* jsdc, JSDScript* jsdscript, bool creating,
                      void* callerdata)
 {
 #ifdef CAUTIOUS_SCRIPTHOOK
-    JSContext *cx = JSD_GetDefaultJSContext(jsdc);
-    JSRuntime *rt = JS_GetRuntime(cx);
+    JSRuntime *rt = JS_GetRuntime(nsContentUtils::GetSafeJSContext());
 #endif
 
     if (creating) {
@@ -693,7 +671,7 @@ jsds_ScriptHookProc (JSDContext* jsdc, JSDScript* jsdscript, JSBool creating,
         }
             
         nsCOMPtr<jsdIScript> script = 
-            getter_AddRefs(jsdScript::FromPtr(jsdc, jsdscript));
+            dont_AddRef(jsdScript::FromPtr(jsdc, jsdscript));
 #ifdef CAUTIOUS_SCRIPTHOOK
         JS_UNKEEP_ATOMS(rt);
 #endif
@@ -761,7 +739,7 @@ jsds_ScriptHookProc (JSDContext* jsdc, JSDScript* jsdscript, JSBool creating,
 
 /* Contexts */
 /*
-NS_IMPL_THREADSAFE_ISUPPORTS2(jsdContext, jsdIContext, jsdIEphemeral);
+NS_IMPL_ISUPPORTS2(jsdContext, jsdIContext, jsdIEphemeral);
 
 NS_IMETHODIMP
 jsdContext::GetJSDContext(JSDContext **_rval)
@@ -772,7 +750,7 @@ jsdContext::GetJSDContext(JSDContext **_rval)
 */
 
 /* Objects */
-NS_IMPL_THREADSAFE_ISUPPORTS1(jsdObject, jsdIObject)
+NS_IMPL_ISUPPORTS1(jsdObject, jsdIObject)
 
 NS_IMETHODIMP
 jsdObject::GetJSDContext(JSDContext **_rval)
@@ -826,7 +804,7 @@ jsdObject::GetValue(jsdIValue **_rval)
 }
 
 /* Properties */
-NS_IMPL_THREADSAFE_ISUPPORTS2(jsdProperty, jsdIProperty, jsdIEphemeral)
+NS_IMPL_ISUPPORTS2(jsdProperty, jsdIProperty, jsdIEphemeral)
 
 jsdProperty::jsdProperty (JSDContext *aCx, JSDProperty *aProperty) :
     mCx(aCx), mProperty(aProperty)
@@ -917,16 +895,18 @@ jsdProperty::GetValue(jsdIValue **_rval)
 }
 
 /* Scripts */
-NS_IMPL_THREADSAFE_ISUPPORTS2(jsdScript, jsdIScript, jsdIEphemeral)
+NS_IMPL_ISUPPORTS2(jsdScript, jsdIScript, jsdIEphemeral)
 
 static NS_IMETHODIMP
-AssignToJSString(JSDContext *aCx, nsACString *x, JSString *str)
+AssignToJSString(JSDContext *aCx, nsACString *x, JSString *str_)
 {
-    if (!str) {
+    if (!str_) {
         x->SetLength(0);
         return NS_OK;
     }
-    JSContext *cx = JSD_GetDefaultJSContext(aCx);
+    JS::RootedString str(JSD_GetJSRuntime(aCx), str_);
+    AutoSafeJSContext cx;
+    JSAutoCompartment ac(cx, JSD_GetDefaultGlobal(aCx)); // Just in case.
     size_t length = JS_GetStringEncodingLength(cx, str);
     if (length == size_t(-1))
         return NS_ERROR_FAILURE;
@@ -992,17 +972,19 @@ jsdScript::~jsdScript ()
  */
 PCMapEntry *
 jsdScript::CreatePPLineMap()
-{    
-    JSContext  *cx  = JSD_GetDefaultJSContext (mCx);
-    JSAutoRequest ar(cx);
-    JSObject   *obj = JS_NewObject(cx, NULL, NULL, NULL);
-    JSFunction *fun = JSD_GetJSFunction (mCx, mScript);
-    JSScript   *script; /* In JSD compartment */
+{
+    AutoSafeJSContext cx;
+    JSAutoCompartment ac(cx, JSD_GetDefaultGlobal (mCx)); // Just in case.
+    JS::RootedObject obj(cx, JS_NewObject(cx, nullptr, nullptr, nullptr));
+    if (!obj)
+        return nullptr;
+    JS::RootedFunction fun(cx, JSD_GetJSFunction (mCx, mScript));
+    JS::RootedScript script(cx); /* In JSD compartment */
     uint32_t    baseLine;
-    JSString   *jsstr;
+    JS::RootedString jsstr(cx);
     size_t      length;
     const jschar *chars;
-    
+
     if (fun) {
         unsigned nargs;
 
@@ -1020,9 +1002,11 @@ jsdScript::CreatePPLineMap()
         }
 
         JS::Anchor<JSString *> kungFuDeathGrip(jsstr);
-        const char *argnames[] = {"arg1", "arg2", "arg3", "arg4", 
-                                  "arg5", "arg6", "arg7", "arg8",
-                                  "arg9", "arg10", "arg11", "arg12" };
+        static const char *const argnames[] = {
+            "arg1", "arg2", "arg3", "arg4",
+            "arg5", "arg6", "arg7", "arg8",
+            "arg9", "arg10", "arg11", "arg12"
+        };
         fun = JS_CompileUCFunction (cx, obj, "ppfun", nargs, argnames, chars,
                                     length, "x-jsd:ppbuffer?type=function", 3);
         if (!fun || !(script = JS_GetFunctionScript(cx, fun)))
@@ -1132,8 +1116,8 @@ NS_IMETHODIMP
 jsdScript::GetVersion (int32_t *_rval)
 {
     ASSERT_VALID_EPHEMERAL;
-    JSContext *cx = JSD_GetDefaultJSContext (mCx);
-    JSScript *script = JSD_GetJSScript(mCx, mScript);
+    AutoSafeJSContext cx;
+    JS::RootedScript script(cx, JSD_GetJSScript(mCx, mScript));
     JSAutoCompartment ac(cx, script);
     *_rval = static_cast<int32_t>(JS_GetScriptVersion(cx, script));
     return NS_OK;
@@ -1160,7 +1144,7 @@ jsdScript::Invalidate()
                                     (JSD_GetScriptPrivate(mScript));
     NS_ASSERTION (script == this, "That's not my script!");
     NS_RELEASE(script);
-    JSD_SetScriptPrivate(mScript, NULL);
+    JSD_SetScriptPrivate(mScript, nullptr);
     return NS_OK;
 }
 
@@ -1172,10 +1156,10 @@ jsdScript::InvalidateAll ()
         return;
 
     JSDScript *script;
-    JSDScript *iter = NULL;
+    JSDScript *iter = nullptr;
     
     JSD_LockScriptSubsystem(cx);
-    while((script = JSD_IterateScripts(cx, &iter)) != NULL) {
+    while((script = JSD_IterateScripts(cx, &iter)) != nullptr) {
         nsCOMPtr<jsdIScript> jsdis = 
             static_cast<jsdIScript *>(JSD_GetScriptPrivate(script));
         if (jsdis)
@@ -1225,19 +1209,14 @@ NS_IMETHODIMP
 jsdScript::GetParameterNames(uint32_t* count, PRUnichar*** paramNames)
 {
     ASSERT_VALID_EPHEMERAL;
-    JSContext *cx = JSD_GetDefaultJSContext (mCx);
-    if (!cx) {
-        NS_WARNING("No default context !?");
-        return NS_ERROR_FAILURE;
-    }
-    JSFunction *fun = JSD_GetJSFunction (mCx, mScript);
+    AutoSafeJSContext cx;
+    JS::RootedFunction fun(cx, JSD_GetJSFunction (mCx, mScript));
     if (!fun) {
         *count = 0;
         *paramNames = nullptr;
         return NS_OK;
     }
 
-    JSAutoRequest ar(cx);
     JSAutoCompartment ac(cx, JS_GetFunctionObject(fun));
 
     unsigned nargs;
@@ -1286,15 +1265,11 @@ jsdScript::GetParameterNames(uint32_t* count, PRUnichar*** paramNames)
 NS_IMETHODIMP
 jsdScript::GetFunctionObject(jsdIValue **_rval)
 {
-    JSFunction *fun = JSD_GetJSFunction(mCx, mScript);
+    JS::RootedFunction fun(JSD_GetJSRuntime(mCx), JSD_GetJSFunction(mCx, mScript));
     if (!fun)
         return NS_ERROR_NOT_AVAILABLE;
 
-    JSContext *jsContext = JSD_GetDefaultJSContext (mCx);
-    if (!jsContext) {
-        return NS_ERROR_FAILURE;
-    }
-
+    AutoSafeJSContext jsContext;
     JS::RootedObject obj(jsContext, JS_GetFunctionObject(fun));
     if (!obj)
         return NS_ERROR_FAILURE;
@@ -1320,14 +1295,9 @@ NS_IMETHODIMP
 jsdScript::GetFunctionSource(nsAString & aFunctionSource)
 {
     ASSERT_VALID_EPHEMERAL;
-    JSContext *cx = JSD_GetDefaultJSContext (mCx);
-    if (!cx) {
-        NS_WARNING("No default context !?");
-        return NS_ERROR_FAILURE;
-    }
+    AutoSafeJSContext cx_;
+    JSContext *cx = cx_; // Appease the type system with Maybe<>s below.
     JS::RootedFunction fun(cx, JSD_GetJSFunction (mCx, mScript));
-
-    JSAutoRequest ar(cx);
 
     JSString *jsstr;
     mozilla::Maybe<JSAutoCompartment> ac;
@@ -1492,7 +1462,8 @@ jsdScript::GetExecutableLines(uint32_t aPcmap, uint32_t aStartLine, uint32_t aMa
         uintptr_t end = JSD_GetClosestPC(mCx, mScript, lastLine + 1);
 
         *aExecutableLines = static_cast<uint32_t*>(NS_Alloc((end - start + 1) * sizeof(uint32_t)));
-        if (!JSD_GetLinePCs(mCx, mScript, aStartLine, aMaxLines, aCount, aExecutableLines, NULL))
+        if (!JSD_GetLinePCs(mCx, mScript, aStartLine, aMaxLines, aCount, aExecutableLines,
+                            nullptr))
             return NS_ERROR_OUT_OF_MEMORY;
         
         return NS_OK;
@@ -1561,7 +1532,7 @@ jsdScript::SetBreakpoint(uint32_t aPC)
 {
     ASSERT_VALID_EPHEMERAL;
     uintptr_t pc = mFirstPC + aPC;
-    JSD_SetExecutionHook (mCx, mScript, pc, jsds_ExecutionHookProc, NULL);
+    JSD_SetExecutionHook (mCx, mScript, pc, jsds_ExecutionHookProc, nullptr);
     return NS_OK;
 }
 
@@ -1585,7 +1556,7 @@ jsdScript::ClearAllBreakpoints()
 }
 
 /* Contexts */
-NS_IMPL_THREADSAFE_ISUPPORTS2(jsdContext, jsdIContext, jsdIEphemeral)
+NS_IMPL_ISUPPORTS2(jsdContext, jsdIContext, jsdIEphemeral)
 
 jsdIContext *
 jsdContext::FromPtr (JSDContext *aJSDCx, JSContext *aJSCx)
@@ -1603,7 +1574,7 @@ jsdContext::FromPtr (JSDContext *aJSDCx, JSContext *aJSCx)
     else
     {
         nsCOMPtr<nsISupports> iscx;
-        if (JS_GetOptions(aJSCx) & JSOPTION_PRIVATE_IS_NSISUPPORTS)
+        if (JS::ContextOptionsRef(aJSCx).privateIsNSISupports())
             iscx = static_cast<nsISupports *>(JS_GetContextPrivate(aJSCx));
         jsdicx = new jsdContext (aJSDCx, aJSCx, iscx);
     }
@@ -1665,11 +1636,41 @@ jsdContext::GetJSContext(JSContext **_rval)
     return NS_OK;
 }
 
+/* Simulate the old options API in terms of the new one for backwards
+ * compatibility */
+
+#define JSOPTION_EXTRA_WARNINGS                 JS_BIT(0)
+#define JSOPTION_WERROR                         JS_BIT(1)
+#define JSOPTION_VAROBJFIX                      JS_BIT(2)
+#define JSOPTION_PRIVATE_IS_NSISUPPORTS         JS_BIT(3)
+#define JSOPTION_COMPILE_N_GO                   JS_BIT(4)
+#define JSOPTION_DONT_REPORT_UNCAUGHT           JS_BIT(8)
+#define JSOPTION_NO_DEFAULT_COMPARTMENT_OBJECT  JS_BIT(11)
+#define JSOPTION_NO_SCRIPT_RVAL                 JS_BIT(12)
+#define JSOPTION_BASELINE                       JS_BIT(14)
+#define JSOPTION_TYPE_INFERENCE                 JS_BIT(16)
+#define JSOPTION_STRICT_MODE                    JS_BIT(17)
+#define JSOPTION_ION                            JS_BIT(18)
+#define JSOPTION_ASMJS                          JS_BIT(19)
+#define JSOPTION_MASK                           JS_BITMASK(20)
+
 NS_IMETHODIMP
 jsdContext::GetOptions(uint32_t *_rval)
 {
     ASSERT_VALID_EPHEMERAL;
-    *_rval = JS_GetOptions(mJSCx);
+    *_rval = (JS::ContextOptionsRef(mJSCx).extraWarnings() ? JSOPTION_EXTRA_WARNINGS : 0)
+           | (JS::ContextOptionsRef(mJSCx).werror() ? JSOPTION_WERROR : 0)
+           | (JS::ContextOptionsRef(mJSCx).varObjFix() ? JSOPTION_VAROBJFIX : 0)
+           | (JS::ContextOptionsRef(mJSCx).privateIsNSISupports() ? JSOPTION_PRIVATE_IS_NSISUPPORTS : 0)
+           | (JS::ContextOptionsRef(mJSCx).compileAndGo() ? JSOPTION_COMPILE_N_GO : 0)
+           | (JS::ContextOptionsRef(mJSCx).dontReportUncaught() ? JSOPTION_DONT_REPORT_UNCAUGHT : 0)
+           | (JS::ContextOptionsRef(mJSCx).noDefaultCompartmentObject() ? JSOPTION_NO_DEFAULT_COMPARTMENT_OBJECT : 0)
+           | (JS::ContextOptionsRef(mJSCx).noScriptRval() ? JSOPTION_NO_SCRIPT_RVAL : 0)
+           | (JS::ContextOptionsRef(mJSCx).baseline() ? JSOPTION_BASELINE : 0)
+           | (JS::ContextOptionsRef(mJSCx).typeInference() ? JSOPTION_TYPE_INFERENCE : 0)
+           | (JS::ContextOptionsRef(mJSCx).strictMode() ? JSOPTION_STRICT_MODE : 0)
+           | (JS::ContextOptionsRef(mJSCx).ion() ? JSOPTION_ION : 0)
+           | (JS::ContextOptionsRef(mJSCx).asmJS() ? JSOPTION_ASMJS : 0);
     return NS_OK;
 }
 
@@ -1677,14 +1678,25 @@ NS_IMETHODIMP
 jsdContext::SetOptions(uint32_t options)
 {
     ASSERT_VALID_EPHEMERAL;
-    uint32_t lastOptions = JS_GetOptions(mJSCx);
 
     /* don't let users change this option, they'd just be shooting themselves
      * in the foot. */
-    if ((options ^ lastOptions) & JSOPTION_PRIVATE_IS_NSISUPPORTS)
+    if (JS::ContextOptionsRef(mJSCx).privateIsNSISupports() !=
+        (options & JSOPTION_PRIVATE_IS_NSISUPPORTS))
         return NS_ERROR_ILLEGAL_VALUE;
 
-    JS_SetOptions(mJSCx, options);
+    JS::ContextOptionsRef(mJSCx).setExtraWarnings(options & JSOPTION_EXTRA_WARNINGS)
+                                .setWerror(options & JSOPTION_WERROR)
+                                .setVarObjFix(options & JSOPTION_VAROBJFIX)
+                                .setCompileAndGo(options & JSOPTION_COMPILE_N_GO)
+                                .setDontReportUncaught(options & JSOPTION_DONT_REPORT_UNCAUGHT)
+                                .setNoDefaultCompartmentObject(options & JSOPTION_NO_DEFAULT_COMPARTMENT_OBJECT)
+                                .setNoScriptRval(options & JSOPTION_NO_SCRIPT_RVAL)
+                                .setBaseline(options & JSOPTION_BASELINE)
+                                .setTypeInference(options & JSOPTION_TYPE_INFERENCE)
+                                .setStrictMode(options & JSOPTION_STRICT_MODE)
+                                .setIon(options & JSOPTION_ION)
+                                .setAsmJS(options & JSOPTION_ASMJS);
     return NS_OK;
 }
 
@@ -1692,8 +1704,7 @@ NS_IMETHODIMP
 jsdContext::GetPrivateData(nsISupports **_rval)
 {
     ASSERT_VALID_EPHEMERAL;
-    uint32_t options = JS_GetOptions(mJSCx);
-    if (options & JSOPTION_PRIVATE_IS_NSISUPPORTS)
+    if (JS::ContextOptionsRef(mJSCx).privateIsNSISupports()) 
     {
         *_rval = static_cast<nsISupports*>(JS_GetContextPrivate(mJSCx));
         NS_IF_ADDREF(*_rval);
@@ -1702,10 +1713,10 @@ jsdContext::GetPrivateData(nsISupports **_rval)
     {
         *_rval = nullptr;
     }
-    
+
     return NS_OK;
 }
-        
+
 NS_IMETHODIMP
 jsdContext::GetWrappedContext(nsISupports **_rval)
 {
@@ -1726,27 +1737,10 @@ jsdContext::GetTag(uint32_t *_rval)
 }
 
 NS_IMETHODIMP
-jsdContext::GetVersion (int32_t *_rval)
-{
-    ASSERT_VALID_EPHEMERAL;
-    *_rval = static_cast<int32_t>(JS_GetVersion(mJSCx));
-    return NS_OK;
-}
-
-NS_IMETHODIMP
-jsdContext::SetVersion (int32_t id)
-{
-    ASSERT_VALID_EPHEMERAL;
-    JSVersion ver = static_cast<JSVersion>(id);
-    JS_SetVersion(mJSCx, ver);
-    return NS_OK;
-}
-
-NS_IMETHODIMP
 jsdContext::GetGlobalObject (jsdIValue **_rval)
 {
     ASSERT_VALID_EPHEMERAL;
-    JSObject *glob = JS_GetGlobalObject(mJSCx);
+    JSObject *glob = GetDefaultScopeFromJSContext(mJSCx);
     JSDValue *jsdv = JSD_NewValue (mJSDCx, OBJECT_TO_JSVAL(glob));
     if (!jsdv)
         return NS_ERROR_FAILURE;
@@ -1794,7 +1788,7 @@ jsdContext::SetScriptsEnabled (bool _rval)
 }
 
 /* Stack Frames */
-NS_IMPL_THREADSAFE_ISUPPORTS2(jsdStackFrame, jsdIStackFrame, jsdIEphemeral)
+NS_IMPL_ISUPPORTS2(jsdStackFrame, jsdIStackFrame, jsdIEphemeral)
 
 jsdStackFrame::jsdStackFrame (JSDContext *aCx, JSDThreadState *aThreadState,
                               JSDStackFrameInfo *aStackFrameInfo) :
@@ -2034,16 +2028,12 @@ jsdStackFrame::Eval (const nsAString &bytes, const nsACString &fileName,
 
     JSExceptionState *estate = 0;
 
-    JSContext *cx = JSD_GetJSContext (mCx, mThreadState);
+    AutoPushJSContext cx(JSD_GetJSContext (mCx, mThreadState));
 
     JS::RootedValue jv(cx);
-    JSAutoRequest ar(cx);
 
     estate = JS_SaveExceptionState (cx);
     JS_ClearPendingException (cx);
-
-    nsCxPusher pusher;
-    pusher.Push(cx);
 
     *_rval = JSD_AttemptUCScriptInStackFrame (mCx, mThreadState,
                                               mStackFrameInfo,
@@ -2052,7 +2042,7 @@ jsdStackFrame::Eval (const nsAString &bytes, const nsACString &fileName,
                                               line, &jv);
     if (!*_rval) {
         if (JS_IsExceptionPending(cx))
-            JS_GetPendingException (cx, jv.address());
+            JS_GetPendingException (cx, &jv);
         else
             jv = JSVAL_NULL;
     }
@@ -2070,7 +2060,7 @@ jsdStackFrame::Eval (const nsAString &bytes, const nsACString &fileName,
 }        
 
 /* Values */
-NS_IMPL_THREADSAFE_ISUPPORTS2(jsdValue, jsdIValue, jsdIEphemeral)
+NS_IMPL_ISUPPORTS2(jsdValue, jsdIValue, jsdIEphemeral)
 jsdIValue *
 jsdValue::FromPtr (JSDContext *aCx, JSDValue *aValue)
 {
@@ -2169,10 +2159,8 @@ NS_IMETHODIMP
 jsdValue::GetJsType (uint32_t *_rval)
 {
     ASSERT_VALID_EPHEMERAL;
-    jsval val;
+    JS::RootedValue val(JSD_GetJSRuntime(mCx), JSD_GetValueWrappedJSVal (mCx, mValue));
 
-    val = JSD_GetValueWrappedJSVal (mCx, mValue);
-    
     if (JSVAL_IS_NULL(val))
         *_rval = TYPE_NULL;
     else if (JSVAL_IS_BOOLEAN(val))
@@ -2278,11 +2266,7 @@ NS_IMETHODIMP
 jsdValue::GetStringValue(nsACString &_rval)
 {
     ASSERT_VALID_EPHEMERAL;
-    JSContext *cx = JSD_GetDefaultJSContext (mCx);
-    if (!cx) {
-        NS_WARNING("No default context !?");
-        return NS_ERROR_FAILURE;
-    }
+    AutoSafeJSContext cx;
     JSString *jstr_val = JSD_GetValueString(mCx, mValue);
     if (jstr_val) {
         size_t length;
@@ -2328,7 +2312,7 @@ jsdValue::GetProperties (jsdIProperty ***propArray, uint32_t *length)
     NS_ENSURE_TRUE(pa_temp, NS_ERROR_OUT_OF_MEMORY);
 
     uint32_t     i    = 0;
-    JSDProperty *iter = NULL;
+    JSDProperty *iter = nullptr;
     JSDProperty *prop;
     while ((prop = JSD_IterateProperties (mCx, mValue, &iter))) {
         pa_temp[i] = jsdProperty::FromPtr (mCx, prop);
@@ -2349,9 +2333,8 @@ NS_IMETHODIMP
 jsdValue::GetProperty (const nsACString &name, jsdIProperty **_rval)
 {
     ASSERT_VALID_EPHEMERAL;
-    JSContext *cx = JSD_GetDefaultJSContext (mCx);
-
-    JSAutoRequest ar(cx);
+    AutoSafeJSContext cx;
+    JSAutoCompartment ac(cx, JSD_GetDefaultGlobal (mCx)); // Just in case.
 
     /* not rooting this */
     JSString *jstr_name = JS_NewStringCopyZ(cx, PromiseFlatCString(name).get());
@@ -2377,11 +2360,12 @@ jsdValue::GetWrappedValue(JSContext* aCx, JS::Value* aRetval)
 {
     ASSERT_VALID_EPHEMERAL;
 
-    *aRetval = JSD_GetValueWrappedJSVal(mCx, mValue);
-    if (!JS_WrapValue(aCx, aRetval)) {
+    JS::RootedValue value(aCx, JSD_GetValueWrappedJSVal(mCx, mValue));
+    if (!JS_WrapValue(aCx, &value)) {
         return NS_ERROR_FAILURE;
     }
 
+    *aRetval = value;
     return NS_OK;
 }
 
@@ -2501,8 +2485,8 @@ jsdService::DeactivateDebugger ()
     jsdStackFrame::InvalidateAll();
     ClearAllBreakpoints();
 
-    JSD_SetErrorReporter (mCx, NULL, NULL);
-    JSD_SetScriptHook (mCx, NULL, NULL);
+    JSD_SetErrorReporter (mCx, nullptr, nullptr);
+    JSD_SetScriptHook (mCx, nullptr, nullptr);
     JSD_ClearThrowHook (mCx);
     JSD_ClearInterruptHook (mCx);
     JSD_ClearDebuggerHook (mCx);
@@ -2532,12 +2516,13 @@ jsdService::ActivateDebugger (JSRuntime *rt)
         /* condition indicates that the callback proc has not been set yet */
         gPrevGCSliceCallback = JS::SetGCSliceCallback (rt, jsds_GCSliceCallbackProc);
 
-    mCx = JSD_DebuggerOnForUser (rt, NULL, NULL);
+    mCx = JSD_DebuggerOnForUser (rt, nullptr, nullptr);
     if (!mCx)
         return NS_ERROR_FAILURE;
 
-    JSContext *cx   = JSD_GetDefaultJSContext (mCx);
-    JS::RootedObject glob(cx, JS_GetGlobalObject (cx));
+    AutoSafeJSContext cx;
+    JS::RootedObject glob(cx, JSD_GetDefaultGlobal (mCx));
+    JSAutoCompartment ac(cx, glob);
 
     /* init xpconnect on the debugger's context in case xpconnect tries to
      * use it for stuff. */
@@ -2551,29 +2536,29 @@ jsdService::ActivateDebugger (JSRuntime *rt)
     /* Start watching for script creation/destruction and manage jsdScript
      * objects accordingly
      */
-    JSD_SetScriptHook (mCx, jsds_ScriptHookProc, NULL);
+    JSD_SetScriptHook (mCx, jsds_ScriptHookProc, nullptr);
 
     /* If any of these mFooHook objects are installed, do the required JSD
      * hookup now.   See also, jsdService::SetFooHook().
      */
     if (mErrorHook)
-        JSD_SetErrorReporter (mCx, jsds_ErrorHookProc, NULL);
+        JSD_SetErrorReporter (mCx, jsds_ErrorHookProc, nullptr);
     if (mThrowHook)
-        JSD_SetThrowHook (mCx, jsds_ExecutionHookProc, NULL);
+        JSD_SetThrowHook (mCx, jsds_ExecutionHookProc, nullptr);
     /* can't ignore script callbacks, as we need to |Release| the wrapper 
      * stored in private data when a script is deleted. */
     if (mInterruptHook)
-        JSD_SetInterruptHook (mCx, jsds_ExecutionHookProc, NULL);
+        JSD_SetInterruptHook (mCx, jsds_ExecutionHookProc, nullptr);
     if (mDebuggerHook)
-        JSD_SetDebuggerHook (mCx, jsds_ExecutionHookProc, NULL);
+        JSD_SetDebuggerHook (mCx, jsds_ExecutionHookProc, nullptr);
     if (mDebugHook)
-        JSD_SetDebugBreakHook (mCx, jsds_ExecutionHookProc, NULL);
+        JSD_SetDebugBreakHook (mCx, jsds_ExecutionHookProc, nullptr);
     if (mTopLevelHook)
-        JSD_SetTopLevelHook (mCx, jsds_CallHookProc, NULL);
+        JSD_SetTopLevelHook (mCx, jsds_CallHookProc, nullptr);
     else
         JSD_ClearTopLevelHook (mCx);
     if (mFunctionHook)
-        JSD_SetFunctionHook (mCx, jsds_CallHookProc, NULL);
+        JSD_SetFunctionHook (mCx, jsds_CallHookProc, nullptr);
     else
         JSD_ClearFunctionHook (mCx);
     mOn = true;
@@ -2603,9 +2588,8 @@ jsdService::Off (void)
         if (gGCRunning)
             return NS_ERROR_NOT_AVAILABLE;
 
-        JSContext *cx = JSD_GetDefaultJSContext(mCx);
         while (gDeadScripts)
-            jsds_NotifyPendingDeadScripts (JS_GetRuntime(cx));
+            jsds_NotifyPendingDeadScripts (JS_GetRuntime(nsContentUtils::GetSafeJSContext()));
     }
 
     DeactivateDebugger();
@@ -2645,7 +2629,7 @@ jsdService::DoPause(uint32_t *_rval, bool internalCall)
         return NS_ERROR_NOT_INITIALIZED;
 
     if (++mPauseLevel == 1) {
-        JSD_SetErrorReporter (mCx, NULL, NULL);
+        JSD_SetErrorReporter (mCx, nullptr, nullptr);
         JSD_ClearThrowHook (mCx);
         JSD_ClearInterruptHook (mCx);
         JSD_ClearDebuggerHook (mCx);
@@ -2691,21 +2675,21 @@ jsdService::DoUnPause(uint32_t *_rval, bool internalCall)
     if (--mPauseLevel == 0 && mOn) {
         JSD_DebuggerUnpause (mCx);
         if (mErrorHook)
-            JSD_SetErrorReporter (mCx, jsds_ErrorHookProc, NULL);
+            JSD_SetErrorReporter (mCx, jsds_ErrorHookProc, nullptr);
         if (mThrowHook)
-            JSD_SetThrowHook (mCx, jsds_ExecutionHookProc, NULL);
+            JSD_SetThrowHook (mCx, jsds_ExecutionHookProc, nullptr);
         if (mInterruptHook)
-            JSD_SetInterruptHook (mCx, jsds_ExecutionHookProc, NULL);
+            JSD_SetInterruptHook (mCx, jsds_ExecutionHookProc, nullptr);
         if (mDebuggerHook)
-            JSD_SetDebuggerHook (mCx, jsds_ExecutionHookProc, NULL);
+            JSD_SetDebuggerHook (mCx, jsds_ExecutionHookProc, nullptr);
         if (mDebugHook)
-            JSD_SetDebugBreakHook (mCx, jsds_ExecutionHookProc, NULL);
+            JSD_SetDebugBreakHook (mCx, jsds_ExecutionHookProc, nullptr);
         if (mTopLevelHook)
-            JSD_SetTopLevelHook (mCx, jsds_CallHookProc, NULL);
+            JSD_SetTopLevelHook (mCx, jsds_CallHookProc, nullptr);
         else
             JSD_ClearTopLevelHook (mCx);
         if (mFunctionHook)
-            JSD_SetFunctionHook (mCx, jsds_CallHookProc, NULL);
+            JSD_SetFunctionHook (mCx, jsds_CallHookProc, nullptr);
         else
             JSD_ClearFunctionHook (mCx);
 
@@ -2733,13 +2717,13 @@ jsdService::EnumerateContexts (jsdIContextEnumerator *enumerator)
     if (!enumerator)
         return NS_OK;
     
-    JSContext *iter = NULL;
+    JSContext *iter = nullptr;
     JSContext *cx;
 
     while ((cx = JS_ContextIterator (mRuntime, &iter)))
     {
         nsCOMPtr<jsdIContext> jsdicx = 
-            getter_AddRefs(jsdContext::FromPtr(mCx, cx));
+            dont_AddRef(jsdContext::FromPtr(mCx, cx));
         if (jsdicx)
         {
             if (NS_FAILED(enumerator->EnumerateContext(jsdicx)))
@@ -2756,13 +2740,13 @@ jsdService::EnumerateScripts (jsdIScriptEnumerator *enumerator)
     ASSERT_VALID_CONTEXT;
     
     JSDScript *script;
-    JSDScript *iter = NULL;
+    JSDScript *iter = nullptr;
     nsresult rv = NS_OK;
     
     JSD_LockScriptSubsystem(mCx);
     while((script = JSD_IterateScripts(mCx, &iter))) {
         nsCOMPtr<jsdIScript> jsdis =
-            getter_AddRefs(jsdScript::FromPtr(mCx, script));
+            dont_AddRef(jsdScript::FromPtr(mCx, script));
         rv = enumerator->EnumerateScript (jsdis);
         if (NS_FAILED(rv))
             break;
@@ -2793,8 +2777,8 @@ jsdService::DumpHeap(const nsACString &fileName)
     if (!file) {
         rv = NS_ERROR_FAILURE;
     } else {
-        JSContext *cx = JSD_GetDefaultJSContext (mCx);
-        if (!JS_DumpHeap(JS_GetRuntime(cx), file, NULL, JSTRACE_OBJECT, NULL, (size_t)-1, NULL))
+        if (!JS_DumpHeap(JS_GetRuntime(nsContentUtils::GetSafeJSContext()),
+                         file, nullptr, JSTRACE_OBJECT, nullptr, (size_t)-1, nullptr))
             rv = NS_ERROR_FAILURE;
         if (file != stdout)
             fclose(file);
@@ -3064,9 +3048,9 @@ jsdService::SetErrorHook (jsdIErrorHook *aHook)
         return NS_OK;
 
     if (aHook)
-        JSD_SetErrorReporter (mCx, jsds_ErrorHookProc, NULL);
+        JSD_SetErrorReporter (mCx, jsds_ErrorHookProc, nullptr);
     else
-        JSD_SetErrorReporter (mCx, NULL, NULL);
+        JSD_SetErrorReporter (mCx, nullptr, nullptr);
 
     return NS_OK;
 }
@@ -3108,7 +3092,7 @@ jsdService::SetDebugHook (jsdIExecutionHook *aHook)
         return NS_OK;
 
     if (aHook)
-        JSD_SetDebugBreakHook (mCx, jsds_ExecutionHookProc, NULL);
+        JSD_SetDebugBreakHook (mCx, jsds_ExecutionHookProc, nullptr);
     else
         JSD_ClearDebugBreakHook (mCx);
     
@@ -3136,7 +3120,7 @@ jsdService::SetDebuggerHook (jsdIExecutionHook *aHook)
         return NS_OK;
 
     if (aHook)
-        JSD_SetDebuggerHook (mCx, jsds_ExecutionHookProc, NULL);
+        JSD_SetDebuggerHook (mCx, jsds_ExecutionHookProc, nullptr);
     else
         JSD_ClearDebuggerHook (mCx);
     
@@ -3164,7 +3148,7 @@ jsdService::SetInterruptHook (jsdIExecutionHook *aHook)
         return NS_OK;
 
     if (aHook)
-        JSD_SetInterruptHook (mCx, jsds_ExecutionHookProc, NULL);
+        JSD_SetInterruptHook (mCx, jsds_ExecutionHookProc, nullptr);
     else
         JSD_ClearInterruptHook (mCx);
     
@@ -3192,7 +3176,7 @@ jsdService::SetScriptHook (jsdIScriptHook *aHook)
         return NS_OK;
     
     if (aHook)
-        JSD_SetScriptHook (mCx, jsds_ScriptHookProc, NULL);
+        JSD_SetScriptHook (mCx, jsds_ScriptHookProc, nullptr);
     /* we can't unset it if !aHook, because we still need to see script
      * deletes in order to Release the jsdIScripts held in JSDScript
      * private data. */
@@ -3220,7 +3204,7 @@ jsdService::SetThrowHook (jsdIExecutionHook *aHook)
         return NS_OK;
 
     if (aHook)
-        JSD_SetThrowHook (mCx, jsds_ExecutionHookProc, NULL);
+        JSD_SetThrowHook (mCx, jsds_ExecutionHookProc, nullptr);
     else
         JSD_ClearThrowHook (mCx);
     
@@ -3248,7 +3232,7 @@ jsdService::SetTopLevelHook (jsdICallHook *aHook)
         return NS_OK;
 
     if (aHook)
-        JSD_SetTopLevelHook (mCx, jsds_CallHookProc, NULL);
+        JSD_SetTopLevelHook (mCx, jsds_CallHookProc, nullptr);
     else
         JSD_ClearTopLevelHook (mCx);
     
@@ -3276,7 +3260,7 @@ jsdService::SetFunctionHook (jsdICallHook *aHook)
         return NS_OK;
 
     if (aHook)
-        JSD_SetFunctionHook (mCx, jsds_CallHookProc, NULL);
+        JSD_SetFunctionHook (mCx, jsds_CallHookProc, nullptr);
     else
         JSD_ClearFunctionHook (mCx);
     
@@ -3328,13 +3312,13 @@ NS_GENERIC_FACTORY_SINGLETON_CONSTRUCTOR(jsdService, jsdService::GetService)
 class jsdASObserver MOZ_FINAL : public nsIObserver
 {
   public:
-    NS_DECL_ISUPPORTS
+    NS_DECL_THREADSAFE_ISUPPORTS
     NS_DECL_NSIOBSERVER
 
     jsdASObserver () {}    
 };
 
-NS_IMPL_THREADSAFE_ISUPPORTS1(jsdASObserver, nsIObserver)
+NS_IMPL_ISUPPORTS1(jsdASObserver, nsIObserver)
 
 NS_IMETHODIMP
 jsdASObserver::Observe (nsISupports *aSubject, const char *aTopic,
@@ -3374,15 +3358,15 @@ NS_DEFINE_NAMED_CID(JSDSERVICE_CID);
 NS_DEFINE_NAMED_CID(JSDASO_CID);
 
 static const mozilla::Module::CIDEntry kJSDCIDs[] = {
-    { &kJSDSERVICE_CID, false, NULL, jsdServiceConstructor },
-    { &kJSDASO_CID, false, NULL, jsdASObserverConstructor },
-    { NULL }
+    { &kJSDSERVICE_CID, false, nullptr, jsdServiceConstructor },
+    { &kJSDASO_CID, false, nullptr, jsdASObserverConstructor },
+    { nullptr }
 };
 
 static const mozilla::Module::ContractIDEntry kJSDContracts[] = {
     { jsdServiceCtrID, &kJSDSERVICE_CID },
     { jsdARObserverCtrID, &kJSDASO_CID },
-    { NULL }
+    { nullptr }
 };
 
 static const mozilla::Module kJSDModule = {
@@ -3404,14 +3388,14 @@ global_finalize(JSFreeOp *aFop, JSObject *aObj)
 }
 
 JSObject *
-CreateJSDGlobal(JSContext *aCx, JSClass *aClasp)
+CreateJSDGlobal(JSContext *aCx, const JSClass *aClasp)
 {
     nsresult rv;
     nsCOMPtr<nsIPrincipal> nullPrin = do_CreateInstance("@mozilla.org/nullprincipal;1", &rv);
     NS_ENSURE_SUCCESS(rv, nullptr);
 
     JSPrincipals *jsPrin = nsJSPrincipals::get(nullPrin);
-    JSObject *global = JS_NewGlobalObject(aCx, aClasp, jsPrin);
+    JS::RootedObject global(aCx, JS_NewGlobalObject(aCx, aClasp, jsPrin, JS::DontFireOnNewGlobalHook));
     NS_ENSURE_TRUE(global, nullptr);
 
     // We have created a new global let's attach a private to it
@@ -3419,6 +3403,8 @@ CreateJSDGlobal(JSContext *aCx, JSClass *aClasp)
     nsCOMPtr<nsIScriptObjectPrincipal> sbp =
         new SandboxPrivate(nullPrin, global);
     JS_SetPrivate(global, sbp.forget().get());
+
+    JS_FireOnNewGlobalObject(aCx, global);
 
     return global;
 }
@@ -3430,7 +3416,7 @@ CreateJSDGlobal(JSContext *aCx, JSClass *aClasp)
 
 #if 0
 /* Thread States */
-NS_IMPL_THREADSAFE_ISUPPORTS1(jsdThreadState, jsdIThreadState); 
+NS_IMPL_ISUPPORTS1(jsdThreadState, jsdIThreadState); 
 
 NS_IMETHODIMP
 jsdThreadState::GetJSDContext(JSDContext **_rval)

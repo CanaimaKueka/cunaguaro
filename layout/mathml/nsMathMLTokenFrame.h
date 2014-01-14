@@ -7,7 +7,6 @@
 #define nsMathMLTokenFrame_h___
 
 #include "mozilla/Attributes.h"
-#include "nsCOMPtr.h"
 #include "nsMathMLContainerFrame.h"
 
 //
@@ -21,7 +20,7 @@ public:
   friend nsIFrame* NS_NewMathMLTokenFrame(nsIPresShell* aPresShell, nsStyleContext* aContext);
 
   NS_IMETHOD
-  TransmitAutomaticData() {
+  TransmitAutomaticData() MOZ_OVERRIDE {
     // The REC defines the following elements to be space-like:
     // * an mtext, mspace, maligngroup, or malignmark element;
     if (mContent->Tag() == nsGkAtoms::mtext_) {
@@ -31,9 +30,9 @@ public:
   }
 
   NS_IMETHOD
-  InheritAutomaticData(nsIFrame* aParent);
+  InheritAutomaticData(nsIFrame* aParent) MOZ_OVERRIDE;
 
-  virtual eMathMLFrameType GetMathMLFrameType();
+  virtual eMathMLFrameType GetMathMLFrameType() MOZ_OVERRIDE;
 
   NS_IMETHOD
   SetInitialChildList(ChildListID     aListID,
@@ -59,7 +58,7 @@ public:
         bool                 aPlaceOrigin,
         nsHTMLReflowMetrics& aDesiredSize) MOZ_OVERRIDE;
 
-  virtual void MarkIntrinsicWidthsDirty();
+  virtual void MarkIntrinsicWidthsDirty() MOZ_OVERRIDE;
 
   virtual nsresult
   ChildListChanged(int32_t aModType) MOZ_OVERRIDE
@@ -79,7 +78,7 @@ protected:
   // depending on its textual content
   bool SetTextStyle();
 
-  void ForceTrimChildTextFrames();
+  void MarkTextFramesAsTokenMathML();
 };
 
 #endif /* nsMathMLTokentFrame_h___ */

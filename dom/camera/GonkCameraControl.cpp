@@ -25,7 +25,6 @@
 #include "nsCOMPtr.h"
 #include "nsDOMClassInfo.h"
 #include "nsMemory.h"
-#include "jsapi.h"
 #include "nsThread.h"
 #include <media/MediaProfiles.h>
 #include "mozilla/FileUtils.h"
@@ -143,10 +142,12 @@ static const char* getKeyText(uint32_t aKey)
 }
 
 // nsDOMCameraControl implementation-specific constructor
-nsDOMCameraControl::nsDOMCameraControl(uint32_t aCameraId, nsIThread* aCameraThread, nsICameraGetCameraCallback* onSuccess, nsICameraErrorCallback* onError, uint64_t aWindowId)
-  : mDOMCapabilities(nullptr)
+nsDOMCameraControl::nsDOMCameraControl(uint32_t aCameraId, nsIThread* aCameraThread, nsICameraGetCameraCallback* onSuccess, nsICameraErrorCallback* onError, nsPIDOMWindow* aWindow)
+  : mDOMCapabilities(nullptr), mWindow(aWindow)
 {
+  MOZ_ASSERT(aWindow, "shouldn't be created with null window!");
   DOM_CAMERA_LOGT("%s:%d : this=%p\n", __func__, __LINE__, this);
+  SetIsDOMBinding();
 
   /**
    * nsDOMCameraControl is a cycle-collection participant, which means it is
@@ -160,8 +161,8 @@ nsDOMCameraControl::nsDOMCameraControl(uint32_t aCameraId, nsIThread* aCameraThr
    * nsDOMCameraControl or memory will leak!
    */
   NS_ADDREF_THIS();
-  nsRefPtr<nsGonkCameraControl> control = new nsGonkCameraControl(aCameraId, aCameraThread, this, onSuccess, onError, aWindowId);
-  control->DispatchInit(this, onSuccess, onError, aWindowId);
+  nsRefPtr<nsGonkCameraControl> control = new nsGonkCameraControl(aCameraId, aCameraThread, this, onSuccess, onError, aWindow->WindowID());
+  control->DispatchInit(this, onSuccess, onError, aWindow->WindowID());
   mCameraControl = control;
 }
 
@@ -174,8 +175,8 @@ public:
   InitGonkCameraControl(nsGonkCameraControl* aCameraControl, nsDOMCameraControl* aDOMCameraControl, nsICameraGetCameraCallback* onSuccess, nsICameraErrorCallback* onError, uint64_t aWindowId)
     : mCameraControl(aCameraControl)
     , mDOMCameraControl(aDOMCameraControl)
-    , mOnSuccessCb(onSuccess)
-    , mOnErrorCb(onError)
+    , mOnSuccessCb(new nsMainThreadPtrHolder<nsICameraGetCameraCallback>(onSuccess))
+    , mOnErrorCb(new nsMainThreadPtrHolder<nsICameraErrorCallback>(onError))
     , mWindowId(aWindowId)
   {
     DOM_CAMERA_LOGT("%s:%d : this=%p\n", __func__, __LINE__, this);
@@ -195,8 +196,8 @@ public:
   nsRefPtr<nsGonkCameraControl> mCameraControl;
   // Raw pointer to DOM-facing camera control--it must NS_ADDREF itself for us
   nsDOMCameraControl* mDOMCameraControl;
-  nsCOMPtr<nsICameraGetCameraCallback> mOnSuccessCb;
-  nsCOMPtr<nsICameraErrorCallback> mOnErrorCb;
+  nsMainThreadPtrHandle<nsICameraGetCameraCallback> mOnSuccessCb;
+  nsMainThreadPtrHandle<nsICameraErrorCallback> mOnErrorCb;
   uint64_t mWindowId;
 };
 
@@ -676,6 +677,8 @@ nsGonkCameraControl::StartPreviewImpl(StartPreviewTask* aStartPreview)
   if (aStartPreview->mDOMPreview) {
     mDOMPreview->Started();
   }
+
+  OnPreviewStateChange(PREVIEW_STARTED);
   return NS_OK;
 }
 
@@ -694,6 +697,7 @@ nsGonkCameraControl::StopPreviewInternal(bool aForced)
     mDOMPreview = nullptr;
   }
 
+  OnPreviewStateChange(PREVIEW_STOPPED);
   return NS_OK;
 }
 
@@ -863,6 +867,10 @@ nsGonkCameraControl::TakePictureImpl(TakePictureTask* aTakePicture)
   if (mCameraHw->TakePicture() != OK) {
     return NS_ERROR_FAILURE;
   }
+  
+  // In Gonk, taking a picture implicitly kills the preview stream,
+  // so we need to reflect that here.
+  OnPreviewStateChange(PREVIEW_STOPPED);
   return NS_OK;
 }
 
@@ -1040,9 +1048,21 @@ nsGonkCameraControl::TakePictureComplete(uint8_t* aData, uint32_t aLength)
 }
 
 void
+nsGonkCameraControl::TakePictureError()
+{
+  nsCOMPtr<nsIRunnable> takePictureError = new CameraErrorResult(mTakePictureOnErrorCb, NS_LITERAL_STRING("FAILURE"), mWindowId);
+  mTakePictureOnSuccessCb = nullptr;
+  mTakePictureOnErrorCb = nullptr;
+  nsresult rv = NS_DispatchToMainThread(takePictureError);
+  if (NS_FAILED(rv)) {
+    NS_WARNING("Failed to dispatch takePicture() onError callback to main thread!");
+  }
+}
+
+void
 nsGonkCameraControl::SetPreviewSize(uint32_t aWidth, uint32_t aHeight)
 {
-  Vector<Size> previewSizes;
+  android::Vector<Size> previewSizes;
   uint32_t bestWidth = aWidth;
   uint32_t bestHeight = aHeight;
   uint32_t minSizeDelta = UINT32_MAX;
@@ -1425,7 +1445,7 @@ nsGonkCameraControl::GetVideoSizes(nsTArray<idl::CameraSize>& aVideoSizes)
 {
   aVideoSizes.Clear();
 
-  Vector<Size> sizes;
+  android::Vector<Size> sizes;
   mParams.getSupportedVideoSizes(sizes);
   if (sizes.size() == 0) {
     DOM_CAMERA_LOGI("Camera doesn't support video independent of the preview\n");
@@ -1456,6 +1476,12 @@ ReceiveImage(nsGonkCameraControl* gc, uint8_t* aData, uint32_t aLength)
 }
 
 void
+ReceiveImageError(nsGonkCameraControl* gc)
+{
+  gc->TakePictureError();
+}
+
+void
 AutoFocusComplete(nsGonkCameraControl* gc, bool aSuccess)
 {
   gc->AutoFocusComplete(aSuccess);
@@ -1468,8 +1494,8 @@ GonkFrameBuilder(Image* aImage, void* aBuffer, uint32_t aWidth, uint32_t aHeight
    * Cast the generic Image back to our platform-specific type and
    * populate it.
    */
-  GonkIOSurfaceImage* videoImage = static_cast<GonkIOSurfaceImage*>(aImage);
-  GonkIOSurfaceImage::Data data;
+  GrallocImage* videoImage = static_cast<GrallocImage*>(aImage);
+  GrallocImage::GrallocData data;
   data.mGraphicBuffer = static_cast<layers::GraphicBufferLocked*>(aBuffer);
   data.mPicSize = gfxIntSize(aWidth, aHeight);
   videoImage->SetData(data);
@@ -1478,7 +1504,7 @@ GonkFrameBuilder(Image* aImage, void* aBuffer, uint32_t aWidth, uint32_t aHeight
 void
 ReceiveFrame(nsGonkCameraControl* gc, layers::GraphicBufferLocked* aBuffer)
 {
-  if (!gc->ReceiveFrame(aBuffer, ImageFormat::GONK_IO_SURFACE, GonkFrameBuilder)) {
+  if (!gc->ReceiveFrame(aBuffer, ImageFormat::GRALLOC_PLANAR_YCBCR, GonkFrameBuilder)) {
     aBuffer->Unlock();
   }
 }

@@ -50,6 +50,8 @@
 <!ENTITY sendLaterCmd.accesskey "z">
 <!ENTITY printSetupCmd.label "Pagina-instellingen…">
 <!ENTITY printSetupCmd.accesskey "P">
+<!ENTITY printPreviewCmd.label "Afdrukvoorbeeld">
+<!ENTITY printPreviewCmd.accesskey "v">
 <!ENTITY printCmd.label "Afdrukken…">
 <!ENTITY printCmd.key "P">
 <!ENTITY printCmd.accesskey "d">
@@ -87,6 +89,7 @@
 <!ENTITY findCmd.label "Zoeken en vervangen…">
 <!ENTITY findCmd.key "F">
 <!ENTITY findCmd.accesskey "Z">
+<!ENTITY findReplaceCmd.key "H">
 <!ENTITY findAgainCmd.label "Opnieuw zoeken">
 <!ENTITY findAgainCmd.key "G">
 <!ENTITY findAgainCmd.accesskey "w">

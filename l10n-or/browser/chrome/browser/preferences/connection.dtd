@@ -1,3 +1,7 @@
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+
 
 <!ENTITY  connectionsDialog.title       "ସଂଯୋଗ ବିନ୍ୟାସ">
 <!ENTITY  window.width                  "37em">
@@ -18,7 +22,6 @@
 <!ENTITY  reload.accesskey              "e">
 <!ENTITY  ftp.label                     "FTP ପ୍ରକ୍ସି:">
 <!ENTITY  ftp.accesskey                 "F">
-
 <!ENTITY  http.label                    "HTTP ପ୍ରକ୍ସି:">
 <!ENTITY  http.accesskey                "x">
 <!ENTITY  ssl.label                     "SSL ପ୍ରକ୍ସି:">
@@ -33,8 +36,6 @@
 <!ENTITY  HTTPport.accesskey            "P">
 <!ENTITY  SSLport.accesskey             "o">
 <!ENTITY  FTPport.accesskey             "r">
-<!-- No accesskey for gopher (':' doesn't go well) - mpt's going to redesign the window -->
-
 <!ENTITY  SOCKSport.accesskey           "t">
 <!ENTITY  noproxy.label                 "ପାଇଁ କୌଣସି ପ୍ରକ୍ସି ନାହିଁ:">
 <!ENTITY  noproxy.accesskey             "n">

@@ -1,8 +1,8 @@
-Index: cunaguaro-8.0-4/browser/app/profile/firefox.js
+Index: iceweasel-27.0~b5/browser/app/profile/firefox.js
 ===================================================================
---- cunaguaro-8.0-4.orig/browser/app/profile/firefox.js	2013-04-25 15:39:08.767976999 -0430
-+++ cunaguaro-8.0-4/browser/app/profile/firefox.js	2013-04-25 16:32:00.564130505 -0430
-@@ -354,7 +354,7 @@
+--- iceweasel-27.0~b5.orig/browser/app/profile/firefox.js	2014-01-14 10:28:25.674387718 -0430
++++ iceweasel-27.0~b5/browser/app/profile/firefox.js	2014-01-14 10:32:04.447472566 -0430
+@@ -395,7 +395,7 @@
  pref("browser.search.order.3",                "chrome://browser-region/locale/region.properties");
  
  // search bar results always open in a new tab
@@ -11,25 +11,25 @@ Index: cunaguaro-8.0-4/browser/app/profile/firefox.js
  
  // context menu searches open in the foreground
  pref("browser.search.context.loadInBackground", false);
-Index: cunaguaro-8.0-4/modules/libpref/src/init/all.js
+Index: iceweasel-27.0~b5/modules/libpref/src/init/all.js
 ===================================================================
---- cunaguaro-8.0-4.orig/modules/libpref/src/init/all.js	2013-04-25 15:39:08.743976997 -0430
-+++ cunaguaro-8.0-4/modules/libpref/src/init/all.js	2013-04-25 16:29:04.404121979 -0430
-@@ -1445,7 +1445,7 @@
+--- iceweasel-27.0~b5.orig/modules/libpref/src/init/all.js	2014-01-14 10:28:25.674387718 -0430
++++ iceweasel-27.0~b5/modules/libpref/src/init/all.js	2014-01-14 10:32:04.447472566 -0430
+@@ -1605,7 +1605,7 @@
  pref("security.checkloaduri", true);
  pref("security.xpconnect.plugin.unrestricted", true);
  // security-sensitive dialogs should delay button enabling. In milliseconds.
--pref("security.dialog_enable_delay", 2000);
+-pref("security.dialog_enable_delay", 1000);
 +pref("security.dialog_enable_delay", 500);
  pref("security.notification_enable_delay", 500);
  
  pref("security.csp.enable", true);
-Index: cunaguaro-8.0-4/netwerk/base/public/security-prefs.js
+Index: iceweasel-27.0~b5/netwerk/base/public/security-prefs.js
 ===================================================================
---- cunaguaro-8.0-4.orig/netwerk/base/public/security-prefs.js	2013-04-16 14:15:02.000000000 -0430
-+++ cunaguaro-8.0-4/netwerk/base/public/security-prefs.js	2013-04-25 16:31:28.680128961 -0430
-@@ -7,7 +7,7 @@
- pref("security.enable_tls_session_tickets", true);
+--- iceweasel-27.0~b5.orig/netwerk/base/public/security-prefs.js	2014-01-14 10:28:25.674387718 -0430
++++ iceweasel-27.0~b5/netwerk/base/public/security-prefs.js	2014-01-14 10:32:04.451472577 -0430
+@@ -6,7 +6,7 @@
+ pref("security.tls.version.max", 3);
  pref("security.enable_md5_signatures", false);
  
 -pref("security.ssl.allow_unrestricted_renego_everywhere__temporarily_available_pref", false);

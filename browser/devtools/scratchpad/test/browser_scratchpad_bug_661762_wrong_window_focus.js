@@ -2,10 +2,6 @@
 /* Any copyright is dedicated to the Public Domain.
    http://creativecommons.org/publicdomain/zero/1.0/ */
 
-let tempScope = {};
-Cu.import("resource:///modules/HUDService.jsm", tempScope);
-let HUDService = tempScope.HUDService;
-
 function test()
 {
   waitForExplicitFinish();
@@ -43,7 +39,7 @@ function test()
         Services.obs.
           addObserver(onWebConsoleOpen, "web-console-created", false);
 
-        HUDService.consoleUI.toggleHUD();
+        HUDService.toggleWebConsole();
       });
     });
   }, true);
@@ -54,12 +50,12 @@ function test()
 function testFocus(sw, hud) {
   let sp = sw.Scratchpad;
 
-  function onMessage(subj) {
-    Services.obs.removeObserver(onMessage, "web-console-message-created");
+  function onMessage(event, messages) {
+    let msg = [...messages][0];
 
-    var loc = hud.jsterm.outputNode.querySelector(".webconsole-location");
+    var loc = msg.querySelector(".location");
     ok(loc, "location element exists");
-    is(loc.value, sw.Scratchpad.uniqueName + ":1",
+    is(loc.textContent.trim(), sw.Scratchpad.uniqueName + ":1",
         "location value is correct");
 
     sw.addEventListener("focus", function onFocus() {
@@ -83,12 +79,12 @@ function testFocus(sw, hud) {
 
   // Sending messages to web console is an asynchronous operation. That's
   // why we have to setup an observer here.
-  Services.obs.addObserver(onMessage, "web-console-message-created", false);
+  hud.ui.once("messages-added", onMessage);
 
   sp.setText("console.log('foo');");
   sp.run().then(function ([selection, error, result]) {
     is(selection, "console.log('foo');", "selection is correct");
     is(error, undefined, "error is correct");
-    is(result, undefined, "result is correct");
+    is(result.type, "undefined", "result is correct");
   });
 }

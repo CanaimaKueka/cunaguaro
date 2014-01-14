@@ -6,6 +6,7 @@
 #ifndef HTMLFrameSetElement_h
 #define HTMLFrameSetElement_h
 
+#include "mozilla/Attributes.h"
 #include "nsIDOMHTMLFrameSetElement.h"
 #include "nsGenericHTMLElement.h"
 
@@ -39,10 +40,10 @@ struct nsFramesetSpec {
 namespace mozilla {
 namespace dom {
 
-class BeforeUnloadEventHandlerNonNull;
+class OnBeforeUnloadEventHandlerNonNull;
 
-class HTMLFrameSetElement : public nsGenericHTMLElement,
-                            public nsIDOMHTMLFrameSetElement
+class HTMLFrameSetElement MOZ_FINAL : public nsGenericHTMLElement,
+                                      public nsIDOMHTMLFrameSetElement
 {
 public:
   HTMLFrameSetElement(already_AddRefed<nsINodeInfo> aNodeInfo)
@@ -51,7 +52,6 @@ public:
       mNumCols(0),
       mCurrentRowColHint(NS_STYLE_HINT_REFLOW)
   {
-    SetIsDOMBinding();
   }
   virtual ~HTMLFrameSetElement();
 
@@ -59,15 +59,6 @@ public:
 
   // nsISupports
   NS_DECL_ISUPPORTS_INHERITED
-
-  // nsIDOMNode
-  NS_FORWARD_NSIDOMNODE_TO_NSINODE
-
-  // nsIDOMElement
-  NS_FORWARD_NSIDOMELEMENT_TO_GENERIC
-
-  // nsIDOMHTMLElement
-  NS_FORWARD_NSIDOMHTMLELEMENT_TO_GENERIC
 
   // nsIDOMHTMLFrameSetElement
   NS_DECL_NSIDOMHTMLFRAMESETELEMENT
@@ -99,12 +90,12 @@ public:
   NS_IMETHOD SetOn##name_(JSContext *cx, const JS::Value &v);
 #define WINDOW_EVENT_HELPER(name_, type_)                               \
   type_* GetOn##name_();                                                \
-  void SetOn##name_(type_* handler, ErrorResult& error);
+  void SetOn##name_(type_* handler);
 #define WINDOW_EVENT(name_, id_, type_, struct_)                        \
   WINDOW_EVENT_HELPER(name_, EventHandlerNonNull)
 #define BEFOREUNLOAD_EVENT(name_, id_, type_, struct_)                  \
-  WINDOW_EVENT_HELPER(name_, BeforeUnloadEventHandlerNonNull)
-#include "nsEventNameList.h"
+  WINDOW_EVENT_HELPER(name_, OnBeforeUnloadEventHandlerNonNull)
+#include "nsEventNameList.h" // IWYU pragma: keep
 #undef BEFOREUNLOAD_EVENT
 #undef WINDOW_EVENT
 #undef WINDOW_EVENT_HELPER
@@ -120,7 +111,7 @@ public:
   }
   virtual nsresult SetAttr(int32_t aNameSpaceID, nsIAtom* aName,
                            nsIAtom* aPrefix, const nsAString& aValue,
-                           bool aNotify);
+                           bool aNotify) MOZ_OVERRIDE;
 
    /**
     * GetRowSpec is used to get the "rows" spec.
@@ -143,12 +134,11 @@ public:
   virtual bool ParseAttribute(int32_t aNamespaceID,
                                 nsIAtom* aAttribute,
                                 const nsAString& aValue,
-                                nsAttrValue& aResult);
+                                nsAttrValue& aResult) MOZ_OVERRIDE;
   virtual nsChangeHint GetAttributeChangeHint(const nsIAtom* aAttribute,
-                                              int32_t aModType) const;
+                                              int32_t aModType) const MOZ_OVERRIDE;
 
-  virtual nsresult Clone(nsINodeInfo *aNodeInfo, nsINode **aResult) const;
-  virtual nsIDOMNode* AsDOMNode() { return this; }
+  virtual nsresult Clone(nsINodeInfo *aNodeInfo, nsINode **aResult) const MOZ_OVERRIDE;
 
 protected:
   virtual JSObject* WrapNode(JSContext *aCx,

@@ -48,7 +48,7 @@ public:
   virtual void GetMarkPoints(nsTArray<nsSVGMark> *aMarks) MOZ_OVERRIDE;
   virtual void ConstructPath(gfxContext *aCtx) MOZ_OVERRIDE;
 
-  virtual already_AddRefed<gfxFlattenedPath> GetFlattenedPath(const gfxMatrix &aMatrix) MOZ_OVERRIDE;
+  virtual already_AddRefed<gfxPath> GetPath(const gfxMatrix &aMatrix) MOZ_OVERRIDE;
 
   // nsIContent interface
   virtual nsresult Clone(nsINodeInfo *aNodeInfo, nsINode **aResult) const MOZ_OVERRIDE;
@@ -74,7 +74,7 @@ public:
   gfxFloat GetPathLengthScale(PathLengthScaleForType aFor);
 
   // WebIDL
-  already_AddRefed<nsIDOMSVGAnimatedNumber> PathLength();
+  already_AddRefed<SVGAnimatedNumber> PathLength();
   float GetTotalLength(ErrorResult& rv);
   already_AddRefed<nsISVGPoint> GetPointAtLength(float distance, ErrorResult& rv);
   uint32_t GetPathSegAtLength(float distance);

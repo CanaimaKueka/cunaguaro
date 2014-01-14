@@ -26,7 +26,13 @@ class HTMLCheckboxAccessible : public LeafAccessible
 public:
   enum { eAction_Click = 0 };
 
-  HTMLCheckboxAccessible(nsIContent* aContent, DocAccessible* aDoc);
+  HTMLCheckboxAccessible(nsIContent* aContent, DocAccessible* aDoc) :
+    LeafAccessible(aContent, aDoc)
+  {
+    // Ignore "CheckboxStateChange" DOM event in lieu of document observer
+    // state change notification.
+    mStateFlags |= eIgnoreDOMUIEvent;
+  }
 
   // nsIAccessible
   NS_IMETHOD GetActionName(uint8_t aIndex, nsAString& aName);
@@ -51,7 +57,13 @@ class HTMLRadioButtonAccessible : public RadioButtonAccessible
 {
 
 public:
-  HTMLRadioButtonAccessible(nsIContent* aContent, DocAccessible* aDoc);
+  HTMLRadioButtonAccessible(nsIContent* aContent, DocAccessible* aDoc) :
+    RadioButtonAccessible(aContent, aDoc)
+  {
+    // Ignore "RadioStateChange" DOM event in lieu of document observer
+    // state change notification.
+    mStateFlags |= eIgnoreDOMUIEvent;
+  }
 
   // Accessible
   virtual uint64_t NativeState();
@@ -94,7 +106,8 @@ protected:
 
 
 /**
- * Accessible for HTML input@type="text" element.
+ * Accessible for HTML input@type="text", input@type="password", textarea and
+ * other HTML text controls.
  */
 class HTMLTextFieldAccessible : public HyperTextAccessibleWrap
 {
@@ -118,6 +131,7 @@ public:
   virtual void ApplyARIAState(uint64_t* aState) const;
   virtual mozilla::a11y::role NativeRole();
   virtual uint64_t NativeState();
+  virtual already_AddRefed<nsIPersistentProperties> NativeAttributes() MOZ_OVERRIDE;
 
   // ActionAccessible
   virtual uint8_t ActionCount();
@@ -180,7 +194,7 @@ public:
 
   // Accessible
   virtual mozilla::a11y::role NativeRole();
-  virtual Relation RelationByType(uint32_t aType);
+  virtual Relation RelationByType(RelationType aType) MOZ_OVERRIDE;
 
 protected:
   // Accessible
@@ -201,7 +215,7 @@ public:
 
   // Accessible
   virtual mozilla::a11y::role NativeRole();
-  virtual Relation RelationByType(uint32_t aType);
+  virtual Relation RelationByType(RelationType aType) MOZ_OVERRIDE;
 };
 
 /**
@@ -215,7 +229,7 @@ public:
   // Accessible
   virtual already_AddRefed<nsIPersistentProperties> NativeAttributes() MOZ_OVERRIDE;
   virtual mozilla::a11y::role NativeRole();
-  virtual Relation RelationByType(uint32_t aType);
+  virtual Relation RelationByType(RelationType aType) MOZ_OVERRIDE;
 
 protected:
   // Accessible
@@ -236,7 +250,7 @@ public:
 
   // Accessible
   virtual mozilla::a11y::role NativeRole();
-  virtual Relation RelationByType(uint32_t aType);
+  virtual Relation RelationByType(RelationType aType) MOZ_OVERRIDE;
 };
 
 } // namespace a11y

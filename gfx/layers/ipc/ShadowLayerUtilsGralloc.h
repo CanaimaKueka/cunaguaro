@@ -72,10 +72,6 @@ public:
   virtual ~GrallocBufferActor();
 
   static PGrallocBufferParent*
-  Create(const gfxIntSize& aSize, const gfxContentType& aContent,
-         MaybeMagicGrallocBufferHandle* aOutHandle);
-
-  static PGrallocBufferParent*
   Create(const gfxIntSize& aSize, const uint32_t& aFormat, const uint32_t& aUsage,
          MaybeMagicGrallocBufferHandle* aOutHandle);
 
@@ -91,12 +87,15 @@ public:
 
   // used only for hacky fix in gecko 23 for bug 862324
   // see bug 865908 about fixing this.
-  void SetTextureHost(TextureHost* aTextureHost);
+  void AddDeprecatedTextureHost(DeprecatedTextureHost* aDeprecatedTextureHost);
+  void RemoveDeprecatedTextureHost(DeprecatedTextureHost* aDeprecatedTextureHost);
+
+  android::GraphicBuffer* GetGraphicBuffer();
+
+  void InitFromHandle(const MagicGrallocBufferHandle& aHandle);
 
 private:
   GrallocBufferActor();
-
-  void InitFromHandle(const MagicGrallocBufferHandle& aHandle);
 
   android::sp<GraphicBuffer> mGraphicBuffer;
 
@@ -106,7 +105,7 @@ private:
 
   // used only for hacky fix in gecko 23 for bug 862324
   // see bug 865908 about fixing this.
-  TextureHost* mTextureHost;
+  nsAutoTArray<DeprecatedTextureHost*, 2> mDeprecatedTextureHosts;
 
   friend class ISurfaceAllocator;
 };

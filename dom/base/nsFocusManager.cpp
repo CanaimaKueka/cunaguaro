@@ -7,20 +7,13 @@
 
 #include "nsFocusManager.h"
 
-#include "nsIInterfaceRequestor.h"
 #include "nsIInterfaceRequestorUtils.h"
-#include "nsIServiceManager.h"
 #include "nsGkAtoms.h"
 #include "nsContentUtils.h"
 #include "nsIDocument.h"
 #include "nsIDOMWindow.h"
 #include "nsPIDOMWindow.h"
 #include "nsIDOMElement.h"
-#include "nsIDOMXULElement.h"
-#include "nsIDOMHTMLFrameElement.h"
-#include "nsIDOMHTMLInputElement.h"
-#include "nsIDOMHTMLMapElement.h"
-#include "nsIDOMHTMLLegendElement.h"
 #include "nsIDOMDocument.h"
 #include "nsIDOMRange.h"
 #include "nsIHTMLDocument.h"
@@ -28,9 +21,7 @@
 #include "nsIDocShellTreeOwner.h"
 #include "nsLayoutUtils.h"
 #include "nsIPresShell.h"
-#include "nsIContentViewer.h"
 #include "nsFrameTraversal.h"
-#include "nsObjectFrame.h"
 #include "nsEventDispatcher.h"
 #include "nsEventStateManager.h"
 #include "nsIMEStateManager.h"
@@ -41,17 +32,18 @@
 #include "nsFrameSelection.h"
 #include "mozilla/Selection.h"
 #include "nsXULPopupManager.h"
-#include "nsIDOMNodeFilter.h"
 #include "nsIScriptObjectPrincipal.h"
 #include "nsIPrincipal.h"
-#include "mozAutoDocUpdate.h"
-#include "nsFrameLoader.h"
 #include "nsIObserverService.h"
-#include "nsIScriptError.h"
+#include "nsIObjectFrame.h"
+#include "nsBindingManager.h"
+#include "nsStyleCoord.h"
 
+#include "mozilla/ContentEvents.h"
 #include "mozilla/dom/Element.h"
 #include "mozilla/LookAndFeel.h"
 #include "mozilla/Preferences.h"
+#include "mozilla/Services.h"
 #include <algorithm>
 
 #ifdef MOZ_XUL
@@ -61,6 +53,10 @@
 
 #ifdef ACCESSIBILITY
 #include "nsAccessibilityService.h"
+#endif
+
+#ifndef XP_MACOSX
+#include "nsIScriptError.h"
 #endif
 
 using namespace mozilla;
@@ -213,7 +209,7 @@ nsFocusManager::Observe(nsISupports *aSubject,
   if (!nsCRT::strcmp(aTopic, NS_PREFBRANCH_PREFCHANGE_TOPIC_ID)) {
     nsDependentString data(aData);
     if (data.EqualsLiteral("accessibility.browsewithcaret")) {
-      UpdateCaret(false, true, mFocusedContent);
+      UpdateCaretForCaretBrowsingMode();
     }
     else if (data.EqualsLiteral("accessibility.tabfocus_applies_to_xul")) {
       nsIContent::sTabFocusModelAppliesToXUL =
@@ -311,7 +307,7 @@ nsFocusManager::GetRedirectedFocus(nsIContent* aContent)
         if (!doc)
           return nullptr;
 
-        nsINodeList* children = doc->BindingManager()->GetXBLChildNodesFor(aContent);
+        nsINodeList* children = doc->BindingManager()->GetAnonymousNodesFor(aContent);
         if (children) {
           nsIContent* child = children->Item(0);
           if (child && child->Tag() == nsGkAtoms::slider)
@@ -687,7 +683,9 @@ nsFocusManager::WindowRaised(nsIDOMWindow* aWindow)
       return NS_ERROR_FAILURE;
     }
 
-    baseWindow->SetVisibility(true);
+    if (!sTestMode) {
+      baseWindow->SetVisibility(true);
+    }
   }
 
   // inform the DOM window that it has activated, so that the active attribute
@@ -1163,7 +1161,7 @@ nsFocusManager::SetFocusInner(nsIContent* aNewContent, int32_t aFlags,
       (fullscreenAncestor = nsContentUtils::GetFullscreenAncestor(contentToFocus->OwnerDoc())) &&
       nsContentUtils::HasPluginWithUncontrolledEventDispatch(contentToFocus)) {
     nsContentUtils::ReportToConsole(nsIScriptError::warningFlag,
-                                    "DOM",
+                                    NS_LITERAL_CSTRING("DOM"),
                                     contentToFocus->OwnerDoc(),
                                     nsContentUtils::eDOM_PROPERTIES,
                                     "FocusedWindowedPluginWhileFullScreen");
@@ -1855,7 +1853,7 @@ public:
 
   NS_IMETHOD Run()
   {
-    nsFocusEvent event(true, mType);
+    InternalFocusEvent event(true, mType);
     event.mFlags.mBubbles = false;
     event.fromRaise = mWindowRaised;
     event.isRefocus = mIsRefocus;
@@ -1992,6 +1990,12 @@ nsFocusManager::RaiseWindow(nsPIDOMWindow* aWindow)
       widget->SetFocus(true);
   }
 #endif
+}
+
+void
+nsFocusManager::UpdateCaretForCaretBrowsingMode()
+{
+  UpdateCaret(false, true, mFocusedContent);
 }
 
 void
@@ -2139,6 +2143,8 @@ nsFocusManager::SetCaretVisible(nsIPresShell* aPresShell,
       // First, hide the caret to prevent attempting to show it in SetCaretDOMSelection
       caret->SetCaretVisible(false);
 
+      // Caret must blink on non-editable elements
+      caret->SetIgnoreUserModify(true);
       // Tell the caret which selection to use
       caret->SetCaretDOMSelection(domSelection);
 
@@ -2150,6 +2156,7 @@ nsFocusManager::SetCaretVisible(nsIPresShell* aPresShell,
       if (!selCon)
         return NS_ERROR_FAILURE;
 
+      selCon->SetCaretReadOnly(false);
       selCon->SetCaretEnabled(aVisible);
       caret->SetCaretVisible(aVisible);
     }
@@ -2537,6 +2544,9 @@ nsFocusManager::DetermineElementToMoveFocus(nsPIDOMWindow* aWindow,
     ignoreTabIndex = false;
 
     if (aNoParentTraversal) {
+      if (startContent == rootContent)
+        return NS_OK;
+
       startContent = rootContent;
       tabIndex = forward ? 1 : 0;
       continue;

@@ -20,6 +20,11 @@
 <!ENTITY  reloadTab.accesskey                "r">
 <!ENTITY  reloadAllTabs.label                "Recargar todas las pestañas">
 <!ENTITY  reloadAllTabs.accesskey            "A">
+<!-- LOCALIZATION NOTE (closeTabsToTheEnd.label): This should indicate the
+direction in which tabs are closed, i.e. locales that use RTL mode should say
+left instead of right. -->
+<!ENTITY  closeTabsToTheEnd.label            "Cerrar pestañas hacia la derecha">
+<!ENTITY  closeTabsToTheEnd.accesskey        "i">
 <!ENTITY  closeOtherTabs.label               "Cerrar las otras pestañas">
 <!ENTITY  closeOtherTabs.accesskey           "o">
 
@@ -41,6 +46,11 @@ can reach it easily. -->
 <!ENTITY  bookmarkAllTabs.accesskey          "t">
 <!ENTITY  undoCloseTab.label                 "Deshacer cerrar pestaña">
 <!ENTITY  undoCloseTab.accesskey             "h">
+<!-- LOCALIZATION NOTE (undoCloseTabs.label) : This label is used
+when the previous tab-closing operation closed more than one tab. It
+replaces the undoCloseTab.label and will use the same accesskey as the
+undoCloseTab.label so users will not need to learn new keyboard controls. -->
+<!ENTITY  undoCloseTabs.label                "Deshacer cerrar pestañas">
 <!ENTITY  closeTab.label                     "Cerrar pestaña">
 <!ENTITY  closeTab.accesskey                 "c">
 
@@ -102,9 +112,8 @@ These should match what Safari and other Apple applications use on OS X Lion. --
 <!ENTITY fullScreenExit.accesskey "S">
 <!ENTITY fullscreenAllowButton.label "Permitir">
 <!ENTITY fullscreenExitButton.label "Denegar">
-<!ENTITY fullscreenApproval.value "¿Permitir pantalla completa?">
 
-<!ENTITY fullscreenExitHint.value "Pulse ESC en cualquier momento para salir de pantalla completa">
+<!ENTITY fullscreenExitHint2.value "Pulse ESC en cualquier momento para salir.">
 <!ENTITY leaveDOMFullScreen.label "Salir de pantalla completa">
 <!ENTITY leaveDOMFullScreen.accesskey "S">
 
@@ -195,8 +204,6 @@ These should match what Safari and other Apple applications use on OS X Lion. --
 
 <!ENTITY keywordfield.label "Agregar una palabra clave a esta búsqueda…">
 <!ENTITY keywordfield.accesskey "g">
-<!ENTITY search.label "Búsqueda web">
-<!ENTITY search.accesskey "S">
 <!ENTITY downloads.label "Descargas">
 <!ENTITY downloads.tooltip "Muestra el progreso de las descargas">
 <!ENTITY downloads.accesskey "D">
@@ -209,16 +216,20 @@ These should match what Safari and other Apple applications use on OS X Lion. --
 <!ENTITY webDeveloperMenu.label       "Desarrollador web">
 <!ENTITY webDeveloperMenu.accesskey   "w">
 
+<!ENTITY devToolsCmd.keycode          "VK_F12">
+<!ENTITY devToolsCmd.keytext          "F12">
+
 <!ENTITY devtoolsConnect.label        "Conectar…">
 <!ENTITY devtoolsConnect.accesskey    "e">
 
 <!ENTITY errorConsoleCmd.label "Consola de errores">
 <!ENTITY errorConsoleCmd.accesskey "C">
-<!ENTITY errorConsoleCmd.commandkey   "j">
 
 <!ENTITY remoteWebConsoleCmd.label    "Consola web remota">
 
 <!ENTITY browserConsoleCmd.label      "Consola del navegador">
+<!ENTITY browserConsoleCmd.commandkey "j">
+<!ENTITY browserConsoleCmd.accesskey  "B">
 
 <!ENTITY inspectContextMenu.label     "Inspeccionar elemento">
 <!ENTITY inspectContextMenu.accesskey "o">
@@ -242,13 +253,22 @@ These should match what Safari and other Apple applications use on OS X Lion. --
 <!ENTITY scratchpad.keycode           "VK_F4">
 <!ENTITY scratchpad.keytext           "F4">
 
+<!-- LOCALIZATION NOTE (chromeDebuggerMenu.label): This is the label for the
+  -  application menu item that opens the browser debugger UI in the Tools menu. -->
+<!ENTITY chromeDebuggerMenu.label       "Depurador del navegador">
+<!ENTITY chromeDebuggerMenu.accesskey   "e">
+
 <!ENTITY devToolbarCloseButton.tooltiptext "Cerrar barra de desarrolladores">
 <!ENTITY devToolbarMenu.label "Barra de desarrolladores">
 <!ENTITY devToolbarMenu.accesskey          "r">
+<!ENTITY devAppMgrMenu.label               "Administrador de aplicaciones">
+<!ENTITY devAppMgrMenu.accesskey           "A">
 <!ENTITY devToolbar.keycode                "VK_F2">
 <!ENTITY devToolbar.keytext                "F2">
 <!ENTITY devToolboxMenuItem.label          "Intercambiar herramientas">
 <!ENTITY devToolboxMenuItem.accesskey      "t">
+<!ENTITY devToolboxMenuItem.keycode        "I">
+<!ENTITY devToolboxMenuItem.keytext        "I">
 
 <!ENTITY devToolbarToolsButton.tooltip     "Intercambiar herramientas de desarrollador">
 <!ENTITY devToolbarOtherToolsButton.label  "Más herramientas">
@@ -317,7 +337,6 @@ These should match what Safari and other Apple applications use on OS X Lion. --
 <!ENTITY historyUndoWindowMenu.label "Ventanas cerradas recientemente">
 <!ENTITY historyRestoreLastSession.label "Restaurar sesión previa">
 
-<!ENTITY historyHomeCmd.label "Inicio">
 <!ENTITY showAllHistoryCmd2.label "Mostrar todo el historial">
 <!ENTITY showAllHistoryCmd.commandkey "h">
 
@@ -400,6 +419,8 @@ These should match what Safari and other Apple applications use on OS X Lion. --
 <!ENTITY viewImageCmd.accesskey "i">
 <!ENTITY viewImageInfoCmd.label       "Ver información de la imagen">
 <!ENTITY viewImageInfoCmd.accesskey   "f">
+<!ENTITY viewImageDescCmd.label       "Ver descripción">
+<!ENTITY viewImageDescCmd.accesskey   "d">
 <!ENTITY viewVideoCmd.label           "Ver video">
 <!ENTITY viewVideoCmd.accesskey       "i">
 <!ENTITY viewBGImageCmd.label "Ver imagen de fondo">
@@ -616,6 +637,13 @@ just addresses the organization to follow, e.g. "This site is run by " -->
 
 <!ENTITY identity.moreInfoLinkText "Más información…">
 
+<!ENTITY identity.permissions "Permisos">
+
+<!-- LOCALIZATION NOTE (identity.help.tooltip) : This string should be the
+     localized title of this SUMO article
+     https://support.mozilla.org/kb/how-do-i-tell-if-my-connection-is-secure -->
+<!ENTITY identity.help.tooltip "Cómo saber si mi conexión a un sitio web es segura?">
+
 <!-- Name for the tabs toolbar as spoken by screen readers.
 The word "toolbar" is appended automatically and should not be contained below! -->
 <!ENTITY tabsToolbar.label "Pestañas del navegador">
@@ -659,9 +687,10 @@ The word "toolbar" is appended automatically and should not be contained below! 
 <!ENTITY social.chatBar.label "Focus chats">
 <!ENTITY social.chatBar.accesskey "c">
 
-<!-- labels are set dynamically, see browser.properties -->
-<!ENTITY social.markpage.accesskey "m">
-<!ENTITY social.marklink.accesskey "M">
+<!ENTITY social.markpageMenu.accesskey "p">
+<!ENTITY social.markpageMenu.label "Guardar página en…">
+<!ENTITY social.marklinkMenu.accesskey "l">
+<!ENTITY social.marklinkMenu.label "Guardar enlace en…">
 
 <!ENTITY getUserMedia.selectCamera.label "Cámara a compartir:">
 <!ENTITY getUserMedia.selectCamera.accesskey "C">
@@ -672,6 +701,28 @@ The word "toolbar" is appended automatically and should not be contained below! 
 <!ENTITY webrtcIndicatorButton.tooltip "Mostrar sitios con los cuales esté compartiendo cámara o micrófono">
 
 <!ENTITY mixedContentBlocked.helplink "Conocer más">
-<!ENTITY mixedContentBlocked.moreinfo "La mayor parte de los sitios web aún funcionan correctamente cunando este contenido es bloqueado.">
+<!ENTITY mixedContentBlocked.moreinfo "La mayor parte de los sitios web aún funcionan correctamente cuando este contenido es bloqueado.">
 
 <!ENTITY pointerLock.notification.message "Pulse ESC en cualquier momento para mostrarlo nuevamente.">
+
+<!ENTITY pluginNotification.showAll.label "Mostrar todo">
+<!ENTITY pluginNotification.showAll.accesskey "s">
+
+<!-- LOCALIZATION NOTE (pluginActivateNow.label, pluginActivateAlways.label, pluginBlockNow.label): These should be the same as the matching strings in browser.properties -->
+<!ENTITY pluginActivateNow.label "Permitir ahora">
+<!ENTITY pluginActivateAlways.label "Permitir y recordar">
+<!ENTITY pluginBlockNow.label "Bloquear plugin">
+
+<!-- LOCALIZATION NOTE: (pluginNotification.width): This is used to determine the
+     width of the plugin popup notification that can appear if a plugin has been
+     blocked on a page. Should be wide enough to fit the pluginActivateNow.label
+     and pluginActivateAlways.label strings above on a single line. This must be
+     a CSS length value. -->
+<!ENTITY pluginNotification.width "28em">
+
+<!ENTITY tabCrashed.header "Pestaña colgada">
+<!ENTITY tabCrashed.message "Bueno, esto es vergonzoso. Tratamos de mostrar esta página web, pero no está respondiendo.">
+<!ENTITY tabCrashed.checkSendReport "Decirle a &vendorShortName; sobre este cuelgue así pueden arreglarlo.">
+<!ENTITY tabCrashed.tryAgain "Intentar nuevamente">
+
+

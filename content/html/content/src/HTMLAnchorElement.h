@@ -7,19 +7,17 @@
 #ifndef mozilla_dom_HTMLAnchorElement_h
 #define mozilla_dom_HTMLAnchorElement_h
 
+#include "mozilla/Attributes.h"
+#include "mozilla/dom/Link.h"
 #include "nsGenericHTMLElement.h"
 #include "nsIDOMHTMLAnchorElement.h"
-#include "nsILink.h"
-#include "Link.h"
-#include "base/compiler_specific.h"
 
 namespace mozilla {
 namespace dom {
 
-class HTMLAnchorElement : public nsGenericHTMLElement,
-                          public nsIDOMHTMLAnchorElement,
-                          public nsILink,
-                          public Link
+class HTMLAnchorElement MOZ_FINAL : public nsGenericHTMLElement,
+                                    public nsIDOMHTMLAnchorElement,
+                                    public Link
 {
 public:
   using Element::GetText;
@@ -27,23 +25,13 @@ public:
 
   HTMLAnchorElement(already_AddRefed<nsINodeInfo> aNodeInfo)
     : nsGenericHTMLElement(aNodeInfo)
-    , ALLOW_THIS_IN_INITIALIZER_LIST(Link(this))
+    , Link(MOZ_THIS_IN_INITIALIZER_LIST())
   {
-    SetIsDOMBinding();
   }
   virtual ~HTMLAnchorElement();
 
   // nsISupports
   NS_DECL_ISUPPORTS_INHERITED
-
-  // nsIDOMNode
-  NS_FORWARD_NSIDOMNODE_TO_NSINODE
-
-  // nsIDOMElement
-  NS_FORWARD_NSIDOMELEMENT_TO_GENERIC
-
-  // nsIDOMHTMLElement
-  NS_FORWARD_NSIDOMHTMLELEMENT_TO_GENERIC
 
   virtual int32_t TabIndexDefault() MOZ_OVERRIDE;
   virtual bool Draggable() const MOZ_OVERRIDE;
@@ -54,23 +42,18 @@ public:
   // DOM memory reporter participant
   NS_DECL_SIZEOF_EXCLUDING_THIS
 
-  // nsILink
-  NS_IMETHOD LinkAdded() { return NS_OK; }
-  NS_IMETHOD LinkRemoved() { return NS_OK; }
-
   virtual nsresult BindToTree(nsIDocument* aDocument, nsIContent* aParent,
                               nsIContent* aBindingParent,
-                              bool aCompileEventHandlers);
+                              bool aCompileEventHandlers) MOZ_OVERRIDE;
   virtual void UnbindFromTree(bool aDeep = true,
-                              bool aNullParent = true);
-  virtual bool IsHTMLFocusable(bool aWithMouse, bool *aIsFocusable, int32_t *aTabIndex);
+                              bool aNullParent = true) MOZ_OVERRIDE;
+  virtual bool IsHTMLFocusable(bool aWithMouse, bool *aIsFocusable, int32_t *aTabIndex) MOZ_OVERRIDE;
 
-  virtual nsresult PreHandleEvent(nsEventChainPreVisitor& aVisitor);
-  virtual nsresult PostHandleEvent(nsEventChainPostVisitor& aVisitor);
-  virtual bool IsLink(nsIURI** aURI) const;
-  virtual void GetLinkTarget(nsAString& aTarget);
-  virtual nsLinkState GetLinkState() const;
-  virtual already_AddRefed<nsIURI> GetHrefURI() const;
+  virtual nsresult PreHandleEvent(nsEventChainPreVisitor& aVisitor) MOZ_OVERRIDE;
+  virtual nsresult PostHandleEvent(nsEventChainPostVisitor& aVisitor) MOZ_OVERRIDE;
+  virtual bool IsLink(nsIURI** aURI) const MOZ_OVERRIDE;
+  virtual void GetLinkTarget(nsAString& aTarget) MOZ_OVERRIDE;
+  virtual already_AddRefed<nsIURI> GetHrefURI() const MOZ_OVERRIDE;
 
   nsresult SetAttr(int32_t aNameSpaceID, nsIAtom* aName,
                    const nsAString& aValue, bool aNotify)
@@ -79,19 +62,17 @@ public:
   }
   virtual nsresult SetAttr(int32_t aNameSpaceID, nsIAtom* aName,
                            nsIAtom* aPrefix, const nsAString& aValue,
-                           bool aNotify);
+                           bool aNotify) MOZ_OVERRIDE;
   virtual nsresult UnsetAttr(int32_t aNameSpaceID, nsIAtom* aAttribute,
-                             bool aNotify);
+                             bool aNotify) MOZ_OVERRIDE;
   virtual bool ParseAttribute(int32_t aNamespaceID,
                                 nsIAtom* aAttribute,
                                 const nsAString& aValue,
-                                nsAttrValue& aResult);
+                                nsAttrValue& aResult) MOZ_OVERRIDE;
 
-  virtual nsresult Clone(nsINodeInfo *aNodeInfo, nsINode **aResult) const;
+  virtual nsresult Clone(nsINodeInfo *aNodeInfo, nsINode **aResult) const MOZ_OVERRIDE;
 
-  virtual nsEventStates IntrinsicState() const;
-
-  virtual nsIDOMNode* AsDOMNode() { return this; }
+  virtual nsEventStates IntrinsicState() const MOZ_OVERRIDE;
 
   virtual void OnDNSPrefetchDeferred();
   virtual void OnDNSPrefetchRequested();
@@ -153,6 +134,31 @@ public:
   {
     rv = SetText(aValue);
   }
+
+  void GetOrigin(nsAString& aOrigin)
+  {
+    Link::GetOrigin(aOrigin);
+  }
+
+  void GetUsername(nsAString& aUsername)
+  {
+    Link::GetUsername(aUsername);
+  }
+
+  void SetUsername(const nsAString& aUsername)
+  {
+    Link::SetUsername(aUsername);
+  }
+
+  void GetPassword(nsAString& aPassword)
+  {
+    Link::GetPassword(aPassword);
+  }
+
+  void SetPassword(const nsAString& aPassword)
+  {
+    Link::SetPassword(aPassword);
+  }
   // The XPCOM URI decomposition attributes are fine for us
   void GetCoords(nsString& aValue)
   {
@@ -200,8 +206,8 @@ public:
   }
 
 protected:
-  virtual void GetItemValueText(nsAString& text);
-  virtual void SetItemValueText(const nsAString& text);
+  virtual void GetItemValueText(nsAString& text) MOZ_OVERRIDE;
+  virtual void SetItemValueText(const nsAString& text) MOZ_OVERRIDE;
   virtual JSObject* WrapNode(JSContext *aCx,
                              JS::Handle<JSObject*> aScope) MOZ_OVERRIDE;
 };

@@ -28,7 +28,7 @@
 <!ENTITY  generalSecurityDetails   "Yderligere sikkerhedsoplysninger">
 <!ENTITY  generalSecurityDetails.accesskey "Y">
 
-<!ENTITY  mediaTab              "Medie">
+<!ENTITY  mediaTab              "Medieindhold">
 <!ENTITY  mediaTab.accesskey    "M">
 <!ENTITY  mediaLocation         "Adresse:">
 <!ENTITY  mediaText             "Associeret tekst:">
@@ -58,17 +58,8 @@
 <!ENTITY  permAllowSession      "Tillad for sessionen">
 <!ENTITY  permBlock             "Bloker">
 <!ENTITY  permissionsFor        "Tilladelser for:">
-<!ENTITY  permImage             "Indlæse billeder">
-<!ENTITY  permPopup             "Åbne pop op-vinduer">
-<!ENTITY  permCookie            "Sætte cookies">
-<!ENTITY  permNotifications     "Vise beskeder">
-<!ENTITY  permInstall           "Installere udvidelser eller temaer">
-<!ENTITY  permGeo               "Se min placering">
 <!ENTITY  permPlugins           "Aktivere plugins">
-<!ENTITY  permFullscreen        "Aktivere fuldskærm">
-<!ENTITY  permPointerLock2      "Skjule musemarkør">
 
-<!ENTITY  permIndexedDB         "Bruge offline-lager">
 <!ENTITY  permClearStorage           "Ryd lager">
 <!ENTITY  permClearStorage.accesskey "R">
 

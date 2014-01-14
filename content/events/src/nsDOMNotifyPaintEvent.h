@@ -6,22 +6,31 @@
 #ifndef nsDOMNotifyPaintEvent_h_
 #define nsDOMNotifyPaintEvent_h_
 
+#include "mozilla/Attributes.h"
 #include "nsIDOMNotifyPaintEvent.h"
 #include "nsDOMEvent.h"
 #include "nsPresContext.h"
 #include "mozilla/dom/NotifyPaintEventBinding.h"
 
 class nsPaintRequestList;
-class nsClientRectList;
-class nsClientRect;
+
+namespace mozilla {
+namespace dom {
+class DOMRect;
+class DOMRectList;
+}
+}
 
 class nsDOMNotifyPaintEvent : public nsDOMEvent,
                               public nsIDOMNotifyPaintEvent
 {
+  typedef mozilla::dom::DOMRect DOMRect;
+  typedef mozilla::dom::DOMRectList DOMRectList;
+
 public:
   nsDOMNotifyPaintEvent(mozilla::dom::EventTarget* aOwner,
                         nsPresContext*           aPresContext,
-                        nsEvent*                 aEvent,
+                        mozilla::WidgetEvent*    aEvent,
                         uint32_t                 aEventType,
                         nsInvalidateRequestList* aInvalidateRequests);
 
@@ -31,12 +40,12 @@ public:
 
   // Forward to base class
   NS_FORWARD_TO_NSDOMEVENT_NO_SERIALIZATION_NO_DUPLICATION
-  NS_IMETHOD DuplicatePrivateData()
+  NS_IMETHOD DuplicatePrivateData() MOZ_OVERRIDE
   {
     return nsDOMEvent::DuplicatePrivateData();
   }
-  NS_IMETHOD_(void) Serialize(IPC::Message* aMsg, bool aSerializeInterfaceType);
-  NS_IMETHOD_(bool) Deserialize(const IPC::Message* aMsg, void** aIter);
+  NS_IMETHOD_(void) Serialize(IPC::Message* aMsg, bool aSerializeInterfaceType) MOZ_OVERRIDE;
+  NS_IMETHOD_(bool) Deserialize(const IPC::Message* aMsg, void** aIter) MOZ_OVERRIDE;
 
   virtual JSObject* WrapObject(JSContext* aCx,
                                JS::Handle<JSObject*> aScope) MOZ_OVERRIDE
@@ -44,9 +53,9 @@ public:
     return mozilla::dom::NotifyPaintEventBinding::Wrap(aCx, aScope, this);
   }
 
-  already_AddRefed<nsClientRectList> ClientRects();
+  already_AddRefed<DOMRectList> ClientRects();
 
-  already_AddRefed<nsClientRect> BoundingClientRect();
+  already_AddRefed<DOMRect> BoundingClientRect();
 
   already_AddRefed<nsPaintRequestList> PaintRequests();
 private:
