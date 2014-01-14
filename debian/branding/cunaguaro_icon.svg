@@ -16,8 +16,8 @@
    inkscape:version="0.45"
    version="1.0"
    sodipodi:docbase="/tmp"
-   sodipodi:docname="iceweasel_icon.svg"
-   inkscape:export-filename="E:\Mis Documentos - unicko\Mis imágenes\imagenes SVG\Ice images\iceweasel_icon.png"
+   sodipodi:docname="cunaguaro_icon.svg"
+   inkscape:export-filename="E:\Mis Documentos - unicko\Mis imágenes\imagenes SVG\Ice images\cunaguaro_icon.png"
    inkscape:export-xdpi="90"
    inkscape:export-ydpi="90"
    inkscape:output_extension="org.inkscape.output.svg.inkscape"
@@ -3631,7 +3631,7 @@
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
         <cc:license
            rdf:resource="http://www.mozilla.org/MPL/" />
-        <dc:title>Iceweasel - Icon</dc:title>
+        <dc:title>Cunaguaro - Icon</dc:title>
         <dc:creator>
           <cc:Agent>
             <dc:title>Ricardo Fernández Fuentes</dc:title>
@@ -3642,11 +3642,11 @@
             <dc:title>Ricardo Fernández Fuentes</dc:title>
           </cc:Agent>
         </dc:rights>
-        <dc:description>iceweasel icon
+        <dc:description>cunaguaro icon
 </dc:description>
         <dc:subject>
           <rdf:Bag>
-            <rdf:li>iceweasel</rdf:li>
+            <rdf:li>cunaguaro</rdf:li>
             <rdf:li>ico</rdf:li>
             <rdf:li>icon</rdf:li>
           </rdf:Bag>

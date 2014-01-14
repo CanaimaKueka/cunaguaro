@@ -1,7 +1,7 @@
-Index: iceweasel-27.0~b5/browser/app/profile/firefox.js
+Index: cunaguaro-27.0~b5/browser/app/profile/firefox.js
 ===================================================================
---- iceweasel-27.0~b5.orig/browser/app/profile/firefox.js	2014-01-14 10:28:25.674387718 -0430
-+++ iceweasel-27.0~b5/browser/app/profile/firefox.js	2014-01-14 10:32:04.447472566 -0430
+--- cunaguaro-27.0~b5.orig/browser/app/profile/firefox.js	2014-01-14 10:28:25.674387718 -0430
++++ cunaguaro-27.0~b5/browser/app/profile/firefox.js	2014-01-14 10:32:04.447472566 -0430
 @@ -395,7 +395,7 @@
  pref("browser.search.order.3",                "chrome://browser-region/locale/region.properties");
  
@@ -11,10 +11,10 @@ Index: iceweasel-27.0~b5/browser/app/profile/firefox.js
  
  // context menu searches open in the foreground
  pref("browser.search.context.loadInBackground", false);
-Index: iceweasel-27.0~b5/modules/libpref/src/init/all.js
+Index: cunaguaro-27.0~b5/modules/libpref/src/init/all.js
 ===================================================================
---- iceweasel-27.0~b5.orig/modules/libpref/src/init/all.js	2014-01-14 10:28:25.674387718 -0430
-+++ iceweasel-27.0~b5/modules/libpref/src/init/all.js	2014-01-14 10:32:04.447472566 -0430
+--- cunaguaro-27.0~b5.orig/modules/libpref/src/init/all.js	2014-01-14 10:28:25.674387718 -0430
++++ cunaguaro-27.0~b5/modules/libpref/src/init/all.js	2014-01-14 10:32:04.447472566 -0430
 @@ -1605,7 +1605,7 @@
  pref("security.checkloaduri", true);
  pref("security.xpconnect.plugin.unrestricted", true);
@@ -24,10 +24,10 @@ Index: iceweasel-27.0~b5/modules/libpref/src/init/all.js
  pref("security.notification_enable_delay", 500);
  
  pref("security.csp.enable", true);
-Index: iceweasel-27.0~b5/netwerk/base/public/security-prefs.js
+Index: cunaguaro-27.0~b5/netwerk/base/public/security-prefs.js
 ===================================================================
---- iceweasel-27.0~b5.orig/netwerk/base/public/security-prefs.js	2014-01-14 10:28:25.674387718 -0430
-+++ iceweasel-27.0~b5/netwerk/base/public/security-prefs.js	2014-01-14 10:32:04.451472577 -0430
+--- cunaguaro-27.0~b5.orig/netwerk/base/public/security-prefs.js	2014-01-14 10:28:25.674387718 -0430
++++ cunaguaro-27.0~b5/netwerk/base/public/security-prefs.js	2014-01-14 10:32:04.451472577 -0430
 @@ -6,7 +6,7 @@
  pref("security.tls.version.max", 3);
  pref("security.enable_md5_signatures", false);

@@ -1,7 +1,7 @@
-Index: iceweasel-27.0~b5/l10n-af/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-af/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-af/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-af/browser/searchplugins/list.txt	2014-01-14 10:43:56.579003835 -0430
+--- cunaguaro-27.0~b5.orig/l10n-af/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-af/browser/searchplugins/list.txt	2014-01-14 10:43:56.579003835 -0430
 @@ -1,6 +1,6 @@
 -amazondotcom
 -bing
@@ -14,10 +14,10 @@ Index: iceweasel-27.0~b5/l10n-af/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-ak/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-ak/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-ak/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-ak/browser/searchplugins/list.txt	2014-01-14 10:43:56.579003835 -0430
+--- cunaguaro-27.0~b5.orig/l10n-ak/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-ak/browser/searchplugins/list.txt	2014-01-14 10:43:56.579003835 -0430
 @@ -1,6 +1,6 @@
 -amazondotcom
 -bing
@@ -29,10 +29,10 @@ Index: iceweasel-27.0~b5/l10n-ak/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-ar/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-ar/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-ar/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-ar/browser/searchplugins/list.txt	2014-01-14 10:43:56.579003835 -0430
+--- cunaguaro-27.0~b5.orig/l10n-ar/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-ar/browser/searchplugins/list.txt	2014-01-14 10:43:56.579003835 -0430
 @@ -1,6 +1,6 @@
  google
 -bing
@@ -45,10 +45,10 @@ Index: iceweasel-27.0~b5/l10n-ar/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-ar/mail/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-ar/mail/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-ar/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-ar/mail/searchplugins/list.txt	2014-01-14 10:43:56.579003835 -0430
+--- cunaguaro-27.0~b5.orig/l10n-ar/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-ar/mail/searchplugins/list.txt	2014-01-14 10:43:56.579003835 -0430
 @@ -1,6 +1,6 @@
 -bing
 -yahoo
@@ -61,10 +61,10 @@ Index: iceweasel-27.0~b5/l10n-ar/mail/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-ar/mobile/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-ar/mobile/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-ar/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-ar/mobile/searchplugins/list.txt	2014-01-14 10:43:56.579003835 -0430
+--- cunaguaro-27.0~b5.orig/l10n-ar/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-ar/mobile/searchplugins/list.txt	2014-01-14 10:43:56.579003835 -0430
 @@ -1,3 +1,6 @@
  google
 -wikipedia-ar
@@ -73,10 +73,10 @@ Index: iceweasel-27.0~b5/l10n-ar/mobile/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-ast/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-ast/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-ast/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-ast/browser/searchplugins/list.txt	2014-01-14 10:43:56.579003835 -0430
+--- cunaguaro-27.0~b5.orig/l10n-ast/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-ast/browser/searchplugins/list.txt	2014-01-14 10:43:56.579003835 -0430
 @@ -1,6 +1,6 @@
  google
 -bing
@@ -89,10 +89,10 @@ Index: iceweasel-27.0~b5/l10n-ast/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-ast/mail/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-ast/mail/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-ast/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-ast/mail/searchplugins/list.txt	2014-01-14 10:43:56.579003835 -0430
+--- cunaguaro-27.0~b5.orig/l10n-ast/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-ast/mail/searchplugins/list.txt	2014-01-14 10:43:56.579003835 -0430
 @@ -1,9 +1,6 @@
 -amazondotcom
 -aol-web-search
@@ -108,10 +108,10 @@ Index: iceweasel-27.0~b5/l10n-ast/mail/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-be/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-be/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-be/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-be/browser/searchplugins/list.txt	2014-01-14 10:43:56.579003835 -0430
+--- cunaguaro-27.0~b5.orig/l10n-be/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-be/browser/searchplugins/list.txt	2014-01-14 10:43:56.579003835 -0430
 @@ -1,7 +1,6 @@
  google
 -yahoo
@@ -125,10 +125,10 @@ Index: iceweasel-27.0~b5/l10n-be/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-be/mail/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-be/mail/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-be/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-be/mail/searchplugins/list.txt	2014-01-14 10:43:56.579003835 -0430
+--- cunaguaro-27.0~b5.orig/l10n-be/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-be/mail/searchplugins/list.txt	2014-01-14 10:43:56.579003835 -0430
 @@ -1,7 +1,6 @@
  google
 -yahoo
@@ -143,10 +143,10 @@ Index: iceweasel-27.0~b5/l10n-be/mail/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-be/mobile/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-be/mobile/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-be/mobile/searchplugins/list.txt	2014-01-13 14:53:56.000000000 -0430
-+++ iceweasel-27.0~b5/l10n-be/mobile/searchplugins/list.txt	2014-01-14 10:43:56.579003835 -0430
+--- cunaguaro-27.0~b5.orig/l10n-be/mobile/searchplugins/list.txt	2014-01-13 14:53:56.000000000 -0430
++++ cunaguaro-27.0~b5/l10n-be/mobile/searchplugins/list.txt	2014-01-14 10:43:56.579003835 -0430
 @@ -1,5 +1,8 @@
  google
  twitter
@@ -157,10 +157,10 @@ Index: iceweasel-27.0~b5/l10n-be/mobile/searchplugins/list.txt
 +canaima-wiki
  yahoo
  bing
-Index: iceweasel-27.0~b5/l10n-be/suite/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-be/suite/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-be/suite/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-be/suite/searchplugins/list.txt	2014-01-14 10:43:56.579003835 -0430
+--- cunaguaro-27.0~b5.orig/l10n-be/suite/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-be/suite/searchplugins/list.txt	2014-01-14 10:43:56.579003835 -0430
 @@ -1,4 +1,6 @@
 -creativecommons
  google
@@ -170,10 +170,10 @@ Index: iceweasel-27.0~b5/l10n-be/suite/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-bg/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-bg/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-bg/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-bg/browser/searchplugins/list.txt	2014-01-14 10:43:56.583003848 -0430
+--- cunaguaro-27.0~b5.orig/l10n-bg/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-bg/browser/searchplugins/list.txt	2014-01-14 10:43:56.583003848 -0430
 @@ -1,7 +1,6 @@
 -911bg
 -amazondotcom
@@ -187,10 +187,10 @@ Index: iceweasel-27.0~b5/l10n-bg/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-bg/mail/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-bg/mail/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-bg/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-bg/mail/searchplugins/list.txt	2014-01-14 10:43:56.583003848 -0430
+--- cunaguaro-27.0~b5.orig/l10n-bg/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-bg/mail/searchplugins/list.txt	2014-01-14 10:43:56.583003848 -0430
 @@ -1,7 +1,6 @@
 -amazondotcom
 -aol-web-search
@@ -203,10 +203,10 @@ Index: iceweasel-27.0~b5/l10n-bg/mail/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-bn-BD/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-bn-BD/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-bn-BD/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-bn-BD/browser/searchplugins/list.txt	2014-01-14 10:43:56.583003848 -0430
+--- cunaguaro-27.0~b5.orig/l10n-bn-BD/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-bn-BD/browser/searchplugins/list.txt	2014-01-14 10:43:56.583003848 -0430
 @@ -1,4 +1,6 @@
 -bing
  google
@@ -217,10 +217,10 @@ Index: iceweasel-27.0~b5/l10n-bn-BD/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-bn-IN/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-bn-IN/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-bn-IN/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-bn-IN/browser/searchplugins/list.txt	2014-01-14 10:43:56.583003848 -0430
+--- cunaguaro-27.0~b5.orig/l10n-bn-IN/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-bn-IN/browser/searchplugins/list.txt	2014-01-14 10:43:56.583003848 -0430
 @@ -1,8 +1,6 @@
 -amazondotcom
 -eBay-in
@@ -235,10 +235,10 @@ Index: iceweasel-27.0~b5/l10n-bn-IN/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-bn-IN/mail/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-bn-IN/mail/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-bn-IN/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-bn-IN/mail/searchplugins/list.txt	2014-01-14 10:43:56.583003848 -0430
+--- cunaguaro-27.0~b5.orig/l10n-bn-IN/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-bn-IN/mail/searchplugins/list.txt	2014-01-14 10:43:56.583003848 -0430
 @@ -1,7 +1,6 @@
 -amazondotcom
 -aol-web-search
@@ -251,10 +251,10 @@ Index: iceweasel-27.0~b5/l10n-bn-IN/mail/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-bn-IN/suite/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-bn-IN/suite/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-bn-IN/suite/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-bn-IN/suite/searchplugins/list.txt	2014-01-14 10:43:56.583003848 -0430
+--- cunaguaro-27.0~b5.orig/l10n-bn-IN/suite/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-bn-IN/suite/searchplugins/list.txt	2014-01-14 10:43:56.583003848 -0430
 @@ -1,4 +1,6 @@
 -creativecommons
  google
@@ -264,10 +264,10 @@ Index: iceweasel-27.0~b5/l10n-bn-IN/suite/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-br/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-br/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-br/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-br/browser/searchplugins/list.txt	2014-01-14 10:43:56.583003848 -0430
+--- cunaguaro-27.0~b5.orig/l10n-br/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-br/browser/searchplugins/list.txt	2014-01-14 10:43:56.583003848 -0430
 @@ -1,6 +1,6 @@
 -amazon-france
 -freelang
@@ -280,10 +280,10 @@ Index: iceweasel-27.0~b5/l10n-br/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-br/mail/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-br/mail/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-br/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-br/mail/searchplugins/list.txt	2014-01-14 10:43:56.587003865 -0430
+--- cunaguaro-27.0~b5.orig/l10n-br/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-br/mail/searchplugins/list.txt	2014-01-14 10:43:56.587003865 -0430
 @@ -1,8 +1,6 @@
 -amazondotcom
 -aol-web-search
@@ -296,10 +296,10 @@ Index: iceweasel-27.0~b5/l10n-br/mail/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-bs/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-bs/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-bs/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-bs/browser/searchplugins/list.txt	2014-01-14 10:43:56.587003865 -0430
+--- cunaguaro-27.0~b5.orig/l10n-bs/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-bs/browser/searchplugins/list.txt	2014-01-14 10:43:56.587003865 -0430
 @@ -1,7 +1,6 @@
  google
 -wikipedia-bs
@@ -312,10 +312,10 @@ Index: iceweasel-27.0~b5/l10n-bs/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-ca/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-ca/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-ca/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-ca/browser/searchplugins/list.txt	2014-01-14 10:43:56.587003865 -0430
+--- cunaguaro-27.0~b5.orig/l10n-ca/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-ca/browser/searchplugins/list.txt	2014-01-14 10:43:56.587003865 -0430
 @@ -1,6 +1,6 @@
  google
 -bing
@@ -326,10 +326,10 @@ Index: iceweasel-27.0~b5/l10n-ca/browser/searchplugins/list.txt
 +wikipedia
 +canaima
 +canaima-list
-Index: iceweasel-27.0~b5/l10n-ca/mail/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-ca/mail/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-ca/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-ca/mail/searchplugins/list.txt	2014-01-14 10:43:56.587003865 -0430
+--- cunaguaro-27.0~b5.orig/l10n-ca/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-ca/mail/searchplugins/list.txt	2014-01-14 10:43:56.587003865 -0430
 @@ -1,5 +1,6 @@
 -bing
 -huubs
@@ -342,10 +342,10 @@ Index: iceweasel-27.0~b5/l10n-ca/mail/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-ca/mobile/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-ca/mobile/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-ca/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-ca/mobile/searchplugins/list.txt	2014-01-14 10:43:56.587003865 -0430
+--- cunaguaro-27.0~b5.orig/l10n-ca/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-ca/mobile/searchplugins/list.txt	2014-01-14 10:43:56.587003865 -0430
 @@ -1,4 +1,6 @@
  google
  twitter
@@ -355,10 +355,10 @@ Index: iceweasel-27.0~b5/l10n-ca/mobile/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-ca/suite/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-ca/suite/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-ca/suite/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-ca/suite/searchplugins/list.txt	2014-01-14 10:43:56.587003865 -0430
+--- cunaguaro-27.0~b5.orig/l10n-ca/suite/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-ca/suite/searchplugins/list.txt	2014-01-14 10:43:56.587003865 -0430
 @@ -1,5 +1,6 @@
  google
 -huubs
@@ -370,10 +370,10 @@ Index: iceweasel-27.0~b5/l10n-ca/suite/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-cs/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-cs/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-cs/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-cs/browser/searchplugins/list.txt	2014-01-14 10:43:56.587003865 -0430
+--- cunaguaro-27.0~b5.orig/l10n-cs/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-cs/browser/searchplugins/list.txt	2014-01-14 10:43:56.587003865 -0430
 @@ -1,6 +1,6 @@
  google
 -heureka-cz
@@ -386,10 +386,10 @@ Index: iceweasel-27.0~b5/l10n-cs/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-cs/mail/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-cs/mail/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-cs/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-cs/mail/searchplugins/list.txt	2014-01-14 10:43:56.587003865 -0430
+--- cunaguaro-27.0~b5.orig/l10n-cs/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-cs/mail/searchplugins/list.txt	2014-01-14 10:43:56.587003865 -0430
 @@ -1,8 +1,6 @@
 -amazondotcom
 -aol-web-search
@@ -402,10 +402,10 @@ Index: iceweasel-27.0~b5/l10n-cs/mail/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-cs/mobile/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-cs/mobile/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-cs/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-cs/mobile/searchplugins/list.txt	2014-01-14 10:43:56.587003865 -0430
+--- cunaguaro-27.0~b5.orig/l10n-cs/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-cs/mobile/searchplugins/list.txt	2014-01-14 10:43:56.587003865 -0430
 @@ -1,5 +1,6 @@
  google
 -seznam-cz
@@ -416,10 +416,10 @@ Index: iceweasel-27.0~b5/l10n-cs/mobile/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-cs/suite/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-cs/suite/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-cs/suite/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-cs/suite/searchplugins/list.txt	2014-01-14 10:43:56.587003865 -0430
+--- cunaguaro-27.0~b5.orig/l10n-cs/suite/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-cs/suite/searchplugins/list.txt	2014-01-14 10:43:56.587003865 -0430
 @@ -1,4 +1,6 @@
  google
 -seznam-cz
@@ -430,10 +430,10 @@ Index: iceweasel-27.0~b5/l10n-cs/suite/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-cy/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-cy/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-cy/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-cy/browser/searchplugins/list.txt	2014-01-14 10:43:56.587003865 -0430
+--- cunaguaro-27.0~b5.orig/l10n-cy/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-cy/browser/searchplugins/list.txt	2014-01-14 10:43:56.587003865 -0430
 @@ -1,8 +1,6 @@
 -amazon-en-GB
 -creativecommons
@@ -448,10 +448,10 @@ Index: iceweasel-27.0~b5/l10n-cy/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-cy/mail/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-cy/mail/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-cy/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-cy/mail/searchplugins/list.txt	2014-01-14 10:43:56.591003887 -0430
+--- cunaguaro-27.0~b5.orig/l10n-cy/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-cy/mail/searchplugins/list.txt	2014-01-14 10:43:56.591003887 -0430
 @@ -1,7 +1,6 @@
 -amazondotcom
 -aol-web-search
@@ -464,10 +464,10 @@ Index: iceweasel-27.0~b5/l10n-cy/mail/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-da/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-da/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-da/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-da/browser/searchplugins/list.txt	2014-01-14 10:43:56.591003887 -0430
+--- cunaguaro-27.0~b5.orig/l10n-da/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-da/browser/searchplugins/list.txt	2014-01-14 10:43:56.591003887 -0430
 @@ -1,5 +1,6 @@
 -amazon-co-uk
 -bing
@@ -479,10 +479,10 @@ Index: iceweasel-27.0~b5/l10n-da/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-da/mail/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-da/mail/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-da/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-da/mail/searchplugins/list.txt	2014-01-14 10:43:56.591003887 -0430
+--- cunaguaro-27.0~b5.orig/l10n-da/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-da/mail/searchplugins/list.txt	2014-01-14 10:43:56.591003887 -0430
 @@ -1,5 +1,6 @@
 -amazon-co-uk
 -bing
@@ -494,10 +494,10 @@ Index: iceweasel-27.0~b5/l10n-da/mail/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-da/mobile/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-da/mobile/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-da/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-da/mobile/searchplugins/list.txt	2014-01-14 10:43:56.591003887 -0430
+--- cunaguaro-27.0~b5.orig/l10n-da/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-da/mobile/searchplugins/list.txt	2014-01-14 10:43:56.591003887 -0430
 @@ -1,4 +1,6 @@
 -amazon-co-uk
  google
@@ -507,10 +507,10 @@ Index: iceweasel-27.0~b5/l10n-da/mobile/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-de/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-de/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-de/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-de/browser/searchplugins/list.txt	2014-01-14 10:43:56.591003887 -0430
+--- cunaguaro-27.0~b5.orig/l10n-de/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-de/browser/searchplugins/list.txt	2014-01-14 10:43:56.591003887 -0430
 @@ -1,8 +1,6 @@
  google
 -yahoo-de
@@ -525,10 +525,10 @@ Index: iceweasel-27.0~b5/l10n-de/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-de/mail/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-de/mail/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-de/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-de/mail/searchplugins/list.txt	2014-01-14 10:43:56.591003887 -0430
+--- cunaguaro-27.0~b5.orig/l10n-de/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-de/mail/searchplugins/list.txt	2014-01-14 10:43:56.591003887 -0430
 @@ -1,6 +1,6 @@
 -amazondotcom-de
 -bing
@@ -542,10 +542,10 @@ Index: iceweasel-27.0~b5/l10n-de/mail/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-de/mobile/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-de/mobile/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-de/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-de/mobile/searchplugins/list.txt	2014-01-14 10:43:56.591003887 -0430
+--- cunaguaro-27.0~b5.orig/l10n-de/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-de/mobile/searchplugins/list.txt	2014-01-14 10:43:56.591003887 -0430
 @@ -1,6 +1,6 @@
  google
 -yahoo-de
@@ -557,10 +557,10 @@ Index: iceweasel-27.0~b5/l10n-de/mobile/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-de/suite/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-de/suite/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-de/suite/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-de/suite/searchplugins/list.txt	2014-01-14 10:43:56.591003887 -0430
+--- cunaguaro-27.0~b5.orig/l10n-de/suite/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-de/suite/searchplugins/list.txt	2014-01-14 10:43:56.591003887 -0430
 @@ -1,4 +1,6 @@
 -creativecommons
  google
@@ -571,10 +571,10 @@ Index: iceweasel-27.0~b5/l10n-de/suite/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-el/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-el/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-el/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-el/browser/searchplugins/list.txt	2014-01-14 10:43:56.591003887 -0430
+--- cunaguaro-27.0~b5.orig/l10n-el/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-el/browser/searchplugins/list.txt	2014-01-14 10:43:56.591003887 -0430
 @@ -1,6 +1,6 @@
  google
 -amazon-en-GB
@@ -587,10 +587,10 @@ Index: iceweasel-27.0~b5/l10n-el/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-el/mail/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-el/mail/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-el/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-el/mail/searchplugins/list.txt	2014-01-14 10:43:56.591003887 -0430
+--- cunaguaro-27.0~b5.orig/l10n-el/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-el/mail/searchplugins/list.txt	2014-01-14 10:43:56.591003887 -0430
 @@ -1,7 +1,6 @@
 -amazondotcom
 -aol-web-search
@@ -603,10 +603,10 @@ Index: iceweasel-27.0~b5/l10n-el/mail/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-el/mobile/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-el/mobile/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-el/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-el/mobile/searchplugins/list.txt	2014-01-14 10:43:56.591003887 -0430
+--- cunaguaro-27.0~b5.orig/l10n-el/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-el/mobile/searchplugins/list.txt	2014-01-14 10:43:56.591003887 -0430
 @@ -1,4 +1,6 @@
  google
  twitter
@@ -616,10 +616,10 @@ Index: iceweasel-27.0~b5/l10n-el/mobile/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-en-GB/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-en-GB/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-en-GB/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-en-GB/browser/searchplugins/list.txt	2014-01-14 10:43:56.591003887 -0430
+--- cunaguaro-27.0~b5.orig/l10n-en-GB/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-en-GB/browser/searchplugins/list.txt	2014-01-14 10:43:56.591003887 -0430
 @@ -1,8 +1,6 @@
 -amazon-en-GB
 -bing
@@ -632,10 +632,10 @@ Index: iceweasel-27.0~b5/l10n-en-GB/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-en-GB/mail/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-en-GB/mail/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-en-GB/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-en-GB/mail/searchplugins/list.txt	2014-01-14 10:43:56.591003887 -0430
+--- cunaguaro-27.0~b5.orig/l10n-en-GB/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-en-GB/mail/searchplugins/list.txt	2014-01-14 10:43:56.591003887 -0430
 @@ -1,8 +1,6 @@
 -amazon-en-GB
 -aol-en-GB
@@ -648,10 +648,10 @@ Index: iceweasel-27.0~b5/l10n-en-GB/mail/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-en-GB/mobile/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-en-GB/mobile/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-en-GB/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-en-GB/mobile/searchplugins/list.txt	2014-01-14 10:43:56.591003887 -0430
+--- cunaguaro-27.0~b5.orig/l10n-en-GB/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-en-GB/mobile/searchplugins/list.txt	2014-01-14 10:43:56.591003887 -0430
 @@ -1,6 +1,6 @@
 -amazon-en-GB
 -bing
@@ -662,10 +662,10 @@ Index: iceweasel-27.0~b5/l10n-en-GB/mobile/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-en-GB/suite/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-en-GB/suite/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-en-GB/suite/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-en-GB/suite/searchplugins/list.txt	2014-01-14 10:43:56.591003887 -0430
+--- cunaguaro-27.0~b5.orig/l10n-en-GB/suite/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-en-GB/suite/searchplugins/list.txt	2014-01-14 10:43:56.591003887 -0430
 @@ -1,4 +1,6 @@
 -creativecommons
  google
@@ -675,10 +675,10 @@ Index: iceweasel-27.0~b5/l10n-en-GB/suite/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-en-ZA/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-en-ZA/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-en-ZA/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-en-ZA/browser/searchplugins/list.txt	2014-01-14 10:43:56.595003916 -0430
+--- cunaguaro-27.0~b5.orig/l10n-en-ZA/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-en-ZA/browser/searchplugins/list.txt	2014-01-14 10:43:56.595003916 -0430
 @@ -1,5 +1,6 @@
  google
 -bing
@@ -689,10 +689,10 @@ Index: iceweasel-27.0~b5/l10n-en-ZA/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-eo/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-eo/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-eo/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-eo/browser/searchplugins/list.txt	2014-01-14 10:43:56.595003916 -0430
+--- cunaguaro-27.0~b5.orig/l10n-eo/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-eo/browser/searchplugins/list.txt	2014-01-14 10:43:56.595003916 -0430
 @@ -1,8 +1,6 @@
  google
 -wikipedia-eo
@@ -708,10 +708,10 @@ Index: iceweasel-27.0~b5/l10n-eo/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-es-AR/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-es-AR/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-es-AR/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-es-AR/browser/searchplugins/list.txt	2014-01-14 10:43:56.595003916 -0430
+--- cunaguaro-27.0~b5.orig/l10n-es-AR/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-es-AR/browser/searchplugins/list.txt	2014-01-14 10:43:56.595003916 -0430
 @@ -1,7 +1,6 @@
  google
 -yahoo-ar
@@ -725,10 +725,10 @@ Index: iceweasel-27.0~b5/l10n-es-AR/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-es-AR/mail/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-es-AR/mail/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-es-AR/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-es-AR/mail/searchplugins/list.txt	2014-01-14 10:43:56.595003916 -0430
+--- cunaguaro-27.0~b5.orig/l10n-es-AR/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-es-AR/mail/searchplugins/list.txt	2014-01-14 10:43:56.595003916 -0430
 @@ -1,6 +1,6 @@
  google
 -yahoo-ar
@@ -741,10 +741,10 @@ Index: iceweasel-27.0~b5/l10n-es-AR/mail/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-es-AR/mobile/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-es-AR/mobile/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-es-AR/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-es-AR/mobile/searchplugins/list.txt	2014-01-14 10:43:56.595003916 -0430
+--- cunaguaro-27.0~b5.orig/l10n-es-AR/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-es-AR/mobile/searchplugins/list.txt	2014-01-14 10:43:56.595003916 -0430
 @@ -1,4 +1,6 @@
  google
 -mercadolibre-ar
@@ -754,10 +754,10 @@ Index: iceweasel-27.0~b5/l10n-es-AR/mobile/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-es-AR/suite/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-es-AR/suite/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-es-AR/suite/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-es-AR/suite/searchplugins/list.txt	2014-01-14 10:43:56.595003916 -0430
+--- cunaguaro-27.0~b5.orig/l10n-es-AR/suite/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-es-AR/suite/searchplugins/list.txt	2014-01-14 10:43:56.595003916 -0430
 @@ -1,4 +1,6 @@
 -creativecommons
  google
@@ -767,10 +767,10 @@ Index: iceweasel-27.0~b5/l10n-es-AR/suite/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-es-CL/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-es-CL/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-es-CL/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-es-CL/browser/searchplugins/list.txt	2014-01-14 10:43:56.595003916 -0430
+--- cunaguaro-27.0~b5.orig/l10n-es-CL/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-es-CL/browser/searchplugins/list.txt	2014-01-14 10:43:56.595003916 -0430
 @@ -1,6 +1,6 @@
  google
 -bing
@@ -783,10 +783,10 @@ Index: iceweasel-27.0~b5/l10n-es-CL/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-es-CL/mobile/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-es-CL/mobile/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-es-CL/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-es-CL/mobile/searchplugins/list.txt	2014-01-14 10:43:56.595003916 -0430
+--- cunaguaro-27.0~b5.orig/l10n-es-CL/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-es-CL/mobile/searchplugins/list.txt	2014-01-14 10:43:56.595003916 -0430
 @@ -1,4 +1,6 @@
 -amazondotcom
  google
@@ -795,10 +795,10 @@ Index: iceweasel-27.0~b5/l10n-es-CL/mobile/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-es-ES/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-es-ES/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-es-ES/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-es-ES/browser/searchplugins/list.txt	2014-01-14 10:43:56.595003916 -0430
+--- cunaguaro-27.0~b5.orig/l10n-es-ES/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-es-ES/browser/searchplugins/list.txt	2014-01-14 10:43:56.595003916 -0430
 @@ -1,7 +1,6 @@
  google
 -yahoo-es
@@ -812,10 +812,10 @@ Index: iceweasel-27.0~b5/l10n-es-ES/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-es-ES/mail/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-es-ES/mail/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-es-ES/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-es-ES/mail/searchplugins/list.txt	2014-01-14 10:43:56.595003916 -0430
+--- cunaguaro-27.0~b5.orig/l10n-es-ES/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-es-ES/mail/searchplugins/list.txt	2014-01-14 10:43:56.595003916 -0430
 @@ -1,7 +1,6 @@
  google
 -yahoo-es
@@ -828,10 +828,10 @@ Index: iceweasel-27.0~b5/l10n-es-ES/mail/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-es-ES/mobile/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-es-ES/mobile/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-es-ES/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-es-ES/mobile/searchplugins/list.txt	2014-01-14 10:43:56.595003916 -0430
+--- cunaguaro-27.0~b5.orig/l10n-es-ES/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-es-ES/mobile/searchplugins/list.txt	2014-01-14 10:43:56.595003916 -0430
 @@ -1,6 +1,6 @@
  google
 -yahoo-es
@@ -843,10 +843,10 @@ Index: iceweasel-27.0~b5/l10n-es-ES/mobile/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-es-ES/suite/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-es-ES/suite/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-es-ES/suite/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-es-ES/suite/searchplugins/list.txt	2014-01-14 10:43:56.595003916 -0430
+--- cunaguaro-27.0~b5.orig/l10n-es-ES/suite/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-es-ES/suite/searchplugins/list.txt	2014-01-14 10:43:56.595003916 -0430
 @@ -1,4 +1,6 @@
 -creativecommons
  google
@@ -857,10 +857,10 @@ Index: iceweasel-27.0~b5/l10n-es-ES/suite/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-es-MX/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-es-MX/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-es-MX/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-es-MX/browser/searchplugins/list.txt	2014-01-14 10:43:56.595003916 -0430
+--- cunaguaro-27.0~b5.orig/l10n-es-MX/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-es-MX/browser/searchplugins/list.txt	2014-01-14 10:43:56.595003916 -0430
 @@ -1,5 +1,6 @@
  google
 -yahoo-mx
@@ -872,10 +872,10 @@ Index: iceweasel-27.0~b5/l10n-es-MX/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-et/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-et/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-et/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-et/browser/searchplugins/list.txt	2014-01-14 10:43:56.595003916 -0430
+--- cunaguaro-27.0~b5.orig/l10n-et/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-et/browser/searchplugins/list.txt	2014-01-14 10:43:56.595003916 -0430
 @@ -1,6 +1,6 @@
 -eBay
  google
@@ -888,10 +888,10 @@ Index: iceweasel-27.0~b5/l10n-et/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-et/mail/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-et/mail/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-et/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-et/mail/searchplugins/list.txt	2014-01-14 10:43:56.595003916 -0430
+--- cunaguaro-27.0~b5.orig/l10n-et/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-et/mail/searchplugins/list.txt	2014-01-14 10:43:56.595003916 -0430
 @@ -1,6 +1,6 @@
 -eBay
  google
@@ -904,10 +904,10 @@ Index: iceweasel-27.0~b5/l10n-et/mail/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-et/mobile/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-et/mobile/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-et/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-et/mobile/searchplugins/list.txt	2014-01-14 10:43:56.599003933 -0430
+--- cunaguaro-27.0~b5.orig/l10n-et/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-et/mobile/searchplugins/list.txt	2014-01-14 10:43:56.599003933 -0430
 @@ -1,4 +1,6 @@
 -amazondotcom
  google
@@ -916,10 +916,10 @@ Index: iceweasel-27.0~b5/l10n-et/mobile/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-eu/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-eu/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-eu/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-eu/browser/searchplugins/list.txt	2014-01-14 10:43:56.599003933 -0430
+--- cunaguaro-27.0~b5.orig/l10n-eu/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-eu/browser/searchplugins/list.txt	2014-01-14 10:43:56.599003933 -0430
 @@ -1,8 +1,6 @@
 -amazon-en-GB
 -bing
@@ -934,10 +934,10 @@ Index: iceweasel-27.0~b5/l10n-eu/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-eu/mail/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-eu/mail/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-eu/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-eu/mail/searchplugins/list.txt	2014-01-14 10:43:56.599003933 -0430
+--- cunaguaro-27.0~b5.orig/l10n-eu/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-eu/mail/searchplugins/list.txt	2014-01-14 10:43:56.599003933 -0430
 @@ -1,7 +1,6 @@
 -amazondotcom
 -aol-web-search
@@ -950,10 +950,10 @@ Index: iceweasel-27.0~b5/l10n-eu/mail/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-eu/mobile/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-eu/mobile/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-eu/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-eu/mobile/searchplugins/list.txt	2014-01-14 10:43:56.599003933 -0430
+--- cunaguaro-27.0~b5.orig/l10n-eu/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-eu/mobile/searchplugins/list.txt	2014-01-14 10:43:56.599003933 -0430
 @@ -1,3 +1,6 @@
  google
  twitter
@@ -962,10 +962,10 @@ Index: iceweasel-27.0~b5/l10n-eu/mobile/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-fa/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-fa/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-fa/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-fa/browser/searchplugins/list.txt	2014-01-14 10:43:56.599003933 -0430
+--- cunaguaro-27.0~b5.orig/l10n-fa/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-fa/browser/searchplugins/list.txt	2014-01-14 10:43:56.599003933 -0430
 @@ -1,6 +1,6 @@
 -amazondotcom
 -answers
@@ -978,10 +978,10 @@ Index: iceweasel-27.0~b5/l10n-fa/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-fa/mobile/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-fa/mobile/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-fa/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-fa/mobile/searchplugins/list.txt	2014-01-14 10:43:56.599003933 -0430
+--- cunaguaro-27.0~b5.orig/l10n-fa/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-fa/mobile/searchplugins/list.txt	2014-01-14 10:43:56.599003933 -0430
 @@ -1,3 +1,6 @@
  google
 -wikipedia-fa
@@ -991,10 +991,10 @@ Index: iceweasel-27.0~b5/l10n-fa/mobile/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-fi/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-fi/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-fi/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-fi/browser/searchplugins/list.txt	2014-01-14 10:43:56.599003933 -0430
+--- cunaguaro-27.0~b5.orig/l10n-fi/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-fi/browser/searchplugins/list.txt	2014-01-14 10:43:56.599003933 -0430
 @@ -1,6 +1,6 @@
 -bing
 -bookplus-fi
@@ -1007,10 +1007,10 @@ Index: iceweasel-27.0~b5/l10n-fi/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-fi/mail/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-fi/mail/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-fi/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-fi/mail/searchplugins/list.txt	2014-01-14 10:43:56.599003933 -0430
+--- cunaguaro-27.0~b5.orig/l10n-fi/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-fi/mail/searchplugins/list.txt	2014-01-14 10:43:56.599003933 -0430
 @@ -1,6 +1,6 @@
 -amazondotcom
 -bing
@@ -1023,10 +1023,10 @@ Index: iceweasel-27.0~b5/l10n-fi/mail/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-fi/mobile/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-fi/mobile/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-fi/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-fi/mobile/searchplugins/list.txt	2014-01-14 10:43:56.599003933 -0430
+--- cunaguaro-27.0~b5.orig/l10n-fi/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-fi/mobile/searchplugins/list.txt	2014-01-14 10:43:56.599003933 -0430
 @@ -1,5 +1,6 @@
  google
  twitter
@@ -1037,10 +1037,10 @@ Index: iceweasel-27.0~b5/l10n-fi/mobile/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-fi/suite/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-fi/suite/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-fi/suite/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-fi/suite/searchplugins/list.txt	2014-01-14 10:43:56.599003933 -0430
+--- cunaguaro-27.0~b5.orig/l10n-fi/suite/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-fi/suite/searchplugins/list.txt	2014-01-14 10:43:56.599003933 -0430
 @@ -1,6 +1,6 @@
 -bookplus-fi
 -creativecommons-fi
@@ -1053,10 +1053,10 @@ Index: iceweasel-27.0~b5/l10n-fi/suite/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-fr/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-fr/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-fr/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-fr/browser/searchplugins/list.txt	2014-01-14 10:43:56.603003950 -0430
+--- cunaguaro-27.0~b5.orig/l10n-fr/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-fr/browser/searchplugins/list.txt	2014-01-14 10:43:56.603003950 -0430
 @@ -1,7 +1,6 @@
  google
 -amazon-france
@@ -1070,10 +1070,10 @@ Index: iceweasel-27.0~b5/l10n-fr/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-fr/mail/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-fr/mail/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-fr/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-fr/mail/searchplugins/list.txt	2014-01-14 10:43:56.603003950 -0430
+--- cunaguaro-27.0~b5.orig/l10n-fr/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-fr/mail/searchplugins/list.txt	2014-01-14 10:43:56.603003950 -0430
 @@ -1,6 +1,6 @@
 -amazon-france
 -bing
@@ -1087,10 +1087,10 @@ Index: iceweasel-27.0~b5/l10n-fr/mail/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-fr/mobile/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-fr/mobile/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-fr/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-fr/mobile/searchplugins/list.txt	2014-01-14 10:43:56.603003950 -0430
+--- cunaguaro-27.0~b5.orig/l10n-fr/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-fr/mobile/searchplugins/list.txt	2014-01-14 10:43:56.603003950 -0430
 @@ -1,6 +1,7 @@
 -yahoo-france
  google
@@ -1102,10 +1102,10 @@ Index: iceweasel-27.0~b5/l10n-fr/mobile/searchplugins/list.txt
 +canaima-list
 +canaima-wiki
  bing
-Index: iceweasel-27.0~b5/l10n-fr/suite/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-fr/suite/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-fr/suite/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-fr/suite/searchplugins/list.txt	2014-01-14 10:43:56.603003950 -0430
+--- cunaguaro-27.0~b5.orig/l10n-fr/suite/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-fr/suite/searchplugins/list.txt	2014-01-14 10:43:56.603003950 -0430
 @@ -1,5 +1,6 @@
 -creativecommons
  google
@@ -1117,10 +1117,10 @@ Index: iceweasel-27.0~b5/l10n-fr/suite/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-fy-NL/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-fy-NL/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-fy-NL/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-fy-NL/browser/searchplugins/list.txt	2014-01-14 10:43:56.603003950 -0430
+--- cunaguaro-27.0~b5.orig/l10n-fy-NL/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-fy-NL/browser/searchplugins/list.txt	2014-01-14 10:43:56.603003950 -0430
 @@ -1,6 +1,6 @@
 -google
 -bing
@@ -1134,10 +1134,10 @@ Index: iceweasel-27.0~b5/l10n-fy-NL/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-fy-NL/mail/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-fy-NL/mail/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-fy-NL/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-fy-NL/mail/searchplugins/list.txt	2014-01-14 10:43:56.603003950 -0430
+--- cunaguaro-27.0~b5.orig/l10n-fy-NL/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-fy-NL/mail/searchplugins/list.txt	2014-01-14 10:43:56.603003950 -0430
 @@ -1,7 +1,6 @@
 -amazondotcom
 -aol-web-search
@@ -1150,10 +1150,10 @@ Index: iceweasel-27.0~b5/l10n-fy-NL/mail/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-fy-NL/mobile/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-fy-NL/mobile/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-fy-NL/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-fy-NL/mobile/searchplugins/list.txt	2014-01-14 10:43:56.603003950 -0430
+--- cunaguaro-27.0~b5.orig/l10n-fy-NL/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-fy-NL/mobile/searchplugins/list.txt	2014-01-14 10:43:56.603003950 -0430
 @@ -1,3 +1,6 @@
  google
 -wikipedia-fy-NL
@@ -1163,10 +1163,10 @@ Index: iceweasel-27.0~b5/l10n-fy-NL/mobile/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-fy-NL/suite/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-fy-NL/suite/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-fy-NL/suite/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-fy-NL/suite/searchplugins/list.txt	2014-01-14 10:43:56.603003950 -0430
+--- cunaguaro-27.0~b5.orig/l10n-fy-NL/suite/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-fy-NL/suite/searchplugins/list.txt	2014-01-14 10:43:56.603003950 -0430
 @@ -1 +1,6 @@
  google
 +twitter
@@ -1174,10 +1174,10 @@ Index: iceweasel-27.0~b5/l10n-fy-NL/suite/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-ga-IE/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-ga-IE/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-ga-IE/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-ga-IE/browser/searchplugins/list.txt	2014-01-14 10:43:56.603003950 -0430
+--- cunaguaro-27.0~b5.orig/l10n-ga-IE/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-ga-IE/browser/searchplugins/list.txt	2014-01-14 10:43:56.603003950 -0430
 @@ -1,9 +1,6 @@
  google
  twitter
@@ -1192,10 +1192,10 @@ Index: iceweasel-27.0~b5/l10n-ga-IE/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-ga-IE/mail/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-ga-IE/mail/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-ga-IE/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-ga-IE/mail/searchplugins/list.txt	2014-01-14 10:43:56.603003950 -0430
+--- cunaguaro-27.0~b5.orig/l10n-ga-IE/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-ga-IE/mail/searchplugins/list.txt	2014-01-14 10:43:56.603003950 -0430
 @@ -1,7 +1,6 @@
  google
  twitter
@@ -1208,10 +1208,10 @@ Index: iceweasel-27.0~b5/l10n-ga-IE/mail/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-ga-IE/mobile/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-ga-IE/mobile/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-ga-IE/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-ga-IE/mobile/searchplugins/list.txt	2014-01-14 10:43:56.603003950 -0430
+--- cunaguaro-27.0~b5.orig/l10n-ga-IE/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-ga-IE/mobile/searchplugins/list.txt	2014-01-14 10:43:56.603003950 -0430
 @@ -1,5 +1,6 @@
  google
  twitter
@@ -1222,10 +1222,10 @@ Index: iceweasel-27.0~b5/l10n-ga-IE/mobile/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-gd/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-gd/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-gd/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-gd/browser/searchplugins/list.txt	2014-01-14 10:43:56.603003950 -0430
+--- cunaguaro-27.0~b5.orig/l10n-gd/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-gd/browser/searchplugins/list.txt	2014-01-14 10:43:56.603003950 -0430
 @@ -1,6 +1,6 @@
 -google
 -yahoo-en-GB
@@ -1239,10 +1239,10 @@ Index: iceweasel-27.0~b5/l10n-gd/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-gd/mail/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-gd/mail/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-gd/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-gd/mail/searchplugins/list.txt	2014-01-14 10:43:56.603003950 -0430
+--- cunaguaro-27.0~b5.orig/l10n-gd/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-gd/mail/searchplugins/list.txt	2014-01-14 10:43:56.603003950 -0430
 @@ -1,6 +1,6 @@
 -google
 -yahoo-en-GB
@@ -1256,10 +1256,10 @@ Index: iceweasel-27.0~b5/l10n-gd/mail/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-gd/mobile/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-gd/mobile/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-gd/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-gd/mobile/searchplugins/list.txt	2014-01-14 10:43:56.603003950 -0430
+--- cunaguaro-27.0~b5.orig/l10n-gd/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-gd/mobile/searchplugins/list.txt	2014-01-14 10:43:56.603003950 -0430
 @@ -1,4 +1,6 @@
 -amazondotcom
  google
@@ -1268,10 +1268,10 @@ Index: iceweasel-27.0~b5/l10n-gd/mobile/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-gl/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-gl/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-gl/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-gl/browser/searchplugins/list.txt	2014-01-14 10:43:56.607003969 -0430
+--- cunaguaro-27.0~b5.orig/l10n-gl/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-gl/browser/searchplugins/list.txt	2014-01-14 10:43:56.607003969 -0430
 @@ -1,6 +1,6 @@
 -amazon-en-GB
 -creativecommons
@@ -1284,10 +1284,10 @@ Index: iceweasel-27.0~b5/l10n-gl/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-gl/mobile/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-gl/mobile/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-gl/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-gl/mobile/searchplugins/list.txt	2014-01-14 10:43:56.607003969 -0430
+--- cunaguaro-27.0~b5.orig/l10n-gl/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-gl/mobile/searchplugins/list.txt	2014-01-14 10:43:56.607003969 -0430
 @@ -1,4 +1,6 @@
 -amazondotcom
  google
@@ -1297,10 +1297,10 @@ Index: iceweasel-27.0~b5/l10n-gl/mobile/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-gl/suite/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-gl/suite/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-gl/suite/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-gl/suite/searchplugins/list.txt	2014-01-14 10:43:56.607003969 -0430
+--- cunaguaro-27.0~b5.orig/l10n-gl/suite/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-gl/suite/searchplugins/list.txt	2014-01-14 10:43:56.607003969 -0430
 @@ -1,4 +1,6 @@
 -creativecommons
  google
@@ -1310,10 +1310,10 @@ Index: iceweasel-27.0~b5/l10n-gl/suite/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-gu-IN/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-gu-IN/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-gu-IN/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-gu-IN/browser/searchplugins/list.txt	2014-01-14 10:43:56.607003969 -0430
+--- cunaguaro-27.0~b5.orig/l10n-gu-IN/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-gu-IN/browser/searchplugins/list.txt	2014-01-14 10:43:56.607003969 -0430
 @@ -1,6 +1,6 @@
 -eBay-in
  google
@@ -1326,10 +1326,10 @@ Index: iceweasel-27.0~b5/l10n-gu-IN/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-gu-IN/mobile/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-gu-IN/mobile/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-gu-IN/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-gu-IN/mobile/searchplugins/list.txt	2014-01-14 10:43:56.607003969 -0430
+--- cunaguaro-27.0~b5.orig/l10n-gu-IN/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-gu-IN/mobile/searchplugins/list.txt	2014-01-14 10:43:56.607003969 -0430
 @@ -1,4 +1,6 @@
 -amazondotcom
  google
@@ -1338,10 +1338,10 @@ Index: iceweasel-27.0~b5/l10n-gu-IN/mobile/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-he/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-he/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-he/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-he/browser/searchplugins/list.txt	2014-01-14 10:43:56.607003969 -0430
+--- cunaguaro-27.0~b5.orig/l10n-he/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-he/browser/searchplugins/list.txt	2014-01-14 10:43:56.607003969 -0430
 @@ -1,4 +1,6 @@
  google
 -yahoo
@@ -1352,10 +1352,10 @@ Index: iceweasel-27.0~b5/l10n-he/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-he/mail/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-he/mail/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-he/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-he/mail/searchplugins/list.txt	2014-01-14 10:43:56.607003969 -0430
+--- cunaguaro-27.0~b5.orig/l10n-he/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-he/mail/searchplugins/list.txt	2014-01-14 10:43:56.607003969 -0430
 @@ -1,8 +1,6 @@
 -amazondotcom
 -aol-web-search
@@ -1368,10 +1368,10 @@ Index: iceweasel-27.0~b5/l10n-he/mail/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-he/mobile/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-he/mobile/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-he/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-he/mobile/searchplugins/list.txt	2014-01-14 10:43:56.607003969 -0430
+--- cunaguaro-27.0~b5.orig/l10n-he/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-he/mobile/searchplugins/list.txt	2014-01-14 10:43:56.607003969 -0430
 @@ -1,3 +1,6 @@
  google
  twitter
@@ -1380,10 +1380,10 @@ Index: iceweasel-27.0~b5/l10n-he/mobile/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-hi-IN/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-hi-IN/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-hi-IN/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-hi-IN/browser/searchplugins/list.txt	2014-01-14 10:43:56.607003969 -0430
+--- cunaguaro-27.0~b5.orig/l10n-hi-IN/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-hi-IN/browser/searchplugins/list.txt	2014-01-14 10:43:56.607003969 -0430
 @@ -1,5 +1,6 @@
  google
 -yahoo-in
@@ -1395,10 +1395,10 @@ Index: iceweasel-27.0~b5/l10n-hi-IN/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-hi-IN/mobile/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-hi-IN/mobile/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-hi-IN/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-hi-IN/mobile/searchplugins/list.txt	2014-01-14 10:43:56.607003969 -0430
+--- cunaguaro-27.0~b5.orig/l10n-hi-IN/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-hi-IN/mobile/searchplugins/list.txt	2014-01-14 10:43:56.607003969 -0430
 @@ -1,4 +1,6 @@
 -amazondotcom
  google
@@ -1407,10 +1407,10 @@ Index: iceweasel-27.0~b5/l10n-hi-IN/mobile/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-hr/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-hr/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-hr/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-hr/browser/searchplugins/list.txt	2014-01-14 10:43:56.607003969 -0430
+--- cunaguaro-27.0~b5.orig/l10n-hr/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-hr/browser/searchplugins/list.txt	2014-01-14 10:43:56.607003969 -0430
 @@ -1,8 +1,6 @@
 -amazon-en-GB
 -bing
@@ -1424,10 +1424,10 @@ Index: iceweasel-27.0~b5/l10n-hr/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-hr/mail/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-hr/mail/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-hr/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-hr/mail/searchplugins/list.txt	2014-01-14 10:43:56.607003969 -0430
+--- cunaguaro-27.0~b5.orig/l10n-hr/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-hr/mail/searchplugins/list.txt	2014-01-14 10:43:56.607003969 -0430
 @@ -1,8 +1,6 @@
 -amazondotcom
 -aol-web-search
@@ -1440,10 +1440,10 @@ Index: iceweasel-27.0~b5/l10n-hr/mail/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-hu/mail/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-hu/mail/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-hu/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-hu/mail/searchplugins/list.txt	2014-01-14 10:43:56.607003969 -0430
+--- cunaguaro-27.0~b5.orig/l10n-hu/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-hu/mail/searchplugins/list.txt	2014-01-14 10:43:56.607003969 -0430
 @@ -1,5 +1,6 @@
 -eBay-hu
  google
@@ -1455,10 +1455,10 @@ Index: iceweasel-27.0~b5/l10n-hu/mail/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-hy-AM/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-hy-AM/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-hy-AM/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-hy-AM/browser/searchplugins/list.txt	2014-01-14 10:43:56.611003995 -0430
+--- cunaguaro-27.0~b5.orig/l10n-hy-AM/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-hy-AM/browser/searchplugins/list.txt	2014-01-14 10:43:56.611003995 -0430
 @@ -1,6 +1,6 @@
 -amazondotcom
 -eBay
@@ -1471,10 +1471,10 @@ Index: iceweasel-27.0~b5/l10n-hy-AM/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-hy-AM/mobile/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-hy-AM/mobile/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-hy-AM/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-hy-AM/mobile/searchplugins/list.txt	2014-01-14 10:43:56.611003995 -0430
+--- cunaguaro-27.0~b5.orig/l10n-hy-AM/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-hy-AM/mobile/searchplugins/list.txt	2014-01-14 10:43:56.611003995 -0430
 @@ -1,4 +1,6 @@
 -amazondotcom
  google
@@ -1484,10 +1484,10 @@ Index: iceweasel-27.0~b5/l10n-hy-AM/mobile/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-id/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-id/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-id/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-id/browser/searchplugins/list.txt	2014-01-14 10:43:56.611003995 -0430
+--- cunaguaro-27.0~b5.orig/l10n-id/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-id/browser/searchplugins/list.txt	2014-01-14 10:43:56.611003995 -0430
 @@ -1,3 +1,6 @@
  google
 -yahoo-id
@@ -1497,10 +1497,10 @@ Index: iceweasel-27.0~b5/l10n-id/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-id/mail/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-id/mail/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-id/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-id/mail/searchplugins/list.txt	2014-01-14 10:43:56.611003995 -0430
+--- cunaguaro-27.0~b5.orig/l10n-id/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-id/mail/searchplugins/list.txt	2014-01-14 10:43:56.611003995 -0430
 @@ -1,3 +1,6 @@
  google
 -yahoo-id
@@ -1510,10 +1510,10 @@ Index: iceweasel-27.0~b5/l10n-id/mail/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-id/mobile/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-id/mobile/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-id/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-id/mobile/searchplugins/list.txt	2014-01-14 10:43:56.623004054 -0430
+--- cunaguaro-27.0~b5.orig/l10n-id/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-id/mobile/searchplugins/list.txt	2014-01-14 10:43:56.623004054 -0430
 @@ -1,4 +1,7 @@
  answers
  google
@@ -1523,10 +1523,10 @@ Index: iceweasel-27.0~b5/l10n-id/mobile/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-is/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-is/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-is/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-is/browser/searchplugins/list.txt	2014-01-14 10:43:56.623004054 -0430
+--- cunaguaro-27.0~b5.orig/l10n-is/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-is/browser/searchplugins/list.txt	2014-01-14 10:43:56.623004054 -0430
 @@ -1,7 +1,6 @@
 -amazondotcom
 -bing
@@ -1540,10 +1540,10 @@ Index: iceweasel-27.0~b5/l10n-is/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-is/mail/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-is/mail/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-is/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-is/mail/searchplugins/list.txt	2014-01-14 10:43:56.623004054 -0430
+--- cunaguaro-27.0~b5.orig/l10n-is/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-is/mail/searchplugins/list.txt	2014-01-14 10:43:56.623004054 -0430
 @@ -1,7 +1,6 @@
 -amazondotcom
 -bing
@@ -1557,10 +1557,10 @@ Index: iceweasel-27.0~b5/l10n-is/mail/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-it/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-it/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-it/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-it/browser/searchplugins/list.txt	2014-01-14 10:43:56.627004068 -0430
+--- cunaguaro-27.0~b5.orig/l10n-it/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-it/browser/searchplugins/list.txt	2014-01-14 10:43:56.627004068 -0430
 @@ -1,7 +1,6 @@
 -amazon-it
 -bing
@@ -1574,10 +1574,10 @@ Index: iceweasel-27.0~b5/l10n-it/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-it/mail/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-it/mail/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-it/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-it/mail/searchplugins/list.txt	2014-01-14 10:43:56.627004068 -0430
+--- cunaguaro-27.0~b5.orig/l10n-it/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-it/mail/searchplugins/list.txt	2014-01-14 10:43:56.627004068 -0430
 @@ -1,7 +1,6 @@
 -amazon-it
 -bing
@@ -1590,10 +1590,10 @@ Index: iceweasel-27.0~b5/l10n-it/mail/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-it/mobile/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-it/mobile/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-it/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-it/mobile/searchplugins/list.txt	2014-01-14 10:43:56.627004068 -0430
+--- cunaguaro-27.0~b5.orig/l10n-it/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-it/mobile/searchplugins/list.txt	2014-01-14 10:43:56.627004068 -0430
 @@ -1,4 +1,6 @@
  google
 -wikipedia-it
@@ -1603,10 +1603,10 @@ Index: iceweasel-27.0~b5/l10n-it/mobile/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-it/suite/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-it/suite/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-it/suite/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-it/suite/searchplugins/list.txt	2014-01-14 10:43:56.627004068 -0430
+--- cunaguaro-27.0~b5.orig/l10n-it/suite/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-it/suite/searchplugins/list.txt	2014-01-14 10:43:56.627004068 -0430
 @@ -1,4 +1,6 @@
 -creativecommons
  google
@@ -1616,10 +1616,10 @@ Index: iceweasel-27.0~b5/l10n-it/suite/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-ja/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-ja/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-ja/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-ja/browser/searchplugins/list.txt	2014-01-14 10:43:56.627004068 -0430
+--- cunaguaro-27.0~b5.orig/l10n-ja/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-ja/browser/searchplugins/list.txt	2014-01-14 10:43:56.627004068 -0430
 @@ -1,8 +1,6 @@
 -google-jp
 -yahoo-jp
@@ -1635,10 +1635,10 @@ Index: iceweasel-27.0~b5/l10n-ja/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-ja/mail/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-ja/mail/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-ja/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-ja/mail/searchplugins/list.txt	2014-01-14 10:43:56.627004068 -0430
+--- cunaguaro-27.0~b5.orig/l10n-ja/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-ja/mail/searchplugins/list.txt	2014-01-14 10:43:56.627004068 -0430
 @@ -1,8 +1,6 @@
 -google-jp
 -yahoo-jp
@@ -1654,10 +1654,10 @@ Index: iceweasel-27.0~b5/l10n-ja/mail/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-ja/mobile/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-ja/mobile/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-ja/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-ja/mobile/searchplugins/list.txt	2014-01-14 10:43:56.627004068 -0430
+--- cunaguaro-27.0~b5.orig/l10n-ja/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-ja/mobile/searchplugins/list.txt	2014-01-14 10:43:56.627004068 -0430
 @@ -1,5 +1,6 @@
  google
 -amazon-jp
@@ -1669,10 +1669,10 @@ Index: iceweasel-27.0~b5/l10n-ja/mobile/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-ja/suite/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-ja/suite/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-ja/suite/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-ja/suite/searchplugins/list.txt	2014-01-14 10:43:56.627004068 -0430
+--- cunaguaro-27.0~b5.orig/l10n-ja/suite/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-ja/suite/searchplugins/list.txt	2014-01-14 10:43:56.627004068 -0430
 @@ -1,4 +1,6 @@
 -google-jp
 -yahoo-jp
@@ -1684,10 +1684,10 @@ Index: iceweasel-27.0~b5/l10n-ja/suite/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-kk/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-kk/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-kk/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-kk/browser/searchplugins/list.txt	2014-01-14 10:43:56.627004068 -0430
+--- cunaguaro-27.0~b5.orig/l10n-kk/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-kk/browser/searchplugins/list.txt	2014-01-14 10:43:56.627004068 -0430
 @@ -1,5 +1,6 @@
  google
 -kaz-kk
@@ -1698,10 +1698,10 @@ Index: iceweasel-27.0~b5/l10n-kk/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-kn/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-kn/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-kn/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-kn/browser/searchplugins/list.txt	2014-01-14 10:43:56.627004068 -0430
+--- cunaguaro-27.0~b5.orig/l10n-kn/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-kn/browser/searchplugins/list.txt	2014-01-14 10:43:56.627004068 -0430
 @@ -1,6 +1,6 @@
 -amazondotcom
  google
@@ -1714,10 +1714,10 @@ Index: iceweasel-27.0~b5/l10n-kn/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-ko/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-ko/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-ko/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-ko/browser/searchplugins/list.txt	2014-01-14 10:43:56.627004068 -0430
+--- cunaguaro-27.0~b5.orig/l10n-ko/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-ko/browser/searchplugins/list.txt	2014-01-14 10:43:56.627004068 -0430
 @@ -1,5 +1,6 @@
  google
 -daum-kr
@@ -1729,10 +1729,10 @@ Index: iceweasel-27.0~b5/l10n-ko/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-ko/mail/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-ko/mail/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-ko/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-ko/mail/searchplugins/list.txt	2014-01-14 10:43:56.627004068 -0430
+--- cunaguaro-27.0~b5.orig/l10n-ko/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-ko/mail/searchplugins/list.txt	2014-01-14 10:43:56.627004068 -0430
 @@ -1,5 +1,6 @@
  google
 -daum-kr
@@ -1744,10 +1744,10 @@ Index: iceweasel-27.0~b5/l10n-ko/mail/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-ko/mobile/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-ko/mobile/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-ko/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-ko/mobile/searchplugins/list.txt	2014-01-14 10:43:56.627004068 -0430
+--- cunaguaro-27.0~b5.orig/l10n-ko/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-ko/mobile/searchplugins/list.txt	2014-01-14 10:43:56.627004068 -0430
 @@ -1,5 +1,6 @@
  google
 -danawa-kr
@@ -1758,10 +1758,10 @@ Index: iceweasel-27.0~b5/l10n-ko/mobile/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-ku/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-ku/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-ku/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-ku/browser/searchplugins/list.txt	2014-01-14 10:43:56.627004068 -0430
+--- cunaguaro-27.0~b5.orig/l10n-ku/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-ku/browser/searchplugins/list.txt	2014-01-14 10:43:56.627004068 -0430
 @@ -1,7 +1,6 @@
 -amazondotcom
 -answers
@@ -1776,10 +1776,10 @@ Index: iceweasel-27.0~b5/l10n-ku/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-ku/mobile/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-ku/mobile/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-ku/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-ku/mobile/searchplugins/list.txt	2014-01-14 10:43:56.627004068 -0430
+--- cunaguaro-27.0~b5.orig/l10n-ku/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-ku/mobile/searchplugins/list.txt	2014-01-14 10:43:56.627004068 -0430
 @@ -1,4 +1,6 @@
 -amazondotcom
  google
@@ -1788,10 +1788,10 @@ Index: iceweasel-27.0~b5/l10n-ku/mobile/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-lg/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-lg/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-lg/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-lg/browser/searchplugins/list.txt	2014-01-14 10:43:56.627004068 -0430
+--- cunaguaro-27.0~b5.orig/l10n-lg/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-lg/browser/searchplugins/list.txt	2014-01-14 10:43:56.627004068 -0430
 @@ -1,7 +1,6 @@
 -amazondotcom
 -bing
@@ -1803,10 +1803,10 @@ Index: iceweasel-27.0~b5/l10n-lg/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-lt/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-lt/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-lt/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-lt/browser/searchplugins/list.txt	2014-01-14 10:43:56.627004068 -0430
+--- cunaguaro-27.0~b5.orig/l10n-lt/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-lt/browser/searchplugins/list.txt	2014-01-14 10:43:56.627004068 -0430
 @@ -1,6 +1,6 @@
 -amazondotcom
 -bing
@@ -1818,10 +1818,10 @@ Index: iceweasel-27.0~b5/l10n-lt/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-lt/mail/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-lt/mail/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-lt/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-lt/mail/searchplugins/list.txt	2014-01-14 10:43:56.627004068 -0430
+--- cunaguaro-27.0~b5.orig/l10n-lt/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-lt/mail/searchplugins/list.txt	2014-01-14 10:43:56.627004068 -0430
 @@ -1,6 +1,6 @@
 -amazondotcom
 -bing
@@ -1833,10 +1833,10 @@ Index: iceweasel-27.0~b5/l10n-lt/mail/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-lt/mobile/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-lt/mobile/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-lt/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-lt/mobile/searchplugins/list.txt	2014-01-14 10:43:56.631004087 -0430
+--- cunaguaro-27.0~b5.orig/l10n-lt/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-lt/mobile/searchplugins/list.txt	2014-01-14 10:43:56.631004087 -0430
 @@ -1,3 +1,6 @@
  google
  twitter
@@ -1845,10 +1845,10 @@ Index: iceweasel-27.0~b5/l10n-lt/mobile/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-lt/suite/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-lt/suite/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-lt/suite/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-lt/suite/searchplugins/list.txt	2014-01-14 10:43:56.631004087 -0430
+--- cunaguaro-27.0~b5.orig/l10n-lt/suite/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-lt/suite/searchplugins/list.txt	2014-01-14 10:43:56.631004087 -0430
 @@ -1,4 +1,6 @@
  google
 -wikipedia-lt
@@ -1859,10 +1859,10 @@ Index: iceweasel-27.0~b5/l10n-lt/suite/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-lv/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-lv/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-lv/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-lv/browser/searchplugins/list.txt	2014-01-14 10:43:56.631004087 -0430
+--- cunaguaro-27.0~b5.orig/l10n-lv/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-lv/browser/searchplugins/list.txt	2014-01-14 10:43:56.631004087 -0430
 @@ -1,6 +1,6 @@
  google
 -yahoo
@@ -1875,10 +1875,10 @@ Index: iceweasel-27.0~b5/l10n-lv/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-mai/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-mai/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-mai/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-mai/browser/searchplugins/list.txt	2014-01-14 10:43:56.631004087 -0430
+--- cunaguaro-27.0~b5.orig/l10n-mai/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-mai/browser/searchplugins/list.txt	2014-01-14 10:43:56.631004087 -0430
 @@ -1,6 +1,6 @@
  google
 -yahoo-in
@@ -1890,10 +1890,10 @@ Index: iceweasel-27.0~b5/l10n-mai/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-mk/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-mk/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-mk/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-mk/browser/searchplugins/list.txt	2014-01-14 10:43:56.631004087 -0430
+--- cunaguaro-27.0~b5.orig/l10n-mk/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-mk/browser/searchplugins/list.txt	2014-01-14 10:43:56.631004087 -0430
 @@ -1,8 +1,6 @@
 -amazondotcom
 -bing
@@ -1908,10 +1908,10 @@ Index: iceweasel-27.0~b5/l10n-mk/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-ml/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-ml/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-ml/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-ml/browser/searchplugins/list.txt	2014-01-14 10:43:56.631004087 -0430
+--- cunaguaro-27.0~b5.orig/l10n-ml/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-ml/browser/searchplugins/list.txt	2014-01-14 10:43:56.631004087 -0430
 @@ -1,7 +1,6 @@
  google
 -bing
@@ -1924,10 +1924,10 @@ Index: iceweasel-27.0~b5/l10n-ml/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-mr/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-mr/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-mr/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-mr/browser/searchplugins/list.txt	2014-01-14 10:43:56.631004087 -0430
+--- cunaguaro-27.0~b5.orig/l10n-mr/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-mr/browser/searchplugins/list.txt	2014-01-14 10:43:56.631004087 -0430
 @@ -1,7 +1,6 @@
  google
 -amazondotcom
@@ -1941,10 +1941,10 @@ Index: iceweasel-27.0~b5/l10n-mr/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-nb-NO/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-nb-NO/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-nb-NO/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-nb-NO/browser/searchplugins/list.txt	2014-01-14 10:43:56.631004087 -0430
+--- cunaguaro-27.0~b5.orig/l10n-nb-NO/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-nb-NO/browser/searchplugins/list.txt	2014-01-14 10:43:56.631004087 -0430
 @@ -1,8 +1,6 @@
 -amazon-en-GB
 -bing
@@ -1959,10 +1959,10 @@ Index: iceweasel-27.0~b5/l10n-nb-NO/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-nb-NO/mail/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-nb-NO/mail/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-nb-NO/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-nb-NO/mail/searchplugins/list.txt	2014-01-14 10:43:56.631004087 -0430
+--- cunaguaro-27.0~b5.orig/l10n-nb-NO/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-nb-NO/mail/searchplugins/list.txt	2014-01-14 10:43:56.631004087 -0430
 @@ -1,9 +1,7 @@
 -amazondotcom
 -aol-web-search
@@ -1976,10 +1976,10 @@ Index: iceweasel-27.0~b5/l10n-nb-NO/mail/searchplugins/list.txt
 +canaima-list
 +canaima-wiki
  gulesider-NO
-Index: iceweasel-27.0~b5/l10n-nb-NO/mobile/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-nb-NO/mobile/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-nb-NO/mobile/searchplugins/list.txt	2014-01-13 14:53:56.000000000 -0430
-+++ iceweasel-27.0~b5/l10n-nb-NO/mobile/searchplugins/list.txt	2014-01-14 10:43:56.631004087 -0430
+--- cunaguaro-27.0~b5.orig/l10n-nb-NO/mobile/searchplugins/list.txt	2014-01-13 14:53:56.000000000 -0430
++++ cunaguaro-27.0~b5/l10n-nb-NO/mobile/searchplugins/list.txt	2014-01-14 10:43:56.631004087 -0430
 @@ -1,4 +1,7 @@
  google
  twitter
@@ -1989,10 +1989,10 @@ Index: iceweasel-27.0~b5/l10n-nb-NO/mobile/searchplugins/list.txt
 +canaima-list
 +canaima-wiki
  gulesider-mobile-NO
-Index: iceweasel-27.0~b5/l10n-nb-NO/suite/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-nb-NO/suite/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-nb-NO/suite/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-nb-NO/suite/searchplugins/list.txt	2014-01-14 10:43:56.631004087 -0430
+--- cunaguaro-27.0~b5.orig/l10n-nb-NO/suite/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-nb-NO/suite/searchplugins/list.txt	2014-01-14 10:43:56.631004087 -0430
 @@ -1,4 +1,6 @@
 -creativecommons
  google
@@ -2003,10 +2003,10 @@ Index: iceweasel-27.0~b5/l10n-nb-NO/suite/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-nl/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-nl/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-nl/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-nl/browser/searchplugins/list.txt	2014-01-14 10:43:56.631004087 -0430
+--- cunaguaro-27.0~b5.orig/l10n-nl/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-nl/browser/searchplugins/list.txt	2014-01-14 10:43:56.631004087 -0430
 @@ -1,5 +1,6 @@
  google
 -bing
@@ -2018,10 +2018,10 @@ Index: iceweasel-27.0~b5/l10n-nl/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-nl/mail/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-nl/mail/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-nl/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-nl/mail/searchplugins/list.txt	2014-01-14 10:43:56.631004087 -0430
+--- cunaguaro-27.0~b5.orig/l10n-nl/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-nl/mail/searchplugins/list.txt	2014-01-14 10:43:56.631004087 -0430
 @@ -1,7 +1,6 @@
 -amazondotcom
 -aol-web-search
@@ -2034,10 +2034,10 @@ Index: iceweasel-27.0~b5/l10n-nl/mail/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-nl/mobile/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-nl/mobile/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-nl/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-nl/mobile/searchplugins/list.txt	2014-01-14 10:43:56.631004087 -0430
+--- cunaguaro-27.0~b5.orig/l10n-nl/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-nl/mobile/searchplugins/list.txt	2014-01-14 10:43:56.631004087 -0430
 @@ -1,3 +1,6 @@
  google
 -wikipedia-nl
@@ -2048,10 +2048,10 @@ Index: iceweasel-27.0~b5/l10n-nl/mobile/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-nl/suite/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-nl/suite/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-nl/suite/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-nl/suite/searchplugins/list.txt	2014-01-14 10:43:56.631004087 -0430
+--- cunaguaro-27.0~b5.orig/l10n-nl/suite/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-nl/suite/searchplugins/list.txt	2014-01-14 10:43:56.631004087 -0430
 @@ -1,4 +1,6 @@
 -creativecommons
  google
@@ -2062,10 +2062,10 @@ Index: iceweasel-27.0~b5/l10n-nl/suite/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-nn-NO/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-nn-NO/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-nn-NO/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-nn-NO/browser/searchplugins/list.txt	2014-01-14 10:43:56.631004087 -0430
+--- cunaguaro-27.0~b5.orig/l10n-nn-NO/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-nn-NO/browser/searchplugins/list.txt	2014-01-14 10:43:56.631004087 -0430
 @@ -1,7 +1,6 @@
 -amazon-en-GB
 -bing
@@ -2079,10 +2079,10 @@ Index: iceweasel-27.0~b5/l10n-nn-NO/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-nn-NO/mail/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-nn-NO/mail/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-nn-NO/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-nn-NO/mail/searchplugins/list.txt	2014-01-14 10:43:56.631004087 -0430
+--- cunaguaro-27.0~b5.orig/l10n-nn-NO/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-nn-NO/mail/searchplugins/list.txt	2014-01-14 10:43:56.631004087 -0430
 @@ -1,8 +1,7 @@
 -amazondotcom
 -aol-web-search
@@ -2096,10 +2096,10 @@ Index: iceweasel-27.0~b5/l10n-nn-NO/mail/searchplugins/list.txt
 +canaima-list
 +canaima-wiki
  gulesider-NO
-Index: iceweasel-27.0~b5/l10n-nn-NO/mobile/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-nn-NO/mobile/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-nn-NO/mobile/searchplugins/list.txt	2014-01-13 14:53:56.000000000 -0430
-+++ iceweasel-27.0~b5/l10n-nn-NO/mobile/searchplugins/list.txt	2014-01-14 10:43:56.631004087 -0430
+--- cunaguaro-27.0~b5.orig/l10n-nn-NO/mobile/searchplugins/list.txt	2014-01-13 14:53:56.000000000 -0430
++++ cunaguaro-27.0~b5/l10n-nn-NO/mobile/searchplugins/list.txt	2014-01-14 10:43:56.631004087 -0430
 @@ -1,4 +1,7 @@
  google
  twitter
@@ -2109,10 +2109,10 @@ Index: iceweasel-27.0~b5/l10n-nn-NO/mobile/searchplugins/list.txt
 +canaima-list
 +canaima-wiki
  gulesider-mobile-NO
-Index: iceweasel-27.0~b5/l10n-nso/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-nso/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-nso/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-nso/browser/searchplugins/list.txt	2014-01-14 10:43:56.631004087 -0430
+--- cunaguaro-27.0~b5.orig/l10n-nso/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-nso/browser/searchplugins/list.txt	2014-01-14 10:43:56.631004087 -0430
 @@ -1,5 +1,6 @@
  google
 -bing
@@ -2123,10 +2123,10 @@ Index: iceweasel-27.0~b5/l10n-nso/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-or/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-or/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-or/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-or/browser/searchplugins/list.txt	2014-01-14 10:43:56.631004087 -0430
+--- cunaguaro-27.0~b5.orig/l10n-or/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-or/browser/searchplugins/list.txt	2014-01-14 10:43:56.631004087 -0430
 @@ -1,6 +1,6 @@
  google
 -amazondotcom
@@ -2139,10 +2139,10 @@ Index: iceweasel-27.0~b5/l10n-or/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-pa-IN/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-pa-IN/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-pa-IN/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-pa-IN/browser/searchplugins/list.txt	2014-01-14 10:43:56.635004109 -0430
+--- cunaguaro-27.0~b5.orig/l10n-pa-IN/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-pa-IN/browser/searchplugins/list.txt	2014-01-14 10:43:56.635004109 -0430
 @@ -1,5 +1,6 @@
  google
 -yahoo-in
@@ -2154,10 +2154,10 @@ Index: iceweasel-27.0~b5/l10n-pa-IN/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-pa-IN/mail/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-pa-IN/mail/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-pa-IN/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-pa-IN/mail/searchplugins/list.txt	2014-01-14 10:43:56.635004109 -0430
+--- cunaguaro-27.0~b5.orig/l10n-pa-IN/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-pa-IN/mail/searchplugins/list.txt	2014-01-14 10:43:56.635004109 -0430
 @@ -1,7 +1,6 @@
 -amazondotcom
 -aol-web-search
@@ -2170,10 +2170,10 @@ Index: iceweasel-27.0~b5/l10n-pa-IN/mail/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-pa-IN/mobile/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-pa-IN/mobile/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-pa-IN/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-pa-IN/mobile/searchplugins/list.txt	2014-01-14 10:43:56.635004109 -0430
+--- cunaguaro-27.0~b5.orig/l10n-pa-IN/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-pa-IN/mobile/searchplugins/list.txt	2014-01-14 10:43:56.635004109 -0430
 @@ -1,3 +1,6 @@
  google
  twitter
@@ -2182,10 +2182,10 @@ Index: iceweasel-27.0~b5/l10n-pa-IN/mobile/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-pl/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-pl/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-pl/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-pl/browser/searchplugins/list.txt	2014-01-14 10:43:56.635004109 -0430
+--- cunaguaro-27.0~b5.orig/l10n-pl/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-pl/browser/searchplugins/list.txt	2014-01-14 10:43:56.635004109 -0430
 @@ -1,7 +1,6 @@
  google
 -wp-pl
@@ -2199,10 +2199,10 @@ Index: iceweasel-27.0~b5/l10n-pl/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-pl/mail/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-pl/mail/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-pl/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-pl/mail/searchplugins/list.txt	2014-01-14 10:43:56.635004109 -0430
+--- cunaguaro-27.0~b5.orig/l10n-pl/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-pl/mail/searchplugins/list.txt	2014-01-14 10:43:56.635004109 -0430
 @@ -1,7 +1,6 @@
  google
 -wp-pl
@@ -2216,10 +2216,10 @@ Index: iceweasel-27.0~b5/l10n-pl/mail/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-pl/mobile/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-pl/mobile/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-pl/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-pl/mobile/searchplugins/list.txt	2014-01-14 10:43:56.635004109 -0430
+--- cunaguaro-27.0~b5.orig/l10n-pl/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-pl/mobile/searchplugins/list.txt	2014-01-14 10:43:56.635004109 -0430
 @@ -1,3 +1,6 @@
  google
  twitter
@@ -2228,10 +2228,10 @@ Index: iceweasel-27.0~b5/l10n-pl/mobile/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-pl/suite/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-pl/suite/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-pl/suite/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-pl/suite/searchplugins/list.txt	2014-01-14 10:43:56.635004109 -0430
+--- cunaguaro-27.0~b5.orig/l10n-pl/suite/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-pl/suite/searchplugins/list.txt	2014-01-14 10:43:56.635004109 -0430
 @@ -1,7 +1,6 @@
  google
 -wp-pl
@@ -2245,10 +2245,10 @@ Index: iceweasel-27.0~b5/l10n-pl/suite/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-pt-BR/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-pt-BR/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-pt-BR/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-pt-BR/browser/searchplugins/list.txt	2014-01-14 10:43:56.635004109 -0430
+--- cunaguaro-27.0~b5.orig/l10n-pt-BR/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-pt-BR/browser/searchplugins/list.txt	2014-01-14 10:43:56.635004109 -0430
 @@ -1,6 +1,6 @@
  google
  twitter
@@ -2260,10 +2260,10 @@ Index: iceweasel-27.0~b5/l10n-pt-BR/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-pt-BR/mail/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-pt-BR/mail/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-pt-BR/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-pt-BR/mail/searchplugins/list.txt	2014-01-14 10:43:56.635004109 -0430
+--- cunaguaro-27.0~b5.orig/l10n-pt-BR/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-pt-BR/mail/searchplugins/list.txt	2014-01-14 10:43:56.635004109 -0430
 @@ -1,7 +1,6 @@
 -amazondotcom
 -aol-web-search
@@ -2276,10 +2276,10 @@ Index: iceweasel-27.0~b5/l10n-pt-BR/mail/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-pt-BR/mobile/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-pt-BR/mobile/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-pt-BR/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-pt-BR/mobile/searchplugins/list.txt	2014-01-14 10:43:56.635004109 -0430
+--- cunaguaro-27.0~b5.orig/l10n-pt-BR/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-pt-BR/mobile/searchplugins/list.txt	2014-01-14 10:43:56.635004109 -0430
 @@ -1,4 +1,6 @@
  google
  twitter
@@ -2289,10 +2289,10 @@ Index: iceweasel-27.0~b5/l10n-pt-BR/mobile/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-pt-BR/suite/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-pt-BR/suite/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-pt-BR/suite/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-pt-BR/suite/searchplugins/list.txt	2014-01-14 10:43:56.635004109 -0430
+--- cunaguaro-27.0~b5.orig/l10n-pt-BR/suite/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-pt-BR/suite/searchplugins/list.txt	2014-01-14 10:43:56.635004109 -0430
 @@ -1 +1,6 @@
  google
 +twitter
@@ -2300,10 +2300,10 @@ Index: iceweasel-27.0~b5/l10n-pt-BR/suite/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-pt-PT/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-pt-PT/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-pt-PT/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-pt-PT/browser/searchplugins/list.txt	2014-01-14 10:43:56.635004109 -0430
+--- cunaguaro-27.0~b5.orig/l10n-pt-PT/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-pt-PT/browser/searchplugins/list.txt	2014-01-14 10:43:56.635004109 -0430
 @@ -1,6 +1,7 @@
 -google
 -sapo
@@ -2317,10 +2317,10 @@ Index: iceweasel-27.0~b5/l10n-pt-PT/browser/searchplugins/list.txt
 +canaima-list
 +canaima-wiki
  
-Index: iceweasel-27.0~b5/l10n-pt-PT/mail/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-pt-PT/mail/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-pt-PT/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-pt-PT/mail/searchplugins/list.txt	2014-01-14 10:43:56.635004109 -0430
+--- cunaguaro-27.0~b5.orig/l10n-pt-PT/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-pt-PT/mail/searchplugins/list.txt	2014-01-14 10:43:56.635004109 -0430
 @@ -1,6 +1,6 @@
 -google
 -sapo
@@ -2334,10 +2334,10 @@ Index: iceweasel-27.0~b5/l10n-pt-PT/mail/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-pt-PT/mobile/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-pt-PT/mobile/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-pt-PT/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-pt-PT/mobile/searchplugins/list.txt	2014-01-14 10:43:56.635004109 -0430
+--- cunaguaro-27.0~b5.orig/l10n-pt-PT/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-pt-PT/mobile/searchplugins/list.txt	2014-01-14 10:43:56.635004109 -0430
 @@ -1,2 +1,6 @@
  google
 -wikipedia-ptpt
@@ -2346,10 +2346,10 @@ Index: iceweasel-27.0~b5/l10n-pt-PT/mobile/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-pt-PT/suite/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-pt-PT/suite/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-pt-PT/suite/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-pt-PT/suite/searchplugins/list.txt	2014-01-14 10:43:56.635004109 -0430
+--- cunaguaro-27.0~b5.orig/l10n-pt-PT/suite/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-pt-PT/suite/searchplugins/list.txt	2014-01-14 10:43:56.635004109 -0430
 @@ -1,6 +1,6 @@
 -google
 -sapo
@@ -2363,10 +2363,10 @@ Index: iceweasel-27.0~b5/l10n-pt-PT/suite/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-rm/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-rm/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-rm/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-rm/browser/searchplugins/list.txt	2014-01-14 10:43:56.635004109 -0430
+--- cunaguaro-27.0~b5.orig/l10n-rm/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-rm/browser/searchplugins/list.txt	2014-01-14 10:43:56.635004109 -0430
 @@ -1,6 +1,6 @@
 -bing
  google
@@ -2379,10 +2379,10 @@ Index: iceweasel-27.0~b5/l10n-rm/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-rm/mail/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-rm/mail/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-rm/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-rm/mail/searchplugins/list.txt	2014-01-14 10:43:56.635004109 -0430
+--- cunaguaro-27.0~b5.orig/l10n-rm/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-rm/mail/searchplugins/list.txt	2014-01-14 10:43:56.635004109 -0430
 @@ -1,6 +1,6 @@
 -bing
  google
@@ -2395,10 +2395,10 @@ Index: iceweasel-27.0~b5/l10n-rm/mail/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-ro/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-ro/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-ro/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-ro/browser/searchplugins/list.txt	2014-01-14 10:43:56.635004109 -0430
+--- cunaguaro-27.0~b5.orig/l10n-ro/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-ro/browser/searchplugins/list.txt	2014-01-14 10:43:56.635004109 -0430
 @@ -1,6 +1,6 @@
  google
 -yahoo
@@ -2411,10 +2411,10 @@ Index: iceweasel-27.0~b5/l10n-ro/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-ro/mail/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-ro/mail/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-ro/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-ro/mail/searchplugins/list.txt	2014-01-14 10:43:56.635004109 -0430
+--- cunaguaro-27.0~b5.orig/l10n-ro/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-ro/mail/searchplugins/list.txt	2014-01-14 10:43:56.635004109 -0430
 @@ -1,5 +1,6 @@
 -yahoo
 -bing
@@ -2427,10 +2427,10 @@ Index: iceweasel-27.0~b5/l10n-ro/mail/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-ro/mobile/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-ro/mobile/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-ro/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-ro/mobile/searchplugins/list.txt	2014-01-14 10:43:56.635004109 -0430
+--- cunaguaro-27.0~b5.orig/l10n-ro/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-ro/mobile/searchplugins/list.txt	2014-01-14 10:43:56.635004109 -0430
 @@ -1,4 +1,6 @@
 -amazondotcom
  google
@@ -2439,10 +2439,10 @@ Index: iceweasel-27.0~b5/l10n-ro/mobile/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-ro/suite/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-ro/suite/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-ro/suite/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-ro/suite/searchplugins/list.txt	2014-01-14 10:43:56.635004109 -0430
+--- cunaguaro-27.0~b5.orig/l10n-ro/suite/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-ro/suite/searchplugins/list.txt	2014-01-14 10:43:56.635004109 -0430
 @@ -1,4 +1,6 @@
 -creativecommons
  google
@@ -2452,10 +2452,10 @@ Index: iceweasel-27.0~b5/l10n-ro/suite/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-ru/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-ru/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-ru/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-ru/browser/searchplugins/list.txt	2014-01-14 10:43:56.639004135 -0430
+--- cunaguaro-27.0~b5.orig/l10n-ru/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-ru/browser/searchplugins/list.txt	2014-01-14 10:43:56.639004135 -0430
 @@ -1,7 +1,6 @@
  google
 -mailru
@@ -2469,10 +2469,10 @@ Index: iceweasel-27.0~b5/l10n-ru/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-ru/mail/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-ru/mail/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-ru/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-ru/mail/searchplugins/list.txt	2014-01-14 10:43:56.639004135 -0430
+--- cunaguaro-27.0~b5.orig/l10n-ru/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-ru/mail/searchplugins/list.txt	2014-01-14 10:43:56.639004135 -0430
 @@ -1,7 +1,6 @@
 -amazondotcom
 -aol-web-search
@@ -2485,10 +2485,10 @@ Index: iceweasel-27.0~b5/l10n-ru/mail/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-ru/mobile/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-ru/mobile/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-ru/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-ru/mobile/searchplugins/list.txt	2014-01-14 10:43:56.639004135 -0430
+--- cunaguaro-27.0~b5.orig/l10n-ru/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-ru/mobile/searchplugins/list.txt	2014-01-14 10:43:56.639004135 -0430
 @@ -1,4 +1,6 @@
  google
  twitter
@@ -2498,10 +2498,10 @@ Index: iceweasel-27.0~b5/l10n-ru/mobile/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-ru/suite/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-ru/suite/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-ru/suite/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-ru/suite/searchplugins/list.txt	2014-01-14 10:43:56.639004135 -0430
+--- cunaguaro-27.0~b5.orig/l10n-ru/suite/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-ru/suite/searchplugins/list.txt	2014-01-14 10:43:56.639004135 -0430
 @@ -1,2 +1,6 @@
  google
 -wikipedia-ru
@@ -2510,10 +2510,10 @@ Index: iceweasel-27.0~b5/l10n-ru/suite/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-si/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-si/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-si/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-si/browser/searchplugins/list.txt	2014-01-14 10:43:56.639004135 -0430
+--- cunaguaro-27.0~b5.orig/l10n-si/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-si/browser/searchplugins/list.txt	2014-01-14 10:43:56.639004135 -0430
 @@ -1,7 +1,6 @@
 -amazondotcom
 -answers
@@ -2527,10 +2527,10 @@ Index: iceweasel-27.0~b5/l10n-si/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-si/mail/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-si/mail/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-si/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-si/mail/searchplugins/list.txt	2014-01-14 10:43:56.639004135 -0430
+--- cunaguaro-27.0~b5.orig/l10n-si/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-si/mail/searchplugins/list.txt	2014-01-14 10:43:56.639004135 -0430
 @@ -1,7 +1,6 @@
 -amazondotcom
 -aol-web-search
@@ -2543,10 +2543,10 @@ Index: iceweasel-27.0~b5/l10n-si/mail/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-si/suite/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-si/suite/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-si/suite/searchplugins/list.txt	2014-01-13 14:53:56.000000000 -0430
-+++ iceweasel-27.0~b5/l10n-si/suite/searchplugins/list.txt	2014-01-14 10:43:56.639004135 -0430
+--- cunaguaro-27.0~b5.orig/l10n-si/suite/searchplugins/list.txt	2014-01-13 14:53:56.000000000 -0430
++++ cunaguaro-27.0~b5/l10n-si/suite/searchplugins/list.txt	2014-01-14 10:43:56.639004135 -0430
 @@ -1,3 +1,8 @@
  google
 +twitter
@@ -2556,10 +2556,10 @@ Index: iceweasel-27.0~b5/l10n-si/suite/searchplugins/list.txt
 +canaima-wiki
  dmoz
  jeeves
-Index: iceweasel-27.0~b5/l10n-sk/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-sk/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-sk/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-sk/browser/searchplugins/list.txt	2014-01-14 10:43:56.639004135 -0430
+--- cunaguaro-27.0~b5.orig/l10n-sk/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-sk/browser/searchplugins/list.txt	2014-01-14 10:43:56.639004135 -0430
 @@ -1,9 +1,6 @@
  google
 -azet-sk
@@ -2575,10 +2575,10 @@ Index: iceweasel-27.0~b5/l10n-sk/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-sk/mail/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-sk/mail/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-sk/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-sk/mail/searchplugins/list.txt	2014-01-14 10:43:56.639004135 -0430
+--- cunaguaro-27.0~b5.orig/l10n-sk/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-sk/mail/searchplugins/list.txt	2014-01-14 10:43:56.639004135 -0430
 @@ -1,8 +1,6 @@
 -atlas-sk
 -azet-sk
@@ -2593,10 +2593,10 @@ Index: iceweasel-27.0~b5/l10n-sk/mail/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-sk/mobile/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-sk/mobile/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-sk/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-sk/mobile/searchplugins/list.txt	2014-01-14 10:43:56.639004135 -0430
+--- cunaguaro-27.0~b5.orig/l10n-sk/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-sk/mobile/searchplugins/list.txt	2014-01-14 10:43:56.639004135 -0430
 @@ -1,5 +1,6 @@
  google
 -azet-sk
@@ -2607,10 +2607,10 @@ Index: iceweasel-27.0~b5/l10n-sk/mobile/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-sk/suite/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-sk/suite/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-sk/suite/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-sk/suite/searchplugins/list.txt	2014-01-14 10:43:56.639004135 -0430
+--- cunaguaro-27.0~b5.orig/l10n-sk/suite/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-sk/suite/searchplugins/list.txt	2014-01-14 10:43:56.639004135 -0430
 @@ -1,7 +1,6 @@
  google
 -azet-sk
@@ -2624,10 +2624,10 @@ Index: iceweasel-27.0~b5/l10n-sk/suite/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-sl/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-sl/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-sl/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-sl/browser/searchplugins/list.txt	2014-01-14 10:43:56.639004135 -0430
+--- cunaguaro-27.0~b5.orig/l10n-sl/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-sl/browser/searchplugins/list.txt	2014-01-14 10:43:56.639004135 -0430
 @@ -1,6 +1,6 @@
 -najdi-si
 -ceneji
@@ -2639,10 +2639,10 @@ Index: iceweasel-27.0~b5/l10n-sl/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-sl/mail/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-sl/mail/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-sl/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-sl/mail/searchplugins/list.txt	2014-01-14 10:43:56.639004135 -0430
+--- cunaguaro-27.0~b5.orig/l10n-sl/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-sl/mail/searchplugins/list.txt	2014-01-14 10:43:56.639004135 -0430
 @@ -1,6 +1,6 @@
 -najdi-si
 -ceneji
@@ -2654,10 +2654,10 @@ Index: iceweasel-27.0~b5/l10n-sl/mail/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-sl/mobile/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-sl/mobile/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-sl/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-sl/mobile/searchplugins/list.txt	2014-01-14 10:43:56.639004135 -0430
+--- cunaguaro-27.0~b5.orig/l10n-sl/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-sl/mobile/searchplugins/list.txt	2014-01-14 10:43:56.639004135 -0430
 @@ -1,5 +1,6 @@
 -ceneje
  google
@@ -2668,10 +2668,10 @@ Index: iceweasel-27.0~b5/l10n-sl/mobile/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-son/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-son/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-son/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-son/browser/searchplugins/list.txt	2014-01-14 10:43:56.639004135 -0430
+--- cunaguaro-27.0~b5.orig/l10n-son/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-son/browser/searchplugins/list.txt	2014-01-14 10:43:56.639004135 -0430
 @@ -1,7 +1,6 @@
  google
 -amazon-france
@@ -2685,10 +2685,10 @@ Index: iceweasel-27.0~b5/l10n-son/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-sq/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-sq/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-sq/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-sq/browser/searchplugins/list.txt	2014-01-14 10:43:56.639004135 -0430
+--- cunaguaro-27.0~b5.orig/l10n-sq/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-sq/browser/searchplugins/list.txt	2014-01-14 10:43:56.639004135 -0430
 @@ -1,6 +1,6 @@
 -amazon-en-GB
 -bing
@@ -2701,10 +2701,10 @@ Index: iceweasel-27.0~b5/l10n-sq/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-sq/mail/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-sq/mail/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-sq/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-sq/mail/searchplugins/list.txt	2014-01-14 10:43:56.639004135 -0430
+--- cunaguaro-27.0~b5.orig/l10n-sq/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-sq/mail/searchplugins/list.txt	2014-01-14 10:43:56.639004135 -0430
 @@ -1,6 +1,6 @@
 -amazondotcom
 -bing
@@ -2717,10 +2717,10 @@ Index: iceweasel-27.0~b5/l10n-sq/mail/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-sq/mobile/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-sq/mobile/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-sq/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-sq/mobile/searchplugins/list.txt	2014-01-14 10:43:56.639004135 -0430
+--- cunaguaro-27.0~b5.orig/l10n-sq/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-sq/mobile/searchplugins/list.txt	2014-01-14 10:43:56.639004135 -0430
 @@ -1,4 +1,6 @@
 -amazondotcom
  google
@@ -2730,10 +2730,10 @@ Index: iceweasel-27.0~b5/l10n-sq/mobile/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-sr/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-sr/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-sr/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-sr/browser/searchplugins/list.txt	2014-01-14 10:43:56.639004135 -0430
+--- cunaguaro-27.0~b5.orig/l10n-sr/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-sr/browser/searchplugins/list.txt	2014-01-14 10:43:56.639004135 -0430
 @@ -1,7 +1,6 @@
  google
 -bing
@@ -2747,10 +2747,10 @@ Index: iceweasel-27.0~b5/l10n-sr/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-sr/mobile/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-sr/mobile/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-sr/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-sr/mobile/searchplugins/list.txt	2014-01-14 10:43:56.639004135 -0430
+--- cunaguaro-27.0~b5.orig/l10n-sr/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-sr/mobile/searchplugins/list.txt	2014-01-14 10:43:56.639004135 -0430
 @@ -1,2 +1,6 @@
  google
 -wikipedia-sr
@@ -2759,10 +2759,10 @@ Index: iceweasel-27.0~b5/l10n-sr/mobile/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-sv-SE/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-sv-SE/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-sv-SE/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-sv-SE/browser/searchplugins/list.txt	2014-01-14 10:43:56.639004135 -0430
+--- cunaguaro-27.0~b5.orig/l10n-sv-SE/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-sv-SE/browser/searchplugins/list.txt	2014-01-14 10:43:56.639004135 -0430
 @@ -1,7 +1,6 @@
 -allaannonser-sv-SE
 -bing
@@ -2776,10 +2776,10 @@ Index: iceweasel-27.0~b5/l10n-sv-SE/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-sv-SE/mail/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-sv-SE/mail/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-sv-SE/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-sv-SE/mail/searchplugins/list.txt	2014-01-14 10:43:56.643004148 -0430
+--- cunaguaro-27.0~b5.orig/l10n-sv-SE/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-sv-SE/mail/searchplugins/list.txt	2014-01-14 10:43:56.643004148 -0430
 @@ -1,7 +1,6 @@
 -amazondotcom
 -aol-web-search
@@ -2792,10 +2792,10 @@ Index: iceweasel-27.0~b5/l10n-sv-SE/mail/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-sv-SE/mobile/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-sv-SE/mobile/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-sv-SE/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-sv-SE/mobile/searchplugins/list.txt	2014-01-14 10:43:56.643004148 -0430
+--- cunaguaro-27.0~b5.orig/l10n-sv-SE/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-sv-SE/mobile/searchplugins/list.txt	2014-01-14 10:43:56.643004148 -0430
 @@ -1,4 +1,6 @@
  google
 -prisjakt-sv-SE
@@ -2805,10 +2805,10 @@ Index: iceweasel-27.0~b5/l10n-sv-SE/mobile/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-sv-SE/suite/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-sv-SE/suite/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-sv-SE/suite/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-sv-SE/suite/searchplugins/list.txt	2014-01-14 10:43:56.643004148 -0430
+--- cunaguaro-27.0~b5.orig/l10n-sv-SE/suite/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-sv-SE/suite/searchplugins/list.txt	2014-01-14 10:43:56.643004148 -0430
 @@ -1,4 +1,6 @@
 -creativecommons
  google
@@ -2818,10 +2818,10 @@ Index: iceweasel-27.0~b5/l10n-sv-SE/suite/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-ta-LK/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-ta-LK/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-ta-LK/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-ta-LK/browser/searchplugins/list.txt	2014-01-14 10:43:56.643004148 -0430
+--- cunaguaro-27.0~b5.orig/l10n-ta-LK/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-ta-LK/browser/searchplugins/list.txt	2014-01-14 10:43:56.643004148 -0430
 @@ -1,3 +1,6 @@
 -creativecommons
  google
@@ -2831,10 +2831,10 @@ Index: iceweasel-27.0~b5/l10n-ta-LK/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-ta/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-ta/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-ta/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-ta/browser/searchplugins/list.txt	2014-01-14 10:43:56.643004148 -0430
+--- cunaguaro-27.0~b5.orig/l10n-ta/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-ta/browser/searchplugins/list.txt	2014-01-14 10:43:56.643004148 -0430
 @@ -1,5 +1,6 @@
 -creativecommons
 -eBay-in
@@ -2846,10 +2846,10 @@ Index: iceweasel-27.0~b5/l10n-ta/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-te/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-te/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-te/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-te/browser/searchplugins/list.txt	2014-01-14 10:43:56.643004148 -0430
+--- cunaguaro-27.0~b5.orig/l10n-te/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-te/browser/searchplugins/list.txt	2014-01-14 10:43:56.643004148 -0430
 @@ -1,7 +1,6 @@
 -amazondotcom
 -creativecommons
@@ -2863,10 +2863,10 @@ Index: iceweasel-27.0~b5/l10n-te/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-th/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-th/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-th/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-th/browser/searchplugins/list.txt	2014-01-14 10:43:56.643004148 -0430
+--- cunaguaro-27.0~b5.orig/l10n-th/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-th/browser/searchplugins/list.txt	2014-01-14 10:43:56.643004148 -0430
 @@ -1,8 +1,6 @@
 -amazondotcom
 -bing
@@ -2881,10 +2881,10 @@ Index: iceweasel-27.0~b5/l10n-th/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-th/mobile/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-th/mobile/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-th/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-th/mobile/searchplugins/list.txt	2014-01-14 10:43:56.643004148 -0430
+--- cunaguaro-27.0~b5.orig/l10n-th/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-th/mobile/searchplugins/list.txt	2014-01-14 10:43:56.643004148 -0430
 @@ -1,4 +1,6 @@
 -amazondotcom
  google
@@ -2893,10 +2893,10 @@ Index: iceweasel-27.0~b5/l10n-th/mobile/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-tr/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-tr/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-tr/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-tr/browser/searchplugins/list.txt	2014-01-14 10:43:56.643004148 -0430
+--- cunaguaro-27.0~b5.orig/l10n-tr/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-tr/browser/searchplugins/list.txt	2014-01-14 10:43:56.643004148 -0430
 @@ -1,5 +1,6 @@
  google
 -yandex-tr
@@ -2908,10 +2908,10 @@ Index: iceweasel-27.0~b5/l10n-tr/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-tr/suite/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-tr/suite/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-tr/suite/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-tr/suite/searchplugins/list.txt	2014-01-14 10:43:56.643004148 -0430
+--- cunaguaro-27.0~b5.orig/l10n-tr/suite/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-tr/suite/searchplugins/list.txt	2014-01-14 10:43:56.643004148 -0430
 @@ -1,3 +1,6 @@
  google
 +twitter
@@ -2920,10 +2920,10 @@ Index: iceweasel-27.0~b5/l10n-tr/suite/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-uk/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-uk/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-uk/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-uk/browser/searchplugins/list.txt	2014-01-14 10:43:56.643004148 -0430
+--- cunaguaro-27.0~b5.orig/l10n-uk/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-uk/browser/searchplugins/list.txt	2014-01-14 10:43:56.643004148 -0430
 @@ -1,5 +1,6 @@
  google
 -yandex
@@ -2935,10 +2935,10 @@ Index: iceweasel-27.0~b5/l10n-uk/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-uk/mobile/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-uk/mobile/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-uk/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-uk/mobile/searchplugins/list.txt	2014-01-14 10:43:56.643004148 -0430
+--- cunaguaro-27.0~b5.orig/l10n-uk/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-uk/mobile/searchplugins/list.txt	2014-01-14 10:43:56.643004148 -0430
 @@ -1,4 +1,6 @@
  google
  twitter
@@ -2948,10 +2948,10 @@ Index: iceweasel-27.0~b5/l10n-uk/mobile/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-uk/suite/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-uk/suite/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-uk/suite/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-uk/suite/searchplugins/list.txt	2014-01-14 10:43:56.643004148 -0430
+--- cunaguaro-27.0~b5.orig/l10n-uk/suite/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-uk/suite/searchplugins/list.txt	2014-01-14 10:43:56.643004148 -0430
 @@ -1,4 +1,6 @@
 -creativecommons
  google
@@ -2961,10 +2961,10 @@ Index: iceweasel-27.0~b5/l10n-uk/suite/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-vi/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-vi/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-vi/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-vi/browser/searchplugins/list.txt	2014-01-14 10:43:56.643004148 -0430
+--- cunaguaro-27.0~b5.orig/l10n-vi/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-vi/browser/searchplugins/list.txt	2014-01-14 10:43:56.643004148 -0430
 @@ -1,7 +1,6 @@
 -5giay
 -baambootratuav
@@ -2978,10 +2978,10 @@ Index: iceweasel-27.0~b5/l10n-vi/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-vi/mail/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-vi/mail/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-vi/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-vi/mail/searchplugins/list.txt	2014-01-14 10:43:56.643004148 -0430
+--- cunaguaro-27.0~b5.orig/l10n-vi/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-vi/mail/searchplugins/list.txt	2014-01-14 10:43:56.643004148 -0430
 @@ -1,8 +1,6 @@
 -amazondotcom
 -aol-web-search
@@ -2994,10 +2994,10 @@ Index: iceweasel-27.0~b5/l10n-vi/mail/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-vi/mobile/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-vi/mobile/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-vi/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-vi/mobile/searchplugins/list.txt	2014-01-14 10:43:56.643004148 -0430
+--- cunaguaro-27.0~b5.orig/l10n-vi/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-vi/mobile/searchplugins/list.txt	2014-01-14 10:43:56.643004148 -0430
 @@ -1,4 +1,6 @@
 -amazondotcom
  google
@@ -3006,10 +3006,10 @@ Index: iceweasel-27.0~b5/l10n-vi/mobile/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-zh-CN/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-zh-CN/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-zh-CN/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-zh-CN/browser/searchplugins/list.txt	2014-01-14 10:43:56.643004148 -0430
+--- cunaguaro-27.0~b5.orig/l10n-zh-CN/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-zh-CN/browser/searchplugins/list.txt	2014-01-14 10:43:56.643004148 -0430
 @@ -1,9 +1,6 @@
 -amazondotcn
 -creativecommons
@@ -3025,10 +3025,10 @@ Index: iceweasel-27.0~b5/l10n-zh-CN/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-zh-CN/mail/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-zh-CN/mail/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-zh-CN/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-zh-CN/mail/searchplugins/list.txt	2014-01-14 10:43:56.643004148 -0430
+--- cunaguaro-27.0~b5.orig/l10n-zh-CN/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-zh-CN/mail/searchplugins/list.txt	2014-01-14 10:43:56.643004148 -0430
 @@ -1,7 +1,6 @@
 -amazondotcom
 -aol-web-search
@@ -3041,10 +3041,10 @@ Index: iceweasel-27.0~b5/l10n-zh-CN/mail/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-zh-CN/mobile/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-zh-CN/mobile/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-zh-CN/mobile/searchplugins/list.txt	2014-01-13 14:53:56.000000000 -0430
-+++ iceweasel-27.0~b5/l10n-zh-CN/mobile/searchplugins/list.txt	2014-01-14 10:43:56.643004148 -0430
+--- cunaguaro-27.0~b5.orig/l10n-zh-CN/mobile/searchplugins/list.txt	2014-01-13 14:53:56.000000000 -0430
++++ cunaguaro-27.0~b5/l10n-zh-CN/mobile/searchplugins/list.txt	2014-01-14 10:43:56.643004148 -0430
 @@ -1,4 +1,7 @@
  google
  baidu
@@ -3054,10 +3054,10 @@ Index: iceweasel-27.0~b5/l10n-zh-CN/mobile/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-zh-CN/suite/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-zh-CN/suite/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-zh-CN/suite/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-zh-CN/suite/searchplugins/list.txt	2014-01-14 10:43:56.643004148 -0430
+--- cunaguaro-27.0~b5.orig/l10n-zh-CN/suite/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-zh-CN/suite/searchplugins/list.txt	2014-01-14 10:43:56.643004148 -0430
 @@ -1,4 +1,6 @@
 -creativecommons
  google
@@ -3067,10 +3067,10 @@ Index: iceweasel-27.0~b5/l10n-zh-CN/suite/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-zh-TW/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-zh-TW/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-zh-TW/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-zh-TW/browser/searchplugins/list.txt	2014-01-14 10:43:56.643004148 -0430
+--- cunaguaro-27.0~b5.orig/l10n-zh-TW/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-zh-TW/browser/searchplugins/list.txt	2014-01-14 10:43:56.643004148 -0430
 @@ -1,7 +1,6 @@
  google
 -yahoo-zh-TW
@@ -3084,10 +3084,10 @@ Index: iceweasel-27.0~b5/l10n-zh-TW/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-zh-TW/mail/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-zh-TW/mail/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-zh-TW/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-zh-TW/mail/searchplugins/list.txt	2014-01-14 10:43:56.647004164 -0430
+--- cunaguaro-27.0~b5.orig/l10n-zh-TW/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-zh-TW/mail/searchplugins/list.txt	2014-01-14 10:43:56.647004164 -0430
 @@ -1,8 +1,6 @@
 -google
 -yahoo-zh-TW
@@ -3104,10 +3104,10 @@ Index: iceweasel-27.0~b5/l10n-zh-TW/mail/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-zh-TW/mobile/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-zh-TW/mobile/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-zh-TW/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-zh-TW/mobile/searchplugins/list.txt	2014-01-14 10:43:56.647004164 -0430
+--- cunaguaro-27.0~b5.orig/l10n-zh-TW/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-zh-TW/mobile/searchplugins/list.txt	2014-01-14 10:43:56.647004164 -0430
 @@ -1,2 +1,6 @@
  google
 -wikipedia-zh-TW
@@ -3116,10 +3116,10 @@ Index: iceweasel-27.0~b5/l10n-zh-TW/mobile/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-zh-TW/suite/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-zh-TW/suite/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-zh-TW/suite/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-zh-TW/suite/searchplugins/list.txt	2014-01-14 10:43:56.647004164 -0430
+--- cunaguaro-27.0~b5.orig/l10n-zh-TW/suite/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-zh-TW/suite/searchplugins/list.txt	2014-01-14 10:43:56.647004164 -0430
 @@ -1,5 +1,6 @@
  google
 -yahoo-zh-TW
@@ -3131,10 +3131,10 @@ Index: iceweasel-27.0~b5/l10n-zh-TW/suite/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-zu/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-zu/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-zu/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-zu/browser/searchplugins/list.txt	2014-01-14 10:43:56.647004164 -0430
+--- cunaguaro-27.0~b5.orig/l10n-zu/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-zu/browser/searchplugins/list.txt	2014-01-14 10:43:56.647004164 -0430
 @@ -1,6 +1,6 @@
  google
 -amazondotcom
@@ -3147,10 +3147,10 @@ Index: iceweasel-27.0~b5/l10n-zu/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/mobile/locales/en-US/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/mobile/locales/en-US/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/mobile/locales/en-US/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/mobile/locales/en-US/searchplugins/list.txt	2014-01-14 10:43:56.647004164 -0430
+--- cunaguaro-27.0~b5.orig/mobile/locales/en-US/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/mobile/locales/en-US/searchplugins/list.txt	2014-01-14 10:43:56.647004164 -0430
 @@ -1,6 +1,8 @@
 -amazondotcom
  google
@@ -3161,10 +3161,10 @@ Index: iceweasel-27.0~b5/mobile/locales/en-US/searchplugins/list.txt
 +canaima-wiki
  yahoo
  bing
-Index: iceweasel-27.0~b5/l10n-hu/browser/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-hu/browser/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-hu/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-hu/browser/searchplugins/list.txt	2014-01-14 10:43:56.647004164 -0430
+--- cunaguaro-27.0~b5.orig/l10n-hu/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-hu/browser/searchplugins/list.txt	2014-01-14 10:43:56.647004164 -0430
 @@ -1,5 +1,6 @@
 -eBay-hu
  google
@@ -3176,10 +3176,10 @@ Index: iceweasel-27.0~b5/l10n-hu/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-hu/mobile/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-hu/mobile/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-hu/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-hu/mobile/searchplugins/list.txt	2014-01-14 10:43:56.647004164 -0430
+--- cunaguaro-27.0~b5.orig/l10n-hu/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-hu/mobile/searchplugins/list.txt	2014-01-14 10:43:56.647004164 -0430
 @@ -1,5 +1,5 @@
  google
 -sztaki-en-hu
@@ -3189,10 +3189,10 @@ Index: iceweasel-27.0~b5/l10n-hu/mobile/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-hu/suite/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-hu/suite/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-hu/suite/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-hu/suite/searchplugins/list.txt	2014-01-14 10:43:56.647004164 -0430
+--- cunaguaro-27.0~b5.orig/l10n-hu/suite/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-hu/suite/searchplugins/list.txt	2014-01-14 10:43:56.647004164 -0430
 @@ -1,6 +1,6 @@
 -creativecommons
 -eBay-hu
@@ -3205,10 +3205,10 @@ Index: iceweasel-27.0~b5/l10n-hu/suite/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-sr/mail/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-sr/mail/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-sr/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-sr/mail/searchplugins/list.txt	2014-01-14 10:43:56.647004164 -0430
+--- cunaguaro-27.0~b5.orig/l10n-sr/mail/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-sr/mail/searchplugins/list.txt	2014-01-14 10:43:56.647004164 -0430
 @@ -1,8 +1,6 @@
 -amazondotcom
 -aol-web-search
@@ -3221,10 +3221,10 @@ Index: iceweasel-27.0~b5/l10n-sr/mail/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: iceweasel-27.0~b5/l10n-tr/mobile/searchplugins/list.txt
+Index: cunaguaro-27.0~b5/l10n-tr/mobile/searchplugins/list.txt
 ===================================================================
---- iceweasel-27.0~b5.orig/l10n-tr/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ iceweasel-27.0~b5/l10n-tr/mobile/searchplugins/list.txt	2014-01-14 10:43:56.647004164 -0430
+--- cunaguaro-27.0~b5.orig/l10n-tr/mobile/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
++++ cunaguaro-27.0~b5/l10n-tr/mobile/searchplugins/list.txt	2014-01-14 10:43:56.647004164 -0430
 @@ -1,4 +1,6 @@
  google
 -yandex-tr
