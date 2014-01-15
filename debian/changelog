@@ -123,6 +123,20 @@ cunaguaro (23.0.1-1) unstable; urgency=low
 
  -- Mike Hommey <glandium@debian.org>  Wed, 21 Aug 2013 22:07:49 +0900
 
+cunaguaro (23.0-2) kerepakupai; urgency=low
+
+  * [788d91c] Listando SHELL entre las variables a exportar.
+  * [8de333d] Cambiando página de inicio para la bienvenida. Corrigiendo
+    bug del no reconocimiento de una shell cuando se está en chroot.
+  * [99da239] Removiendo .gitignore.
+  * [e975fb7] Agregando script de conversión a Cunaguaro.
+  * [46cddc7] Convirtiendo Iceweasel a Cunaguaro.
+  * [a3ca877] Agregando parches desde Cunaguaro 22.
+  * [4e2a27e] Corrigiendo actualización del parche.
+  * [3d4d497] Cambiando datos del mantenedor.
+
+ -- Luis Alejandro Martínez Faneyth <luis@huntingbears.com.ve>  Wed, 28 Aug 2013 21:05:39 +0000
+
 cunaguaro (23.0-1) experimental; urgency=low
 
   * New upstream release.

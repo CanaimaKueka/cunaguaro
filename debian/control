@@ -1,7 +1,7 @@
 Source: cunaguaro
 Section: web
 Priority: optional
-Maintainer: Maintainers of Mozilla-related packages <pkg-mozilla-maintainers@lists.alioth.debian.org>
+Maintainer: Luis Alejandro Martínez Faneyth <luis@huntingbears.com.ve>
 Uploaders: Mike Hommey <glandium@debian.org>
 Build-Depends: autotools-dev,
                debhelper (>= 7.2.3),
@@ -50,8 +50,8 @@ Build-Conflicts: graphicsmagick-imagemagick-compat,
                  libhildonmime-dev,
                  libosso-dev
 Standards-Version: 3.9.2.0
-Vcs-Git: git://git.debian.org/git/pkg-mozilla/cunaguaro.git
-Vcs-Browser: http://git.debian.org/?p=pkg-mozilla/cunaguaro.git
+Vcs-Git: git://git.canaima.softwarelibre.gob.ve/canaima-gnu-linux/cunaguaro.git
+Vcs-Browser: http://git.canaima.softwarelibre.gob.ve/?p=cunaguaro.git
 
 Package: cunaguaro
 Architecture: any
