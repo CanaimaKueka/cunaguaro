@@ -25,7 +25,7 @@ var platformVersion = exports.platformVersion = appInfo.platformVersion;
 //
 // Using the GUID instead of the app's name is preferable because sometimes
 // re-branded versions of a product have different names: for instance,
-// Firefox, Minefield, Cunaguaro, and Shiretoko all have the same
+// Firefox, Minefield, Iceweasel, and Shiretoko all have the same
 // GUID.
 // This mapping is duplicated in `app-extensions/bootstrap.js`. They should keep
 // in sync, so if you change one, change the other too!

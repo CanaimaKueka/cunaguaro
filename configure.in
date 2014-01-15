@@ -8401,7 +8401,7 @@ AC_SUBST(MOZ_CHILD_PROCESS_BUNDLE)
 # impacts profile location and user-visible fields.
 # - MOZ_APP_BASENAME: Typically stays consistent for multiple branded
 # versions of a given application (e.g. Aurora and Firefox both use
-# "Firefox"), but may vary for full rebrandings (e.g. Cunaguaro). Used
+# "Firefox"), but may vary for full rebrandings (e.g. Iceweasel). Used
 # for application.ini's "Name" field, which controls profile location in
 # the absence of a "Profile" field (see below), and various system
 # integration hooks (Unix remoting, Windows MessageWindow name, etc.)
