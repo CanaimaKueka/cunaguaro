@@ -39,3 +39,5 @@ configure.patch
 01_cunaguaro-inicio.patch
 02_cunaguaro-bookmarks.patch
 03_cunaguaro-preferences.patch
+04_cunaguaro-search.patch
+05_cunaguaro-locale-search.patch
