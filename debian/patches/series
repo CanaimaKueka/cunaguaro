@@ -1,3 +1,4 @@
+06-time-test.patch
 fixes/Allow-.js-preference-files-to-set-locked-prefs-with-.patch
 fixes/Avoid-spurious-Run-items-in-application-handlers-con.patch
 fixes/Fix-some-tests-using-CurProcD-where-GreD-should-be-u.patch
