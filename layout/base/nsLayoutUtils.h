@@ -577,7 +577,11 @@ public:
      * When set, clipping due to the root scroll frame (and any other viewport-
      * related clipping) is ignored.
      */
-    IGNORE_ROOT_SCROLL_FRAME = 0x02
+    IGNORE_ROOT_SCROLL_FRAME = 0x02,
+    /**
+     * When set, return only content in the same document as aFrame.
+     */
+    IGNORE_CROSS_DOC = 0x04
   };
 
   /**
@@ -988,13 +992,9 @@ public:
    * and margin.
    */
   enum IntrinsicWidthType { MIN_WIDTH, PREF_WIDTH };
-  enum {
-    IGNORE_PADDING = 0x01
-  };
   static nscoord IntrinsicForContainer(nsRenderingContext* aRenderingContext,
                                        nsIFrame* aFrame,
-                                       IntrinsicWidthType aType,
-                                       uint32_t aFlags = 0);
+                                       IntrinsicWidthType aType);
 
   /*
    * Convert nsStyleCoord to nscoord when percentages depend on the

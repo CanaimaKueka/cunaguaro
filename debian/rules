@@ -19,7 +19,9 @@ PRODUCT := browser
 PRODUCT_NAME := firefox
 include debian/upstream.mk
 
+ifdef BACKPORT
 LESS_SYSTEM_LIBS = 1
+endif
 
 OFFICIAL_BRANDING := browser/branding/official
 ifeq ($(DEBIAN_SOURCE),$(PRODUCT_NAME))
@@ -50,6 +52,8 @@ endif
 endif
 
 include $(BRANDING)/configure.sh
+
+BRANDING_CONFIGURE_FLAG = $(if $(filter $(BRANDING),$(OFFICIAL_BRANDING)),--enable-official-branding,--with-branding=$(BRANDING))
 
 # Define PRODUCT, product and Product variables (replacing product with the
 # actual value of $(PRODUCT))
@@ -115,9 +119,7 @@ CXX := g++
 endif
 CXXFLAGS = $(CFLAGS)
 
-SHELL = /bin/sh
-
-EXPORTS := CC CXX CFLAGS CXXFLAGS CPPFLAGS LDFLAGS MOZILLA_OFFICIAL SHELL
+EXPORTS := CC CXX CFLAGS CXXFLAGS CPPFLAGS LDFLAGS MOZILLA_OFFICIAL
 $(call lazy,CONFIGURE_ENV,$$(foreach export,$(EXPORTS),$$(export)="$$($$(export))"))
 
 GENERATED_FILES += debian/dh/dh_xulrunner.1
@@ -208,6 +210,7 @@ stamps/configure-check-xulrunner:: stamps/configure-xulrunner
 
 stamps/build-xulrunner:: stamps/configure-check-xulrunner
 	dh_auto_build --parallel --builddirectory=build-xulrunner -- \
+		_LEAKTEST_FILES=leaktest.py \
 		JS_READLINE=1
 
 stamps/build-xulrunner-extra:: stamps/build-xulrunner build-xulrunner/debian/extra-stuff/Makefile
@@ -220,11 +223,12 @@ stamps/configure-$(PRODUCT):: stamps/build-xulrunner-extra debian/$(PRODUCT).moz
 	$(CONFIGURE_ENV) \
 	../configure --host=$(DEB_HOST_GNU_TYPE) --build=$(DEB_BUILD_GNU_TYPE) --prefix=/usr $(CONFIGURE_FLAGS) \
 		--with-libxul-sdk=$(CURDIR)/build-xulrunner/dist \
-		$(if $(filter $(BRANDING),$(OFFICIAL_BRANDING)),--enable-official-branding,--with-branding=$(BRANDING)) \
+		$(BRANDING_CONFIGURE_FLAG) \
 		--with-system-libxul $(if $(LESS_SYSTEM_LIBS),,--with-system-nspr --with-system-nss)
 
 stamps/build-$(PRODUCT):: stamps/configure-$(PRODUCT)
-	dh_auto_build --builddirectory=build-$(PRODUCT)
+	dh_auto_build --builddirectory=build-$(PRODUCT) -- \
+		_LEAKTEST_FILES=leaktest.py
 
 ifeq (1,)
 ifneq ($(DEBIAN_SOURCE),$(PRODUCT_NAME))
@@ -234,7 +238,7 @@ build-$(PRODUCT)/%/filelist: stamps/build-$(PRODUCT) build-$(PRODUCT)/%/Makefile
 	cd build-$(PRODUCT)/$*/dist/bin && find -type f | sort > $(CURDIR)/$@
 
 stamps/build-check-branding:: build-$(PRODUCT)/$(OFFICIAL_BRANDING)/filelist build-$(PRODUCT)/$(BRANDING)/filelist
-# Ensure the cunaguaro branding contains everything it's supposed to
+# Ensure the iceweasel branding contains everything it's supposed to
 	diff $^
 endif
 endif
@@ -249,6 +253,7 @@ stamps/configure-l10n:: stamps/prepare-configure
 	$(CONFIGURE_ENV) \
 	../configure --host=$(DEB_HOST_GNU_TYPE) --build=$(DEB_BUILD_GNU_TYPE) --prefix=/usr $(CONFIGURE_FLAGS) \
 		--with-l10n-base=$(CURDIR)/l10n \
+		$(BRANDING_CONFIGURE_FLAG) \
 		--disable-compile-environment \
 		--enable-application=$(PRODUCT)
 
@@ -332,10 +337,13 @@ stamps/install-$(PRODUCT):: build-$(PRODUCT)/debian/installer/package-manifest
 		MOZ_PKG_FATAL_WARNINGS=0 \
 		MOZ_PKG_MANIFEST=$(CURDIR)/$<
 
-MPL: LICENSE
+MPL-1.1: gfx/cairo/cairo/COPYING-MPL-1.1
 	cp -f $< $@
 
-override_dh_installdocs: MPL
+MPL-2.0: b2g/LICENSE
+	cp -f $< $@
+
+override_dh_installdocs: MPL-1.1 MPL-2.0
 	dh_installdocs -A $^
 
 L10N_DH_INSTALL_STAMPS = $(foreach lang,$(L10N_LANGS),stamps/dh_install-l10n-$(lang))
@@ -363,8 +371,8 @@ stamps/dh_install:: debian/dh/dh_xulrunner debian/noinstall build-xulrunner/dist
 		debian/$($(PRODUCT))/usr/share/icons/hicolor/64x64/apps/$($(PRODUCT)).png
 ifeq ($(BRANDING),debian/branding)
 	install -d -m 755 debian/$($(PRODUCT))/usr/share/icons/hicolor/scalable/apps
-	install -m 644 debian/branding/cunaguaro_icon.svg \
-		debian/cunaguaro/usr/share/icons/hicolor/scalable/apps/cunaguaro.svg
+	install -m 644 debian/branding/iceweasel_icon.svg \
+		debian/iceweasel/usr/share/icons/hicolor/scalable/apps/iceweasel.svg
 endif
 
 CMP_AWK := '$$0 !~ /^\t/ { txt = txt ? txt "\n" $$0 : $$0 } END { if (txt != expected) { print "Expected:\n" expected "\nGot:\n" txt; exit 1 }}'

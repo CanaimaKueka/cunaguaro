@@ -15668,6 +15668,8 @@ done
 
 
 
+
+
 WIN_TOP_SRC=
 encoding=utf-8
 case "$host_os" in
@@ -16044,6 +16046,7 @@ sed 's/$/,/' >> $CONFIG_STATUS <<EOF
     (''' MOZ_NATIVE_ICU ''', r''' $MOZ_NATIVE_ICU ''')
     (''' MOZILLA_VERSION ''', r''' $MOZILLA_VERSION ''')
     (''' ac_configure_args ''', r''' $ac_configure_args ''')
+    (''' TOOLCHAIN_PREFIX ''', r''' $TOOLCHAIN_PREFIX ''')
     (''' WIN_TOP_SRC ''', r''' $WIN_TOP_SRC ''')
     (''' top_srcdir ''', r''' $top_srcdir ''')
 EOF

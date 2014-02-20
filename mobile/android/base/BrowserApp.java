@@ -1388,7 +1388,15 @@ abstract public class BrowserApp extends GeckoApp
 
         int flags = (tab.isPrivate() || tab.getErrorType() != Tab.ErrorType.NONE) ? 0 : LoadFaviconTask.FLAG_PERSIST;
         int id = Favicons.getFaviconForSize(tab.getURL(), tab.getFaviconURL(), tabFaviconSize, flags, sFaviconLoadedListener);
+
         tab.setFaviconLoadId(id);
+        if (id != Favicons.LOADED &&
+            Tabs.getInstance().isSelectedTab(tab)) {
+            // We're loading the current tab's favicon from somewhere
+            // other than the cache.
+            // Display the globe favicon until then.
+            mBrowserToolbar.showDefaultFavicon();
+        }
     }
 
     private void maybeCancelFaviconLoad(Tab tab) {
@@ -1924,8 +1932,11 @@ abstract public class BrowserApp extends GeckoApp
 
     @Override
     public void openOptionsMenu() {
-        if (!hasTabsSideBar() && areTabsShown())
+        // Disable menu access in edge cases only accessible to hardware menu buttons.
+        if ((!hasTabsSideBar() && areTabsShown()) ||
+                mBrowserToolbar.isEditing()) {
             return;
+        }
 
         // Scroll custom menu to the top
         if (mMenuPanel != null)
@@ -2374,7 +2385,7 @@ abstract public class BrowserApp extends GeckoApp
     @Override
     public void onNewTabs(String[] urls) {
         final EnumSet<OnUrlOpenListener.Flags> flags = EnumSet.of(OnUrlOpenListener.Flags.ALLOW_SWITCH_TO_TAB);
- 
+
         for (String url : urls) {
             if (!maybeSwitchToTab(url, flags)) {
                 openUrl(url, true);
@@ -2409,7 +2420,7 @@ abstract public class BrowserApp extends GeckoApp
     @Override
     protected String getDefaultProfileName() {
         String profile = GeckoProfile.findDefaultProfile(this);
-        return (profile != null ? profile : "default");
+        return (profile != null ? profile : GeckoProfile.DEFAULT_PROFILE);
     }
 
     /**

@@ -9,7 +9,7 @@ we won't be building most of the toolkit.
  1 file changed, 21 insertions(+), 7 deletions(-)
 
 diff --git a/configure.in b/configure.in
-index f73b5a70..564a4ab 100644
+index f73b5a7..564a4ab 100644
 --- a/configure.in
 +++ b/configure.in
 @@ -3545,6 +3545,7 @@ AC_SUBST(LIBXUL_SDK)

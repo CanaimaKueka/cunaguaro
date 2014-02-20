@@ -33,7 +33,7 @@ index 0e8e58a..154e53f 100644
  endif # SHARED_LIBRARY
  
 diff --git a/config/rules.mk b/config/rules.mk
-index 9e9d5e3..ddea814 100644
+index df0dbbe..aeb0b3d 100644
 --- a/config/rules.mk
 +++ b/config/rules.mk
 @@ -222,6 +222,18 @@ else
@@ -114,7 +114,7 @@ index 0e8e58a..154e53f 100644
  endif # SHARED_LIBRARY
  
 diff --git a/js/src/config/rules.mk b/js/src/config/rules.mk
-index 9e9d5e3..ddea814 100644
+index df0dbbe..aeb0b3d 100644
 --- a/js/src/config/rules.mk
 +++ b/js/src/config/rules.mk
 @@ -222,6 +222,18 @@ else
