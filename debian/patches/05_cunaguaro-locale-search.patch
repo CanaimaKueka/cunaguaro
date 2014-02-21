@@ -14,21 +14,6 @@ Index: cunaguaro-27.0~b5/l10n-af/browser/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: cunaguaro-27.0~b5/l10n-ak/browser/searchplugins/list.txt
-===================================================================
---- cunaguaro-27.0~b5.orig/l10n-ak/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ cunaguaro-27.0~b5/l10n-ak/browser/searchplugins/list.txt	2014-01-14 10:43:56.579003835 -0430
-@@ -1,6 +1,6 @@
--amazondotcom
--bing
--eBay
- google
-+twitter
- wikipedia
--yahoo
-+canaima
-+canaima-list
-+canaima-wiki
 Index: cunaguaro-27.0~b5/l10n-ar/browser/searchplugins/list.txt
 ===================================================================
 --- cunaguaro-27.0~b5.orig/l10n-ar/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
@@ -1788,21 +1773,6 @@ Index: cunaguaro-27.0~b5/l10n-ku/mobile/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: cunaguaro-27.0~b5/l10n-lg/browser/searchplugins/list.txt
-===================================================================
---- cunaguaro-27.0~b5.orig/l10n-lg/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ cunaguaro-27.0~b5/l10n-lg/browser/searchplugins/list.txt	2014-01-14 10:43:56.627004068 -0430
-@@ -1,7 +1,6 @@
--amazondotcom
--bing
--eBay
- google
- twitter
- wikipedia
--yahoo
-+canaima
-+canaima-list
-+canaima-wiki
 Index: cunaguaro-27.0~b5/l10n-lt/browser/searchplugins/list.txt
 ===================================================================
 --- cunaguaro-27.0~b5.orig/l10n-lt/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
@@ -2109,20 +2079,6 @@ Index: cunaguaro-27.0~b5/l10n-nn-NO/mobile/searchplugins/list.txt
 +canaima-list
 +canaima-wiki
  gulesider-mobile-NO
-Index: cunaguaro-27.0~b5/l10n-nso/browser/searchplugins/list.txt
-===================================================================
---- cunaguaro-27.0~b5.orig/l10n-nso/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ cunaguaro-27.0~b5/l10n-nso/browser/searchplugins/list.txt	2014-01-14 10:43:56.631004087 -0430
-@@ -1,5 +1,6 @@
- google
--bing
--amazondotcom
--wikipedia
- twitter
-+wikipedia
-+canaima
-+canaima-list
-+canaima-wiki
 Index: cunaguaro-27.0~b5/l10n-or/browser/searchplugins/list.txt
 ===================================================================
 --- cunaguaro-27.0~b5.orig/l10n-or/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
@@ -2818,19 +2774,6 @@ Index: cunaguaro-27.0~b5/l10n-sv-SE/suite/searchplugins/list.txt
 +canaima
 +canaima-list
 +canaima-wiki
-Index: cunaguaro-27.0~b5/l10n-ta-LK/browser/searchplugins/list.txt
-===================================================================
---- cunaguaro-27.0~b5.orig/l10n-ta-LK/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
-+++ cunaguaro-27.0~b5/l10n-ta-LK/browser/searchplugins/list.txt	2014-01-14 10:43:56.643004148 -0430
-@@ -1,3 +1,6 @@
--creativecommons
- google
--wikipedia-ta
-+twitter
-+wikipedia
-+canaima
-+canaima-list
-+canaima-wiki
 Index: cunaguaro-27.0~b5/l10n-ta/browser/searchplugins/list.txt
 ===================================================================
 --- cunaguaro-27.0~b5.orig/l10n-ta/browser/searchplugins/list.txt	2014-01-13 14:53:56.852951708 -0430
@@ -2943,7 +2886,7 @@ Index: cunaguaro-27.0~b5/l10n-uk/mobile/searchplugins/list.txt
  google
  twitter
 -wikipedia-uk
--hotline-ua
+-yandex-market
 +wikipedia
 +canaima
 +canaima-list
