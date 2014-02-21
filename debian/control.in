@@ -55,8 +55,8 @@ Build-Conflicts: graphicsmagick-imagemagick-compat,
                  libhildonmime-dev,
                  libosso-dev
 Standards-Version: 3.9.2.0
-Vcs-Git: git://git.debian.org/git/pkg-mozilla/iceweasel.git
-Vcs-Browser: http://git.debian.org/?p=pkg-mozilla/iceweasel.git
+Vcs-Git: git://git.debian.org/git/pkg-mozilla/cunaguaro.git
+Vcs-Browser: http://git.debian.org/?p=pkg-mozilla/cunaguaro.git
 
 Package: @browser@
 Architecture: any

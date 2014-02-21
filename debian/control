@@ -1,7 +1,7 @@
-Source: iceweasel
+Source: cunaguaro
 Section: web
 Priority: optional
-Maintainer: Maintainers of Mozilla-related packages <pkg-mozilla-maintainers@lists.alioth.debian.org>
+Maintainer: Carlos Espinoza <carlosarmikhael@gmail.com>
 Uploaders: Mike Hommey <glandium@debian.org>
 Build-Depends: autotools-dev,
                debhelper (>= 7.2.3),
@@ -50,10 +50,10 @@ Build-Conflicts: graphicsmagick-imagemagick-compat,
                  libhildonmime-dev,
                  libosso-dev
 Standards-Version: 3.9.2.0
-Vcs-Git: git://git.debian.org/git/pkg-mozilla/iceweasel.git
-Vcs-Browser: http://git.debian.org/?p=pkg-mozilla/iceweasel.git
+Vcs-Git: git://git.canaima.softwarelibre.gob.ve/canaima-gnu-linux/cunaguaro.git
+Vcs-Browser: http://git.canaima.softwarelibre.gob.ve/?p=cunaguaro.git
 
-Package: iceweasel
+Package: cunaguaro
 Architecture: any
 Depends: ${shlibs:Depends},
          ${misc:Depends},
@@ -71,21 +71,21 @@ Breaks: xul-ext-torbutton
 Provides: www-browser,
           gnome-www-browser
 Description: Web browser based on Firefox
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
 
-Package: iceweasel-dbg
+Package: cunaguaro-dbg
 Architecture: any
 Priority: extra
 Section: debug
 Depends: ${misc:Depends},
-         iceweasel (= ${binary:Version}),
+         cunaguaro (= ${binary:Version}),
          xulrunner-27-dbg
-Description: Debugging symbols for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+Description: Debugging symbols for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the debugging symbols for iceweasel.
+ This package contains the debugging symbols for cunaguaro.
 
 Package: xulrunner-27
 Section: libs
@@ -122,7 +122,7 @@ Depends: ${shlibs:Depends},
          ${misc:Depends}
 Description: Mozilla SpiderMonkey JavaScript library
  This library provides the embeddable JavaScript/ECMAScript engine from
- the Mozilla project (used among others by the Iceweasel (Firefox) browser
+ the Mozilla project (used among others by the Cunaguaro (Firefox) browser
  as well as by the iPlanet WebServer).
 Homepage: http://www.mozilla.org/js/
 
@@ -134,7 +134,7 @@ Depends: ${misc:Depends},
          libnspr4-dev
 Description: Development files for the Mozilla SpiderMonkey JavaScript library
  This library provides the embeddable JavaScript/ECMAScript engine from
- the Mozilla project (used among others by the Iceweasel (Firefox) browser
+ the Mozilla project (used among others by the Cunaguaro (Firefox) browser
  as well as by the iPlanet WebServer).
  .
  Install this package if you wish to develop your own programs using the
@@ -149,7 +149,7 @@ Depends: libmozjs27d (= ${binary:Version}),
          ${misc:Depends}
 Description: Development files for the Mozilla SpiderMonkey JavaScript library
  This library provides the embeddable JavaScript/ECMAScript engine from
- the Mozilla project (used among others by the Iceweasel (Firefox) browser
+ the Mozilla project (used among others by the Cunaguaro (Firefox) browser
  as well as by the iPlanet WebServer).
  .
  This package provides the debugging symbols for the library and for
@@ -226,989 +226,989 @@ Description: Debugging symbols for the Gecko engine library
  package.
 Homepage: http://wiki.mozilla.org/XUL:Lib_XUL
 
-Package: iceweasel-l10n-all
+Package: cunaguaro-l10n-all
 Architecture: all
 Section: localization
-Depends: ${misc:Depends}, iceweasel-l10n-ach, iceweasel-l10n-af, iceweasel-l10n-an, iceweasel-l10n-ar, iceweasel-l10n-as, iceweasel-l10n-ast, iceweasel-l10n-be, iceweasel-l10n-bg, iceweasel-l10n-bn-bd, iceweasel-l10n-bn-in, iceweasel-l10n-br, iceweasel-l10n-bs, iceweasel-l10n-ca, iceweasel-l10n-cs, iceweasel-l10n-csb, iceweasel-l10n-cy, iceweasel-l10n-da, iceweasel-l10n-de, iceweasel-l10n-el, iceweasel-l10n-en-gb, iceweasel-l10n-en-za, iceweasel-l10n-eo, iceweasel-l10n-es-ar, iceweasel-l10n-es-cl, iceweasel-l10n-es-es, iceweasel-l10n-es-mx, iceweasel-l10n-et, iceweasel-l10n-eu, iceweasel-l10n-fa, iceweasel-l10n-ff, iceweasel-l10n-fi, iceweasel-l10n-fr, iceweasel-l10n-fy-nl, iceweasel-l10n-ga-ie, iceweasel-l10n-gd, iceweasel-l10n-gl, iceweasel-l10n-gu-in, iceweasel-l10n-he, iceweasel-l10n-hi-in, iceweasel-l10n-hr, iceweasel-l10n-hu, iceweasel-l10n-hy-am, iceweasel-l10n-id, iceweasel-l10n-is, iceweasel-l10n-it, iceweasel-l10n-ja, iceweasel-l10n-kk, iceweasel-l10n-km, iceweasel-l10n-kn, iceweasel-l10n-ko, iceweasel-l10n-ku, iceweasel-l10n-lij, iceweasel-l10n-lt, iceweasel-l10n-lv, iceweasel-l10n-mai, iceweasel-l10n-mk, iceweasel-l10n-ml, iceweasel-l10n-mr, iceweasel-l10n-nb-no, iceweasel-l10n-nl, iceweasel-l10n-nn-no, iceweasel-l10n-or, iceweasel-l10n-pa-in, iceweasel-l10n-pl, iceweasel-l10n-pt-br, iceweasel-l10n-pt-pt, iceweasel-l10n-rm, iceweasel-l10n-ro, iceweasel-l10n-ru, iceweasel-l10n-si, iceweasel-l10n-sk, iceweasel-l10n-sl, iceweasel-l10n-son, iceweasel-l10n-sq, iceweasel-l10n-sr, iceweasel-l10n-sv-se, iceweasel-l10n-ta, iceweasel-l10n-te, iceweasel-l10n-th, iceweasel-l10n-tr, iceweasel-l10n-uk, iceweasel-l10n-vi, iceweasel-l10n-xh, iceweasel-l10n-zh-cn, iceweasel-l10n-zh-tw, iceweasel-l10n-zu
-Description: All language packages for Iceweasel (meta)
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+Depends: ${misc:Depends}, cunaguaro-l10n-ach, cunaguaro-l10n-af, cunaguaro-l10n-an, cunaguaro-l10n-ar, cunaguaro-l10n-as, cunaguaro-l10n-ast, cunaguaro-l10n-be, cunaguaro-l10n-bg, cunaguaro-l10n-bn-bd, cunaguaro-l10n-bn-in, cunaguaro-l10n-br, cunaguaro-l10n-bs, cunaguaro-l10n-ca, cunaguaro-l10n-cs, cunaguaro-l10n-csb, cunaguaro-l10n-cy, cunaguaro-l10n-da, cunaguaro-l10n-de, cunaguaro-l10n-el, cunaguaro-l10n-en-gb, cunaguaro-l10n-en-za, cunaguaro-l10n-eo, cunaguaro-l10n-es-ar, cunaguaro-l10n-es-cl, cunaguaro-l10n-es-es, cunaguaro-l10n-es-mx, cunaguaro-l10n-et, cunaguaro-l10n-eu, cunaguaro-l10n-fa, cunaguaro-l10n-ff, cunaguaro-l10n-fi, cunaguaro-l10n-fr, cunaguaro-l10n-fy-nl, cunaguaro-l10n-ga-ie, cunaguaro-l10n-gd, cunaguaro-l10n-gl, cunaguaro-l10n-gu-in, cunaguaro-l10n-he, cunaguaro-l10n-hi-in, cunaguaro-l10n-hr, cunaguaro-l10n-hu, cunaguaro-l10n-hy-am, cunaguaro-l10n-id, cunaguaro-l10n-is, cunaguaro-l10n-it, cunaguaro-l10n-ja, cunaguaro-l10n-kk, cunaguaro-l10n-km, cunaguaro-l10n-kn, cunaguaro-l10n-ko, cunaguaro-l10n-ku, cunaguaro-l10n-lij, cunaguaro-l10n-lt, cunaguaro-l10n-lv, cunaguaro-l10n-mai, cunaguaro-l10n-mk, cunaguaro-l10n-ml, cunaguaro-l10n-mr, cunaguaro-l10n-nb-no, cunaguaro-l10n-nl, cunaguaro-l10n-nn-no, cunaguaro-l10n-or, cunaguaro-l10n-pa-in, cunaguaro-l10n-pl, cunaguaro-l10n-pt-br, cunaguaro-l10n-pt-pt, cunaguaro-l10n-rm, cunaguaro-l10n-ro, cunaguaro-l10n-ru, cunaguaro-l10n-si, cunaguaro-l10n-sk, cunaguaro-l10n-sl, cunaguaro-l10n-son, cunaguaro-l10n-sq, cunaguaro-l10n-sr, cunaguaro-l10n-sv-se, cunaguaro-l10n-ta, cunaguaro-l10n-te, cunaguaro-l10n-th, cunaguaro-l10n-tr, cunaguaro-l10n-uk, cunaguaro-l10n-vi, cunaguaro-l10n-xh, cunaguaro-l10n-zh-cn, cunaguaro-l10n-zh-tw, cunaguaro-l10n-zu
+Description: All language packages for Cunaguaro (meta)
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This is a metapackage depending on all available localizations of Iceweasel.
+ This is a metapackage depending on all available localizations of Cunaguaro.
 
-Package: iceweasel-l10n-ach
+Package: cunaguaro-l10n-ach
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
-Description: Acoli language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
+Description: Acoli language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Acoli.
+ This package contains the localization of Cunaguaro in Acoli.
 
-Package: iceweasel-l10n-af
+Package: cunaguaro-l10n-af
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
-Description: Afrikaans language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
+Description: Afrikaans language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Afrikaans.
+ This package contains the localization of Cunaguaro in Afrikaans.
 
-Package: iceweasel-l10n-an
+Package: cunaguaro-l10n-an
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
-Description: Aragonese language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
+Description: Aragonese language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Aragonese.
+ This package contains the localization of Cunaguaro in Aragonese.
 
-Package: iceweasel-l10n-ar
+Package: cunaguaro-l10n-ar
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
-Description: Arabic language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
+Description: Arabic language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Arabic.
+ This package contains the localization of Cunaguaro in Arabic.
 
-Package: iceweasel-l10n-as
+Package: cunaguaro-l10n-as
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
-Description: Assamese language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
+Description: Assamese language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Assamese.
+ This package contains the localization of Cunaguaro in Assamese.
 
-Package: iceweasel-l10n-ast
+Package: cunaguaro-l10n-ast
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
-Description: Asturian language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
+Description: Asturian language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Asturian.
+ This package contains the localization of Cunaguaro in Asturian.
 
-Package: iceweasel-l10n-be
+Package: cunaguaro-l10n-be
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
-Description: Belarusian language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
+Description: Belarusian language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Belarusian.
+ This package contains the localization of Cunaguaro in Belarusian.
 
-Package: iceweasel-l10n-bg
+Package: cunaguaro-l10n-bg
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
 Recommends: myspell-bg
-Description: Bulgarian language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+Description: Bulgarian language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Bulgarian.
+ This package contains the localization of Cunaguaro in Bulgarian.
 
-Package: iceweasel-l10n-bn-bd
+Package: cunaguaro-l10n-bn-bd
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
-Description: Bengali (Bangladesh) language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
+Description: Bengali (Bangladesh) language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Bengali (Bangladesh).
+ This package contains the localization of Cunaguaro in Bengali (Bangladesh).
 
-Package: iceweasel-l10n-bn-in
+Package: cunaguaro-l10n-bn-in
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
-Description: Bengali (India) language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
+Description: Bengali (India) language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Bengali (India).
+ This package contains the localization of Cunaguaro in Bengali (India).
 
-Package: iceweasel-l10n-br
+Package: cunaguaro-l10n-br
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
-Description: Breton language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
+Description: Breton language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Breton.
+ This package contains the localization of Cunaguaro in Breton.
 
-Package: iceweasel-l10n-bs
+Package: cunaguaro-l10n-bs
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
-Description: Bosnian language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
+Description: Bosnian language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Bosnian.
+ This package contains the localization of Cunaguaro in Bosnian.
 
-Package: iceweasel-l10n-ca
+Package: cunaguaro-l10n-ca
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
 Recommends: myspell-ca
-Description: Catalan language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+Description: Catalan language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Catalan.
+ This package contains the localization of Cunaguaro in Catalan.
 
-Package: iceweasel-l10n-cs
+Package: cunaguaro-l10n-cs
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
 Recommends: myspell-cs-cz
-Description: Czech language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+Description: Czech language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Czech.
+ This package contains the localization of Cunaguaro in Czech.
 
-Package: iceweasel-l10n-csb
+Package: cunaguaro-l10n-csb
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
-Description: Kashubian language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
+Description: Kashubian language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Kashubian.
+ This package contains the localization of Cunaguaro in Kashubian.
 
-Package: iceweasel-l10n-cy
+Package: cunaguaro-l10n-cy
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
-Description: Welsh language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
+Description: Welsh language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Welsh.
+ This package contains the localization of Cunaguaro in Welsh.
 
-Package: iceweasel-l10n-da
+Package: cunaguaro-l10n-da
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
 Recommends: myspell-da
-Description: Danish language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+Description: Danish language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Danish.
+ This package contains the localization of Cunaguaro in Danish.
 
-Package: iceweasel-l10n-de
+Package: cunaguaro-l10n-de
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
 Recommends: myspell-de-de | myspell-de-at | myspell-de-ch
-Description: German language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+Description: German language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in German.
+ This package contains the localization of Cunaguaro in German.
 
-Package: iceweasel-l10n-el
+Package: cunaguaro-l10n-el
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
 Recommends: myspell-el-gr
-Description: Modern Greek language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+Description: Modern Greek language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Modern Greek.
+ This package contains the localization of Cunaguaro in Modern Greek.
 
-Package: iceweasel-l10n-en-gb
+Package: cunaguaro-l10n-en-gb
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
 Recommends: myspell-en-gb | myspell-en-us
-Description: English (United Kingdom) language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+Description: English (United Kingdom) language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in English (United Kingdom).
+ This package contains the localization of Cunaguaro in English (United Kingdom).
 
-Package: iceweasel-l10n-en-za
+Package: cunaguaro-l10n-en-za
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
 Recommends: myspell-en-gb | myspell-en-us
-Description: English (South Africa) language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+Description: English (South Africa) language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in English (South Africa).
+ This package contains the localization of Cunaguaro in English (South Africa).
 
-Package: iceweasel-l10n-eo
+Package: cunaguaro-l10n-eo
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
 Recommends: myspell-eo
-Description: Esperanto language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+Description: Esperanto language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Esperanto.
+ This package contains the localization of Cunaguaro in Esperanto.
 
-Package: iceweasel-l10n-es-ar
+Package: cunaguaro-l10n-es-ar
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
 Recommends: myspell-es
-Description: Spanish (Argentina) language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+Description: Spanish (Argentina) language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Spanish (Argentina).
+ This package contains the localization of Cunaguaro in Spanish (Argentina).
 
-Package: iceweasel-l10n-es-cl
+Package: cunaguaro-l10n-es-cl
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
-Description: Spanish (Chile) language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
+Description: Spanish (Chile) language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Spanish (Chile).
+ This package contains the localization of Cunaguaro in Spanish (Chile).
 
-Package: iceweasel-l10n-es-es
+Package: cunaguaro-l10n-es-es
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
 Recommends: myspell-es
-Description: Spanish (Spain) language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+Description: Spanish (Spain) language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Spanish (Spain).
+ This package contains the localization of Cunaguaro in Spanish (Spain).
 
-Package: iceweasel-l10n-es-mx
+Package: cunaguaro-l10n-es-mx
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
-Description: Spanish (Mexico) language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
+Description: Spanish (Mexico) language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Spanish (Mexico).
+ This package contains the localization of Cunaguaro in Spanish (Mexico).
 
-Package: iceweasel-l10n-et
+Package: cunaguaro-l10n-et
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
 Recommends: myspell-et
-Description: Estonian language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+Description: Estonian language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Estonian.
+ This package contains the localization of Cunaguaro in Estonian.
 
-Package: iceweasel-l10n-eu
+Package: cunaguaro-l10n-eu
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
-Description: Basque language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
+Description: Basque language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Basque.
+ This package contains the localization of Cunaguaro in Basque.
 
-Package: iceweasel-l10n-fa
+Package: cunaguaro-l10n-fa
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
-Description: Persian language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
+Description: Persian language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Persian.
+ This package contains the localization of Cunaguaro in Persian.
 
-Package: iceweasel-l10n-ff
+Package: cunaguaro-l10n-ff
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
-Description: Fulah language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
+Description: Fulah language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Fulah.
+ This package contains the localization of Cunaguaro in Fulah.
 
-Package: iceweasel-l10n-fi
+Package: cunaguaro-l10n-fi
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
 Recommends: xul-ext-mozvoikko
-Description: Finnish language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+Description: Finnish language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Finnish.
+ This package contains the localization of Cunaguaro in Finnish.
 
-Package: iceweasel-l10n-fr
+Package: cunaguaro-l10n-fr
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
 Recommends: myspell-fr | myspell-fr-gut
-Description: French language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+Description: French language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in French.
+ This package contains the localization of Cunaguaro in French.
 
-Package: iceweasel-l10n-fy-nl
+Package: cunaguaro-l10n-fy-nl
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
-Description: Western Frisian (Netherlands) language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
+Description: Western Frisian (Netherlands) language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Western Frisian (Netherlands).
+ This package contains the localization of Cunaguaro in Western Frisian (Netherlands).
 
-Package: iceweasel-l10n-ga-ie
+Package: cunaguaro-l10n-ga-ie
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
-Description: Irish (Ireland) language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
+Description: Irish (Ireland) language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Irish (Ireland).
+ This package contains the localization of Cunaguaro in Irish (Ireland).
 
-Package: iceweasel-l10n-gd
+Package: cunaguaro-l10n-gd
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
-Description: Scottish Gaelic language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
+Description: Scottish Gaelic language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Scottish Gaelic.
+ This package contains the localization of Cunaguaro in Scottish Gaelic.
 
-Package: iceweasel-l10n-gl
+Package: cunaguaro-l10n-gl
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
-Description: Galician language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
+Description: Galician language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Galician.
+ This package contains the localization of Cunaguaro in Galician.
 
-Package: iceweasel-l10n-gu-in
+Package: cunaguaro-l10n-gu-in
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
-Description: Gujarati (India) language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
+Description: Gujarati (India) language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Gujarati (India).
+ This package contains the localization of Cunaguaro in Gujarati (India).
 
-Package: iceweasel-l10n-he
+Package: cunaguaro-l10n-he
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
 Recommends: myspell-he
-Description: Hebrew language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+Description: Hebrew language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Hebrew.
+ This package contains the localization of Cunaguaro in Hebrew.
 
-Package: iceweasel-l10n-hi-in
+Package: cunaguaro-l10n-hi-in
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
-Description: Hindi (India) language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
+Description: Hindi (India) language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Hindi (India).
+ This package contains the localization of Cunaguaro in Hindi (India).
 
-Package: iceweasel-l10n-hr
+Package: cunaguaro-l10n-hr
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
-Description: Croatian language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
+Description: Croatian language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Croatian.
+ This package contains the localization of Cunaguaro in Croatian.
 
-Package: iceweasel-l10n-hu
+Package: cunaguaro-l10n-hu
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
 Recommends: myspell-hu
-Description: Hungarian language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+Description: Hungarian language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Hungarian.
+ This package contains the localization of Cunaguaro in Hungarian.
 
-Package: iceweasel-l10n-hy-am
+Package: cunaguaro-l10n-hy-am
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
-Description: Armenian (Armenia) language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
+Description: Armenian (Armenia) language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Armenian (Armenia).
+ This package contains the localization of Cunaguaro in Armenian (Armenia).
 
-Package: iceweasel-l10n-id
+Package: cunaguaro-l10n-id
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
-Description: Indonesian language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
+Description: Indonesian language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Indonesian.
+ This package contains the localization of Cunaguaro in Indonesian.
 
-Package: iceweasel-l10n-is
+Package: cunaguaro-l10n-is
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
-Description: Icelandic language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
+Description: Icelandic language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Icelandic.
+ This package contains the localization of Cunaguaro in Icelandic.
 
-Package: iceweasel-l10n-it
+Package: cunaguaro-l10n-it
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
 Recommends: myspell-it
-Description: Italian language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+Description: Italian language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Italian.
+ This package contains the localization of Cunaguaro in Italian.
 
-Package: iceweasel-l10n-ja
+Package: cunaguaro-l10n-ja
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
-Description: Japanese language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
+Description: Japanese language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Japanese.
+ This package contains the localization of Cunaguaro in Japanese.
 
-Package: iceweasel-l10n-kk
+Package: cunaguaro-l10n-kk
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
-Description: Kazakh language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
+Description: Kazakh language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Kazakh.
+ This package contains the localization of Cunaguaro in Kazakh.
 
-Package: iceweasel-l10n-km
+Package: cunaguaro-l10n-km
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
-Description: Central Khmer language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
+Description: Central Khmer language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Central Khmer.
+ This package contains the localization of Cunaguaro in Central Khmer.
 
-Package: iceweasel-l10n-kn
+Package: cunaguaro-l10n-kn
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
-Description: Kannada language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
+Description: Kannada language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Kannada.
+ This package contains the localization of Cunaguaro in Kannada.
 
-Package: iceweasel-l10n-ko
+Package: cunaguaro-l10n-ko
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
-Description: Korean language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
+Description: Korean language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Korean.
+ This package contains the localization of Cunaguaro in Korean.
 
-Package: iceweasel-l10n-ku
+Package: cunaguaro-l10n-ku
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
 Recommends: myspell-ku
-Description: Kurdish language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+Description: Kurdish language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Kurdish.
+ This package contains the localization of Cunaguaro in Kurdish.
 
-Package: iceweasel-l10n-lij
+Package: cunaguaro-l10n-lij
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
-Description: Ligurian language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
+Description: Ligurian language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Ligurian.
+ This package contains the localization of Cunaguaro in Ligurian.
 
-Package: iceweasel-l10n-lt
+Package: cunaguaro-l10n-lt
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
 Recommends: myspell-lt
-Description: Lithuanian language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+Description: Lithuanian language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Lithuanian.
+ This package contains the localization of Cunaguaro in Lithuanian.
 
-Package: iceweasel-l10n-lv
+Package: cunaguaro-l10n-lv
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
 Recommends: myspell-lv
-Description: Latvian language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+Description: Latvian language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Latvian.
+ This package contains the localization of Cunaguaro in Latvian.
 
-Package: iceweasel-l10n-mai
+Package: cunaguaro-l10n-mai
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
-Description: Maithili language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
+Description: Maithili language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Maithili.
+ This package contains the localization of Cunaguaro in Maithili.
 
-Package: iceweasel-l10n-mk
+Package: cunaguaro-l10n-mk
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
-Description: Macedonian language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
+Description: Macedonian language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Macedonian.
+ This package contains the localization of Cunaguaro in Macedonian.
 
-Package: iceweasel-l10n-ml
+Package: cunaguaro-l10n-ml
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
-Description: Malayalam language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
+Description: Malayalam language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Malayalam.
+ This package contains the localization of Cunaguaro in Malayalam.
 
-Package: iceweasel-l10n-mr
+Package: cunaguaro-l10n-mr
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
-Description: Marathi language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
+Description: Marathi language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Marathi.
+ This package contains the localization of Cunaguaro in Marathi.
 
-Package: iceweasel-l10n-nb-no
+Package: cunaguaro-l10n-nb-no
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
 Recommends: myspell-nb
-Description: Norwegian Bokmål (Norway) language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+Description: Norwegian Bokmål (Norway) language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Norwegian Bokmål (Norway).
+ This package contains the localization of Cunaguaro in Norwegian Bokmål (Norway).
 
-Package: iceweasel-l10n-nl
+Package: cunaguaro-l10n-nl
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
 Recommends: myspell-nl
-Description: Dutch language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+Description: Dutch language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Dutch.
+ This package contains the localization of Cunaguaro in Dutch.
 
-Package: iceweasel-l10n-nn-no
+Package: cunaguaro-l10n-nn-no
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
 Recommends: myspell-nn
-Description: Norwegian Nynorsk (Norway) language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+Description: Norwegian Nynorsk (Norway) language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Norwegian Nynorsk (Norway).
+ This package contains the localization of Cunaguaro in Norwegian Nynorsk (Norway).
 
-Package: iceweasel-l10n-or
+Package: cunaguaro-l10n-or
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
-Description: Oriya language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
+Description: Oriya language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Oriya.
+ This package contains the localization of Cunaguaro in Oriya.
 
-Package: iceweasel-l10n-pa-in
+Package: cunaguaro-l10n-pa-in
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
-Description: Panjabi (India) language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
+Description: Panjabi (India) language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Panjabi (India).
+ This package contains the localization of Cunaguaro in Panjabi (India).
 
-Package: iceweasel-l10n-pl
+Package: cunaguaro-l10n-pl
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
 Recommends: myspell-pl
-Description: Polish language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+Description: Polish language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Polish.
+ This package contains the localization of Cunaguaro in Polish.
 
-Package: iceweasel-l10n-pt-br
+Package: cunaguaro-l10n-pt-br
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
 Recommends: myspell-pt-br | myspell-pt
-Description: Portuguese (Brazil) language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+Description: Portuguese (Brazil) language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Portuguese (Brazil).
+ This package contains the localization of Cunaguaro in Portuguese (Brazil).
 
-Package: iceweasel-l10n-pt-pt
+Package: cunaguaro-l10n-pt-pt
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
 Recommends: myspell-pt-pt | myspell-pt
-Description: Portuguese (Portugal) language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+Description: Portuguese (Portugal) language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Portuguese (Portugal).
+ This package contains the localization of Cunaguaro in Portuguese (Portugal).
 
-Package: iceweasel-l10n-rm
+Package: cunaguaro-l10n-rm
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
-Description: Romansh language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
+Description: Romansh language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Romansh.
+ This package contains the localization of Cunaguaro in Romansh.
 
-Package: iceweasel-l10n-ro
+Package: cunaguaro-l10n-ro
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
-Description: Romanian language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
+Description: Romanian language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Romanian.
+ This package contains the localization of Cunaguaro in Romanian.
 
-Package: iceweasel-l10n-ru
+Package: cunaguaro-l10n-ru
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
 Recommends: myspell-ru
-Description: Russian language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+Description: Russian language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Russian.
+ This package contains the localization of Cunaguaro in Russian.
 
-Package: iceweasel-l10n-si
+Package: cunaguaro-l10n-si
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
-Description: Sinhala language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
+Description: Sinhala language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Sinhala.
+ This package contains the localization of Cunaguaro in Sinhala.
 
-Package: iceweasel-l10n-sk
+Package: cunaguaro-l10n-sk
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
 Recommends: myspell-sk
-Description: Slovak language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+Description: Slovak language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Slovak.
+ This package contains the localization of Cunaguaro in Slovak.
 
-Package: iceweasel-l10n-sl
+Package: cunaguaro-l10n-sl
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
 Recommends: myspell-sl
-Description: Slovenian language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+Description: Slovenian language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Slovenian.
+ This package contains the localization of Cunaguaro in Slovenian.
 
-Package: iceweasel-l10n-son
+Package: cunaguaro-l10n-son
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
-Description: Songhai languages language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
+Description: Songhai languages language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Songhai languages.
+ This package contains the localization of Cunaguaro in Songhai languages.
 
-Package: iceweasel-l10n-sq
+Package: cunaguaro-l10n-sq
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
-Description: Albanian language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
+Description: Albanian language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Albanian.
+ This package contains the localization of Cunaguaro in Albanian.
 
-Package: iceweasel-l10n-sr
+Package: cunaguaro-l10n-sr
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
-Description: Serbian language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
+Description: Serbian language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Serbian.
+ This package contains the localization of Cunaguaro in Serbian.
 
-Package: iceweasel-l10n-sv-se
+Package: cunaguaro-l10n-sv-se
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
 Recommends: myspell-sv-se
-Description: Swedish (Sweden) language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+Description: Swedish (Sweden) language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Swedish (Sweden).
+ This package contains the localization of Cunaguaro in Swedish (Sweden).
 
-Package: iceweasel-l10n-ta
+Package: cunaguaro-l10n-ta
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
-Description: Tamil language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
+Description: Tamil language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Tamil.
+ This package contains the localization of Cunaguaro in Tamil.
 
-Package: iceweasel-l10n-te
+Package: cunaguaro-l10n-te
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
-Description: Telugu language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
+Description: Telugu language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Telugu.
+ This package contains the localization of Cunaguaro in Telugu.
 
-Package: iceweasel-l10n-th
+Package: cunaguaro-l10n-th
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
-Description: Thai language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
+Description: Thai language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Thai.
+ This package contains the localization of Cunaguaro in Thai.
 
-Package: iceweasel-l10n-tr
+Package: cunaguaro-l10n-tr
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
-Description: Turkish language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
+Description: Turkish language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Turkish.
+ This package contains the localization of Cunaguaro in Turkish.
 
-Package: iceweasel-l10n-uk
+Package: cunaguaro-l10n-uk
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
 Recommends: myspell-uk
-Description: Ukrainian language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+Description: Ukrainian language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Ukrainian.
+ This package contains the localization of Cunaguaro in Ukrainian.
 
-Package: iceweasel-l10n-vi
+Package: cunaguaro-l10n-vi
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
-Description: Vietnamese language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
+Description: Vietnamese language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Vietnamese.
+ This package contains the localization of Cunaguaro in Vietnamese.
 
-Package: iceweasel-l10n-xh
+Package: cunaguaro-l10n-xh
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
-Description: Xhosa language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
+Description: Xhosa language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Xhosa.
+ This package contains the localization of Cunaguaro in Xhosa.
 
-Package: iceweasel-l10n-zh-cn
+Package: cunaguaro-l10n-zh-cn
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
-Description: Chinese (China) language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
+Description: Chinese (China) language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Chinese (China).
+ This package contains the localization of Cunaguaro in Chinese (China).
 
-Package: iceweasel-l10n-zh-tw
+Package: cunaguaro-l10n-zh-tw
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
-Description: Chinese (Taiwan) language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
+Description: Chinese (Taiwan) language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Chinese (Taiwan).
+ This package contains the localization of Cunaguaro in Chinese (Taiwan).
 
-Package: iceweasel-l10n-zu
+Package: cunaguaro-l10n-zu
 Architecture: all
 Section: localization
 Depends: ${misc:Depends},
-         iceweasel (>= ${source:Version}), iceweasel (<< ${source:Version}.1~)
-Description: Zulu language package for Iceweasel
- Iceweasel is Firefox, rebranded. It is a powerful, extensible web browser
+         cunaguaro (>= ${source:Version}), cunaguaro (<< ${source:Version}.1~)
+Description: Zulu language package for Cunaguaro
+ Cunaguaro is Firefox, rebranded. It is a powerful, extensible web browser
  with support for modern web application technologies.
  .
- This package contains the localization of Iceweasel in Zulu.
+ This package contains the localization of Cunaguaro in Zulu.
