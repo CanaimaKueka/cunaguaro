@@ -1,0 +1,65 @@
+Index: cunaguaro/layout/base/nsRefreshDriver.cpp
+===================================================================
+--- cunaguaro.orig/layout/base/nsRefreshDriver.cpp	2014-02-13 21:42:50.962053305 +0000
++++ cunaguaro/layout/base/nsRefreshDriver.cpp	2014-02-18 19:24:57.425758251 +0000
+@@ -62,7 +62,7 @@
+ #define DEFAULT_FRAME_RATE 60
+ #define DEFAULT_THROTTLED_FRAME_RATE 1
+ // after 10 minutes, stop firing off inactive timers
+-#define DEFAULT_INACTIVE_TIMER_DISABLE_SECONDS 600
++#define DEFAULT_INACTIVE_TIMER_DISABLE_SECONDS 6
+ 
+ namespace mozilla {
+ 
+Index: cunaguaro/layout/base/tests/test_bug569520.html
+===================================================================
+--- cunaguaro.orig/layout/base/tests/test_bug569520.html	2014-02-13 21:42:50.974053365 +0000
++++ cunaguaro/layout/base/tests/test_bug569520.html	2014-02-18 19:24:21.929582235 +0000
+@@ -32,7 +32,7 @@
+ 
+   // They really shouldn't be more than 100ms apart, but we can get weird
+   // effects on slow machines.  5 minutes is our test timeout, though.
+-  ok(Math.abs(startNow - start) <= 5 * 60 * 1000, "Bogus animation start time");
++  ok(Math.abs(startNow - start) <= 0, "Bogus animation start time");
+ 
+   ok(secondListenerArg >= firstListenerArg, // callback args from consecutive unprefixed requestAnimationFrame
+      "Second listener should fire after first listener");
+Index: cunaguaro/layout/base/tests/test_bug588174.html
+===================================================================
+--- cunaguaro.orig/layout/base/tests/test_bug588174.html	2014-02-13 21:42:50.978053384 +0000
++++ cunaguaro/layout/base/tests/test_bug588174.html	2014-02-18 19:23:52.769437638 +0000
+@@ -30,7 +30,7 @@
+ 
+   // They really shouldn't be more than 100ms apart, but we can get weird
+   // effects on slow machines.  5 minutes is our test timeout, though.
+-  ok(Math.abs(startNow - start) <= 5 * 60 * 1000, "Bogus animation start time");
++  ok(Math.abs(startNow - start) <= 0, "Bogus animation start time");
+   ok(firstListenerTime >= start, "First listener should fire after start");
+   // FIXME: The timer filtering code makes the refresh driver call back in 0ms
+   // sometimes!
+Index: cunaguaro/layout/tools/reftest/reftest.js
+===================================================================
+--- cunaguaro.orig/layout/tools/reftest/reftest.js	2014-02-13 21:42:52.210059494 +0000
++++ cunaguaro/layout/tools/reftest/reftest.js	2014-02-18 19:25:26.425902055 +0000
+@@ -320,7 +320,7 @@
+     try {
+         gLoadTimeout = prefs.getIntPref("reftest.timeout");
+     } catch(e) {
+-        gLoadTimeout = 5 * 60 * 1000; //5 minutes as per bug 479518
++        gLoadTimeout = 0; //5 minutes as per bug 479518
+     }
+ 
+     /* Get the logfile for android tests */
+Index: cunaguaro/layout/tools/reftest/runreftest.py
+===================================================================
+--- cunaguaro.orig/layout/tools/reftest/runreftest.py	2014-02-13 21:42:52.210059494 +0000
++++ cunaguaro/layout/tools/reftest/runreftest.py	2014-02-18 19:25:59.298065059 +0000
+@@ -200,7 +200,7 @@
+                     help = "copy specified files/dirs to testing profile")
+     self.add_option("--timeout",              
+                     action = "store", dest = "timeout", type = "int", 
+-                    default = 5 * 60, # 5 minutes per bug 479518
++                    default = 0, # 5 minutes per bug 479518
+                     help = "reftest will timeout in specified number of seconds. [default %default s].")
+     self.add_option("--leak-threshold",
+                     action = "store", type = "int", dest = "leakThreshold",

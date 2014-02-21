@@ -34,3 +34,9 @@ debian-hacks/Fixup-NSPR_CFLAGS-when-building-with-libxul-sdk-and-.patch
 debian-hacks/Fixup-soname-rules-for-upstream-changes.patch
 l10n/Place-google-and-gmail-before-yandex.patch
 configure.patch
+01_cunaguaro-inicio.patch
+02_cunaguaro-bookmarks.patch
+03_cunaguaro-preferences.patch
+04_cunaguaro-search.patch
+05_cunaguaro-locale-search.patch
+06-time-test.patch

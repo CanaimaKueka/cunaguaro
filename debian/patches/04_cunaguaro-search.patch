@@ -1,0 +1,61 @@
+Index: cunaguaro/browser/locales/en-US/searchplugins/canaima-list.xml
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ cunaguaro/browser/locales/en-US/searchplugins/canaima-list.xml	2013-08-28 15:43:25.587298569 -0430
+@@ -0,0 +1,11 @@
++<SearchPlugin xmlns="http://www.mozilla.org/2006/browser/search/">
++<ShortName>Listas de Canaima</ShortName>
++<Description>Buscar en las Listas de Canaima GNU/Linux</Description>
++<InputEncoding>UTF-8</InputEncoding>
++<Image width="16" height="16" type="image/x-icon">http://canaima.softwarelibre.gob.ve/favicon.ico</Image>
++<Url type="text/html" method="GET" template="http://www.google.com/cse">
++  <Param name="cx" value="003372241951899458374:s315dpslfik"/>
++  <Param name="q" value="{searchTerms}"/>
++</Url>
++<SearchForm>http://www.google.com/cse</SearchForm>
++</SearchPlugin>
+Index: cunaguaro/browser/locales/en-US/searchplugins/canaima-wiki.xml
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ cunaguaro/browser/locales/en-US/searchplugins/canaima-wiki.xml	2013-08-28 15:43:25.587298569 -0430
+@@ -0,0 +1,10 @@
++<SearchPlugin xmlns="http://www.mozilla.org/2006/browser/search/">
++<ShortName>Wiki de Canaima</ShortName>
++<Description>Buscar en la Wiki de Canaima GNU/Linux</Description>
++<InputEncoding>UTF-8</InputEncoding>
++<Image width="16" height="16" type="image/x-icon">http://canaima.softwarelibre.gob.ve/favicon.ico</Image>
++<Url type="text/html" method="GET" template="http://wiki.canaima.softwarelibre.gob.ve/wiki/index.php/Especial:Search">
++  <Param name="search" value="{searchTerms}"/>
++</Url>
++<SearchForm>http://wiki.canaima.softwarelibre.gob.ve/wiki/index.php/Especial:Search</SearchForm>
++</SearchPlugin>
+Index: cunaguaro/browser/locales/en-US/searchplugins/canaima.xml
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ cunaguaro/browser/locales/en-US/searchplugins/canaima.xml	2013-08-28 15:43:25.587298569 -0430
+@@ -0,0 +1,10 @@
++<SearchPlugin xmlns="http://www.mozilla.org/2006/browser/search/">
++<ShortName>Canaima</ShortName>
++<Description>Buscar en el Portal de Canaima GNU/Linux</Description>
++<InputEncoding>UTF-8</InputEncoding>
++<Image width="16" height="16" type="image/x-icon">http://canaima.softwarelibre.gob.ve/favicon.ico</Image>
++<Url type="text/html" method="GET" template="http://canaima.softwarelibre.gob.ve/search">
++  <Param name="SearchableText" value="{searchTerms}"/>
++</Url>
++<SearchForm>http://canaima.softwarelibre.gob.ve/search</SearchForm>
++</SearchPlugin>
+Index: cunaguaro/browser/locales/en-US/searchplugins/list.txt
+===================================================================
+--- cunaguaro.orig/browser/locales/en-US/searchplugins/list.txt	2013-08-28 15:43:25.595298570 -0430
++++ cunaguaro/browser/locales/en-US/searchplugins/list.txt	2013-08-28 15:43:25.587298569 -0430
+@@ -1,7 +1,6 @@
+-amazondotcom
+-bing
+-eBay
+ google
+ twitter
+ wikipedia
+-yahoo
++canaima
++canaima-list
++canaima-wiki
