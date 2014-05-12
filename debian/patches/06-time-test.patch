@@ -1,16 +1,3 @@
-Index: cunaguaro/layout/base/nsRefreshDriver.cpp
-===================================================================
---- cunaguaro.orig/layout/base/nsRefreshDriver.cpp	2014-02-13 21:42:50.962053305 +0000
-+++ cunaguaro/layout/base/nsRefreshDriver.cpp	2014-02-18 19:24:57.425758251 +0000
-@@ -62,7 +62,7 @@
- #define DEFAULT_FRAME_RATE 60
- #define DEFAULT_THROTTLED_FRAME_RATE 1
- // after 10 minutes, stop firing off inactive timers
--#define DEFAULT_INACTIVE_TIMER_DISABLE_SECONDS 600
-+#define DEFAULT_INACTIVE_TIMER_DISABLE_SECONDS 6
- 
- namespace mozilla {
- 
 Index: cunaguaro/layout/base/tests/test_bug569520.html
 ===================================================================
 --- cunaguaro.orig/layout/base/tests/test_bug569520.html	2014-02-13 21:42:50.974053365 +0000
