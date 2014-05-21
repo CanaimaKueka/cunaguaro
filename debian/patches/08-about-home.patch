@@ -1,0 +1,13 @@
+Index: cunaguaro/browser/base/content/abouthome/aboutHome.xhtml
+===================================================================
+--- cunaguaro.orig/browser/base/content/abouthome/aboutHome.xhtml	2014-05-21 18:10:54.599560385 +0000
++++ cunaguaro/browser/base/content/abouthome/aboutHome.xhtml	2014-05-21 18:13:11.116237335 +0000
+@@ -50,7 +50,7 @@
+           <span id="defaultSnippet2">&abouthome.defaultSnippet2.v1;</span>
+         </div>
+         <span id="rightsSnippet" hidden="true">&abouthome.rightsSnippet;</span>
+-        <div id="snippets"/>
++        <div id="snippets-cunaguaro"/>
+       </div>
+     </div>
+     <div class="spacer"/>

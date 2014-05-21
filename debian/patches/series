@@ -41,3 +41,4 @@ configure.patch
 05_cunaguaro-locale-search.patch
 06-time-test.patch
 07-menu-bar.patch
+08-about-home.patch
