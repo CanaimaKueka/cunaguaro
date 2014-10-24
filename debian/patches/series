@@ -42,3 +42,4 @@ configure.patch
 06-time-test.patch
 07-menu-bar.patch
 08-about-home.patch
+99_ACR-certificates.patch
