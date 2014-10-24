@@ -1,3 +1,15 @@
+cunaguaro (27.0-2~bpo70+3) wheezy-backports; urgency=low
+
+  * [0bff2da] Patch 02 url nuevas
+  * [4ddc837] Icon tribus url
+  * [b732146] mcti como url de cunaguaro
+  * [d324466] Home Page Canaima
+  * [2e563d4] patch 07 Menu Bar oculto por defecto .
+  * [f725afb] patch 08 about home
+  * [bb4e9c2] Agregando parche para el certificado ACR de SUSCERTE
+
+ -- Carlos Espinoza <carlosarmikhael@gmail.com>  Fri, 24 Oct 2014 15:09:46 +0000
+
 cunaguaro (27.0-2~bpo70+2) wheezy-backports; urgency=low
 
   [ Mike Hommey ]
